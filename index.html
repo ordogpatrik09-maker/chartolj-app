@@ -2186,7 +2186,12 @@
     <div id="journal-screen" class="hidden absolute inset-0 z-[85] bg-dark-950 flex flex-col">
         <div class="flex items-center justify-between p-4 border-b border-dark-750 shrink-0">
             <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-calendar-day text-neon-green mr-1.5"></i>Kereskedési Napló</h2>
-            <button onclick="closeTradingJournal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-center gap-2">
+                <button onclick="exportJournalCsv()" title="Exportálás CSV-be" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-file-csv text-xs"></i>
+                </button>
+                <button onclick="closeTradingJournal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
         </div>
         <div class="flex-grow overflow-y-auto px-4 pb-10">
             <!-- Hónapváltó -->
@@ -2202,6 +2207,15 @@
             <!-- Havi összesítő -->
             <div id="journal-summary" class="grid grid-cols-4 gap-2 mb-4"></div>
 
+            <!-- Mindenkori equity-görbe (az ÖSSZES rögzített nap kumulált P&L-je, nem csak a hónap) -->
+            <div id="journal-equity-wrap" class="hidden glass-card rounded-xl p-3 mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[9px] text-slate-500 uppercase font-bold">Mindenkori egyenleg-görbe</span>
+                    <span id="journal-equity-total" class="text-xs font-mono font-extrabold"></span>
+                </div>
+                <div id="journal-equity-chart"></div>
+            </div>
+
             <!-- Naptár rács -->
             <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-500 uppercase mb-1">
                 <div>H</div><div>K</div><div>Sze</div><div>Cs</div><div>P</div><div>Szo</div><div>V</div>
@@ -2211,7 +2225,8 @@
             <p class="text-[10px] text-slate-500 leading-relaxed mt-4">
                 Koppints bármelyik napra a rögzítéshez vagy szerkesztéshez. A zöld nap nyereséges, a piros veszteséges,
                 a szürke keret egy rögzített, nullszaldós ("break-even") napot jelent. Ez a napló csak ezen az eszközön,
-                a böngésződben tárolódik.
+                a böngésződben tárolódik. A fenti egyenleg-görbe és a CSV-exportálás mindig az ÖSSZES rögzített napot
+                veszi figyelembe, nem csak a megjelenített hónapot.
             </p>
 
             <!-- Napi bejegyzés szerkesztő (megnyitáskor jelenik meg) -->
@@ -10518,10 +10533,72 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         }
 
+        // Mindenkori (all-time) egyenleg-görbe: a rögzített napok dátum szerint
+        // rendezve, kumulált P&L-lel — egyetlen, függőségmentes inline SVG
+        // polyline-ként, hogy ne kelljen külön charting könyvtár. Azt mutatja
+        // meg, amit egy sima havi összesítő nem tud: a hosszútávú trendet
+        // (pl. 3 jó hónap után egy rossz hét mennyire számít az egész képben).
+        function renderJournalEquityCurve() {
+            const wrap = document.getElementById('journal-equity-wrap');
+            const keys = Object.keys(tradingJournal).sort();
+            if (keys.length < 2) { wrap.classList.add('hidden'); return; }
+            wrap.classList.remove('hidden');
+
+            let running = 0;
+            const points = keys.map(k => { running += Number(tradingJournal[k].pnl) || 0; return running; });
+            const total = points[points.length - 1];
+            const totalEl = document.getElementById('journal-equity-total');
+            totalEl.textContent = `${total >= 0 ? '+' : ''}$${total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            totalEl.className = `text-xs font-mono font-extrabold ${total > 0 ? 'text-neon-green' : total < 0 ? 'text-neon-red' : 'text-slate-300'}`;
+
+            const w = 280, h = 64, pad = 4;
+            const min = Math.min(0, ...points), max = Math.max(0, ...points);
+            const range = (max - min) || 1;
+            const stepX = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+            const toY = (v) => h - pad - ((v - min) / range) * (h - pad * 2);
+            const coords = points.map((v, i) => [pad + i * stepX, toY(v)]);
+            const linePath = coords.map((c, i) => (i === 0 ? 'M' : 'L') + c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
+            const zeroY = toY(0).toFixed(1);
+            const areaPath = `${linePath} L${coords[coords.length - 1][0].toFixed(1)},${zeroY} L${coords[0][0].toFixed(1)},${zeroY} Z`;
+            const lineColor = total >= 0 ? '#34d399' : '#f43f5e';
+
+            document.getElementById('journal-equity-chart').innerHTML = `
+                <svg viewBox="0 0 ${w} ${h}" class="w-full" style="height:64px" preserveAspectRatio="none">
+                    <line x1="0" y1="${zeroY}" x2="${w}" y2="${zeroY}" stroke="#334155" stroke-width="1" stroke-dasharray="3,3" />
+                    <path d="${areaPath}" fill="${lineColor}" opacity="0.12" />
+                    <path d="${linePath}" fill="none" stroke="${lineColor}" stroke-width="1.75" />
+                </svg>`;
+        }
+
+        // CSV-exportálás: az ÖSSZES rögzített nap (nem csak a megjelenített
+        // hónap) dátum, napi P&L és jegyzet szerint, hogy a felhasználó pl.
+        // Excelben is tovább tudja elemezni a saját adatait.
+        function exportJournalCsv() {
+            const keys = Object.keys(tradingJournal).sort();
+            if (keys.length === 0) { showNotification('Még nincs rögzített napi bejegyzésed.'); return; }
+            const escapeCsv = (s) => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+            const rows = [['Dátum', 'Napi P&L ($)', 'Jegyzet'].map(escapeCsv).join(',')];
+            keys.forEach(k => {
+                const e = tradingJournal[k];
+                rows.push([k, Number(e.pnl).toFixed(2), e.note || ''].map(escapeCsv).join(','));
+            });
+            const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chartolj_kereskedesi_naplo_${journalDateKey(new Date())}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('Napló exportálva CSV fájlba.');
+        }
+
         function renderTradingJournalCalendar() {
             const y = journalViewDate.getFullYear(), m = journalViewDate.getMonth();
             document.getElementById('journal-month-label').textContent = `${JOURNAL_MONTH_NAMES[m]} ${y}`;
             renderJournalStreakBanner();
+            renderJournalEquityCurve();
 
             // --- Havi összesítő ---
             const firstOfMonth = new Date(y, m, 1);
