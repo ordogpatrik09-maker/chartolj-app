@@ -2055,6 +2055,10 @@
                 </div>
                 <div id="profile-name-error" class="hidden text-[10px] text-neon-red mt-1"></div>
             </div>
+            <button onclick="openTradingJournal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-green/40 transition">
+                <span class="text-xs font-bold text-white"><i class="fa-solid fa-calendar-day text-neon-green mr-2"></i>Kereskedési Napló (napi P&amp;L)</span>
+                <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+            </button>
             <button onclick="openPremiumModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-amber-400/40 transition">
                 <span class="text-xs font-bold text-white"><i class="fa-solid fa-crown text-amber-400 mr-2"></i><span data-i18n="profile_premium">Chartolj Prémium</span></span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
@@ -2135,6 +2139,63 @@
             <div class="flex items-center gap-2">
                 <button onclick="closeDeleteAccountModal()" class="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-dark-800 hover:bg-dark-750 transition">Mégsem</button>
                 <button id="delete-account-confirm-btn" onclick="confirmDeleteAccount()" disabled class="flex-1 py-2.5 rounded-xl text-xs font-extrabold uppercase bg-dark-800 text-slate-600 cursor-not-allowed transition">Törlés</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= KERESKEDÉSI NAPLÓ (napi P&L naptár) =================
+         Ez NEM a szimulátor automatikus tranzakció-előzménye (az a Kereskedés
+         képernyő "Kereskedési Előzmények" fülén van, és minden újratöltéskor
+         nullázódik, mivel a demo-számla is mindig 100 000$-ról indul újra).
+         Ez egy ÖNÁLLÓ, kézzel vezetett napló: a user minden nap végén saját
+         maga rögzíti, mennyit keresett/veszített aznap (akár a szimulátorban,
+         akár valós/demo számláján máshol), plusz egy rövid jegyzetet/tanulságot.
+         Ez pontosan az a fegyelmezett szokás, amit a profi kereskedők is
+         csinálnak — a saját teljesítmény objektív, naptár-nézetű áttekintése
+         segít felismerni a mintázatokat (pl. "hétfőn mindig veszítek"). -->
+    <div id="journal-screen" class="hidden absolute inset-0 z-[85] bg-dark-950 flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b border-dark-750 shrink-0">
+            <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-calendar-day text-neon-green mr-1.5"></i>Kereskedési Napló</h2>
+            <button onclick="closeTradingJournal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="flex-grow overflow-y-auto px-4 pb-10">
+            <!-- Hónapváltó -->
+            <div class="flex items-center justify-between mt-4 mb-3">
+                <button onclick="journalShiftMonth(-1)" class="w-9 h-9 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                <div id="journal-month-label" class="text-sm font-extrabold text-white"></div>
+                <button onclick="journalShiftMonth(1)" class="w-9 h-9 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+            </div>
+
+            <!-- Havi összesítő -->
+            <div id="journal-summary" class="grid grid-cols-4 gap-2 mb-4"></div>
+
+            <!-- Naptár rács -->
+            <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-500 uppercase mb-1">
+                <div>H</div><div>K</div><div>Sze</div><div>Cs</div><div>P</div><div>Szo</div><div>V</div>
+            </div>
+            <div id="journal-calendar-grid" class="grid grid-cols-7 gap-1"></div>
+
+            <p class="text-[10px] text-slate-500 leading-relaxed mt-4">
+                Koppints bármelyik napra a rögzítéshez vagy szerkesztéshez. A zöld nap nyereséges, a piros veszteséges,
+                a szürke keret egy rögzített, nullszaldós ("break-even") napot jelent. Ez a napló csak ezen az eszközön,
+                a böngésződben tárolódik.
+            </p>
+
+            <!-- Napi bejegyzés szerkesztő (megnyitáskor jelenik meg) -->
+            <div id="journal-entry-editor" class="hidden mt-4 glass-card rounded-xl border border-neon-cyan/30 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div id="journal-entry-date-label" class="text-xs font-extrabold text-white"></div>
+                    <button onclick="closeJournalEntryEditor()" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-xmark text-xs"></i></button>
+                </div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Napi eredmény ($)</label>
+                <input type="number" id="journal-entry-pnl" step="0.01" placeholder="pl. 150 vagy -80" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50 mb-3">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Jegyzet / tanulság (opcionális)</label>
+                <textarea id="journal-entry-note" rows="3" maxlength="500" placeholder="Mi ment jól? Mit csinálnál másképp legközelebb?" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50 resize-none mb-3"></textarea>
+                <div id="journal-entry-today-hint" class="hidden text-[10px] text-slate-500 mb-3"></div>
+                <div class="flex items-center gap-2">
+                    <button id="journal-entry-delete-btn" onclick="deleteJournalEntry()" class="hidden px-4 py-2.5 rounded-xl text-xs font-bold text-neon-red bg-neon-red/10 border border-neon-red/30 hover:bg-neon-red/20 transition">Törlés</button>
+                    <button onclick="saveJournalEntry()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 hover:brightness-110 active:scale-[0.98] transition">Mentés</button>
+                </div>
             </div>
         </div>
     </div>
@@ -10342,6 +10403,169 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <p class="text-slate-500 text-[10px] mt-4">Verzió: 0.1 (vázlat) — utoljára frissítve: [DÁTUM]</p>
             `
         };
+
+        // ================= KERESKEDÉSI NAPLÓ (kézzel vezetett, napi P&L naptár) =================
+        // Minden bejegyzés kulcsa "YYYY-MM-DD" (helyi idő szerint), értéke { pnl, note, savedAt }.
+        // Szándékosan különálló a szimulátor automatikus tradeHistory-jától — ez a felhasználó
+        // SAJÁT, kézzel rögzített napi összegzése, ami akár a szimulátorból, akár egy valós/demo
+        // számláról is származhat. Csak localStorage-ban tárolódik (eszközönként).
+        let tradingJournal = {};
+        let journalViewDate = new Date(); // az aktuálisan megjelenített hónap
+        let journalEditingKey = null;     // melyik nap bejegyzését szerkeszti épp az editor
+
+        function journalDateKey(d) {
+            const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+        function loadTradingJournal() {
+            try {
+                const raw = localStorage.getItem('chartolj_trading_journal');
+                tradingJournal = raw ? JSON.parse(raw) : {};
+            } catch (e) { tradingJournal = {}; }
+        }
+        function saveTradingJournalState() {
+            try { localStorage.setItem('chartolj_trading_journal', JSON.stringify(tradingJournal)); } catch (e) {}
+        }
+
+        function openTradingJournal() {
+            loadTradingJournal();
+            journalViewDate = new Date();
+            closeJournalEntryEditor();
+            document.getElementById('journal-screen').classList.remove('hidden');
+            renderTradingJournalCalendar();
+        }
+        function closeTradingJournal() {
+            document.getElementById('journal-screen').classList.add('hidden');
+        }
+
+        function journalShiftMonth(delta) {
+            journalViewDate = new Date(journalViewDate.getFullYear(), journalViewDate.getMonth() + delta, 1);
+            closeJournalEntryEditor();
+            renderTradingJournalCalendar();
+        }
+
+        const JOURNAL_MONTH_NAMES = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június', 'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December'];
+
+        function renderTradingJournalCalendar() {
+            const y = journalViewDate.getFullYear(), m = journalViewDate.getMonth();
+            document.getElementById('journal-month-label').textContent = `${JOURNAL_MONTH_NAMES[m]} ${y}`;
+
+            // --- Havi összesítő ---
+            const firstOfMonth = new Date(y, m, 1);
+            const monthPrefix = `${y}-${String(m + 1).padStart(2, '0')}-`;
+            const entries = Object.entries(tradingJournal).filter(([k]) => k.startsWith(monthPrefix)).map(([k, v]) => v);
+            const total = entries.reduce((s, e) => s + (Number(e.pnl) || 0), 0);
+            const winDays = entries.filter(e => Number(e.pnl) > 0).length;
+            const lossDays = entries.filter(e => Number(e.pnl) < 0).length;
+            const tradedDays = winDays + lossDays;
+            const winRate = tradedDays > 0 ? Math.round((winDays / tradedDays) * 100) : null;
+            const totalColor = total > 0 ? 'text-neon-green' : total < 0 ? 'text-neon-red' : 'text-slate-300';
+            document.getElementById('journal-summary').innerHTML = `
+                <div class="glass-card rounded-xl p-2.5 text-center">
+                    <div class="text-[9px] text-slate-500 uppercase font-bold mb-0.5">Havi összesen</div>
+                    <div class="text-sm font-mono font-extrabold ${totalColor}">${total >= 0 ? '+' : ''}$${total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                </div>
+                <div class="glass-card rounded-xl p-2.5 text-center">
+                    <div class="text-[9px] text-slate-500 uppercase font-bold mb-0.5">Nyerő napok</div>
+                    <div class="text-sm font-mono font-extrabold text-neon-green">${winDays}</div>
+                </div>
+                <div class="glass-card rounded-xl p-2.5 text-center">
+                    <div class="text-[9px] text-slate-500 uppercase font-bold mb-0.5">Vesztes napok</div>
+                    <div class="text-sm font-mono font-extrabold text-neon-red">${lossDays}</div>
+                </div>
+                <div class="glass-card rounded-xl p-2.5 text-center">
+                    <div class="text-[9px] text-slate-500 uppercase font-bold mb-0.5">Nap-Win Rate</div>
+                    <div class="text-sm font-mono font-extrabold text-white">${winRate === null ? '—' : winRate + '%'}</div>
+                </div>
+            `;
+
+            // --- Naptár rács ---
+            // Hétfővel kezdünk (HU szokás): JS getDay() 0=Vas..6=Szo -> eltolás, hogy 0=Hét legyen.
+            const jsFirstDay = firstOfMonth.getDay();
+            const leadingBlanks = (jsFirstDay + 6) % 7;
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            const todayKey = journalDateKey(new Date());
+
+            let cells = '';
+            for (let i = 0; i < leadingBlanks; i++) cells += `<div></div>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const key = `${monthPrefix}${String(day).padStart(2, '0')}`;
+                const entry = tradingJournal[key];
+                const isToday = key === todayKey;
+                let cellClass = 'relative aspect-square rounded-lg flex flex-col items-center justify-center text-[10px] font-mono cursor-pointer transition border ';
+                let pnlLabel = '';
+                if (entry && Number(entry.pnl) > 0) {
+                    cellClass += 'bg-neon-green/10 border-neon-green/40 text-neon-green hover:bg-neon-green/20';
+                    pnlLabel = `+${Math.round(Number(entry.pnl))}`;
+                } else if (entry && Number(entry.pnl) < 0) {
+                    cellClass += 'bg-neon-red/10 border-neon-red/40 text-neon-red hover:bg-neon-red/20';
+                    pnlLabel = `${Math.round(Number(entry.pnl))}`;
+                } else if (entry) {
+                    cellClass += 'bg-dark-800 border-slate-500/40 text-slate-300 hover:bg-dark-750';
+                    pnlLabel = '0';
+                } else {
+                    cellClass += 'bg-dark-850/60 border-dark-750 text-slate-500 hover:border-neon-cyan/40';
+                }
+                if (isToday) cellClass += ' ring-1 ring-neon-cyan/70';
+                cells += `<div class="${cellClass}" onclick="openJournalEntryEditor('${key}')">
+                    <span class="font-bold">${day}</span>
+                    ${pnlLabel ? `<span class="text-[9px] leading-none mt-0.5">${pnlLabel}</span>` : ''}
+                    ${entry && entry.note ? `<span class="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-amber-400"></span>` : ''}
+                </div>`;
+            }
+            document.getElementById('journal-calendar-grid').innerHTML = cells;
+        }
+
+        function openJournalEntryEditor(key) {
+            journalEditingKey = key;
+            const entry = tradingJournal[key] || {};
+            const d = new Date(key + 'T00:00:00');
+            const label = d.toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+            document.getElementById('journal-entry-date-label').textContent = label;
+            document.getElementById('journal-entry-pnl').value = entry.pnl !== undefined ? entry.pnl : '';
+            document.getElementById('journal-entry-note').value = entry.note || '';
+            document.getElementById('journal-entry-delete-btn').classList.toggle('hidden', entry.pnl === undefined);
+
+            // Ha ma van az adott nap, és a szimulátorban volt ma zárt pozíció, felajánljuk az összegét.
+            const hint = document.getElementById('journal-entry-today-hint');
+            const todayKey = journalDateKey(new Date());
+            if (key === todayKey && entry.pnl === undefined && typeof tradeHistory !== 'undefined' && tradeHistory.length > 0) {
+                const simTotal = tradeHistory.reduce((s, h) => s + (Number(h.pnl) || 0), 0);
+                hint.classList.remove('hidden');
+                hint.innerHTML = `Ma a szimulátorban lezárt pozícióid összesen <strong class="text-white">${simTotal >= 0 ? '+' : ''}$${simTotal.toFixed(2)}</strong>-t hoztak.
+                    <button onclick="document.getElementById('journal-entry-pnl').value='${simTotal.toFixed(2)}'" class="text-neon-cyan font-bold underline ml-1">Átvétel</button>`;
+            } else {
+                hint.classList.add('hidden');
+                hint.innerHTML = '';
+            }
+
+            document.getElementById('journal-entry-editor').classList.remove('hidden');
+            document.getElementById('journal-entry-editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        function closeJournalEntryEditor() {
+            journalEditingKey = null;
+            const editor = document.getElementById('journal-entry-editor');
+            if (editor) editor.classList.add('hidden');
+        }
+        function saveJournalEntry() {
+            if (!journalEditingKey) return;
+            const pnlRaw = document.getElementById('journal-entry-pnl').value;
+            if (pnlRaw === '' || isNaN(Number(pnlRaw))) { showNotification('Adj meg egy érvényes számot (pl. 150 vagy -80).'); return; }
+            const note = document.getElementById('journal-entry-note').value.trim();
+            tradingJournal[journalEditingKey] = { pnl: Number(pnlRaw), note, savedAt: Date.now() };
+            saveTradingJournalState();
+            closeJournalEntryEditor();
+            renderTradingJournalCalendar();
+            showNotification('Napi bejegyzés mentve.');
+        }
+        function deleteJournalEntry() {
+            if (!journalEditingKey) return;
+            delete tradingJournal[journalEditingKey];
+            saveTradingJournalState();
+            closeJournalEntryEditor();
+            renderTradingJournalCalendar();
+            showNotification('Bejegyzés törölve.');
+        }
 
         let currentLegalTab = 'risk';
 
