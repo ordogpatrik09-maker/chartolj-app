@@ -7920,9 +7920,100 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         "térközzel ismételt gyakorlás" (spaced repetition), ami sokkal tartósabb rögzülést
                         ad, mint az azonnali, tömeges magolás. Ez a rész szívet nem vesz el.
                     </p>
-                    <button onclick="startMistakePractice()" class="px-8 py-3 rounded-xl text-sm font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
-                        <i class="fa-solid fa-play mr-1.5"></i> Gyakorlás indítása (${due})
-                    </button>
+                    <div class="flex items-center justify-center gap-2.5">
+                        <button onclick="startMistakePractice()" class="px-8 py-3 rounded-xl text-sm font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                            <i class="fa-solid fa-play mr-1.5"></i> Gyakorlás indítása (${due})
+                        </button>
+                        <button onclick="renderMistakeBankStats()" title="Statisztika" class="w-11 h-11 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 hover:text-white transition flex items-center justify-center">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Statisztika-nézet a Hibás Kérdésekhez: melyik Akadémia-modulból hibázol
+        // legtöbbször, és mennyire "ragadnak" a hibáid (hányszor esel vissza ugyanarra
+        // a kérdésre, mielőtt sikerülne 5x egymás után). Ez segít eldönteni, hogy melyik
+        // témakört érdemes újra átvenni a leckék közül, nem csak gyakorolni a kvízt.
+        function renderMistakeBankStats() {
+            const el = document.getElementById('mistake-bank-viewer');
+            const keys = [...academyMistakes];
+
+            // --- Csoportosítás Akadémia-modul szerint ---
+            const byModule = {}; // moduleIdx -> { count, misses }
+            let totalMisses = 0;
+            const boxCounts = [0, 0, 0, 0, 0]; // hányadik SRS-fokozatban áll jelenleg
+            keys.forEach(key => {
+                const parsed = parseMistakeKey(key);
+                const lesson = parsed && LESSONS_DATA[parsed.lessonIdx];
+                const sched = getMistakeSched(key);
+                totalMisses += sched.misses;
+                const box = Math.min(MISTAKE_GRADUATE_BOX - 1, Math.max(0, sched.box));
+                boxCounts[box]++;
+                const modIdx = lesson ? (lesson.m || 0) : -1;
+                if (!byModule[modIdx]) byModule[modIdx] = { count: 0, misses: 0 };
+                byModule[modIdx].count++;
+                byModule[modIdx].misses += sched.misses;
+            });
+
+            const moduleRows = Object.entries(byModule)
+                .sort((a, b) => b[1].count - a[1].count)
+                .map(([modIdx, stat]) => {
+                    const mod = ACADEMY_MODULES[Number(modIdx)];
+                    const name = mod ? mod.n : 'Egyéb';
+                    const icon = mod ? mod.i : 'fa-circle-question';
+                    const pct = Math.round((stat.count / keys.length) * 100);
+                    const avgMisses = (stat.misses / stat.count).toFixed(1);
+                    return `
+                        <div class="mb-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-bold text-slate-200"><i class="fa-solid ${icon} text-neon-cyan mr-1.5 w-4 text-center"></i>${name}</span>
+                                <span class="text-[10px] text-slate-500 font-mono">${stat.count} kérdés · átl. ${avgMisses}x hibázva</span>
+                            </div>
+                            <div class="h-2 rounded-full bg-dark-800 overflow-hidden">
+                                <div class="h-full bg-neon-red/70" style="width:${pct}%"></div>
+                            </div>
+                        </div>`;
+                }).join('');
+
+            const boxLabels = ['Új / visszaesett', '1 nap múlva', '3 nap múlva', '1 hét múlva', '16 nap múlva'];
+            const boxColors = ['bg-neon-red/70', 'bg-amber-400/70', 'bg-amber-400/70', 'bg-neon-green/60', 'bg-neon-green/80'];
+            const boxRows = boxCounts.map((c, i) => {
+                if (c === 0) return '';
+                const pct = Math.round((c / keys.length) * 100);
+                return `
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <div class="w-24 text-[10px] text-slate-500 shrink-0">${boxLabels[i]}</div>
+                        <div class="flex-grow h-2 rounded-full bg-dark-800 overflow-hidden">
+                            <div class="h-full ${boxColors[i]}" style="width:${pct}%"></div>
+                        </div>
+                        <div class="w-6 text-right text-[10px] font-mono text-slate-400">${c}</div>
+                    </div>`;
+            }).join('');
+
+            el.innerHTML = `
+                <div class="w-full max-w-md m-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-extrabold text-white"><i class="fa-solid fa-chart-pie text-neon-cyan mr-1.5"></i>Hiba-statisztika</h2>
+                        <button onclick="renderMistakeBankIntro()" class="text-xs font-bold text-slate-400 hover:text-white transition"><i class="fa-solid fa-arrow-left mr-1"></i> Vissza</button>
+                    </div>
+
+                    <div class="glass-card rounded-xl p-3.5 mb-4">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-2.5">Hol hibázol legtöbbször</div>
+                        ${moduleRows || '<p class="text-xs text-slate-500">Nincs elég adat.</p>'}
+                    </div>
+
+                    <div class="glass-card rounded-xl p-3.5">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-2.5">Hol állnak a kérdéseid a rögzülésben</div>
+                        ${boxRows}
+                        <p class="text-[10px] text-slate-500 leading-relaxed mt-3">
+                            Összesen <strong class="text-white">${keys.length}</strong> kérdés a gyűjtőben,
+                            eddig összesen <strong class="text-white">${totalMisses}</strong> alkalommal hibázva rajtuk.
+                            Minél jobbra kerül egy kérdés fent, annál tartósabban megy már — a legelső sor
+                            ("Új / visszaesett") igényli most a legtöbb figyelmet.
+                        </p>
+                    </div>
                 </div>
             `;
         }
