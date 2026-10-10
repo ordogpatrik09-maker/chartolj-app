@@ -1,0 +1,31 @@
+-- =====================================================================
+-- 013_drop_legacy_user_trigger.sql
+-- =====================================================================
+-- HIBA, AMIT EZ JAVÍT (2026-10-08, élő teszt során derült ki):
+-- Az éles Supabase projekten egy KORÁBBI munkamenetből megmaradt, elavult
+-- trigger élt az auth.users táblán ("on_auth_user_created" →
+-- public.handle_new_user()), EGYIDEJŰLEG a 003_triggers.sql-ben
+-- létrehozott új, biztonságos triggerrel ("on_auth_user_created_chartolj"
+-- → public.handle_new_chartolj_user()).
+--
+-- A régi függvény ezt csinálta:
+--   insert into public.profiles (id, tag, name) values (...);
+--   insert into public.progress (user_id) values (new.id);
+--   insert into public.demo_trading (user_id) values (new.id);  -- <- HIBA
+--
+-- A `public.demo_trading` tábla NEM létezik a jelenlegi sémában (sosem lett
+-- létrehozva ehhez a projekthez) — ez a sor minden egyes új regisztrációnál
+-- hibát dobott, ami az AFTER INSERT trigger tranzakciós kontextusa miatt az
+-- EGÉSZ felhasználó-létrehozást visszagörgette. A Supabase Auth ezt
+-- generikus "Database error saving new user" (500-as) hibaként adta vissza
+-- a kliensnek — vagyis ÚJ REGISZTRÁCIÓ EGYÁLTALÁN NEM MŰKÖDÖTT.
+--
+-- A MEGOLDÁS: a régi trigger és függvény törlése. Minden funkcióját
+-- (profiles/progress sor létrehozása) a 003_triggers.sql biztonságos,
+-- ON CONFLICT-tel védett handle_new_chartolj_user() triggere már lefedi,
+-- ráadásul azt is helyesen, hogy a subscriptions táblába is beírja a free
+-- alapállapotot.
+-- =====================================================================
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
