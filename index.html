@@ -2166,6 +2166,9 @@
                 <button onclick="journalShiftMonth(1)" class="w-9 h-9 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
             </div>
 
+            <!-- Jelenlegi sorozat (minden eddigi bejegyzés alapján, nem csak a megjelenített hónap) -->
+            <div id="journal-streak-banner" class="hidden mb-3 glass-card rounded-xl p-3 text-center"></div>
+
             <!-- Havi összesítő -->
             <div id="journal-summary" class="grid grid-cols-4 gap-2 mb-4"></div>
 
@@ -10446,9 +10449,49 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         const JOURNAL_MONTH_NAMES = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június', 'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December'];
 
+        // A jelenlegi (aktuális) sorozatot a MA napjától visszafelé nézzük, az ÖSSZES
+        // rögzített bejegyzésen (nem csak a megjelenített hónapon) — ez mutatja meg,
+        // hogy épp most hány egymást követő nyerő vagy vesztes napod van.
+        function computeJournalCurrentStreak() {
+            const keys = Object.keys(tradingJournal).sort(); // "YYYY-MM-DD" lexikografikusan is időrendi
+            if (keys.length === 0) return null;
+            const todayKey = journalDateKey(new Date());
+            // A legutóbbi rögzített nap (akár ma, akár korábbi) a kiindulópont.
+            const relevant = keys.filter(k => k <= todayKey);
+            if (relevant.length === 0) return null;
+            let streakType = null, streakCount = 0;
+            for (let i = relevant.length - 1; i >= 0; i--) {
+                const pnl = Number(tradingJournal[relevant[i]].pnl);
+                const type = pnl > 0 ? 'win' : pnl < 0 ? 'loss' : 'flat';
+                if (type === 'flat') break; // egy nullszaldós nap megszakítja a sorozatot
+                if (streakType === null) { streakType = type; streakCount = 1; }
+                else if (type === streakType) streakCount++;
+                else break;
+            }
+            if (streakType === null) return null;
+            return { type: streakType, count: streakCount };
+        }
+
+        function renderJournalStreakBanner() {
+            const el = document.getElementById('journal-streak-banner');
+            const streak = computeJournalCurrentStreak();
+            if (!streak || streak.count < 2) { el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
+            if (streak.type === 'win') {
+                el.className = 'mb-3 glass-card rounded-xl border border-neon-green/30 bg-neon-green/[0.04] p-3 text-center';
+                el.innerHTML = `<span class="text-sm font-extrabold text-neon-green">🔥 ${streak.count} napos nyerő sorozat</span>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Szép munka — ne hagyd, hogy a lendület túlzott kockázatvállalásba csapjon át.</p>`;
+            } else {
+                el.className = 'mb-3 glass-card rounded-xl border border-neon-red/30 bg-neon-red/[0.04] p-3 text-center';
+                el.innerHTML = `<span class="text-sm font-extrabold text-neon-red">⚠️ ${streak.count} napos vesztes sorozat</span>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Érdemes most inkább kisebb mérettel, vagy egy szünettel visszavenni a tempóból.</p>`;
+            }
+        }
+
         function renderTradingJournalCalendar() {
             const y = journalViewDate.getFullYear(), m = journalViewDate.getMonth();
             document.getElementById('journal-month-label').textContent = `${JOURNAL_MONTH_NAMES[m]} ${y}`;
+            renderJournalStreakBanner();
 
             // --- Havi összesítő ---
             const firstOfMonth = new Date(y, m, 1);
