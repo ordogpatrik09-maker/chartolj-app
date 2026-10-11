@@ -2288,6 +2288,12 @@
                 <div id="journal-equity-chart"></div>
             </div>
 
+            <!-- Haladó (profi szintű) napló-statisztikák: Profit Factor, Max
+                 Drawdown, nyertes/vesztes napok aránya — ugyanazok a mutatók,
+                 amiket a profi kereskedők is figyelnek a saját teljesítményük
+                 értékeléséhez, nem csak a nyers összes P&L. -->
+            <div id="journal-advanced-stats-wrap" class="hidden mb-4"></div>
+
             <!-- Naptár rács -->
             <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-500 uppercase mb-1">
                 <div>H</div><div>K</div><div>Sze</div><div>Cs</div><div>P</div><div>Szo</div><div>V</div>
@@ -11285,6 +11291,74 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </svg>`;
         }
 
+        // Haladó napló-statisztikák (nap-szintű, nem egyedi trade-szintű,
+        // mivel a napló napi összesített P&L-t rögzít): Profit Factor
+        // (összes nyereség / összes veszteség abszolút értéke), legnagyobb
+        // visszaesés (max drawdown) az equity-görbén, nyertes/vesztes napok
+        // aránya és átlagos mérete. Ezek pontosan azok a mutatók, amiket a
+        // profi kereskedők a saját "edge"-ük objektív felméréséhez néznek —
+        // nem csak azt, hogy "most pluszban vagyok-e".
+        function renderJournalAdvancedStats() {
+            const wrap = document.getElementById('journal-advanced-stats-wrap');
+            const keys = Object.keys(tradingJournal).sort();
+            if (keys.length < 3) { wrap.classList.add('hidden'); return; }
+            wrap.classList.remove('hidden');
+
+            const pnls = keys.map(k => Number(tradingJournal[k].pnl) || 0);
+            const winDays = pnls.filter(p => p > 0);
+            const lossDays = pnls.filter(p => p < 0);
+            const grossProfit = winDays.reduce((a, b) => a + b, 0);
+            const grossLoss = Math.abs(lossDays.reduce((a, b) => a + b, 0));
+            const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss) : (grossProfit > 0 ? Infinity : 0);
+            const avgWin = winDays.length ? grossProfit / winDays.length : 0;
+            const avgLoss = lossDays.length ? grossLoss / lossDays.length : 0;
+            const winDayPct = (winDays.length / pnls.length) * 100;
+
+            // Max drawdown az equity-görbén: a futó csúcsponttól mért
+            // legnagyobb visszaesés $-ban és %-ban (a csúcsponthoz képest).
+            let running = 0, peak = 0, maxDDAmount = 0, maxDDPct = 0;
+            keys.forEach(k => {
+                running += Number(tradingJournal[k].pnl) || 0;
+                if (running > peak) peak = running;
+                const dd = peak - running;
+                if (dd > maxDDAmount) {
+                    maxDDAmount = dd;
+                    maxDDPct = peak > 0 ? (dd / peak) * 100 : 0;
+                }
+            });
+
+            const pfDisplay = profitFactor === Infinity ? '∞' : profitFactor.toFixed(2);
+            const pfColorClass = profitFactor >= 1.5 ? 'text-neon-green' : profitFactor >= 1 ? 'text-amber-400' : 'text-neon-red';
+
+            wrap.innerHTML = `
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[9px] text-slate-500 uppercase font-bold mb-2.5">Haladó statisztikák (mindenkori)</div>
+                    <div class="grid grid-cols-2 gap-2.5 mb-2.5">
+                        <div class="bg-dark-900 rounded-lg p-2 text-center">
+                            <div class="text-[9px] text-slate-500 uppercase mb-0.5">Profit Factor</div>
+                            <div class="text-sm font-mono font-extrabold ${pfColorClass}">${pfDisplay}</div>
+                        </div>
+                        <div class="bg-dark-900 rounded-lg p-2 text-center">
+                            <div class="text-[9px] text-slate-500 uppercase mb-0.5">Max visszaesés</div>
+                            <div class="text-sm font-mono font-extrabold text-neon-red">-$${maxDDAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                            <div class="text-[9px] text-slate-500 font-mono">(${maxDDPct.toFixed(0)}%)</div>
+                        </div>
+                        <div class="bg-dark-900 rounded-lg p-2 text-center">
+                            <div class="text-[9px] text-slate-500 uppercase mb-0.5">Nyertes napok</div>
+                            <div class="text-sm font-mono font-extrabold text-neon-green">${winDayPct.toFixed(0)}%</div>
+                            <div class="text-[9px] text-slate-500 font-mono">átl. +$${avgWin.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                        </div>
+                        <div class="bg-dark-900 rounded-lg p-2 text-center">
+                            <div class="text-[9px] text-slate-500 uppercase mb-0.5">Vesztes napok</div>
+                            <div class="text-sm font-mono font-extrabold text-neon-red">${(100 - winDayPct).toFixed(0)}%</div>
+                            <div class="text-[9px] text-slate-500 font-mono">átl. -$${avgLoss.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                        </div>
+                    </div>
+                    <p class="text-[9.5px] text-slate-500 leading-relaxed">Profit Factor = összes nyereség / összes veszteség (nap-szinten). 1.0 alatt hosszú távon veszítesz, 1.5+ felett egészséges a stratégiád. A Max visszaesés azt mutatja, mennyit bírna el a fegyelmed, ha a csúcsról a legnagyobb mélypontig esnél.</p>
+                </div>
+            `;
+        }
+
         // CSV-exportálás: az ÖSSZES rögzített nap (nem csak a megjelenített
         // hónap) dátum, napi P&L és jegyzet szerint, hogy a felhasználó pl.
         // Excelben is tovább tudja elemezni a saját adatait.
@@ -11314,6 +11388,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('journal-month-label').textContent = `${JOURNAL_MONTH_NAMES[m]} ${y}`;
             renderJournalStreakBanner();
             renderJournalEquityCurve();
+            renderJournalAdvancedStats();
 
             // --- Havi összesítő ---
             const firstOfMonth = new Date(y, m, 1);
