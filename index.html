@@ -6099,6 +6099,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (recentLog.length >= 3) {
                 insights.push(`${recentLog.length} hibabejegyzés gyűlt össze ezen a héten — a Mistake Bank "Gyakorlás indítása" gombbal ezek pont most esedékesek lehetnek.`);
             }
+
+            // --- Kereskedési Terv betartása: hány vesztes nap lépte túl a saját
+            // napi veszteség-limitet? Ehhez egy becsült számlaegyenleg kell (a
+            // Pozícióméret Kalkulátorban megadott érték), mert a Napló csak $
+            // összeget rögzít, a Terv pedig %-ban van megadva. ---
+            let planBreachDays = null;
+            if (tradingPlan && tradingPlan.maxDailyLoss) {
+                const balanceInput = document.getElementById('ps-balance');
+                const balance = balanceInput && Number(balanceInput.value) > 0 ? Number(balanceInput.value) : null;
+                if (balance) {
+                    const lossDaysThisWeek = recentJournalEntries.filter(e => Number(e.pnl) < 0);
+                    planBreachDays = lossDaysThisWeek.filter(e => Math.abs(Number(e.pnl)) / balance * 100 >= tradingPlan.maxDailyLoss).length;
+                    if (planBreachDays > 0) {
+                        insights.push(`${planBreachDays} napon lépted túl a saját, Kereskedési Tervben rögzített napi veszteség-limitet (${tradingPlan.maxDailyLoss}%) — ez a leggyakoribb oka, hogy egy jó stratégia is veszteségessé válik hosszú távon.`);
+                    } else if (lossDaysThisWeek.length > 0) {
+                        insights.push(`Minden vesztes napodon a saját napi veszteség-limiteden (${tradingPlan.maxDailyLoss}%) belül maradtál — ez pontosan az a fegyelem, ami hosszú távon megvédi a tőkédet.`);
+                    }
+                }
+            }
             if (insights.length === 0) insights.push('Folytasd ugyanígy — még nincs elég adat egy konkrét, személyre szabott tanácshoz.');
 
             el.innerHTML = `
@@ -6121,6 +6140,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="mt-2 pt-2 border-t border-dark-750/60">
                     ${insights.map(txt => `<p class="text-[11px] text-amber-400 leading-relaxed flex gap-1.5"><i class="fa-solid fa-lightbulb mt-0.5 shrink-0"></i><span>${txt}</span></p>`).join('')}
                 </div>
+                ${!tradingPlan && recentJournalEntries.length >= 2 ? `
+                <button onclick="switchMobileTab('profile'); setTimeout(openTradingPlan, 50);" class="mt-3 w-full text-left flex items-center justify-between px-3 py-2 rounded-lg bg-neon-purple/[0.06] border border-neon-purple/25 hover:border-neon-purple/50 transition">
+                    <span class="text-[11px] text-slate-300"><i class="fa-solid fa-clipboard-list text-neon-purple mr-1.5"></i>Még nincs Kereskedési Terved — írd le a szabályaidat, hogy itt is láthasd, mennyire tartod magad hozzájuk.</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] text-neon-purple shrink-0 ml-2"></i>
+                </button>` : ''}
             `;
         }
 
