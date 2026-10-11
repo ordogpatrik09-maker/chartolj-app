@@ -987,6 +987,13 @@
                                 <div class="text-[10px] text-slate-400">Mikor várható nagy volatilitás ezen a héten?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('preflight-modal'); preflightChecked = {}; renderPreflightChecklist();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-list-check"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Belépés Előtti Ellenőrzőlista</div>
+                                <div class="text-[10px] text-slate-400">Fegyelmezett vagy, vagy csak sietsz?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1998,6 +2005,33 @@
             <div id="newscal-week-label" class="text-center text-xs font-mono text-slate-300 mb-3"></div>
             <div id="newscal-list" class="space-y-2"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Sok profi kereskedő magas horderejű hírek (🔴) közvetlen közelében szűkebb pozícióméretet használ, vagy teljesen kiül a piacról — a hirtelen, kiszámíthatatlan árkiugrás (gap) a stop-loss-t is "átugorhatja".</p>
+        </div>
+    </div>
+
+    <!-- ================= BELÉPÉS ELŐTTI ELLENŐRZŐLISTA (OKTATÁSI, FEGYELEM) =================
+         A legtöbb profi prop-trading cég megköveteli a kereskedőktől egy
+         ilyen rutin átgondolását pozíciónyitás ELŐTT — a cél nem az, hogy
+         megakadályozza a kereskedést (ez csak egy önellenőrző lista, nem
+         blokkoló validáció a tényleges megbízás-végrehajtásnál), hanem hogy
+         a felhasználó TUDATOSAN, higgadt fejjel menjen végig a saját
+         szabályain, mielőtt pozíciót nyitna — ez maga a fegyelem gyakorlása. -->
+    <div id="preflight-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-neon-green"></i> Belépés Előtti Ellenőrzőlista
+                </h3>
+                <button onclick="closeToolModal('preflight-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Mielőtt pozíciót nyitnál, menj végig ezen a listán higgadt fejjel. Ez nem akadályozza meg a kereskedést — csak egy pillanatnyi, tudatos megállás, amit a profi kereskedők is rutinból csinálnak.</p>
+
+            <div id="preflight-checkboxes" class="space-y-2 mb-4"></div>
+
+            <div id="preflight-verdict" class="hidden mb-3"></div>
+
+            <button onclick="closeToolModal('preflight-modal')" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-dark-800 border border-dark-700 text-slate-300 hover:bg-dark-750 transition">
+                Bezárás
+            </button>
         </div>
     </div>
 
@@ -5575,6 +5609,61 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 `;
             }).join('');
+        }
+
+        // ================= BELÉPÉS ELŐTTI ELLENŐRZŐLISTA (OKTATÁSI, FEGYELEM) =================
+        // Szándékosan NEM perzisztens állapot (nem localStorage-ban tárolt) —
+        // minden megnyitáskor újraindul, mert a cél egy FRISS, az adott
+        // pillanatra vonatkozó önellenőrzés, nem egy egyszeri kitöltés. Az
+        // utolsó 2 tétel dinamikusan a mentett Kereskedési Tervre hivatkozik,
+        // ha az létezik, hogy valóban személyre szabott legyen.
+        let preflightChecked = {};
+        function getPreflightItems() {
+            const items = [
+                { id: 'stoploss', label: 'Meghatároztam a stop-loss szintet, MIELŐTT megnyitnám a pozíciót.' },
+                { id: 'setup', label: 'A belépési ok egy konkrét, felismerhető setup — nem csak "érzés" vagy találgatás.' },
+                { id: 'calm', label: 'Higgadt, kipihent állapotban vagyok — nem fáradt, ideges, vagy FOMO/bosszú-kereskedés hatása alatt.' },
+                { id: 'sized', label: 'A pozícióméretet a kockázatkezelési szabályaim alapján, nem ötletszerűen választottam.' }
+            ];
+            if (tradingPlan && tradingPlan.maxRisk) {
+                items.push({ id: 'planrisk', label: `Ez a trade NEM lépi túl a Kereskedési Tervemben rögzített max. kockázatot (${tradingPlan.maxRisk}%/trade).` });
+            }
+            if (tradingPlan && tradingPlan.setups && tradingPlan.setups.length > 0) {
+                items.push({ id: 'plansetup', label: `A belépés egyike a Kereskedési Tervemben rögzített preferált setupjaimnak (${tradingPlan.setups.join(', ')}).` });
+            }
+            return items;
+        }
+        function togglePreflightItem(id) {
+            preflightChecked[id] = !preflightChecked[id];
+            renderPreflightChecklist();
+        }
+        function renderPreflightChecklist() {
+            const items = getPreflightItems();
+            const boxEl = document.getElementById('preflight-checkboxes');
+            boxEl.innerHTML = items.map(item => {
+                const checked = !!preflightChecked[item.id];
+                return `
+                    <button type="button" onclick="togglePreflightItem('${item.id}')" class="w-full flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition ${checked ? 'bg-neon-green/[0.07] border-neon-green/30' : 'bg-dark-850/60 border-dark-750 hover:border-dark-600'}">
+                        <span class="shrink-0 w-4.5 h-4.5 rounded-md border flex items-center justify-center mt-0.5 ${checked ? 'bg-neon-green border-neon-green text-dark-950' : 'border-dark-600 text-transparent'}"><i class="fa-solid fa-check text-[9px]"></i></span>
+                        <span class="text-[11px] leading-snug ${checked ? 'text-slate-200' : 'text-slate-400'}">${item.label}</span>
+                    </button>
+                `;
+            }).join('');
+
+            const checkedCount = items.filter(i => preflightChecked[i.id]).length;
+            const verdictEl = document.getElementById('preflight-verdict');
+            if (checkedCount === 0) {
+                verdictEl.classList.add('hidden');
+                return;
+            }
+            verdictEl.classList.remove('hidden');
+            if (checkedCount === items.length) {
+                verdictEl.className = 'mb-3 glass-card rounded-xl border border-neon-green/30 bg-neon-green/[0.05] p-3 text-center';
+                verdictEl.innerHTML = `<span class="text-xs font-extrabold text-neon-green">✅ Minden pontot megerősítettél — fegyelmezetten lépsz be.</span>`;
+            } else {
+                verdictEl.className = 'mb-3 glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 text-center';
+                verdictEl.innerHTML = `<span class="text-xs font-bold text-amber-400">⚠️ Még ${items.length - checkedCount} pont nincs megerősítve — érdemes megállni és átgondolni, mielőtt belépsz.</span>`;
+            }
         }
 
         /* ================= AKADÉMIA (Oktatóközpont) ================= */
