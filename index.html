@@ -987,6 +987,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyit "ér" átlagosan egy trade-ed?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('backtest-modal'); renderBacktestAssetLabel()" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-flask"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Stratégia Backtester</div>
+                                <div class="text-[10px] text-slate-400">EMA-keresztezés teszt a múltbeli adaton</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-percent"></i></span>
                             <div>
@@ -2112,6 +2119,46 @@
         </div>
     </div>
 
+    <!-- ================= STRATÉGIA BACKTESTER (OKTATÁSI) =================
+         A cél megtanítani a backtesting ALAPGONDOLATÁT egy olyan egyszerű,
+         mechanikus szabályon (EMA-keresztezés), amit a felhasználó maga is
+         meg tud érteni és le tud követni — NEM egy "szent grál" stratégia
+         ajánlása. A jelenleg betöltött chart adaton (candleData) futtatja
+         a szimulációt, hogy valódi (bár demó/szimulált) árfolyamadaton
+         lásson eredményt, Buy & Hold összehasonlítással együtt. -->
+    <div id="backtest-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-flask text-neon-purple"></i> Stratégia Backtester
+                </h3>
+                <button onclick="closeToolModal('backtest-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Egyszerű EMA-keresztezés stratégia: long belépés, amikor a gyors EMA a lassú EMA fölé kerül, zárás, amikor visszakeresztez alá. A jelenleg betöltött <span id="backtest-asset-label" class="text-white font-bold">—</span> charton futtatja a szimulációt.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Gyors EMA periódus</label>
+                    <input type="number" id="backtest-fast" value="9" step="1" min="2" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Lassú EMA periódus</label>
+                    <input type="number" id="backtest-slow" value="21" step="1" min="3" max="300" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke ($)</label>
+            <input type="number" id="backtest-equity" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="runBacktestFromUI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Backtest futtatása
+            </button>
+
+            <div id="backtest-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
+        </div>
+    </div>
+
     <!-- ================= GAZDASÁGI HÍRNAPTÁR (OKTATÁSI, SZIMULÁLT) =================
          A cél NEM valós piaci hírek megjelenítése (ez demó app, nincs valós
          adatforrás), hanem OKTATÁSI bemutatása annak, hogy milyen típusú
@@ -2320,6 +2367,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Trade Expectancy Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Mennyit "ér" átlagosan egy trade-ed?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('backtest-modal'); renderBacktestAssetLabel()" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-flask"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Stratégia Backtester</div>
+                    <div class="text-[10px] text-slate-400">EMA-keresztezés teszt a múltbeli adaton</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -4293,6 +4347,185 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let sumSq = 0;
             for (let i = index - period + 1; i <= index; i++) sumSq += Math.pow(values[i] - mean, 2);
             return Math.sqrt(sumSq / period);
+        }
+
+        // Egyszerű, standard EMA-sorozat: az első érték a kezdő `period`
+        // záróár SMA-ja, utána a szabványos EMA-rekurzió (k = 2/(period+1)).
+        // A Backtester (lásd lejjebb) ezt használja fel az EMA-keresztezés
+        // stratégia szimulálásához.
+        function calcEMASeries(closes, period) {
+            const ema = new Array(closes.length).fill(null);
+            if (closes.length < period) return ema;
+            let sum = 0;
+            for (let i = 0; i < period; i++) sum += closes[i];
+            ema[period - 1] = sum / period;
+            const k = 2 / (period + 1);
+            for (let i = period; i < closes.length; i++) {
+                ema[i] = closes[i] * k + ema[i - 1] * (1 - k);
+            }
+            return ema;
+        }
+
+        // ================= STRATÉGIA BACKTESTER (OKTATÁSI) =================
+        // Egyszerű, tiszta (side-effect mentes) EMA-keresztezés backtest:
+        // long belépés, amikor a gyors EMA keresztbe megy a lassú EMA fölé,
+        // kilépés (zárás), amikor visszakeresztezi alá. Mindig "flat vagy
+        // long" állapot (nincs short), és az aktuális periódus végén nyitva
+        // maradt pozíció az utolsó záróáron kerül elszámolásra (mark-to-market).
+        // A cél megtanítani, hogy egy egyszerű, mechanikus szabály hogyan
+        // teljesít a MÚLTBELI adaton — ez NEM garancia a jövőbeli teljesítményre
+        // (ez a klasszikus "overfitting a múltra" csapda, amire a modal szövege
+        // is figyelmeztet).
+        function runEMACrossoverBacktest(candles, fastPeriod, slowPeriod, startEquity) {
+            const closes = candles.map(c => c.close);
+            const fastEma = calcEMASeries(closes, fastPeriod);
+            const slowEma = calcEMASeries(closes, slowPeriod);
+
+            let equity = startEquity;
+            let position = null; // { entryPrice, entryIndex }
+            const trades = [];
+            const equityCurve = [{ index: 0, equity: startEquity }];
+            let peakEquity = startEquity;
+            let maxDrawdownPct = 0;
+
+            for (let i = 1; i < closes.length; i++) {
+                if (fastEma[i] === null || slowEma[i] === null || fastEma[i - 1] === null || slowEma[i - 1] === null) continue;
+
+                const wasBelow = fastEma[i - 1] <= slowEma[i - 1];
+                const isAbove = fastEma[i] > slowEma[i];
+                const crossedUp = wasBelow && isAbove;
+                const crossedDown = !wasBelow && !isAbove;
+
+                if (!position && crossedUp) {
+                    position = { entryPrice: closes[i], entryIndex: i };
+                } else if (position && crossedDown) {
+                    const retPct = (closes[i] - position.entryPrice) / position.entryPrice;
+                    equity = equity * (1 + retPct);
+                    trades.push({ entryIndex: position.entryIndex, exitIndex: i, entryPrice: position.entryPrice, exitPrice: closes[i], returnPct: retPct });
+                    position = null;
+                }
+
+                equityCurve.push({ index: i, equity });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            // Nyitva maradt pozíció zárása az utolsó áron (mark-to-market), hogy
+            // a végeredmény tartalmazza a folyamatban lévő pozíció hatását is.
+            if (position) {
+                const lastClose = closes[closes.length - 1];
+                const retPct = (lastClose - position.entryPrice) / position.entryPrice;
+                equity = equity * (1 + retPct);
+                trades.push({ entryIndex: position.entryIndex, exitIndex: closes.length - 1, entryPrice: position.entryPrice, exitPrice: lastClose, returnPct: retPct, stillOpenAtEnd: true });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            const wins = trades.filter(t => t.returnPct > 0).length;
+            const winRatePct = trades.length ? (wins / trades.length * 100) : 0;
+            const totalReturnPct = (equity - startEquity) / startEquity * 100;
+            const buyHoldReturnPct = closes.length > 1 ? (closes[closes.length - 1] - closes[0]) / closes[0] * 100 : 0;
+
+            return {
+                trades, equityCurve, winRatePct, totalReturnPct, maxDrawdownPct,
+                finalEquity: equity, buyHoldReturnPct, tradeCount: trades.length
+            };
+        }
+
+        // Nagyon egyszerű, függőségmentes equity-görbe sparkline egy kis
+        // canvasre — nem a fő chart-motort használja (az sokkal komplexebb
+        // dolgokra van hangolva), csak egy gyors vizuális áttekintést ad.
+        function drawBacktestEquitySparkline(canvas, equityCurve, startEquity) {
+            if (!canvas || !equityCurve.length) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            const values = equityCurve.map(p => p.equity);
+            const min = Math.min(startEquity, ...values);
+            const max = Math.max(startEquity, ...values);
+            const range = (max - min) || 1;
+            const toXY = (i, v) => [
+                (i / Math.max(1, equityCurve.length - 1)) * (w - 4) + 2,
+                h - 2 - ((v - min) / range) * (h - 4)
+            ];
+
+            // Nulla-vonal (kezdő tőke szintje)
+            const [, zeroY] = toXY(0, startEquity);
+            ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, zeroY);
+            ctx.lineTo(w, zeroY);
+            ctx.stroke();
+
+            const finalAboveStart = values[values.length - 1] >= startEquity;
+            ctx.strokeStyle = finalAboveStart ? '#39FF88' : '#FF3B5C';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            equityCurve.forEach((p, i) => {
+                const [x, y] = toXY(i, p.equity);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+        }
+
+        function renderBacktestAssetLabel() {
+            const el = document.getElementById('backtest-asset-label');
+            if (!el) return;
+            el.textContent = (typeof currentAsset !== 'undefined' && currentAsset && currentAsset.symbol) ? currentAsset.symbol : 'eszköz';
+        }
+
+        function runBacktestFromUI() {
+            const out = document.getElementById('backtest-result');
+            const fastPeriod = parseInt(document.getElementById('backtest-fast').value, 10);
+            const slowPeriod = parseInt(document.getElementById('backtest-slow').value, 10);
+            const startEquity = parseFloat(document.getElementById('backtest-equity').value);
+
+            if (!fastPeriod || !slowPeriod || fastPeriod < 2 || slowPeriod <= fastPeriod || !startEquity || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódusokat (a lassú EMA legyen nagyobb, mint a gyors) és pozitív kezdő tőkét!</div>`;
+                return;
+            }
+            if (typeof candleData === 'undefined' || !candleData || candleData.length < slowPeriod + 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton ehhez a backteszthez — válts hosszabb idősíkra vagy csökkentsd a lassú EMA periódust.</div>`;
+                return;
+            }
+
+            const result = runEMACrossoverBacktest(candleData, fastPeriod, slowPeriod, startEquity);
+            const beatBuyHold = result.totalReturnPct > result.buyHoldReturnPct;
+            const isPositive = result.totalReturnPct > 0;
+
+            out.innerHTML = `
+                <canvas id="backtest-sparkline" width="320" height="70" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
+                <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Teljes hozam (${result.tradeCount} trade)</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toFixed(2)}%</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toFixed(2)}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Találati arány:</span>
+                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toFixed(1)}%</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Max. visszaesés (drawdown):</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toFixed(2)}%</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Buy & Hold hozam (összehasonlításként):</span>
+                        <span class="font-extrabold text-slate-300 text-sm">${result.buyHoldReturnPct >= 0 ? '+' : ''}${result.buyHoldReturnPct.toFixed(2)}%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${beatBuyHold ? 'text-neon-green' : 'text-amber-400'}">${result.tradeCount === 0
+                    ? 'Ebben az időszakban nem volt EMA-keresztezés — próbálj más periódust vagy hosszabb idősíkot.'
+                    : beatBuyHold
+                        ? `Ez a stratégia ezen az időszakon felülteljesítette az egyszerű Buy & Hold-ot.`
+                        : `Ez a stratégia ezen az időszakon ALULteljesítette az egyszerű Buy & Hold-ot — egy mechanikus szabály nem automatikusan jobb, mint egyszerűen megvenni és tartani.`}</p>
+            `;
+
+            const canvas = document.getElementById('backtest-sparkline');
+            drawBacktestEquitySparkline(canvas, result.equityCurve, startEquity);
         }
 
         function calcRSISeries(closes, period = 14) {
