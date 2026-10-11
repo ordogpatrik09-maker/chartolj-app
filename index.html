@@ -1001,6 +1001,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyi a teljes kockázatod MOST, összesítve?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-diagram-project"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Korrelációs Mátrix</div>
+                                <div class="text-[10px] text-slate-400">Mennyire mozognak együtt az eszközeid?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2063,6 +2070,32 @@
             <div id="heat-position-list" class="space-y-2"></div>
 
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Sok kereskedő egyenként "rendben lévő" kockázatú pozíciókat nyit, de elfelejti, hogy EGYSZERRE több is elérheti a stopját (pl. korrelált eszközöknél) — a Portfolio Heat ezt az összesített, egyidejű kockázatot mutatja meg.</p>
+        </div>
+    </div>
+
+    <!-- ================= KORRELÁCIÓS MÁTRIX (OKTATÁSI, ILLUSZTRATÍV) =================
+         Az app 4 eszközének (BTC, ETH, EUR/USD, NVDA) tipikus, oktatási célú
+         korrelációs kapcsolatát mutatja — NEM élő piaci adat, hanem
+         illusztratív, jellemző közelítés, ami a "diverzifikáció csak akkor
+         segít, ha az eszközök nem mozognak együtt" tanulságot teszi
+         konkréttá, és visszakapcsol a Portfolio Heat eszközhöz: korrelált
+         eszközök egyidejű pozíciói valójában NEM annyira diverzifikáltak,
+         mint méretre tűnhetnek. -->
+    <div id="corr-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-diagram-project text-neon-purple"></i> Korrelációs Mátrix
+                </h3>
+                <button onclick="closeToolModal('corr-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Oktatási célú, illusztratív közelítés az app 4 eszköze közötti TIPIKUS kapcsolatról — nem élő piaci adat. +1.0 = tökéletesen együtt mozognak, 0 = nincs kapcsolat, -1.0 = pontosan ellentétesen mozognak.</p>
+
+            <div id="corr-matrix-grid" class="mb-3"></div>
+
+            <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mt-3">
+                <p class="text-[10.5px] text-amber-400 leading-relaxed">⚠️ Ha egyszerre nyitsz pozíciót két ERŐSEN korrelált eszközben (pl. BTC és ETH) ugyanabba az irányba, az valójában NEM diverzifikáció — majdnem olyan, mintha egyetlen, dupla méretű pozíciót nyitnál. Ellenőrizd a Portfolio Heat eszközzel az összesített kockázatodat.</p>
+            </div>
         </div>
     </div>
 
@@ -5765,6 +5798,44 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <span class="font-mono font-bold ${r.hasSL ? 'text-slate-300' : 'text-amber-400'}">${r.hasSL ? '-$' + r.riskAtStop.toLocaleString('en-US', { maximumFractionDigits: 0 }) : 'Nincs SL'}</span>
                 </div>
             `).join('');
+        }
+
+        // ================= KORRELÁCIÓS MÁTRIX (OKTATÁSI, ILLUSZTRATÍV) =================
+        // Statikus, oktatási célú közelítő értékek az app 4 eszköze közötti
+        // TIPIKUS kapcsolatról — szándékosan NEM élő, számolt korreláció
+        // (ahhoz historikus árfolyam-idősor kellene, amit ez a demó app nem
+        // tárol el eszközönként), hanem jól ismert, tankönyvi jellegű
+        // közelítés, amit a modal szövege is egyértelműen jelez.
+        const CORRELATION_MATRIX = {
+            'BTC/USDT': { 'BTC/USDT': 1.00, 'ETH/USDT': 0.85, 'EUR/USD': -0.10, 'NVDA': 0.45 },
+            'ETH/USDT': { 'BTC/USDT': 0.85, 'ETH/USDT': 1.00, 'EUR/USD': -0.05, 'NVDA': 0.40 },
+            'EUR/USD': { 'BTC/USDT': -0.10, 'ETH/USDT': -0.05, 'EUR/USD': 1.00, 'NVDA': 0.05 },
+            'NVDA': { 'BTC/USDT': 0.45, 'ETH/USDT': 0.40, 'EUR/USD': 0.05, 'NVDA': 1.00 }
+        };
+        const CORR_SHORT_LABELS = { 'BTC/USDT': 'BTC', 'ETH/USDT': 'ETH', 'EUR/USD': 'EUR/USD', 'NVDA': 'NVDA' };
+        function corrColor(v) {
+            if (v >= 0.7) return { bg: 'rgba(52,211,153,0.35)', text: '#34d399' };
+            if (v >= 0.3) return { bg: 'rgba(52,211,153,0.15)', text: '#34d399' };
+            if (v > -0.3) return { bg: 'rgba(100,116,139,0.15)', text: '#94a3b8' };
+            if (v > -0.7) return { bg: 'rgba(244,63,94,0.15)', text: '#f43f5e' };
+            return { bg: 'rgba(244,63,94,0.35)', text: '#f43f5e' };
+        }
+        function renderCorrelationMatrix() {
+            const symbols = Object.keys(CORRELATION_MATRIX);
+            const gridEl = document.getElementById('corr-matrix-grid');
+            let html = '<div class="grid" style="grid-template-columns: 56px repeat(' + symbols.length + ', 1fr); gap: 3px;">';
+            html += '<div></div>';
+            symbols.forEach(s => { html += `<div class="text-[9px] font-bold text-slate-400 text-center flex items-center justify-center">${CORR_SHORT_LABELS[s]}</div>`; });
+            symbols.forEach(rowSym => {
+                html += `<div class="text-[9px] font-bold text-slate-400 flex items-center">${CORR_SHORT_LABELS[rowSym]}</div>`;
+                symbols.forEach(colSym => {
+                    const v = CORRELATION_MATRIX[rowSym][colSym];
+                    const c = corrColor(v);
+                    html += `<div class="rounded-md text-center py-2 text-[10px] font-mono font-bold" style="background:${c.bg}; color:${c.text}">${v >= 0 ? '+' : ''}${v.toFixed(2)}</div>`;
+                });
+            });
+            html += '</div>';
+            gridEl.innerHTML = html;
         }
 
         /* ================= AKADÉMIA (Oktatóközpont) ================= */
