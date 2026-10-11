@@ -5309,6 +5309,75 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const DRILL_TIME_LIMIT_MS = 12000;
         let drillTimerInterval = null;
 
+        // ---- Napi kihívás (Daily Challenge) ----
+        // Minden napra a DÁTUMBÓL determinisztikusan (nem valódi véletlenszerűen)
+        // kiválasztott, fix alakzat-készlet — így MINDENKI, aki ma gyakorol, ugyanazt
+        // a 8 alakzatot kapja, és a kihívás nem ismételhető meg kétszer egy napon
+        // belül "friss" készlettel (csak gyakorlásra, streak nélkül). A cél a napi
+        // visszatérés megszilárdítása, a Mistake Bank SRS-éhez hasonló elven, de itt
+        // a "rendszeresség", nem a konkrét kérdés-ismétlés az, amit erősítünk.
+        const DAILY_DRILL_SIZE = 8;
+        let dailyDrillState = { completedDates: [] }; // { completedDates: ["YYYY-MM-DD", ...] } régi elöl, új hátul
+        function loadDailyDrillState() {
+            try {
+                const raw = localStorage.getItem('chartolj_daily_drill_challenge');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && Array.isArray(parsed.completedDates)) dailyDrillState = parsed;
+                }
+            } catch (e) {}
+        }
+        function saveDailyDrillState() {
+            try { localStorage.setItem('chartolj_daily_drill_challenge', JSON.stringify(dailyDrillState)); } catch (e) {}
+        }
+        function todayDateKey() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        // Egyszerű, determinisztikus "hash" a dátumból (nem kriptográfiai célra) —
+        // ugyanaz a dátum mindig ugyanazt a sorrendet/kiválasztást adja.
+        function dateSeedShuffle(arr, seedStr) {
+            let seed = 0;
+            for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+            const rand = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed / 4294967296; };
+            const out = [...arr];
+            for (let i = out.length - 1; i > 0; i--) {
+                const j = Math.floor(rand() * (i + 1));
+                [out[i], out[j]] = [out[j], out[i]];
+            }
+            return out;
+        }
+        function getTodayDrillChallengeIds() {
+            const ids = DRILL_PATTERN_POOL.map(p => p.id).sort(); // stabil alap-sorrend a determinizmushoz
+            return dateSeedShuffle(ids, todayDateKey()).slice(0, DAILY_DRILL_SIZE);
+        }
+        function isDailyDrillDoneToday() {
+            return dailyDrillState.completedDates.includes(todayDateKey());
+        }
+        // A jelenlegi napi-kihívás sorozat (egymást követő napok, amikor teljesítve lett) —
+        // ugyanaz az elv, mint a Kereskedési Napló nyerő/vesztes sorozatánál.
+        function computeDailyDrillStreak() {
+            const dates = [...dailyDrillState.completedDates].sort();
+            if (dates.length === 0) return 0;
+            const todayKey = todayDateKey();
+            const msPerDay = 24 * 60 * 60 * 1000;
+            let cursor = new Date(todayKey + 'T00:00:00');
+            // Ha ma még nincs teljesítve, a sorozatot a TEGNAPI napról nézzük visszafelé
+            // (hogy a reggeli, még-nem-gyakorolt állapotban is lássa a meglévő sorozatát).
+            if (!dates.includes(todayKey)) cursor = new Date(cursor.getTime() - msPerDay);
+            let streak = 0;
+            while (true) {
+                const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+                if (!dates.includes(key)) break;
+                streak++;
+                cursor = new Date(cursor.getTime() - msPerDay);
+            }
+            return streak;
+        }
+        function startDailyDrillChallenge() {
+            startDrillSession(getTodayDrillChallengeIds(), { roundCount: DAILY_DRILL_SIZE, isDailyChallenge: true });
+        }
+
         // ================= REPLAY SZIMULÁTOR (nyitott végű, procedurálisan generált) =================
         // A "Mi lenne, ha..." modul fix, előre megírt forgatókönyv — itt viszont MINDEN
         // egyes gyertyánál szabadon dönthetsz (Long/Short/Zárás/Várakozás), a piaci "nap"
@@ -7349,7 +7418,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             drillSession = {
                 rounds, idx: 0, correct: 0, streak: 0, answered: false, missedStrategyIds: [],
                 focusIds: opts.contrast ? (focusIds || []) : [],
-                returnLessonIdx: opts.returnLessonIdx === undefined ? null : opts.returnLessonIdx
+                returnLessonIdx: opts.returnLessonIdx === undefined ? null : opts.returnLessonIdx,
+                isDailyChallenge: !!opts.isDailyChallenge
             };
             renderDrillRound();
         }
@@ -7407,6 +7477,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const el = document.getElementById('drill-viewer');
             const acc = drillStats.totalAttempts ? Math.round(drillStats.totalCorrect / drillStats.totalAttempts * 100) : 0;
             const weakest = getWeakestPatterns(2);
+            const dailyDone = isDailyDrillDoneToday();
+            const dailyStreak = computeDailyDrillStreak();
             el.innerHTML = `
                 <div class="text-center max-w-md">
                     <div class="w-16 h-16 mx-auto rounded-2xl bg-neon-cyan/10 border border-neon-cyan/30 flex items-center justify-center mb-4">
@@ -7419,6 +7491,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         Egy kör ${DRILL_ROUND_COUNT} gyertyasorból áll, annotáció nélkül, ${(DRILL_TIME_LIMIT_MS/1000).toFixed(0)} másodperccel körönként —
                         ez a valós, éles felismerést gyakorolja, nem a definíciót.
                     </p>
+
+                    <div class="glass-card rounded-xl border ${dailyDone ? 'border-neon-green/30 bg-neon-green/[0.04]' : 'border-neon-cyan/30 bg-neon-cyan/[0.04]'} p-4 mb-5 text-left">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <div class="text-[11px] font-extrabold uppercase tracking-wide ${dailyDone ? 'text-neon-green' : 'text-neon-cyan'}">
+                                <i class="fa-solid fa-calendar-day mr-1.5"></i>Napi kihívás
+                            </div>
+                            ${dailyStreak > 0 ? `<span class="text-[11px] font-mono text-amber-400">🔥 ${dailyStreak} nap</span>` : ''}
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed mb-3">
+                            ${dailyDone
+                                ? `Mára teljesítve! Gyere vissza holnap egy új, ${DAILY_DRILL_SIZE} alakzatos kihívásért, hogy a sorozat folytatódjon.`
+                                : `Minden nap ugyanazt a ${DAILY_DRILL_SIZE} alakzatot kapja mindenki, aki ma gyakorol — teljesítsd, hogy a sorozat ne szakadjon meg, és +15 bónusz coinért.`}
+                        </p>
+                        <button onclick="startDailyDrillChallenge()" class="w-full py-2.5 rounded-lg text-xs font-extrabold uppercase ${dailyDone ? 'bg-dark-800 text-slate-400 border border-dark-700' : 'bg-neon-cyan text-dark-950 hover:brightness-110'} transition">
+                            ${dailyDone ? 'Újra gyakorlás (nem számít a sorozatba)' : 'Napi kihívás indítása'}
+                        </button>
+                    </div>
+
                     <div class="grid grid-cols-3 gap-2 mb-6">
                         <div class="glass-card rounded-xl border border-dark-750 p-3">
                             <div class="text-lg font-extrabold text-white">${drillStats.totalAttempts}</div>
@@ -7782,8 +7872,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function endDrillSession() {
             const s = drillSession;
             const pct = Math.round(s.correct / s.rounds.length * 100);
- 
-            if (pct === 100) showConfetti();           const coinReward = s.correct * 3;
+
+            // Napi kihívás: csak az ELSŐ, ma teljesített kör számít a sorozatba —
+            // ha valaki többször lejátssza ugyanazt a napot, az csak gyakorlás, a
+            // streak-et nem lehet duplán "felhalmozni" vele.
+            let dailyChallengeJustCompleted = false;
+            if (s.isDailyChallenge && !isDailyDrillDoneToday()) {
+                dailyDrillState.completedDates.push(todayDateKey());
+                if (dailyDrillState.completedDates.length > 365) dailyDrillState.completedDates = dailyDrillState.completedDates.slice(-365);
+                saveDailyDrillState();
+                dailyChallengeJustCompleted = true;
+            }
+
+            if (pct === 100) showConfetti();           const coinReward = s.correct * 3 + (dailyChallengeJustCompleted ? 15 : 0);
             userCoins += coinReward;
             saveAcademyState();
             checkMissionAvailability();
@@ -7818,12 +7919,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const el = document.getElementById('drill-viewer');
             const _weakSummary = typeof getWeakestPatterns === 'function' ? getWeakestPatterns() : [];
+            const _dailyStreak = s.isDailyChallenge ? computeDailyDrillStreak() : 0;
+            const dailyBanner = dailyChallengeJustCompleted ? `
+                <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-5">
+                    <div class="text-sm font-extrabold text-amber-400"><i class="fa-solid fa-calendar-check mr-1.5"></i>Napi kihívás teljesítve! 🔥 ${_dailyStreak} napos sorozat</div>
+                    <p class="text-[10px] text-slate-400 mt-1">+15 bónusz coin a napi kihívásért. Gyere vissza holnap, hogy a sorozat folytatódjon.</p>
+                </div>
+            ` : '';
             el.innerHTML = `
                 <div class="text-center max-w-md">
                     <div class="w-16 h-16 mx-auto rounded-2xl ${pct >= 70 ? 'bg-neon-green/10 border-neon-green/30' : 'bg-amber-400/10 border-amber-400/30'} border flex items-center justify-center mb-4">
                         <i class="fa-solid ${pct >= 70 ? 'fa-trophy text-neon-green' : 'fa-chart-simple text-amber-400'} text-2xl"></i>
                     </div>
                     <h2 class="text-lg font-extrabold text-white mb-1">Kör vége</h2>
+                    ${dailyBanner}
                     <p class="text-xs text-slate-400 mb-5">${s.correct} / ${s.rounds.length} helyes válasz (${pct}%${pct >= drillHighScore && pct > 0 ? " 🏆 Új rekord!" : ""})</p>
                     <div class="flex items-center justify-center gap-2 text-xs font-mono text-amber-400 mb-6">
                         <i class="fa-solid fa-coins"></i> +${coinReward} coin
@@ -9272,6 +9381,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         window.addEventListener('offline',function(){var e=document.getElementById('offline-banner');if(e)e.style.display='block';});
         if(!navigator.onLine){var _ob=document.getElementById('offline-banner');if(_ob)_ob.style.display='block';}
         loadAcademyState(); // itt hívjuk, miután minden Set/állapot deklarálva van, amit betölthet
+        loadDailyDrillState();
         updateCoinDisplay();
 
         function renderWhatIfList() {
