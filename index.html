@@ -994,6 +994,13 @@
                                 <div class="text-[10px] text-slate-400">Fegyelmezett vagy, vagy csak sietsz?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-fire"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Portfolio Heat</div>
+                                <div class="text-[10px] text-slate-400">Mennyi a teljes kockázatod MOST, összesítve?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2032,6 +2039,30 @@
             <button onclick="closeToolModal('preflight-modal')" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-dark-800 border border-dark-700 text-slate-300 hover:bg-dark-750 transition">
                 Bezárás
             </button>
+        </div>
+    </div>
+
+    <!-- ================= PORTFOLIO HEAT (OKTATÁSI, ÖSSZESÍTETT KOCKÁZAT) =================
+         A Kockázatkezelés Akadémia-modul tanítja a "Portfolio Heat" fogalmát
+         (az ÖSSZES nyitott pozíció együttes, egyidejű kockázata), de eddig
+         nem volt hozzá ÉLŐ, a tényleges nyitott pozíciókon számoló eszköz —
+         ez most azt teszi lehetővé, hogy a felhasználó a SAJÁT, aktuális
+         demó-pozícióin lássa meg ugyanazt a mutatót, amit a leckében
+         elméletben tanult. -->
+    <div id="heat-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-fire text-amber-400"></i> Portfolio Heat
+                </h3>
+                <button onclick="closeToolModal('heat-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Portfolio Heat az ÖSSZES jelenleg nyitott pozíciód együttes kockázata, ha MINDEGYIK egyszerre érné el a stop-lossát — nem csak az egyes trade-ek kockázatát egyenként, hanem az összesített képet mutatja.</p>
+
+            <div id="heat-summary" class="mb-3"></div>
+            <div id="heat-position-list" class="space-y-2"></div>
+
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Sok kereskedő egyenként "rendben lévő" kockázatú pozíciókat nyit, de elfelejti, hogy EGYSZERRE több is elérheti a stopját (pl. korrelált eszközöknél) — a Portfolio Heat ezt az összesített, egyidejű kockázatot mutatja meg.</p>
         </div>
     </div>
 
@@ -5664,6 +5695,76 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdictEl.className = 'mb-3 glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 text-center';
                 verdictEl.innerHTML = `<span class="text-xs font-bold text-amber-400">⚠️ Még ${items.length - checkedCount} pont nincs megerősítve — érdemes megállni és átgondolni, mielőtt belépsz.</span>`;
             }
+        }
+
+        // ================= PORTFOLIO HEAT (OKTATÁSI, ÖSSZESÍTETT KOCKÁZAT) =================
+        // A jelenleg nyitott pozíciók (a globális `positions` tömb) alapján
+        // kiszámolja, mennyi lenne az ÖSSZES pozíció egyidejű veszteség-
+        // kockázata, HA MINDEGYIK elérné a saját stop-lossát egyszerre.
+        // A pnl-számítás formulája UGYANAZT a logikát követi, mint a
+        // tényleges updatePositionsPnL() függvény (amount * pct * leverage),
+        // hogy a megjelenített kockázat konzisztens legyen a valódi
+        // pozíció-PnL-lel, amit a felhasználó a Pozíciók listán is lát.
+        function renderPortfolioHeat() {
+            const summaryEl = document.getElementById('heat-summary');
+            const listEl = document.getElementById('heat-position-list');
+
+            if (!positions || positions.length === 0) {
+                summaryEl.innerHTML = `<div class="glass-card rounded-xl p-4 text-center text-xs text-slate-400">Jelenleg nincs nyitott pozíciód. Nyiss egy pozíciót a Kereskedés fülön, hogy itt lásd az összesített kockázatot.</div>`;
+                listEl.innerHTML = '';
+                return;
+            }
+
+            let totalDefinedRisk = 0;
+            let undefinedRiskCount = 0;
+            const rows = positions.map(p => {
+                if (p.sl) {
+                    let diff = p.sl - p.entryPrice;
+                    if (p.side === 'short') diff = -diff;
+                    // diff negatív, ha a stop valóban veszteség-irányban van (helyes beállítás esetén)
+                    const pct = diff / p.entryPrice;
+                    const riskAtStop = Math.max(0, -(p.amount * pct * p.leverage)); // csak a veszteség-oldalt vesszük
+                    totalDefinedRisk += riskAtStop;
+                    return { p, riskAtStop, hasSL: true };
+                } else {
+                    undefinedRiskCount++;
+                    return { p, riskAtStop: null, hasSL: false };
+                }
+            });
+
+            const heatPct = accountBalance > 0 ? (totalDefinedRisk / accountBalance) * 100 : 0;
+            let heatColor, heatVerdict;
+            if (heatPct >= 10) {
+                heatColor = 'text-neon-red'; heatVerdict = '🚨 Nagyon magas összesített kockázat — ha minden stop egyszerre találna, súlyos visszaesést szenvednél.';
+            } else if (heatPct >= 5) {
+                heatColor = 'text-amber-400'; heatVerdict = '⚠️ Emelkedett összesített kockázat — érdemes megfontolni kisebb pozíciókat vagy kevesebb egyidejű nyitott trade-et.';
+            } else {
+                heatColor = 'text-neon-green'; heatVerdict = '✅ Egészséges, kezelhető összesített kockázati szint.';
+            }
+
+            summaryEl.innerHTML = `
+                <div class="glass-card rounded-xl p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] text-slate-500 uppercase font-bold">Portfolio Heat (ha minden SL egyszerre találna)</span>
+                        <span class="font-mono font-extrabold ${heatColor} text-sm">${heatPct.toFixed(1)}%</span>
+                    </div>
+                    <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mb-2">
+                        <div class="h-full ${heatPct >= 10 ? 'bg-neon-red' : heatPct >= 5 ? 'bg-amber-400' : 'bg-neon-green'}" style="width:${Math.min(100, Math.max(2, heatPct))}%"></div>
+                    </div>
+                    <p class="text-[10px] font-semibold ${heatColor}">${heatVerdict}</p>
+                    ${undefinedRiskCount > 0 ? `<p class="text-[10px] text-amber-400 mt-1.5">⚠️ ${undefinedRiskCount} pozíciónak nincs stop-lossa — ezek kockázata technikailag korlátlan (a fenti %-ban NEM szerepel).</p>` : ''}
+                </div>
+            `;
+
+            listEl.innerHTML = rows.map(r => `
+                <div class="flex items-center justify-between bg-dark-900 rounded-lg p-2.5 text-[11px]">
+                    <div>
+                        <span class="font-bold text-white">${r.p.asset}</span>
+                        <span class="text-slate-500 ml-1">${r.p.side === 'long' ? 'Long' : 'Short'} · ${r.p.leverage}x</span>
+                    </div>
+                    <span class="font-mono font-bold ${r.hasSL ? 'text-slate-300' : 'text-amber-400'}">${r.hasSL ? '-$' + r.riskAtStop.toLocaleString('en-US', { maximumFractionDigits: 0 }) : 'Nincs SL'}</span>
+                </div>
+            `).join('');
         }
 
         /* ================= AKADÉMIA (Oktatóközpont) ================= */
