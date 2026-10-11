@@ -959,6 +959,13 @@
                                 <div class="text-[10px] text-slate-400">Mikor kell leállnod a mai napra?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('sessions-modal'); renderMarketSessions();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-earth-americas"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Piaci Szekciók Órája</div>
+                                <div class="text-[10px] text-slate-400">Melyik piac van most nyitva?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1862,6 +1869,28 @@
 
             <div id="dl-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy oktatási eszköz, nem befektetési tanácsadás — a saját, előre eldöntött limitedet mindig te határozod meg.</p>
+        </div>
+    </div>
+
+    <!-- ================= PIACI SZEKCIÓK ÓRÁJA (OKTATÁSI) =================
+         Statikus, oktatási célú megjelenítés arról, hogy a 4 legfontosabb
+         globális kereskedési szekció (Sydney, Tokió, London, New York) MIKOR
+         van nyitva UTC szerint, és melyik a jelenlegi pillanat — a cél, hogy
+         a felhasználó megértse, miért van a London-New York átfedés alatt
+         jellemzően a legnagyobb forgalom/volatilitás, és a napja melyik
+         szakaszában "élénkebb" vagy "csendesebb" a piac. -->
+    <div id="sessions-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-lg p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-earth-americas text-neon-purple"></i> Piaci Szekciók Órája
+                </h3>
+                <button onclick="closeToolModal('sessions-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A kriptópiac mindig nyitva van, de a hagyományos piacok (forex, részvények) forgalma a globális kereskedési szekciók szerint hullámzik — ez a kriptóra is begyűrűzik.</p>
+            <div id="sessions-now-label" class="text-center text-xs font-mono text-slate-300 mb-3"></div>
+            <div id="sessions-timeline" class="space-y-2.5 mb-4"></div>
+            <div id="sessions-overlap-note" class="glass-card rounded-xl p-3 text-[11px] text-slate-300 leading-relaxed"></div>
         </div>
     </div>
 
@@ -5163,6 +5192,71 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 ${statusHtml}
             `;
+        }
+
+        // ================= PIACI SZEKCIÓK ÓRÁJA (OKTATÁSI) =================
+        // A 4 fő globális kereskedési szekció nyitás/zárás UTC órában — ezek
+        // hagyományos (forex/részvény) piaci szekciók, de a volatilitási
+        // minta a kriptópiacra is jellemzően átszűrődik, mert a nagy
+        // intézményi szereplők ugyanezen szekciók szerint aktívak.
+        const MARKET_SESSIONS = [
+            { name: 'Sydney', openUTC: 22, closeUTC: 7, color: '#38bdf8' },
+            { name: 'Tokió', openUTC: 0, closeUTC: 9, color: '#f472b6' },
+            { name: 'London', openUTC: 8, closeUTC: 17, color: '#34d399' },
+            { name: 'New York', openUTC: 13, closeUTC: 22, color: '#fbbf24' }
+        ];
+        // Egy szekció "nyitva van-e" adott UTC órában — kezeli az éjfélen
+        // átnyúló eseteket is (pl. Sydney 22:00-07:00).
+        function isSessionOpenAt(session, utcHour) {
+            if (session.openUTC < session.closeUTC) return utcHour >= session.openUTC && utcHour < session.closeUTC;
+            return utcHour >= session.openUTC || utcHour < session.closeUTC;
+        }
+        function renderMarketSessions() {
+            const now = new Date();
+            const utcHour = now.getUTCHours() + now.getUTCMinutes() / 60;
+            const openNow = MARKET_SESSIONS.filter(s => isSessionOpenAt(s, Math.floor(utcHour)));
+
+            document.getElementById('sessions-now-label').innerHTML =
+                `Most: <strong class="text-white">${now.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })}</strong> (helyi idő) ·
+                 <strong class="text-white">${String(Math.floor(utcHour)).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}</strong> UTC`;
+
+            const nowPct = (utcHour / 24) * 100;
+            document.getElementById('sessions-timeline').innerHTML = MARKET_SESSIONS.map(s => {
+                const isOpen = isSessionOpenAt(s, Math.floor(utcHour));
+                // Éjfélen átnyúló szekciónál KÉT sávot rajzolunk (00:00-ig és onnantól), hogy a
+                // vízszintes 0-24 órás vonalon helyesen, folytonosan jelenjen meg.
+                const bars = [];
+                if (s.openUTC < s.closeUTC) {
+                    bars.push({ left: (s.openUTC / 24) * 100, width: ((s.closeUTC - s.openUTC) / 24) * 100 });
+                } else {
+                    bars.push({ left: (s.openUTC / 24) * 100, width: ((24 - s.openUTC) / 24) * 100 });
+                    bars.push({ left: 0, width: (s.closeUTC / 24) * 100 });
+                }
+                return `
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-bold ${isOpen ? 'text-white' : 'text-slate-500'}">${isOpen ? '🟢' : '⚪'} ${s.name}</span>
+                            <span class="text-[9px] text-slate-500 font-mono">${String(s.openUTC).padStart(2, '0')}:00–${String(s.closeUTC).padStart(2, '0')}:00 UTC</span>
+                        </div>
+                        <div class="relative h-2.5 rounded-full bg-dark-800 overflow-hidden">
+                            ${bars.map(b => `<div class="absolute top-0 h-full rounded-full" style="left:${b.left}%; width:${b.width}%; background:${s.color}; opacity:${isOpen ? '0.85' : '0.3'}"></div>`).join('')}
+                            <div class="absolute top-0 h-full w-0.5 bg-white" style="left:${nowPct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const londonOpen = isSessionOpenAt(MARKET_SESSIONS[2], Math.floor(utcHour));
+            const nyOpen = isSessionOpenAt(MARKET_SESSIONS[3], Math.floor(utcHour));
+            const overlapNow = londonOpen && nyOpen;
+            const noteEl = document.getElementById('sessions-overlap-note');
+            if (overlapNow) {
+                noteEl.className = 'glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 text-[11px] text-amber-400 leading-relaxed font-bold';
+                noteEl.innerHTML = '🔥 Most zajlik a London–New York átfedés (13:00–17:00 UTC) — ez jellemzően a nap legnagyobb forgalmú, legvolatilisebb időszaka.';
+            } else {
+                noteEl.className = 'glass-card rounded-xl border border-dark-750 p-3 text-[11px] text-slate-300 leading-relaxed';
+                noteEl.innerHTML = `Jelenleg ${openNow.length > 0 ? openNow.map(s => s.name).join(' + ') + ' van nyitva' : 'minden fő szekció zárva van'}. A legaktívabb időszak jellemzően a <strong class="text-white">London–New York átfedés (13:00–17:00 UTC)</strong> alatt van — ekkor a legnagyobb a forgalom és a volatilitás.`;
+            }
         }
 
         /* ================= AKADÉMIA (Oktatóközpont) ================= */
