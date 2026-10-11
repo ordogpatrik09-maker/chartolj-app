@@ -1177,6 +1177,18 @@
                 <span class="micro-tooltip">Mágneses Igazítás (OHLC)</span>
             </button>
 
+            <!-- JAVÍTÁS: az "Indikátorok" modal (EMA/Bollinger/RSI be- és
+                 kikapcsolása) eddig KIZÁRÓLAG a desktop fejléken (hidden
+                 lg:flex gomb + #indicator-toggles-row) volt elérhető —
+                 mobilon semmilyen módon nem lehetett ezeket az
+                 indikátorokat be/kikapcsolni. Ez a gomb ide, a mobilon is
+                 látható rajzeszköz-sávba, pótolja ezt a hiányzó belépési
+                 pontot (ugyanazt a meglévő indicators-modal-t nyitja meg). -->
+            <button onclick="toggleModal('indicators-modal')" id="tool-indicators-mobile" class="micro-icon-btn hover:!text-neon-cyan">
+                <i class="fa-solid fa-chart-simple text-xs"></i>
+                <span class="micro-tooltip">Indikátorok (EMA / Bollinger / RSI)</span>
+            </button>
+
             <div class="mt-auto flex flex-col gap-2.5">
                 <!-- Tool 11: Clear All Drawings -->
                 <button onclick="clearDrawings()" class="micro-icon-btn hover:!bg-neon-red/20 hover:!text-neon-red hover:!border-neon-red/50">
