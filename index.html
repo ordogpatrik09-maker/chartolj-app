@@ -2332,6 +2332,9 @@
                  értékeléséhez, nem csak a nyers összes P&L. -->
             <div id="journal-advanced-stats-wrap" class="hidden mb-4"></div>
 
+            <!-- Lelkiállapot vs. eredmény statisztika (trading pszichológia) -->
+            <div id="journal-mood-stats-wrap" class="hidden mb-4"></div>
+
             <!-- Naptár rács -->
             <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-500 uppercase mb-1">
                 <div>H</div><div>K</div><div>Sze</div><div>Cs</div><div>P</div><div>Szo</div><div>V</div>
@@ -2355,6 +2358,15 @@
                 <input type="number" id="journal-entry-pnl" step="0.01" placeholder="pl. 150 vagy -80" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50 mb-3">
                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Jegyzet / tanulság (opcionális)</label>
                 <textarea id="journal-entry-note" rows="3" maxlength="500" placeholder="Mi ment jól? Mit csinálnál másképp legközelebb?" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50 resize-none mb-3"></textarea>
+
+                <!-- Érzelmi állapot tagelés: a kereskedési pszichológia egyik
+                     legfontosabb, de leggyakrabban kihagyott gyakorlata —
+                     nem csak AZT rögzíti, mennyit nyertél/vesztettél, hanem
+                     MILYEN lelkiállapotban kereskedtél, hogy később látható
+                     legyen, van-e összefüggés az érzelmi állapot és az
+                     eredmény között (pl. "bosszú-kereskedésnél mindig veszítek"). -->
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Milyen lelkiállapotban kereskedtél? (opcionális)</label>
+                <div id="journal-entry-mood-picker" class="flex flex-wrap gap-1.5 mb-3"></div>
                 <div id="journal-entry-today-hint" class="hidden text-[10px] text-slate-500 mb-3"></div>
                 <div class="flex items-center gap-2">
                     <button id="journal-entry-delete-btn" onclick="deleteJournalEntry()" class="hidden px-4 py-2.5 rounded-xl text-xs font-bold text-neon-red bg-neon-red/10 border border-neon-red/30 hover:bg-neon-red/20 transition">Törlés</button>
@@ -5753,6 +5765,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // együtt maradhatnak.
         const PLAN_SETUP_OPTIONS = ['Forduló alakzatok', 'Folytató alakzatok', 'Gyertyaminták', 'Támasz/Ellenállás törés', 'Trend-követés', 'Hírkereskedés'];
         let tradingPlan = null; // { maxRisk, maxTrades, maxDailyLoss, setups: [...], ownRules, savedAt } vagy null, ha még nincs kitöltve
+
+        // ---- Kereskedési Napló: napi lelkiállapot-tagek ----
+        // Egyetlen tag/nap, a trading psychology oktatási célból: a cél, hogy
+        // a felhasználó idővel LÁSSA a saját adatain, van-e összefüggés egy
+        // adott lelkiállapot (pl. "bosszú-kereskedés") és a napi eredmény
+        // között — ez sokkal erősebb tanulság, mint ha csak elolvassa, hogy
+        // "a bosszú-kereskedés rossz", ha a saját számai is ezt mutatják.
+        const JOURNAL_MOODS = [
+            { id: 'fegyelmezett', label: '😌 Fegyelmezett', color: 'neon-green' },
+            { id: 'onbizto', label: '💪 Önbizó, higgadt', color: 'neon-cyan' },
+            { id: 'ideges', label: '😬 Ideges, feszült', color: 'amber-400' },
+            { id: 'fomo', label: '🏃 FOMO (lemaradás-félelem)', color: 'amber-400' },
+            { id: 'bosszu', label: '😡 Bosszú-kereskedés', color: 'neon-red' },
+            { id: 'faradt', label: '😴 Fáradt, figyelmetlen', color: 'neon-red' },
+            { id: 'unatkozo', label: '🥱 Unatkozó (csak ezért kötöttem)', color: 'slate-400' }
+        ];
+        let journalEntryMoodId = null; // a jelenleg szerkesztett bejegyzés kiválasztott moodja (vagy null)
 
         // ================= REPLAY SZIMULÁTOR (nyitott végű, procedurálisan generált) =================
         // A "Mi lenne, ha..." modul fix, előre megírt forgatókönyv — itt viszont MINDEN
@@ -11478,6 +11507,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             renderJournalStreakBanner();
             renderJournalEquityCurve();
             renderJournalAdvancedStats();
+            renderJournalMoodStats();
 
             // --- Havi összesítő ---
             const firstOfMonth = new Date(y, m, 1);
@@ -11553,6 +11583,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('journal-entry-date-label').textContent = label;
             document.getElementById('journal-entry-pnl').value = entry.pnl !== undefined ? entry.pnl : '';
             document.getElementById('journal-entry-note').value = entry.note || '';
+            journalEntryMoodId = entry.mood || null;
+            renderJournalMoodPicker();
             document.getElementById('journal-entry-delete-btn').classList.toggle('hidden', entry.pnl === undefined);
 
             // Ha ma van az adott nap, és a szimulátorban volt ma zárt pozíció, felajánljuk az összegét.
@@ -11581,7 +11613,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const pnlRaw = document.getElementById('journal-entry-pnl').value;
             if (pnlRaw === '' || isNaN(Number(pnlRaw))) { showNotification('Adj meg egy érvényes számot (pl. 150 vagy -80).'); return; }
             const note = document.getElementById('journal-entry-note').value.trim();
-            tradingJournal[journalEditingKey] = { pnl: Number(pnlRaw), note, savedAt: Date.now() };
+            tradingJournal[journalEditingKey] = { pnl: Number(pnlRaw), note, mood: journalEntryMoodId || null, savedAt: Date.now() };
             saveTradingJournalState();
             closeJournalEntryEditor();
             renderTradingJournalCalendar();
@@ -11594,6 +11626,70 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             closeJournalEntryEditor();
             renderTradingJournalCalendar();
             showNotification('Bejegyzés törölve.');
+        }
+
+        // Egyetlen mood kiválasztható egyszerre (rádiógomb-szerű viselkedés,
+        // nem checkbox) — a cél, hogy a bejegyzés egy tiszta, egyértelmű
+        // lelkiállapot-pillanatfelvétel legyen, nem több egyszerre bejelölt tag.
+        function selectJournalMood(moodId) {
+            journalEntryMoodId = (journalEntryMoodId === moodId) ? null : moodId;
+            renderJournalMoodPicker();
+        }
+        function renderJournalMoodPicker() {
+            const el = document.getElementById('journal-entry-mood-picker');
+            if (!el) return;
+            el.innerHTML = JOURNAL_MOODS.map(m => {
+                const active = journalEntryMoodId === m.id;
+                return `<button type="button" onclick="selectJournalMood('${m.id}')" class="px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold border transition ${active ? `bg-${m.color}/15 border-${m.color}/40 text-${m.color}` : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">${m.label}</button>`;
+            }).join('');
+        }
+
+        // Lelkiállapot-statisztika: a mindenkori bejegyzésekből (amikhez van
+        // mood tag) kiszámolja az egyes lelkiállapotok átlagos napi P&L-jét,
+        // hogy a felhasználó LÁTHASSA, van-e saját mintázat (pl. "amikor
+        // bosszú-kereskedésnek jelöltem a napot, átlagosan vesztettem").
+        function renderJournalMoodStats() {
+            const wrap = document.getElementById('journal-mood-stats-wrap');
+            if (!wrap) return;
+            const entries = Object.values(tradingJournal).filter(e => e && e.mood);
+            if (entries.length < 3) { wrap.classList.add('hidden'); return; }
+            wrap.classList.remove('hidden');
+
+            const byMood = {};
+            entries.forEach(e => {
+                if (!byMood[e.mood]) byMood[e.mood] = [];
+                byMood[e.mood].push(Number(e.pnl) || 0);
+            });
+
+            const rows = JOURNAL_MOODS.map(m => {
+                const pnls = byMood[m.id];
+                if (!pnls || pnls.length === 0) return null;
+                const avg = pnls.reduce((a, b) => a + b, 0) / pnls.length;
+                return { mood: m, count: pnls.length, avg };
+            }).filter(Boolean).sort((a, b) => b.avg - a.avg);
+
+            if (rows.length === 0) { wrap.classList.add('hidden'); return; }
+
+            const maxAbsAvg = Math.max(1, ...rows.map(r => Math.abs(r.avg)));
+            wrap.innerHTML = `
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[9px] text-slate-500 uppercase font-bold mb-2.5">Lelkiállapot vs. napi eredmény (átlag)</div>
+                    <div class="space-y-2">
+                        ${rows.map(r => `
+                            <div>
+                                <div class="flex items-center justify-between text-[10.5px] mb-0.5">
+                                    <span class="text-slate-300 font-semibold">${r.mood.label} <span class="text-slate-600">(${r.count}×)</span></span>
+                                    <span class="font-mono font-bold ${r.avg >= 0 ? 'text-neon-green' : 'text-neon-red'}">${r.avg >= 0 ? '+' : ''}$${r.avg.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                                </div>
+                                <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden">
+                                    <div class="h-full ${r.avg >= 0 ? 'bg-neon-green' : 'bg-neon-red'}" style="width:${Math.max(3, (Math.abs(r.avg) / maxAbsAvg) * 100)}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p class="text-[9.5px] text-slate-500 leading-relaxed mt-2.5">Ez a saját adataid alapján készült — minél több bejegyzést taggelsz lelkiállapottal, annál megbízhatóbb a mintázat.</p>
+                </div>
+            `;
         }
 
         // ================= KERESKEDÉSI TERV =================
