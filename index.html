@@ -7017,6 +7017,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     }
                 }
             }
+            // --- Lelkiállapot-tagek: ezen a héten taggelt bejegyzések közül
+            // melyik lelkiállapot volt a legrosszabb/legjobb átlagos
+            // eredménnyel — a heti összegzés is rákapcsolódik a Napló
+            // pszichológia-funkciójára, nem csak a teljes, mindenkori
+            // statisztikában (Haladó Statisztikák) jelenik meg. ---
+            const recentMoodEntries = recentJournalEntries.filter(e => e && e.mood);
+            if (recentMoodEntries.length >= 2 && typeof JOURNAL_MOODS !== 'undefined') {
+                const byMoodWeek = {};
+                recentMoodEntries.forEach(e => { (byMoodWeek[e.mood] = byMoodWeek[e.mood] || []).push(Number(e.pnl) || 0); });
+                const moodRows = Object.keys(byMoodWeek).map(mid => {
+                    const def = JOURNAL_MOODS.find(m => m.id === mid);
+                    const pnls = byMoodWeek[mid];
+                    const avg = pnls.reduce((a, b) => a + b, 0) / pnls.length;
+                    return { label: def ? def.label : mid, avg, count: pnls.length };
+                }).sort((a, b) => a.avg - b.avg);
+                const worst = moodRows[0];
+                if (worst && worst.avg < 0) {
+                    insights.push(`Ezen a héten "${worst.label}" lelkiállapotban átlagosan ${worst.avg >= 0 ? '+' : ''}$${worst.avg.toFixed(0)}-t hoztál (${worst.count}×) — érdemes figyelni, mikor jelentkezik ez az állapot.`);
+                }
+            }
             if (insights.length === 0) insights.push('Folytasd ugyanígy — még nincs elég adat egy konkrét, személyre szabott tanácshoz.');
 
             el.innerHTML = `
