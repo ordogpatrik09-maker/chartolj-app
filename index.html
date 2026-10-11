@@ -2364,6 +2364,7 @@
                 <option value="ai-analyzer">📷 AI Chart Elemző (Új)</option>
                 <option value="hungarian">🏳️ Magyar Piac</option>
                 <option value="calendar">📅 Makronaptár</option>
+                <option value="glossary">📚 Szószedet</option>
             </select>
         </div>
 
@@ -2398,6 +2399,9 @@
                 </button>
                 <button id="academy-mode-calendar-btn" onclick="setAcademyMode('calendar')" class="relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
                     <i class="fa-solid fa-calendar-days mr-1"></i> Makronaptár
+                </button>
+                <button id="academy-mode-glossary-btn" onclick="setAcademyMode('glossary')" class="relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-book-bookmark mr-1"></i> Szószedet
                 </button>
             </div>
         </div>
@@ -2529,6 +2533,25 @@
                     <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">Ezek a visszatérő piaci események rendszeresen nagy mozgást okoznak — oktatási céllal, hogy felismerd a neveket és megértsd, miért figyeli őket mindenki. Ez nem egy élő, valós idejű gazdasági naptár.</p>
                 </div>
                 <div id="macro-calendar-list" class="flex-grow overflow-y-auto px-5 pb-6 space-y-2"></div>
+            </section>
+        </div>
+
+        <!-- Szószedet — a leckékben és a chart-alakzatoknál már használt fogalmak
+             EGYETLEN, kereshető helyen, kategorizálva. Nem helyettesíti a leckéket
+             (ott kontextusban, példákkal tanulod meg), hanem gyors visszakeresésre
+             szolgál, amikor egy ismerős, de elfelejtett szót látsz valahol az appban. -->
+        <div id="academy-body-glossary" class="hidden flex-grow flex overflow-hidden">
+            <section class="flex-grow flex flex-col overflow-hidden relative bg-dark-900">
+                <div class="px-5 pt-5 pb-3 shrink-0">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-bookmark text-neon-cyan"></i> Szószedet</h2>
+                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed mb-3">Minden fontosabb kereskedési fogalom egy helyen, amit az appban és a leckékben használunk — kereshetően.</p>
+                    <div class="relative mb-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="glossary-search-input" oninput="renderGlossaryList()" placeholder="Keress egy fogalomra… pl. 'spread', 'stop-loss'" class="w-full bg-dark-850 border border-dark-750 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50">
+                    </div>
+                    <div id="glossary-cat-filters" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <div id="glossary-list" class="flex-grow overflow-y-auto px-5 pb-6 space-y-2"></div>
             </section>
         </div>
     </div>
@@ -6939,7 +6962,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 mistakes: document.getElementById('academy-mode-mistakes-btn'),
                 'ai-analyzer': document.getElementById('academy-mode-ai-analyzer-btn'),
                 hungarian: document.getElementById('academy-mode-hungarian-btn'),
-                calendar: document.getElementById('academy-mode-calendar-btn')
+                calendar: document.getElementById('academy-mode-calendar-btn'),
+                glossary: document.getElementById('academy-mode-glossary-btn')
             };
             const bodies = {
                 lessons: document.getElementById('academy-body-lessons'),
@@ -6950,7 +6974,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 mistakes: document.getElementById('academy-body-mistakes'),
                 'ai-analyzer': document.getElementById('academy-body-ai-analyzer'),
                 hungarian: document.getElementById('academy-body-hungarian'),
-                calendar: document.getElementById('academy-body-calendar')
+                calendar: document.getElementById('academy-body-calendar'),
+                glossary: document.getElementById('academy-body-glossary')
             };
 
             const activeClass = 'relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white shadow transition';
@@ -6982,6 +7007,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (mode === 'ai-analyzer') renderAiAnalyzerScreen();
             if (mode === 'hungarian') renderHungarianMarketScreen();
             if (mode === 'calendar') renderMacroCalendar();
+            if (mode === 'glossary') renderGlossaryList();
         }
 
         // ================= MAKROESEMÉNY-NAPTÁR (OKTATÁSI) =================
@@ -7032,6 +7058,92 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>` : ''}
                 </div>`;
             }).join('');
+        }
+
+        // ================= SZÓSZEDET (GLOSSARY) =================
+        // A leckékben, a Chart Drillben és a Replay Szimulátorban már
+        // végig használt szakkifejezések EGY, kereshető helyen — nem új
+        // tananyag, hanem gyors visszakeresés annak, aki egy ismerős, de
+        // elfelejtett fogalomba botlik valahol az appban. Kategóriák
+        // szerint szűrhető, a keresés a kifejezésben ÉS a definícióban is
+        // keres, hogy köznyelvi rákereséssel is megtalálható legyen.
+        const GLOSSARY_TERMS = [
+            { term: 'Day Trading', cat: 'alapok', def: 'Pozíció nyitása és zárása ugyanazon a kereskedési napon, éjszakára sosem átvitt pozícióval.' },
+            { term: 'Long pozíció', cat: 'alapok', def: 'Vásárlás azzal a várakozással, hogy az árfolyam EMELKEDNI fog — a nyereség az emelkedésből származik.' },
+            { term: 'Short pozíció', cat: 'alapok', def: 'Eladás (kölcsönvett eszközzel) azzal a várakozással, hogy az árfolyam CSÖKKENNI fog — a nyereség az esésből származik.' },
+            { term: 'Stop-loss (SL)', cat: 'kockázat', def: 'Előre beállított árszint, amelynél a pozíció automatikusan zár, hogy a veszteség egy meghatározott szint fölé ne nőhessen.' },
+            { term: 'Take-profit (TP) / Célár', cat: 'kockázat', def: 'Előre beállított árszint, amelynél a pozíció automatikusan lezár a nyereség realizálásához.' },
+            { term: 'Risk:Reward arány (R:R)', cat: 'kockázat', def: 'A potenciális nyereség és a vállalt kockázat aránya — pl. egy 1:2 R:R azt jelenti, hogy a célár kétszer messzebb van, mint a stop.' },
+            { term: 'Pozícióméret', cat: 'kockázat', def: 'Az adott ügyletbe fektetett tőke mennyisége — a helyes méretezés a számlaegyenleg, a kockázati % és a stop távolság alapján számolható (lásd Pozícióméret Kalkulátor).' },
+            { term: 'Drawdown', cat: 'kockázat', def: 'A számlaegyenleg csúcsértékétől mért visszaesés mértéke — fontos mutató arra, mennyire volatilis egy kereskedési stratégia.' },
+            { term: 'Tőkeáttétel (Leverage)', cat: 'kockázat', def: 'Kölcsöntőke felhasználása a pozíció méretének megnöveléséhez — a nyereséget ÉS a veszteséget is arányosan felnagyítja.' },
+            { term: 'Likviditás', cat: 'alapok', def: 'Milyen könnyen lehet egy eszközt megvenni/eladni anélkül, hogy az ár jelentősen elmozdulna — alacsony likviditásnál kisebb megbízás is nagy mozgást okozhat.' },
+            { term: 'Spread', cat: 'alapok', def: 'A vételi (bid) és eladási (ask) árfolyam közötti különbség — ez egyfajta implicit tranzakciós költség.' },
+            { term: 'Slippage (csúszás)', cat: 'alapok', def: 'A tényleges végrehajtási ár és a kért ár közötti eltérés, jellemzően gyors mozgás vagy alacsony likviditás esetén.' },
+            { term: 'Volatilitás', cat: 'alapok', def: 'Az árfolyam mozgásának mértéke/intenzitása egy adott időszak alatt — magasabb volatilitás nagyobb lehetőséget ÉS nagyobb kockázatot is jelent.' },
+            { term: 'Támasz (Support)', cat: 'technikai', def: 'Árszint, ahol a vásárlói érdeklődés historikusan megállította az esést — "padló", amiről az ár jellemzően visszapattan.' },
+            { term: 'Ellenállás (Resistance)', cat: 'technikai', def: 'Árszint, ahol az eladói nyomás historikusan megállította az emelkedést — "plafon", amit az árnak nehéz áttörnie.' },
+            { term: 'Trend', cat: 'technikai', def: 'Az árfolyam általános, hosszabb távú iránya — emelkedő (bullish), csökkenő (bearish) vagy oldalazó (range-bound/choppy).' },
+            { term: 'Konszolidáció', cat: 'technikai', def: 'Időszak, amikor az árfolyam egy szűk sávban mozog, mielőtt valamelyik irányba kitörne — "feltöltődés" a következő mozgás előtt.' },
+            { term: 'Kitörés (Breakout)', cat: 'technikai', def: 'Amikor az árfolyam ÁTTÖRI egy korábbi támasz- vagy ellenállás-szintet, jellemzően megnövekedett momentummal.' },
+            { term: 'Hamis kitörés (Fakeout)', cat: 'technikai', def: 'Egy látszólagos kitörés, amely gyorsan visszafordul — gyakori csapda azoknak, akik azonnal, megerősítés nélkül ugranak be a mozgásba.' },
+            { term: 'Volume (Forgalom)', cat: 'technikai', def: 'Egy adott időszak alatt lekereskedett mennyiség — egy mozgás megbízhatóságának egyik legfontosabb megerősítő jele.' },
+            { term: 'Gyertyadiagram (Candlestick)', cat: 'technikai', def: 'Árfolyam-ábrázolási mód, ami egy adott időintervallum nyitó, záró, legmagasabb és legalacsonyabb árát is mutatja egy "gyertyán".' },
+            { term: 'Doji', cat: 'technikai', def: 'Gyertyaminta, ahol a nyitó és záróár közel azonos — bizonytalanságot, a vevők/eladók egyenlő erejét jelzi.' },
+            { term: 'Fej-váll alakzat', cat: 'technikai', def: 'Három csúcsból álló forduló-alakzat, ahol a középső (fej) magasabb, mint a két oldalsó (váll) — jellemzően bearish jel.' },
+            { term: 'Zászló (Flag)', cat: 'technikai', def: 'Egy erős mozgás (zászlórúd) utáni rövid, szűk konszolidáció — jellemzően a trend FOLYTATÓDÁSÁT jelzi.' },
+            { term: 'EMA / SMA', cat: 'technikai', def: 'Exponenciális / egyszerű mozgóátlag — az árfolyam simított, átlagolt vonala, ami segít kiszűrni a rövid távú "zajt" és láthatóvá tenni a trendet.' },
+            { term: 'RSI (Relative Strength Index)', cat: 'technikai', def: 'Momentum-indikátor 0-100 skálán — tipikusan 70 fölött "túlvett", 30 alatt "túladott" állapotot jelez.' },
+            { term: 'Bollinger Szalagok', cat: 'technikai', def: 'Egy mozgóátlag köré rajzolt, volatilitás alapján táguló/szűkülő sávpár — segít azonosítani, mikor "feszes" vagy "tágas" a piac.' },
+            { term: 'FOMO (Fear Of Missing Out)', cat: 'pszichológia', def: 'A kihagyástól való félelem — amikor valaki egy már jócskán megmozdult árfolyamba, elhamarkodottan, a csúcs közelében száll be.' },
+            { term: 'Revenge trading', cat: 'pszichológia', def: 'Egy veszteség utáni, érzelmi alapú, azonnali "visszavágási" kereskedés — jellemzően a fegyelem teljes feladásával és még nagyobb veszteséggel jár.' },
+            { term: 'Overtrading', cat: 'pszichológia', def: 'Indokolatlanul sok ügylet nyitása, gyakran unalomból vagy a veszteség "behozásának" kényszeréből, nem valódi, jó setupok alapján.' },
+            { term: 'Confirmation bias', cat: 'pszichológia', def: 'Hajlam arra, hogy csak a saját véleményünket megerősítő információkat vesszük észre, a cáfolókat pedig figyelmen kívül hagyjuk.' },
+            { term: 'Buy the rumor, sell the news', cat: 'pszichológia', def: 'Jelenség, amikor a piac a VÁRAKOZÁSRA előre reagál, majd a tényleges hírre — akár pozitív hírre is — az ellenkező irányba fordul.' },
+            { term: 'Gap (árfolyamrés)', cat: 'alapok', def: 'Amikor az árfolyam két kereskedési időszak között "átugrik" egy szintet, folytonos kereskedés nélkül — jellemzően zárás utáni hírek miatt.' },
+            { term: 'Buy & Hold', cat: 'alapok', def: 'Passzív stratégia: egy eszköz megvétele és hosszútávú tartása, aktív kereskedés nélkül — a Replay Szimulátor ehhez hasonlítja a teljesítményedet.' },
+            { term: 'Blokklánc', cat: 'kriptó', def: 'Elosztott, több ezer számítógépen egyszerre tárolt, utólag nem módosítható könyvelési rendszer — a kriptovaluták alapja.' },
+            { term: 'Seed phrase', cat: 'kriptó', def: 'A 12-24 szavas kódsor, amivel egy kripto-pénztár teljes egészében visszaállítható — sosem szabad digitálisan tárolni vagy megosztani.' },
+            { term: 'CEX / DEX', cat: 'kriptó', def: 'Központosított (Centralized) vs. decentralizált (Decentralized) kriptotőzsde — előbbinél a tőzsde, utóbbinál a felhasználó tartja a kulcsokat.' },
+            { term: 'NFP (Nonfarm Payrolls)', cat: 'makró', def: 'Havi amerikai munkaerőpiaci statisztika, amely gyakran jelentős piaci volatilitást okoz megjelenésekor.' },
+            { term: 'CPI (Fogyasztói Árindex)', cat: 'makró', def: 'Az infláció hivatalos mérőszáma — közvetlenül befolyásolja a jegybanki kamatdöntési várakozásokat.' },
+            { term: 'Fed / FOMC', cat: 'makró', def: 'Az amerikai jegybank (Federal Reserve) kamatdöntő bizottsága — döntései világszerte hatással vannak a piacokra.' },
+        ];
+
+        let glossarySelectedCat = '';
+        function renderGlossaryList() {
+            const listEl = document.getElementById('glossary-list');
+            const filterEl = document.getElementById('glossary-cat-filters');
+            if (!listEl || !filterEl) return;
+
+            const catLabels = { alapok: 'Alapok', kockázat: 'Kockázatkezelés', technikai: 'Technikai elemzés', pszichológia: 'Pszichológia', kriptó: 'Kriptó', makró: 'Makrogazdaság' };
+            const cats = [...new Set(GLOSSARY_TERMS.map(t => t.cat))];
+            filterEl.innerHTML = [`<button onclick="glossarySelectedCat=''; renderGlossaryList();" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${glossarySelectedCat === '' ? 'bg-neon-cyan/15 border-neon-cyan/40 text-neon-cyan' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">Összes</button>`]
+                .concat(cats.map(c => `<button onclick="glossarySelectedCat='${c}'; renderGlossaryList();" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${glossarySelectedCat === c ? 'bg-neon-cyan/15 border-neon-cyan/40 text-neon-cyan' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">${catLabels[c] || c}</button>`))
+                .join('');
+
+            const searchInput = document.getElementById('glossary-search-input');
+            const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+            const filtered = GLOSSARY_TERMS
+                .filter(t => !glossarySelectedCat || t.cat === glossarySelectedCat)
+                .filter(t => !query || t.term.toLowerCase().includes(query) || t.def.toLowerCase().includes(query))
+                .sort((a, b) => a.term.localeCompare(b.term, 'hu'));
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div class="text-center py-10 text-slate-500 text-xs">Nincs találat ${query ? `a "${query}"` : 'ebben a kategóriában'} keresésre.</div>`;
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(t => `
+                <div class="glass-card rounded-xl p-3.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-bold text-white">${t.term}</span>
+                        <span class="text-[9px] font-bold uppercase text-slate-500 bg-dark-800 px-2 py-0.5 rounded-full shrink-0 ml-2">${catLabels[t.cat] || t.cat}</span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">${t.def}</p>
+                </div>
+            `).join('');
         }
 
         // ================= CHARTOLJ CERTIFIKÁCIÓ =================
