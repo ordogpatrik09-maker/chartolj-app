@@ -2803,6 +2803,29 @@
             </div>
         </header>
 
+        <!-- JAVÍTÁS (2026-10-11, mobil audit nyomán): az XP/Coin/Haladás
+             kijelzők a fejléken "hidden lg:flex" voltak, tehát mobilon
+             a felhasználó a Haladás képernyőn kívül SEHOL nem látta az XP-jét,
+             coin-jait vagy a lecke-haladását az Akadémiában — csak a szívei
+             voltak láthatók. Ez egy kompakt, csak mobilon látható sáv,
+             ami ugyanazokat az adatokat jeleníti meg (külön "-m" végű id-kkal,
+             amiket a meglévő updateAcademyXPDisplay()/updateCoinDisplay()/
+             updateAcademyProgress() függvények is frissítenek). -->
+        <div class="lg:hidden h-8 bg-dark-950/80 border-b border-dark-750/40 px-4 flex items-center justify-center gap-4 shrink-0 font-mono text-[11px]">
+            <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt text-neon-cyan"></i>
+                <span id="academy-xp-label-m" class="font-bold text-white">0 XP</span>
+            </div>
+            <div class="flex items-center gap-1" title="Coin">
+                <i class="fa-solid fa-coins text-amber-400"></i>
+                <span id="academy-coin-label-m" class="font-bold text-white">0</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-award text-amber-400"></i>
+                <span id="academy-progress-label-m" class="font-bold text-white">0 / 0</span>
+            </div>
+        </div>
+
         <!-- JAVÍTÁS (2026-10-09, "nehezen kezelhető, nem fér el" visszajelzés
              nyomán): ez a 8 fület tartalmazó sáv mobilon VÍZSZINTESEN
              GÖRGETHETŐ volt (no-scrollbar osztály — a scroll SÁV is el volt
@@ -7288,6 +7311,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function updateCoinDisplay() {
             const el = document.getElementById('academy-coin-label');
             if (el) el.textContent = userCoins.toLocaleString('hu-HU');
+            const elM = document.getElementById('academy-coin-label-m');
+            if (elM) elM.textContent = userCoins.toLocaleString('hu-HU');
             const premBtn = document.getElementById('academy-premium-btn');
             if (premBtn) {
                 premBtn.innerHTML = isPremiumUser
@@ -7997,9 +8022,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function updateAcademyXPDisplay() {
             const badge = getCurrentBadge();
             const xpLabel = document.getElementById('academy-xp-label');
+            const xpLabelM = document.getElementById('academy-xp-label-m');
             const badgeIcon = document.getElementById('academy-badge-icon');
             const badgeLabel = document.getElementById('academy-badge-label');
             if (xpLabel) xpLabel.textContent = academyXP + ' XP';
+            if (xpLabelM) xpLabelM.textContent = academyXP + ' XP';
             if (badgeIcon) badgeIcon.innerHTML = `<i class="fa-solid ${badge.icon} ${badge.color}"></i>`;
             if (badgeLabel) badgeLabel.textContent = badge.title;
         }
@@ -12526,8 +12553,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const total = LESSONS_DATA.length;
             const done = academyCompleted.size;
             const pct = total ? (done / total * 100) : 0;
-            document.getElementById('academy-progress-label').textContent = `${done} / ${total}`;
-            document.getElementById('academy-progress-bar').style.width = pct + '%';
+            const progLabel = document.getElementById('academy-progress-label');
+            const progLabelM = document.getElementById('academy-progress-label-m');
+            const progBar = document.getElementById('academy-progress-bar');
+            if (progLabel) progLabel.textContent = `${done} / ${total}`;
+            if (progLabelM) progLabelM.textContent = `${done} / ${total}`;
+            if (progBar) progBar.style.width = pct + '%';
         }
 
         function openAcademyLesson(idx) {
