@@ -13373,10 +13373,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function exportProgressData() {
+            // JAVÍTÁS: ez a letöltés eddig csak az Akadémia-haladást
+            // tartalmazta — a session alatt épített Kereskedési Napló és
+            // Kereskedési Terv adatai (amik ugyanúgy a felhasználó saját,
+            // értékes munkáját képviselik) kimaradtak a biztonsági
+            // mentésből/exportból. Most ezek is bekerülnek.
             const data = { exportDate: new Date().toISOString(), xp: academyXP, coins: userCoins,
                 lessonsCompleted: [...academyCompleted].length, totalLessons: LESSONS_DATA.length,
                 drillStats, replayStats, replayJournal: replayJournal.slice(0,20),
-                mistakeBankSize: academyMistakes.size, learningLog: learningLog.slice(0,30) };
+                mistakeBankSize: academyMistakes.size, learningLog: learningLog.slice(0,30),
+                tradingJournal: (typeof tradingJournal !== 'undefined') ? tradingJournal : {},
+                tradingPlan: (typeof tradingPlan !== 'undefined') ? tradingPlan : null,
+                dailyDrillStreak: (typeof computeDailyDrillStreak === 'function') ? computeDailyDrillStreak() : null };
             const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href=url;
