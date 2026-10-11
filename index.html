@@ -980,6 +980,13 @@
                                 <div class="text-[10px] text-slate-400">Pozícióméret a piac volatilitásához igazítva</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('expectancy-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Trade Expectancy Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mennyit "ér" átlagosan egy trade-ed?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-percent"></i></span>
                             <div>
@@ -2069,6 +2076,42 @@
         </div>
     </div>
 
+    <!-- ================= TRADE EXPECTANCY KALKULÁTOR (OKTATÁSI) =================
+         Az "expectancy" (statisztikai várható érték / trade) azt mutatja meg,
+         hogy a találati arány ÉS az átlagos nyereség/veszteség mérete EGYÜTT
+         mennyit "ér" hosszú távon — a cél megtanítani, hogy egy alacsony
+         (akár 35-40%-os) találati arány is lehet nyereséges, ha az átlagos
+         nyertes trade elég sokszor nagyobb az átlagos vesztesnél, és
+         fordítva: egy magas találati arány is veszteséges lehet, ha a
+         vesztes trade-ek mérete aránytalanul nagy. -->
+    <div id="expectancy-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-neon-green"></i> Trade Expectancy Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('expectancy-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A statisztikai várható érték (expectancy) megmutatja, hogy a találati arányod és az átlagos nyereség/veszteség méreted alapján átlagosan mennyit nyersz (vagy veszítesz) EGY trade-en, hosszú távon.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Találati arány (win rate, %)</label>
+            <input type="number" id="exp-winrate" value="40" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Átlagos nyertes trade ($)</label>
+            <input type="number" id="exp-avgwin" value="300" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Átlagos vesztes trade ($, pozitív szám)</label>
+            <input type="number" id="exp-avgloss" value="150" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcExpectancy()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="expectancy-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az expectancy egy múltbeli (vagy feltételezett) statisztikai átlag — a valós eredmények trade-enként nagy szórással térhetnek el tőle. Oktatási célú közelítés, nem garancia jövőbeli teljesítményre.</p>
+        </div>
+    </div>
+
     <!-- ================= GAZDASÁGI HÍRNAPTÁR (OKTATÁSI, SZIMULÁLT) =================
          A cél NEM valós piaci hírek megjelenítése (ez demó app, nincs valós
          adatforrás), hanem OKTATÁSI bemutatása annak, hogy milyen típusú
@@ -2270,6 +2313,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">ATR Pozícióméret Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Pozícióméret a piac volatilitásához igazítva</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('expectancy-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-line"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Trade Expectancy Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mennyit "ér" átlagosan egy trade-ed?</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -5896,6 +5946,47 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= TRADE EXPECTANCY KALKULÁTOR (OKTATÁSI) =================
+        function calcExpectancy() {
+            const winRatePct = parseFloat(document.getElementById('exp-winrate').value);
+            const avgWin = parseFloat(document.getElementById('exp-avgwin').value);
+            const avgLoss = parseFloat(document.getElementById('exp-avgloss').value);
+            const out = document.getElementById('expectancy-result');
+
+            if (!winRatePct || winRatePct <= 0 || winRatePct >= 100 || !avgWin || avgWin <= 0 || !avgLoss || avgLoss <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%) és pozitív átlagos nyereség/veszteség értékeket!</div>`;
+                return;
+            }
+
+            const W = winRatePct / 100;
+            const L = 1 - W;
+            const expectancyDollar = (W * avgWin) - (L * avgLoss);
+            const expectancyR = expectancyDollar / avgLoss;
+            const rrRatio = avgWin / avgLoss;
+            const isPositive = expectancyDollar > 0;
+            const breakEvenWinRate = (avgLoss / (avgWin + avgLoss)) * 100;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Statisztikai várható érték / trade</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${expectancyDollar >= 0 ? '+$' + expectancyDollar.toFixed(2) : '-$' + Math.abs(expectancyDollar).toFixed(2)} <span class="text-sm">(${expectancyR >= 0 ? '+' : ''}${expectancyR.toFixed(2)}R)</span></div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Átlagos Risk/Reward arány:</span>
+                        <span class="font-extrabold text-white text-sm">1:${rrRatio.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Break-even találati arány:</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${breakEvenWinRate.toFixed(1)}%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${isPositive
+                    ? `Pozitív statisztikai előnyöd van: ennél a kombinációnál ${winRatePct}%-os találati arány mellett is nyereséges a stratégia, mert a nyertes trade-ek átlagosan ${rrRatio.toFixed(2)}x nagyobbak a vesztes trade-eknél.`
+                    : `Negatív statisztikai előnyöd van: a jelenlegi találati arány a break-even (${breakEvenWinRate.toFixed(1)}%) alatt van ehhez a Risk/Reward arányhoz — hosszú távon ez a kombináció veszteséget termel, akkor is, ha egyes trade-ek nyereségesek.`}</p>
+            `;
+        }
+
         // ================= GAZDASÁGI HÍRNAPTÁR (OKTATÁSI, SZIMULÁLT) =================
         // Visszatérő makrogazdasági esemény-típusok sablonjai. A tényleges
         // hét-eseményeit a dateSeedShuffle-lel (már létező, dátum-alapú
@@ -8267,6 +8358,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // keres, hogy köznyelvi rákereséssel is megtalálható legyen.
         const GLOSSARY_TERMS = [
             { term: 'ATR (Average True Range)', cat: 'kockázat', def: 'Egy eszköz átlagos volatilitását mérő indikátor. A stop-loss távolságot az ATR-hez igazítva a kockázatkezelés automatikusan alkalmazkodik a piac jelenlegi mozgékonyságához, nem egy tetszőlegesen választott ponthoz.' },
+            { term: 'Expectancy (Statisztikai Várható Érték)', cat: 'statisztika', def: 'Egy átlagos trade várható nyeresége/vesztesége, a találati arány és az átlagos nyereség/veszteség méret alapján: (találati arány × átlagos nyereség) − (vesztes arány × átlagos veszteség). Egy alacsony találati arány is lehet nyereséges, ha a nyertes trade-ek elég sokszor nagyobbak a vesztes trade-eknél.' },
             { term: 'Day Trading', cat: 'alapok', def: 'Pozíció nyitása és zárása ugyanazon a kereskedési napon, éjszakára sosem átvitt pozícióval.' },
             { term: 'Long pozíció', cat: 'alapok', def: 'Vásárlás azzal a várakozással, hogy az árfolyam EMELKEDNI fog — a nyereség az emelkedésből származik.' },
             { term: 'Short pozíció', cat: 'alapok', def: 'Eladás (kölcsönvett eszközzel) azzal a várakozással, hogy az árfolyam CSÖKKENNI fog — a nyereség az esésből származik.' },
