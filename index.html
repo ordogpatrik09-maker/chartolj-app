@@ -8752,9 +8752,74 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         `).join('')}
                     </div>
 
-                    <button onclick="renderReplayJournal()" class="text-xs text-slate-500 hover:text-slate-300 transition underline decoration-dotted">
-                        <i class="fa-solid fa-book mr-1"></i> Kereskedési napló megtekintése (${replayJournal.length})
-                    </button>
+                    <div class="flex items-center justify-center gap-4">
+                        <button onclick="renderReplayJournal()" class="text-xs text-slate-500 hover:text-slate-300 transition underline decoration-dotted">
+                            <i class="fa-solid fa-book mr-1"></i> Kereskedési napló megtekintése (${replayJournal.length})
+                        </button>
+                        ${replayJournal.length >= 3 ? `
+                        <button onclick="renderReplayStatsByType()" class="text-xs text-slate-500 hover:text-slate-300 transition underline decoration-dotted">
+                            <i class="fa-solid fa-chart-pie mr-1"></i> Statisztika piactípus szerint
+                        </button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Melyik piactípusban (trend, choppy, hírsokk, stb.) vagy ERŐSEBB vagy GYENGÉBB —
+        // ez a Mistake Bank statisztikájához hasonló elv: nem csak AZT mutatja meg, hogy
+        // átlagosan hogy teljesítesz, hanem azt, hogy MELYIK piaci körülmény a te
+        // erősséged/gyengeséged, ami sokkal tanulságosabb egy önmagában vett átlagnál.
+        function renderReplayStatsByType() {
+            const el = document.getElementById('replay-viewer');
+            const typeLabels = { trend_up: '📈 Emelkedő trend', trend_down: '📉 Csökkenő trend', choppy: '↔️ Oldalazó', volatile_reversal: '🔄 Fordulatos', news_shock: '⚡ Hírsokk' };
+            const byType = {};
+            replayJournal.forEach(j => {
+                const t = j.type || 'ismeretlen';
+                if (!byType[t]) byType[t] = { count: 0, returnSum: 0, beatCount: 0, winRateSum: 0 };
+                const b = byType[t];
+                b.count++;
+                b.returnSum += Number(j.totalReturn) || 0;
+                b.winRateSum += Number(j.winRate) || 0;
+                if (j.totalReturn > j.buyHoldReturn) b.beatCount++;
+            });
+
+            const rows = Object.entries(byType)
+                .sort((a, b) => b[1].count - a[1].count)
+                .map(([type, b]) => {
+                    const avgReturn = b.returnSum / b.count;
+                    const avgWinRate = Math.round(b.winRateSum / b.count);
+                    const beatPct = Math.round((b.beatCount / b.count) * 100);
+                    const label = typeLabels[type] || type;
+                    const returnColor = avgReturn > 0 ? 'text-neon-green' : avgReturn < 0 ? 'text-neon-red' : 'text-slate-300';
+                    return `
+                        <div class="glass-card rounded-xl border border-dark-750 p-3 flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-slate-200">${label}</div>
+                                <div class="text-[10px] text-slate-500 mt-0.5">${b.count} nap · átl. ${avgWinRate}% találati arány · ${beatPct}%-ban verte a Buy&Hold-ot</div>
+                            </div>
+                            <div class="text-sm font-extrabold ${returnColor} shrink-0">${avgReturn >= 0 ? '+' : ''}${avgReturn.toFixed(1)}%</div>
+                        </div>`;
+                }).join('');
+
+            const best = Object.entries(byType).sort((a, b) => (b[1].returnSum / b[1].count) - (a[1].returnSum / a[1].count))[0];
+            const worst = Object.entries(byType).sort((a, b) => (a[1].returnSum / a[1].count) - (b[1].returnSum / b[1].count))[0];
+            const hint = (best && worst && best[0] !== worst[0] && Object.keys(byType).length >= 2)
+                ? `<p class="text-[11px] text-slate-500 leading-relaxed mt-4">
+                        A legjobb átlagos eredményed <strong class="text-neon-green">${typeLabels[best[0]] || best[0]}</strong> piacokon van,
+                        a leggyengébb pedig <strong class="text-neon-red">${typeLabels[worst[0]] || worst[0]}</strong> típusú napokon —
+                        érdemes tudatosan több gyakorló napot célozni ebből a típusból (fent, a "Piactípus célzása" résznél kiválasztható).
+                   </p>` : '';
+
+            el.innerHTML = `
+                <div class="w-full max-w-2xl mx-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-chart-pie text-neon-purple mr-1.5"></i> Statisztika piactípus szerint</h3>
+                        <button onclick="renderReplayIntro()" class="text-xs text-slate-400 hover:text-white transition">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Vissza
+                        </button>
+                    </div>
+                    <div class="space-y-2">${rows}</div>
+                    ${hint}
                 </div>
             `;
         }
