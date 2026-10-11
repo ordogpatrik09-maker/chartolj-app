@@ -1008,6 +1008,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyire mozognak együtt az eszközeid?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('dailygoal-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullseye"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Napi Cél Követő</div>
+                                <div class="text-[10px] text-slate-400">Mikor érted el a mai célt — és mikor állj le?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2096,6 +2103,42 @@
             <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mt-3">
                 <p class="text-[10.5px] text-amber-400 leading-relaxed">⚠️ Ha egyszerre nyitsz pozíciót két ERŐSEN korrelált eszközben (pl. BTC és ETH) ugyanabba az irányba, az valójában NEM diverzifikáció — majdnem olyan, mintha egyetlen, dupla méretű pozíciót nyitnál. Ellenőrizd a Portfolio Heat eszközzel az összesített kockázatodat.</p>
             </div>
+        </div>
+    </div>
+
+    <!-- ================= NAPI CÉL KÖVETŐ (OKTATÁSI, OVERTRADING ELLEN) =================
+         A Napi Veszteséglimit eszköz "lefelé" védi a felhasználót — ez a
+         "felfelé" oldalt kezeli: egy előre meghatározott napi profit-cél
+         elérése UTÁN a legnagyobb kockázat gyakran nem a veszteség, hanem
+         az overtrading ("már amúgy is jó napom van, csináljunk még egyet")
+         — ezt a lecke is tanítja (Overtrading, Konzisztencia vs 'Home Run'
+         Mentalitás), ez az eszköz pedig gyakorlativá teszi: amint elérted a
+         célt, egyértelmű vizuális jelzést kapsz, hogy ÁLLJ LE. -->
+    <div id="dailygoal-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bullseye text-neon-green"></i> Napi Cél Követő
+                </h3>
+                <button onclick="closeToolModal('dailygoal-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a számládat, a napi profit-célodat (%) és a mai eddigi eredményedet — nem csak a veszteséget kell korlátozni: a cél elérése UTÁNI felesleges, "miért ne" kereskedés (overtrading) is komoly kockázati forrás.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Számla mérete (USDT)</label>
+            <input type="number" id="dg-balance" value="10000" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Napi profit-cél (%)</label>
+            <input type="number" id="dg-goal-pct" value="2" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Mai eddigi eredmény (USDT)</label>
+            <input type="number" id="dg-today-pnl" value="150" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcDailyGoal()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Ellenőrzés
+            </button>
+
+            <div id="dg-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A cél elérése után a legnehezebb dolog gyakran a LEÁLLÁS — a fegyelem itt nem a célig kitartást jelenti, hanem azt, hogy a cél elérése után ne kockáztasd feleslegesen a már megszerzett eredményt.</p>
         </div>
     </div>
 
@@ -5836,6 +5879,49 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             });
             html += '</div>';
             gridEl.innerHTML = html;
+        }
+
+        // ================= NAPI CÉL KÖVETŐ (OKTATÁSI, OVERTRADING ELLEN) =================
+        function calcDailyGoal() {
+            const balance = parseFloat(document.getElementById('dg-balance').value) || 0;
+            const goalPct = parseFloat(document.getElementById('dg-goal-pct').value) || 0;
+            const todayPnl = parseFloat(document.getElementById('dg-today-pnl').value) || 0;
+            const out = document.getElementById('dg-result');
+
+            if (balance <= 0 || goalPct <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számla-egyenleget és napi célt!</div>`;
+                return;
+            }
+
+            const goalAmount = balance * (goalPct / 100);
+            const progressPct = (todayPnl / goalAmount) * 100;
+
+            let statusHtml, barColor;
+            if (todayPnl < 0) {
+                barColor = 'bg-neon-red';
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-red">Ma eddig veszteségben vagy — a cél most nem releváns, inkább a Napi Veszteséglimit eszközt érdemes ellenőrizni.</p>`;
+            } else if (progressPct >= 100) {
+                barColor = 'bg-neon-green';
+                statusHtml = `<p class="text-[10px] font-extrabold mt-2 text-neon-green">🎯 ELÉRTED a mai célt! Ez a legnehezebb pillanat — a fegyelem most azt jelenti, hogy LEÁLLSZ, és nem kockáztatod feleslegesen az eredményt egy "még egy" trade-del.</p>`;
+            } else if (progressPct >= 70) {
+                barColor = 'bg-amber-400';
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-amber-400">Közel vagy a mai célhoz — érdemes már most elkezdeni tudatosan, lassítva kereskedni, nem felpörögve "hajtani" a célt.</p>`;
+            } else {
+                barColor = 'bg-neon-cyan';
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-slate-400">Még van út a mai célig — de a cél sosem indokolja a kockázatkezelési szabályaid feladását.</p>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Napi profit-cél:</span><span class="text-white">$${goalAmount.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Mai eddigi eredmény:</span><span class="${todayPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${todayPnl >= 0 ? '+' : ''}$${todayPnl.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Cél teljesítve:</span><span class="font-bold ${progressPct >= 100 ? 'text-neon-green' : 'text-slate-200'} text-sm">${Math.max(0, progressPct).toFixed(0)}%</span></div>
+                    <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-1">
+                        <div class="h-full ${barColor} transition-all" style="width:${Math.min(100, Math.max(2, progressPct))}%"></div>
+                    </div>
+                </div>
+                ${statusHtml}
+            `;
         }
 
         /* ================= AKADÉMIA (Oktatóközpont) ================= */
