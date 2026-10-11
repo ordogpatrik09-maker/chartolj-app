@@ -980,6 +980,13 @@
                                 <div class="text-[10px] text-slate-400">Mekkora a matematikailag optimális tétnagyság?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Gazdasági Hírnaptár</div>
+                                <div class="text-[10px] text-slate-400">Mikor várható nagy volatilitás ezen a héten?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1969,6 +1976,28 @@
 
             <div id="kelly-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A "teljes Kelly" elméletileg optimális, de a valóságban (becslési hibák, nem-normális hozameloszlás miatt) túl nagy volatilitást és visszaeséseket okoz — ezért a legtöbb profi kereskedő a Kelly-érték felét ("fél-Kelly") vagy negyedét használja gyakorlatban.</p>
+        </div>
+    </div>
+
+    <!-- ================= GAZDASÁGI HÍRNAPTÁR (OKTATÁSI, SZIMULÁLT) =================
+         A cél NEM valós piaci hírek megjelenítése (ez demó app, nincs valós
+         adatforrás), hanem OKTATÁSI bemutatása annak, hogy milyen típusú
+         visszatérő makrogazdasági események léteznek, és miért okoznak
+         ezek jellemzően hirtelen, nagy volatilitást — a felhasználó
+         napra/hétre lebontva, determinisztikusan (dátum-alapú, nem
+         véletlenszerű) generált, de valósághű mintaeseményeket lát. -->
+    <div id="newscal-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-lg p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bullhorn text-neon-cyan"></i> Gazdasági Hírnaptár
+                </h3>
+                <button onclick="closeToolModal('newscal-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Oktatási célú, mintaadatokon alapuló heti áttekintés — nem valós piaci hírfolyam. A cél megérteni, MILYEN típusú események szoktak hirtelen volatilitást okozni, és mikor érdemes extra óvatosnak lenni.</p>
+            <div id="newscal-week-label" class="text-center text-xs font-mono text-slate-300 mb-3"></div>
+            <div id="newscal-list" class="space-y-2"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Sok profi kereskedő magas horderejű hírek (🔴) közvetlen közelében szűkebb pozícióméretet használ, vagy teljesen kiül a piacról — a hirtelen, kiszámíthatatlan árkiugrás (gap) a stop-loss-t is "átugorhatja".</p>
         </div>
     </div>
 
@@ -5475,6 +5504,77 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-amber-400">A teljes Kelly matematikailag optimális, de a valóságban (becslési hibák, sorozatos veszteségek) túl nagy visszaeséseket okozhat. A legtöbb profi a fél-Kelly vagy negyed-Kelly szintet használja a kockázat/trade %-jaként.</p>
             `;
+        }
+
+        // ================= GAZDASÁGI HÍRNAPTÁR (OKTATÁSI, SZIMULÁLT) =================
+        // Visszatérő makrogazdasági esemény-típusok sablonjai. A tényleges
+        // hét-eseményeit a dateSeedShuffle-lel (már létező, dátum-alapú
+        // determinisztikus "hash") választjuk ki és rendezzük napokhoz —
+        // ugyanaz a hét mindig ugyanazt az eseménysort adja, de hétről
+        // hétre más kombináció jön ki, mint egy valós naptárban.
+        const NEWS_EVENT_TEMPLATES = [
+            { name: 'Fed (FOMC) kamatdöntés', impact: 'high', desc: 'Az amerikai jegybank kamatdöntése — a kriptó- és részvénypiacok egyik legnagyobb volatilitást okozó eseménye, mert közvetlenül befolyásolja, mennyire "olcsó" a kockázatvállalás a piacon.' },
+            { name: 'USA CPI (inflációs adat)', impact: 'high', desc: 'A fogyasztói árindex — ha a vártnál magasabb, a piac jellemzően szigorúbb monetáris politikát áraz be, ami gyakran hirtelen eséssel jár a kockázatos eszközökben (pl. kripto).' },
+            { name: 'USA NFP (munkaerőpiaci jelentés)', impact: 'high', desc: 'A havi amerikai bérstatisztika — a vártnál erősebb/gyengébb szám percek alatt nagy kilengést okozhat, mert a Fed következő lépésére utal.' },
+            { name: 'EKB kamatdöntés', impact: 'medium', desc: 'Az Európai Központi Bank kamatdöntése — főleg az euró-párokra és az európai piacokra hat erősebben.' },
+            { name: 'USA PPI (termelői árindex)', impact: 'medium', desc: 'A CPI "kistestvére" — előrejelző jellegű az inflációra, kisebb, de még érdemi piaci reakciót szokott okozni.' },
+            { name: 'Heti munkanélküli kérelmek (USA)', impact: 'low', desc: 'Heti rendszerességű, kisebb horderejű adat — önmagában ritkán okoz nagy kilengést, de sorozatban trendjelző lehet.' },
+            { name: 'USA kiskereskedelmi forgalom', impact: 'medium', desc: 'A fogyasztói költési kedv mérőszáma — erős számok gazdasági optimizmust, gyenge számok aggodalmat válthatnak ki a piacon.' },
+            { name: 'Nagy BTC/ETH opciós lejárat', impact: 'medium', desc: 'Kriptó-specifikus esemény: nagy mennyiségű opciós szerződés lejárata gyakran megnöveli a rövid távú volatilitást az adott eszközben.' },
+            { name: 'USA GDP (negyedéves növekedés)', impact: 'medium', desc: 'A gazdasági növekedés negyedéves üteme — jellemzően kevésbé "meglepetés-érzékeny", mert a piac már részben beárazza előre.' },
+            { name: 'Nagyobb kripto-tőzsdei listázás/esemény', impact: 'low', desc: 'Kriptó-specifikus, kisebb horderejű esemény (pl. új token listázása egy nagy tőzsdén) — jellemzően csak az érintett eszközre hat.' }
+        ];
+        function isoWeekKey(d) {
+            // Az adott dátumhoz tartozó hét HÉTFŐjének dátumkulcsa — ez a
+            // determinisztikus "heti seed", így egy héten belül mindig
+            // ugyanazt az eseménylistát kapjuk, újratöltés után is.
+            const date = new Date(d);
+            const day = (date.getDay() + 6) % 7; // 0 = hétfő
+            date.setDate(date.getDate() - day);
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+        function renderNewsCalendar() {
+            const weekMondayKey = isoWeekKey(new Date());
+            const monday = new Date(weekMondayKey + 'T00:00:00');
+            const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+            const fmt = (d) => d.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' });
+            document.getElementById('newscal-week-label').textContent = `Ezen a héten: ${fmt(monday)} – ${fmt(sunday)}`;
+
+            // Determinisztikusan kiválasztunk ~5 eseményt a sablonokból, és
+            // mindegyikhez hozzárendelünk egy napot (0-6, hétfőtől) és egy
+            // órát — a heti seed alapján, hogy stabil legyen egy héten belül.
+            const shuffledTemplates = dateSeedShuffle(NEWS_EVENT_TEMPLATES.map((_, i) => i), weekMondayKey);
+            const picked = shuffledTemplates.slice(0, 5);
+            const dayOffsets = dateSeedShuffle([0, 1, 2, 3, 4, 5, 6], weekMondayKey + '-days').slice(0, 5);
+            const hourPool = [14, 15, 16, 10, 20, 9, 18];
+            const hours = dateSeedShuffle(hourPool, weekMondayKey + '-hours').slice(0, 5);
+
+            const events = picked.map((tplIdx, i) => {
+                const tpl = NEWS_EVENT_TEMPLATES[tplIdx];
+                const dayDate = new Date(monday); dayDate.setDate(dayDate.getDate() + dayOffsets[i]);
+                return { ...tpl, dayDate, hour: hours[i] };
+            }).sort((a, b) => a.dayDate - b.dayDate || a.hour - b.hour);
+
+            const impactMeta = {
+                high: { label: '🔴 Magas', cls: 'border-neon-red/30 bg-neon-red/[0.05]', text: 'text-neon-red' },
+                medium: { label: '🟠 Közepes', cls: 'border-amber-400/30 bg-amber-400/[0.05]', text: 'text-amber-400' },
+                low: { label: '🟡 Alacsony', cls: 'border-dark-750', text: 'text-slate-400' }
+            };
+
+            document.getElementById('newscal-list').innerHTML = events.map(ev => {
+                const meta = impactMeta[ev.impact];
+                const dayLabel = ev.dayDate.toLocaleDateString('hu-HU', { weekday: 'long', month: 'short', day: 'numeric' });
+                return `
+                    <div class="glass-card rounded-xl border ${meta.cls} p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-white">${ev.name}</span>
+                            <span class="text-[9px] font-extrabold ${meta.text} uppercase shrink-0 ml-2">${meta.label}</span>
+                        </div>
+                        <div class="text-[9.5px] text-slate-500 font-mono mb-1.5">${dayLabel} · ${String(ev.hour).padStart(2, '0')}:00 (becsült idő)</div>
+                        <p class="text-[10.5px] text-slate-400 leading-relaxed">${ev.desc}</p>
+                    </div>
+                `;
+            }).join('');
         }
 
         /* ================= AKADÉMIA (Oktatóközpont) ================= */
