@@ -2081,6 +2081,10 @@
                 <span class="text-xs font-bold text-white"><i class="fa-solid fa-calendar-day text-neon-green mr-2"></i>Kereskedési Napló (napi P&amp;L)</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
+            <button onclick="openTradingPlan()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-purple/40 transition">
+                <span class="text-xs font-bold text-white"><i class="fa-solid fa-clipboard-list text-neon-purple mr-2"></i>Kereskedési Terv (szabályaim)</span>
+                <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+            </button>
             <button onclick="openPremiumModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-amber-400/40 transition">
                 <span class="text-xs font-bold text-white"><i class="fa-solid fa-crown text-amber-400 mr-2"></i><span data-i18n="profile_premium">Chartolj Prémium</span></span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
@@ -2237,6 +2241,46 @@
                     <button onclick="saveJournalEntry()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 hover:brightness-110 active:scale-[0.98] transition">Mentés</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ================= KERESKEDÉSI TERV =================
+         Egy LEÍRT szabályzat (max. kockázat/trade, napi trade-limit, napi
+         veszteség-limit, preferált setupok) — a professzionális kereskedők
+         egyik legfontosabb, de a kezdők által leggyakrabban kihagyott
+         szokása: ELŐRE, HIGGADT fejjel leírni a szabályokat, amíg nincs
+         nyitott pozíció és nincs érzelmi nyomás, majd EZEKHEZ tartani magad
+         kereskedés közben, nem ötletszerűen dönteni. -->
+    <div id="trading-plan-screen" class="hidden absolute inset-0 z-[85] bg-dark-950 flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b border-dark-750 shrink-0">
+            <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-clipboard-list text-neon-purple mr-1.5"></i>Kereskedési Terv</h2>
+            <button onclick="closeTradingPlan()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="flex-grow overflow-y-auto px-4 pb-10">
+            <p class="text-[11px] text-slate-400 leading-relaxed mt-4 mb-4">
+                A profi kereskedők előre, higgadt fejjel írják le a szabályaikat — nem a pozíció közben, érzelmi nyomás alatt
+                találják ki őket. Töltsd ki egyszer, majd tartsd magad hozzá. A terv csak ezen az eszközön, a böngésződben tárolódik.
+            </p>
+
+            <div id="trading-plan-today-check" class="hidden mb-4"></div>
+
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Max. kockázat / trade (%)</label>
+            <input type="number" id="plan-max-risk" step="0.1" min="0" placeholder="pl. 1" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-neon-purple/50 mb-3">
+
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Max. trade-ek száma / nap</label>
+            <input type="number" id="plan-max-trades" step="1" min="0" placeholder="pl. 3" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-neon-purple/50 mb-3">
+
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Napi veszteség-limit (%) — ha elérted, leállsz mára</label>
+            <input type="number" id="plan-max-daily-loss" step="0.1" min="0" placeholder="pl. 3" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-neon-purple/50 mb-3">
+
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Melyik setupokra fókuszálsz?</label>
+            <div id="plan-setup-checkboxes" class="flex flex-wrap gap-1.5 mb-3"></div>
+
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Saját szabályaid (opcionális)</label>
+            <textarea id="plan-own-rules" rows="4" maxlength="600" placeholder="pl. Sosem kereskedek hír megjelenése előtti/utáni 15 percben. Sosem nyitok pozíciót stop-loss nélkül." class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-purple/50 resize-none mb-4"></textarea>
+
+            <button onclick="saveTradingPlan()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white hover:brightness-110 active:scale-[0.98] transition mb-3">Terv mentése</button>
+            <p id="trading-plan-saved-hint" class="hidden text-[10px] text-neon-green text-center mb-3"><i class="fa-solid fa-circle-check mr-1"></i>Mentve.</p>
         </div>
     </div>
 
@@ -5392,6 +5436,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function startDailyDrillChallenge() {
             startDrillSession(getTodayDrillChallengeIds(), { roundCount: DAILY_DRILL_SIZE, isDailyChallenge: true });
         }
+
+        // ---- Kereskedési Terv (Trading Plan) állapota ----
+        // Korábban az init-kódnál (loadTradingPlan()) később futott le, mint ahova
+        // a `let tradingPlan` deklaráció a fájlban került — ez a `let`/`const`
+        // "temporal dead zone" szabálya miatt ReferenceError-t dobott. Most a
+        // deklaráció a többi korai állapot-változóval együtt, a fájl elején él,
+        // a hozzá tartozó FÜGGVÉNYEK pedig a Kereskedési Napló után, logikailag
+        // együtt maradhatnak.
+        const PLAN_SETUP_OPTIONS = ['Forduló alakzatok', 'Folytató alakzatok', 'Gyertyaminták', 'Támasz/Ellenállás törés', 'Trend-követés', 'Hírkereskedés'];
+        let tradingPlan = null; // { maxRisk, maxTrades, maxDailyLoss, setups: [...], ownRules, savedAt } vagy null, ha még nincs kitöltve
 
         // ================= REPLAY SZIMULÁTOR (nyitott végű, procedurálisan generált) =================
         // A "Mi lenne, ha..." modul fix, előre megírt forgatókönyv — itt viszont MINDEN
@@ -9478,6 +9532,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         if(!navigator.onLine){var _ob=document.getElementById('offline-banner');if(_ob)_ob.style.display='block';}
         loadAcademyState(); // itt hívjuk, miután minden Set/állapot deklarálva van, amit betölthet
         loadDailyDrillState();
+        loadTradingPlan();
         updateCoinDisplay();
 
         function renderWhatIfList() {
@@ -11078,6 +11133,86 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             closeJournalEntryEditor();
             renderTradingJournalCalendar();
             showNotification('Bejegyzés törölve.');
+        }
+
+        // ================= KERESKEDÉSI TERV =================
+        function loadTradingPlan() {
+            try {
+                const raw = localStorage.getItem('chartolj_trading_plan');
+                tradingPlan = raw ? JSON.parse(raw) : null;
+            } catch (e) { tradingPlan = null; }
+        }
+        function saveTradingPlanState() {
+            try { localStorage.setItem('chartolj_trading_plan', JSON.stringify(tradingPlan)); } catch (e) {}
+        }
+        function openTradingPlan() {
+            document.getElementById('trading-plan-screen').classList.remove('hidden');
+            renderTradingPlanForm();
+        }
+        function closeTradingPlan() {
+            document.getElementById('trading-plan-screen').classList.add('hidden');
+        }
+        function toggleTradingPlanSetup(label) {
+            const el = document.querySelector(`[data-plan-setup="${label}"]`);
+            const active = el.dataset.active === '1';
+            el.dataset.active = active ? '0' : '1';
+            el.className = `px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${el.dataset.active === '1' ? 'bg-neon-purple/15 border-neon-purple/40 text-neon-purple' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}`;
+        }
+        function renderTradingPlanForm() {
+            const checkboxEl = document.getElementById('plan-setup-checkboxes');
+            const selected = tradingPlan ? (tradingPlan.setups || []) : [];
+            checkboxEl.innerHTML = PLAN_SETUP_OPTIONS.map(opt => {
+                const active = selected.includes(opt);
+                return `<button type="button" data-plan-setup="${opt}" data-active="${active ? '1' : '0'}" onclick="toggleTradingPlanSetup('${opt}')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${active ? 'bg-neon-purple/15 border-neon-purple/40 text-neon-purple' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">${opt}</button>`;
+            }).join('');
+            document.getElementById('plan-max-risk').value = tradingPlan ? (tradingPlan.maxRisk ?? '') : '';
+            document.getElementById('plan-max-trades').value = tradingPlan ? (tradingPlan.maxTrades ?? '') : '';
+            document.getElementById('plan-max-daily-loss').value = tradingPlan ? (tradingPlan.maxDailyLoss ?? '') : '';
+            document.getElementById('plan-own-rules').value = tradingPlan ? (tradingPlan.ownRules || '') : '';
+            document.getElementById('trading-plan-saved-hint').classList.add('hidden');
+            renderTradingPlanTodayCheck();
+        }
+        function saveTradingPlan() {
+            const setups = [...document.querySelectorAll('[data-plan-setup][data-active="1"]')].map(el => el.dataset.planSetup);
+            tradingPlan = {
+                maxRisk: document.getElementById('plan-max-risk').value ? Number(document.getElementById('plan-max-risk').value) : null,
+                maxTrades: document.getElementById('plan-max-trades').value ? Number(document.getElementById('plan-max-trades').value) : null,
+                maxDailyLoss: document.getElementById('plan-max-daily-loss').value ? Number(document.getElementById('plan-max-daily-loss').value) : null,
+                setups,
+                ownRules: document.getElementById('plan-own-rules').value.trim(),
+                savedAt: Date.now()
+            };
+            saveTradingPlanState();
+            document.getElementById('trading-plan-saved-hint').classList.remove('hidden');
+            renderTradingPlanTodayCheck();
+            showNotification('Kereskedési terv mentve.');
+        }
+        // A mai nap gyors összevetése a tervvel, a Kereskedési Napló MAI bejegyzése
+        // alapján (ha van) — ez teszi a tervet nem csak egy leírt szöveggé, hanem
+        // valódi, naponta frissülő visszajelzéssé: tartod-e a saját szabályaidat.
+        function renderTradingPlanTodayCheck() {
+            const el = document.getElementById('trading-plan-today-check');
+            if (!tradingPlan || !tradingPlan.maxDailyLoss) { el.classList.add('hidden'); return; }
+            const todayEntry = typeof tradingJournal !== 'undefined' ? tradingJournal[journalDateKey(new Date())] : null;
+            if (!todayEntry || typeof todayEntry.pnl !== 'number') { el.classList.add('hidden'); return; }
+            // A napi veszteség-limit %-ban van megadva, a Napló $ összegben rögzíti a napot —
+            // mivel nincs egységesen tárolt számlaegyenleg, csak a VESZTESÉG TÉNYÉT és a
+            // Pozícióméret Kalkulátorban megadott egyenleget tudjuk becsléshez használni.
+            const balanceInput = document.getElementById('ps-balance');
+            const balance = balanceInput && Number(balanceInput.value) > 0 ? Number(balanceInput.value) : null;
+            el.classList.remove('hidden');
+            if (todayEntry.pnl >= 0) {
+                el.innerHTML = `<div class="glass-card rounded-xl border border-neon-green/30 bg-neon-green/[0.04] p-3 text-xs text-neon-green font-bold"><i class="fa-solid fa-circle-check mr-1.5"></i>Ma pozitív napod volt eddig a Naplód szerint — tartsd a tervet, ne hajts rá többre.</div>`;
+            } else if (balance) {
+                const lossPct = Math.abs(todayEntry.pnl) / balance * 100;
+                const over = lossPct >= tradingPlan.maxDailyLoss;
+                el.innerHTML = `<div class="glass-card rounded-xl border ${over ? 'border-neon-red/40 bg-neon-red/[0.06]' : 'border-amber-400/30 bg-amber-400/[0.04]'} p-3 text-xs ${over ? 'text-neon-red' : 'text-amber-400'} font-bold">
+                    <i class="fa-solid ${over ? 'fa-triangle-exclamation' : 'fa-circle-info'} mr-1.5"></i>
+                    Mai veszteség a Napló szerint: ${lossPct.toFixed(1)}% (limit: ${tradingPlan.maxDailyLoss}%)${over ? ' — ELÉRTED a limitet, a terved szerint ma állj le.' : ''}
+                </div>`;
+            } else {
+                el.innerHTML = `<div class="glass-card rounded-xl border border-dark-750 p-3 text-xs text-slate-400"><i class="fa-solid fa-circle-info mr-1.5"></i>Mai veszteséges nap a Napló szerint — add meg a számla-egyenleged a Pozícióméret Kalkulátorban, hogy %-ban is lásd a limithez viszonyítva.</div>`;
+            }
         }
 
         let currentLegalTab = 'risk';
