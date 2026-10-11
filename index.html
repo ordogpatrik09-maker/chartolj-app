@@ -7474,8 +7474,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { id: 'r3', name: 'Grafikon Vadász',     need: 20,  reward: 200,  icon: '📈' },
             { id: 'r4', name: 'Tőzsdei Róka',        need: 40,  reward: 350,  icon: '🦊' },
             { id: 'r5', name: 'Prémium Stratéga',    need: 70,  reward: 500,  icon: '💎' },
-            { id: 'r6', name: 'Chartolj Legenda',    need: 110, reward: 1000, icon: '👑' }
+            { id: 'r6', name: 'Chartolj Legenda',    need: 110, reward: 1000, icon: '👑' },
+            // JAVÍTÁS (2026-10-11, prémium-audit nyomán): a Prémium-promóciós
+            // szöveg ("Extra Rangok és jutalom coinok") korábban semmilyen
+            // tényleges extra rangot nem adott — a legfelső rang (r6, 110 lecke)
+            // tisztán ingyenes leckékből is elérhető volt. Ez két ÚJ, kizárólag
+            // PRÉMIUM felhasználóknak elérhető rangot ad, amelyek eléréséhez
+            // a PRO leckék egy részét is teljesíteni kell (340 ingyenes +
+            // 177 PRO lecke van összesen) — ezzel a hirdetett előny valódi.
+            { id: 'r7', name: 'PRO Mesterkereskedő', need: 200, reward: 750,  icon: '⚡', premOnly: true },
+            { id: 'r8', name: 'Chartolj Nagymester', need: 350, reward: 1500, icon: '🏆', premOnly: true }
         ];
+
+        // Prémium felhasználóknak +20% coin-bónusz minden jutalom-forrásnál
+        // (rang, küldetés, streak-mérföldkő, napi drill, replay-elemzés) —
+        // ezzel a Prémium-promóciós "extra jutalom coinok" ígéret valódi,
+        // nem csak marketing-szöveg.
+        function applyPremiumCoinBonus(amount) {
+            if (typeof isPremiumUser !== 'undefined' && isPremiumUser) return Math.round(amount * 1.2);
+            return amount;
+        }
 
         const ACADEMY_MISSIONS = [
             { id: 'm1', title: 'Fejezd be az első leckédet',        icon: 'fa-flag-checkered', reward: 20,  check: () => academyCompleted.size >= 1 },
@@ -7814,7 +7832,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <ul class="space-y-1.5 mb-4 text-[11px] text-slate-400">
                     <li><i class="fa-solid fa-check text-neon-green mr-1.5"></i> Minden PRO lecke és kvíz</li>
-                    <li><i class="fa-solid fa-check text-neon-green mr-1.5"></i> Extra Rangok és jutalom coinok</li>
+                    <li><i class="fa-solid fa-check text-neon-green mr-1.5"></i> 2 exkluzív PRO rang (PRO Mesterkereskedő, Chartolj Nagymester)</li>
+                    <li><i class="fa-solid fa-check text-neon-green mr-1.5"></i> +20% bónusz minden megszerzett jutalom coinra</li>
+                    <li><i class="fa-solid fa-check text-neon-green mr-1.5"></i> Korlátlan szív az Akadémiában (sosem fogy el)</li>
+                    <li><i class="fa-solid fa-check text-neon-green mr-1.5"></i> Korlátlan napi AI chart-elemzés és AI Coach</li>
                     <li><i class="fa-solid fa-check text-neon-green mr-1.5"></i> Új tartalom, ahogy megjelenik</li>
                 </ul>
                 ${!currentUser ? `
@@ -7905,29 +7926,33 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (isRanks) {
                 const progress = academyCompleted.size;
                 listEl.innerHTML = TRADE_RANKS.map(rank => {
-                    const done = progress >= rank.need;
+                    const premLocked = !!rank.premOnly && !isPremiumUser;
+                    const done = progress >= rank.need && !premLocked;
                     const claimed = claimedRanks.has(rank.id);
                     const canClaim = done && !claimed;
                     const pct = Math.min(100, Math.round(progress / rank.need * 100));
+                    const displayReward = applyPremiumCoinBonus(rank.reward);
                     return `
-                        <div class="glass-card rounded-xl p-3 border ${claimed ? 'border-neon-green/30' : canClaim ? 'border-amber-400/40' : 'border-dark-750'}">
+                        <div class="glass-card rounded-xl p-3 border ${claimed ? 'border-neon-green/30' : canClaim ? 'border-amber-400/40' : rank.premOnly ? 'border-amber-400/20' : 'border-dark-750'}">
                             <div class="flex items-center gap-2.5">
                                 <span class="text-2xl">${rank.icon}</span>
                                 <div class="flex-1 min-w-0">
-                                    <div class="text-xs font-bold text-white">${rank.name}</div>
-                                    <div class="text-[9px] font-mono text-slate-500 mt-0.5">${Math.min(progress, rank.need)}/${rank.need} lecke teljesítve</div>
+                                    <div class="text-xs font-bold text-white">${rank.name} ${rank.premOnly ? '<span class="text-amber-400 text-[9px] font-extrabold uppercase">PRO</span>' : ''}</div>
+                                    <div class="text-[9px] font-mono text-slate-500 mt-0.5">${premLocked ? 'Prémium előfizetés szükséges' : `${Math.min(progress, rank.need)}/${rank.need} lecke teljesítve`}</div>
                                     <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-1.5">
-                                        <div class="h-full ${done ? 'bg-neon-green' : 'bg-amber-400'} transition-all" style="width:${pct}%"></div>
+                                        <div class="h-full ${done ? 'bg-neon-green' : premLocked ? 'bg-amber-400/30' : 'bg-amber-400'} transition-all" style="width:${premLocked ? 100 : pct}%"></div>
                                     </div>
                                 </div>
                             </div>
                             <div class="mt-2.5 flex items-center justify-between">
-                                <span class="text-[10px] font-mono text-amber-300"><i class="fa-solid fa-coins mr-1"></i>${rank.reward} coin</span>
+                                <span class="text-[10px] font-mono text-amber-300"><i class="fa-solid fa-coins mr-1"></i>${displayReward} coin${isPremiumUser ? ' (+20%)' : ''}</span>
                                 ${claimed
                                     ? `<span class="text-[10px] font-bold text-neon-green"><i class="fa-solid fa-circle-check mr-1"></i>Átvéve</span>`
                                     : canClaim
                                         ? `<button onclick="claimRank('${rank.id}')" class="px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase bg-amber-400 text-dark-950 hover:brightness-110 active:scale-95 transition">Átvétel</button>`
-                                        : `<span class="text-[10px] text-slate-600"><i class="fa-solid fa-lock mr-1"></i>Zárolva</span>`}
+                                        : premLocked
+                                            ? `<button onclick="openPremiumModal()" class="px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40 hover:bg-amber-400/30 transition"><i class="fa-solid fa-crown mr-1"></i>Prémium</button>`
+                                            : `<span class="text-[10px] text-slate-600"><i class="fa-solid fa-lock mr-1"></i>Zárolva</span>`}
                             </div>
                         </div>
                     `;
@@ -8010,21 +8035,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function claimRank(id) {
             const rank = TRADE_RANKS.find(r => r.id === id);
             if (!rank || claimedRanks.has(id) || academyCompleted.size < rank.need) return;
+            if (rank.premOnly && !isPremiumUser) return;
             claimedRanks.add(id);
-            userCoins += rank.reward;
+            const paidReward = applyPremiumCoinBonus(rank.reward);
+            userCoins += paidReward;
             saveAcademyState();
-            showNotification(rank.icon + ' Rang átvéve: ' + rank.name + ' — +' + rank.reward + ' coin!');
+            showNotification(rank.icon + ' Rang átvéve: ' + rank.name + ' — +' + paidReward + ' coin!');
             updateCoinDisplay();
             renderRanksMissionsModal();
-            showNotification(`Rang jutalom átvéve: ${rank.name} — +${rank.reward} coin`);
-            addSystemLog(`Akadémia: Rang jutalom átvéve — ${rank.name} (+${rank.reward} coin).`, 'TRADE');
+            showNotification(`Rang jutalom átvéve: ${rank.name} — +${paidReward} coin`);
+            addSystemLog(`Akadémia: Rang jutalom átvéve — ${rank.name} (+${paidReward} coin).`, 'TRADE');
         }
 
         function claimMission(id) {
             const m = ACADEMY_MISSIONS.find(x => x.id === id);
             if (!m || claimedMissions.has(id) || !m.check()) return;
             claimedMissions.add(id);
-            userCoins += m.reward;
+            userCoins += applyPremiumCoinBonus(m.reward);
             saveAcademyState();
             updateCoinDisplay();
             renderRanksMissionsModal();
@@ -8095,7 +8122,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             streakState.milestonesClaimed.push(hit.days);
             saveStreakState();
             if (typeof userCoins !== 'undefined') {
-                userCoins += hit.reward;
+                userCoins += applyPremiumCoinBonus(hit.reward);
                 if (typeof saveAcademyState === 'function') saveAcademyState();
                 if (typeof updateCoinDisplay === 'function') updateCoinDisplay();
             }
@@ -8177,7 +8204,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // nem old be automatikusan semmit, a felhasználó nyitja meg a panelt.
         function checkMissionAvailability() {
             const newlyDone = ACADEMY_MISSIONS.some(m => m.check() && !claimedMissions.has(m.id));
-            const newlyDoneRank = TRADE_RANKS.some(r => academyCompleted.size >= r.need && !claimedRanks.has(r.id));
+            const newlyDoneRank = TRADE_RANKS.some(r => academyCompleted.size >= r.need && !claimedRanks.has(r.id) && !(r.premOnly && !isPremiumUser));
             if (newlyDone || newlyDoneRank) {
                 showNotification('Új jutalom vehető át a Rangok / Küldetések panelen!');
             }
@@ -8454,7 +8481,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const CERTIFICATION_QUESTION_COUNT = 15;
 
         function isCertificationUnlocked() {
-            const topRank = TRADE_RANKS[TRADE_RANKS.length - 1];
+            const topRank = TRADE_RANKS.find(r => r.id === 'r6');
             return claimedRanks.has(topRank.id);
         }
 
@@ -8471,7 +8498,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function renderCertificationCard() {
             const el = document.getElementById('certification-card');
             if (!el) return;
-            const topRank = TRADE_RANKS[TRADE_RANKS.length - 1];
+            const topRank = TRADE_RANKS.find(r => r.id === 'r6');
             const unlocked = isCertificationUnlocked();
             const status = getCertificationStatus();
 
@@ -9213,7 +9240,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const goodProcess = (bias !== 'neutral' && drillPendingDecision !== 'NONE' && reasonWasPlausible) ||
                                  (bias === 'neutral' && (drillPendingDecision === 'NONE' || reasonWasPlausible));
 
-            if (goodProcess && decisionMatchesReality) { userCoins += 5; drillStats.decisionCorrect = (drillStats.decisionCorrect || 0) + 1; }
+            if (goodProcess && decisionMatchesReality) { userCoins += applyPremiumCoinBonus(5); drillStats.decisionCorrect = (drillStats.decisionCorrect || 0) + 1; }
             drillStats.decisionTotal = (drillStats.decisionTotal || 0) + 1;
             if (!goodProcess) logLearningMistake('decision_inconsistent', patternId);
             const reasonObj = DRILL_REASONS.find(r => r.id === drillPendingReason);
@@ -9278,7 +9305,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 dailyChallengeJustCompleted = true;
             }
 
-            if (pct === 100) showConfetti();           const coinReward = s.correct * 3 + (dailyChallengeJustCompleted ? 15 : 0);
+            if (pct === 100) showConfetti();           const coinReward = applyPremiumCoinBonus(s.correct * 3 + (dailyChallengeJustCompleted ? 15 : 0));
             userCoins += coinReward;
             saveAcademyState();
             checkMissionAvailability();
@@ -10632,7 +10659,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             // A fegyelmezett FOLYAMAT is jutalmat ér (90. pont: ne csak a profitot jutalmazzuk).
             const processBonus = review.score !== null && review.score >= 75 ? 10 : 0;
-            const coinReward = Math.max(0, Math.round(totalReturn * 2)) + (beatBuyHold ? 15 : 0) + 10 + processBonus;
+            const coinReward = applyPremiumCoinBonus(Math.max(0, Math.round(totalReturn * 2)) + (beatBuyHold ? 15 : 0) + 10 + processBonus);
             userCoins += coinReward;
             saveAcademyState();
             showNotification("Replay kész! " + (totalReturn >= 0 ? "+" : "") + totalReturn.toFixed(1) + "% hozam · " + wins + "/" + s.trades.length + " nyerő");
