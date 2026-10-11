@@ -973,6 +973,13 @@
                                 <div class="text-[10px] text-slate-400">Mekkora az esély, hogy elfogy a tőkéd?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('atr-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">ATR Pozícióméret Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Pozícióméret a piac volatilitásához igazítva</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-percent"></i></span>
                             <div>
@@ -2019,6 +2026,49 @@
         </div>
     </div>
 
+    <!-- ================= ATR-ALAPÚ POZÍCIÓMÉRET KALKULÁTOR (OKTATÁSI) =================
+         A fix pénzbeli/pont-alapú stop-loss helyett a profik gyakran az
+         ATR-t (Average True Range — az adott eszköz átlagos napi/időkeretenkénti
+         volatilitását mérő indikátor) használják a stop távolság beállítására:
+         stop távolság = ATR × szorzó. Ez azt tanítja, hogy a stop-nak a PIAC
+         jelenlegi volatilitásához kell igazodnia, nem egy tetszőlegesen
+         választott ponthoz — egy magas-volatilitású eszközön/napon ugyanaz
+         a fix pont-stop túl szűk (korai kiütés), alacsony volatilitáson
+         pedig túl tág (feleslegesen nagy kockázat) lehet. -->
+    <div id="atr-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-neon-cyan"></i> ATR Pozícióméret Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('atr-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Az ATR (Average True Range) az eszköz átlagos volatilitását méri. A stop távolságot az ATR-hez igazítva a pozícióméret automatikusan alkalmazkodik a piac jelenlegi mozgékonyságához, nem egy tetszőlegesen választott ponthoz.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Tőke ($)</label>
+            <input type="number" id="atr-balance" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Kockázat / trade (a tőke %-a)</label>
+            <input type="number" id="atr-riskpct" value="1" step="0.1" min="0.1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Aktuális ATR érték ($)</label>
+            <input type="number" id="atr-value" value="150" step="0.1" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">ATR-szorzó (stop távolság = ATR × szorzó)</label>
+            <input type="number" id="atr-mult" value="1.5" step="0.1" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Belépési ár ($)</label>
+            <input type="number" id="atr-entry" value="80000" step="0.1" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcATRPositionSize()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="atr-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A szorzó tipikusan 1.5–3 közötti érték — kisebb szorzó szűkebb stopot (gyakoribb korai kiütés), nagyobb szorzó tágabb stopot (kisebb pozícióméretet ugyanakkora kockázat mellett) jelent. Oktatási célú közelítés, nem garancia.</p>
+        </div>
+    </div>
+
     <!-- ================= GAZDASÁGI HÍRNAPTÁR (OKTATÁSI, SZIMULÁLT) =================
          A cél NEM valós piaci hírek megjelenítése (ez demó app, nincs valós
          adatforrás), hanem OKTATÁSI bemutatása annak, hogy milyen típusú
@@ -2213,6 +2263,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Csőd-kockázat (Risk of Ruin)</div>
                     <div class="text-[10px] text-slate-400">Mekkora az esély, hogy elfogy a tőkéd?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('atr-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">ATR Pozícióméret Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Pozícióméret a piac volatilitásához igazítva</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -5786,6 +5843,59 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= ATR-ALAPÚ POZÍCIÓMÉRET KALKULÁTOR (OKTATÁSI) =================
+        function calcATRPositionSize() {
+            const balance = parseFloat(document.getElementById('atr-balance').value);
+            const riskPct = parseFloat(document.getElementById('atr-riskpct').value);
+            const atrValue = parseFloat(document.getElementById('atr-value').value);
+            const mult = parseFloat(document.getElementById('atr-mult').value);
+            const entry = parseFloat(document.getElementById('atr-entry').value);
+            const out = document.getElementById('atr-result');
+
+            if (!balance || balance <= 0 || !riskPct || riskPct <= 0 || !atrValue || atrValue <= 0 || !mult || mult <= 0 || !entry || entry <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív értékeket minden mezőben!</div>`;
+                return;
+            }
+
+            const riskAmount = balance * (riskPct / 100);
+            const stopDistance = atrValue * mult;
+            const stopDistancePct = (stopDistance / entry) * 100;
+            const units = riskAmount / stopDistance;
+            const positionValue = units * entry;
+            const longStopPrice = entry - stopDistance;
+            const shortStopPrice = entry + stopDistance;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2.5">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Stop távolság (ATR × szorzó):</span>
+                        <span class="font-extrabold text-white text-sm">$${stopDistance.toFixed(2)} (${stopDistancePct.toFixed(2)}%)</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Kockáztatott összeg:</span>
+                        <span class="font-extrabold text-amber-400 text-sm">$${riskAmount.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Max. pozícióméret (egység):</span>
+                        <span class="font-extrabold text-neon-cyan text-sm">${units.toFixed(4)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Pozíció értéke:</span>
+                        <span class="font-extrabold text-white text-sm">$${positionValue.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Long stop ár:</span>
+                        <span class="font-extrabold text-neon-red text-sm">$${longStopPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Short stop ár:</span>
+                        <span class="font-extrabold text-neon-red text-sm">$${shortStopPrice.toFixed(2)}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-neon-cyan">A pozícióméret úgy van kiszámolva, hogy a stop beütése pontosan a megadott kockázati összeget ($${riskAmount.toFixed(2)}) veszítse el — ha az ATR (volatilitás) nő, a stop táguljon, de a pozícióméret arányosan csökkenjen, így a kockáztatott $ összeg állandó marad.</p>
+            `;
+        }
+
         // ================= GAZDASÁGI HÍRNAPTÁR (OKTATÁSI, SZIMULÁLT) =================
         // Visszatérő makrogazdasági esemény-típusok sablonjai. A tényleges
         // hét-eseményeit a dateSeedShuffle-lel (már létező, dátum-alapú
@@ -8156,6 +8266,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // szerint szűrhető, a keresés a kifejezésben ÉS a definícióban is
         // keres, hogy köznyelvi rákereséssel is megtalálható legyen.
         const GLOSSARY_TERMS = [
+            { term: 'ATR (Average True Range)', cat: 'kockázat', def: 'Egy eszköz átlagos volatilitását mérő indikátor. A stop-loss távolságot az ATR-hez igazítva a kockázatkezelés automatikusan alkalmazkodik a piac jelenlegi mozgékonyságához, nem egy tetszőlegesen választott ponthoz.' },
             { term: 'Day Trading', cat: 'alapok', def: 'Pozíció nyitása és zárása ugyanazon a kereskedési napon, éjszakára sosem átvitt pozícióval.' },
             { term: 'Long pozíció', cat: 'alapok', def: 'Vásárlás azzal a várakozással, hogy az árfolyam EMELKEDNI fog — a nyereség az emelkedésből származik.' },
             { term: 'Short pozíció', cat: 'alapok', def: 'Eladás (kölcsönvett eszközzel) azzal a várakozással, hogy az árfolyam CSÖKKENNI fog — a nyereség az esésből származik.' },
