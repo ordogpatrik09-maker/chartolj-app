@@ -973,6 +973,13 @@
                                 <div class="text-[10px] text-slate-400">Mekkora az esély, hogy elfogy a tőkéd?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-percent"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Kelly-kritérium kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mekkora a matematikailag optimális tétnagyság?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1931,6 +1938,37 @@
 
             <div id="ruin-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A becslés egy egyszerűsített (fix kockázat %, egymástól független kimenetelű) modellen alapul — a valóságban a sorozatok, a piaci korreláció és a végrehajtási hibák ezt tovább ronthatják. Oktatási célú közelítés, nem garancia.</p>
+        </div>
+    </div>
+
+    <!-- ================= KELLY-KRITÉRIUM KALKULÁTOR (OKTATÁSI) =================
+         A Kelly-formula a matematikailag optimális tétnagyságot adja meg
+         egy adott találati arány + Risk/Reward mellett — a cél megmutatni,
+         hogy a "teljes Kelly" a gyakorlatban túl agresszív (nagy
+         volatilitás), ezért a profik jellemzően "fél-Kelly"-t vagy
+         még kisebb töredéket használnak. -->
+    <div id="kelly-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-percent text-amber-400"></i> Kelly-kritérium Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('kelly-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Kelly-formula megadja, hogy a találati arányod és Risk/Reward arányod mellett matematikailag mekkora tőke-% kockáztatása maximalizálná a hosszú távú növekedési ütemedet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Találati arány (win rate, %)</label>
+            <input type="number" id="kelly-winrate" value="45" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Átlagos Risk/Reward arány (pl. 2 = 1:2)</label>
+            <input type="number" id="kelly-rr" value="2" step="0.1" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcKelly()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="kelly-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A "teljes Kelly" elméletileg optimális, de a valóságban (becslési hibák, nem-normális hozameloszlás miatt) túl nagy volatilitást és visszaeséseket okoz — ezért a legtöbb profi kereskedő a Kelly-érték felét ("fél-Kelly") vagy negyedét használja gyakorlatban.</p>
         </div>
     </div>
 
@@ -5373,6 +5411,57 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
                 ${edge <= 0 ? '<p class="text-[10px] text-slate-400 mt-1">Negatív matematikai előny mellett a kockázat %-ának csökkentése csak LASSÍTJA a csődöt, nem szünteti meg — a találati arányt vagy a Risk/Reward arányt kell javítani.</p>' : ''}
+            `;
+        }
+
+        // ================= KELLY-KRITÉRIUM KALKULÁTOR (OKTATÁSI) =================
+        // Klasszikus Kelly-formula: f* = W - (1-W)/RR, ahol W a találati
+        // arány (0-1 között), RR az átlagos Risk/Reward arány. Az eredmény
+        // a tőke azon hányada, amit egy trade-en kockáztatva hosszú távon
+        // maximalizálná a geometriai növekedési ütemet. Negatív f* esetén
+        // a stratégia matematikai előnye negatív (nem szabadna kereskedni).
+        function calcKelly() {
+            const winRatePct = parseFloat(document.getElementById('kelly-winrate').value);
+            const rr = parseFloat(document.getElementById('kelly-rr').value);
+            const out = document.getElementById('kelly-result');
+
+            if (!winRatePct || winRatePct <= 0 || winRatePct >= 100 || !rr || rr <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%) és Risk/Reward arányt!</div>`;
+                return;
+            }
+
+            const W = winRatePct / 100;
+            const L = 1 - W;
+            const fullKelly = W - (L / rr);
+            const halfKelly = fullKelly / 2;
+            const quarterKelly = fullKelly / 4;
+
+            if (fullKelly <= 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl border border-neon-red/30 bg-neon-red/[0.05] p-3">
+                        <div class="text-sm font-extrabold text-neon-red mb-1">Negatív Kelly-érték: ${(fullKelly * 100).toFixed(1)}%</div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">Ezzel a találati aránnyal és Risk/Reward aránnyal matematikailag <strong class="text-white">nincs statisztikai előnyöd</strong> — a Kelly-formula szerint az optimális kockáztatott összeg $0, azaz nem kellene ezzel a paraméter-kombinációval kereskedni, amíg a találati arányt vagy a Risk/Reward arányt nem javítod.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2.5">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Teljes Kelly (elméleti optimum):</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${(fullKelly * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Fél-Kelly (gyakorlatban javasolt):</span>
+                        <span class="font-extrabold text-neon-green text-sm">${(halfKelly * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Negyed-Kelly (konzervatív):</span>
+                        <span class="font-extrabold text-neon-cyan text-sm">${(quarterKelly * 100).toFixed(1)}%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-amber-400">A teljes Kelly matematikailag optimális, de a valóságban (becslési hibák, sorozatos veszteségek) túl nagy visszaeséseket okozhat. A legtöbb profi a fél-Kelly vagy negyed-Kelly szintet használja a kockázat/trade %-jaként.</p>
             `;
         }
 
