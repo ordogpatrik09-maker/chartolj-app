@@ -6048,19 +6048,80 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             review.checks.forEach(ch => { if (!ch.good && map[ch.id]) logLearningMistake(map[ch.id], null, review.info.label); });
         }
 
+        // Valódi, több-forrású heti jelentés (korábban csak egy nyers Replay+hiba
+        // számláló volt egy mondatban) — a professzionális kereskedők egyik
+        // alapvető szokása a HETI ÉRTÉKELÉS: nem csak az látja, MENNYIT
+        // gyakorolt, hanem azt is, HOGYAN ment, és mit érdemes a jövő héten
+        // másképp csinálni. Ez a Napló, a Chart Drill, a Replay Szimulátor és a
+        // Mistake Bank adatait egyetlen, cselekvésre ösztönző kártyává fűzi össze.
         function renderProgressWeeklyReview() {
             const el = document.getElementById('progress-weekly-review');
             if (!el) return;
-            // Last 7 days stats
             const now = Date.now();
             const weekAgo = now - 7 * 86400000;
-            const recentLog = learningLog.filter(function(e) { return e.t >= weekAgo; });
-            const recentSessions = replayJournal.filter(function(j) { return j.date && j.date >= weekAgo; });
-            const recentLessons = 0; // would need timestamps on completions
-            const html = recentLog.length + recentSessions.length > 0
-                ? '<div class="text-xs text-slate-300"><span class="font-bold text-neon-cyan">' + recentSessions.length + '</span> Replay session és <span class="font-bold text-neon-cyan">' + recentLog.length + '</span> hibabejegyzés az elmúlt 7 napban.</div>'
-                : '<div class="text-xs text-slate-500">Még nincs adat az elmúlt hétre.</div>';
-            el.innerHTML = html;
+            const weekAgoKey = journalDateKey(new Date(weekAgo));
+
+            const recentLog = learningLog.filter(e => e.t >= weekAgo);
+            const recentReplaySessions = replayJournal.filter(j => j.date && j.date >= weekAgo);
+            const recentJournalEntries = Object.entries(tradingJournal).filter(([k]) => k >= weekAgoKey).map(([, v]) => v);
+
+            const hasAnyData = recentLog.length + recentReplaySessions.length + recentJournalEntries.length > 0;
+            if (!hasAnyData) {
+                el.innerHTML = '<div class="text-xs text-slate-500">Még nincs adat az elmúlt hétre — kezdj el gyakorolni, hogy itt lásd a heti összegzésed.</div>';
+                return;
+            }
+
+            // --- Napló: heti P&L és nyerő/vesztes napok ---
+            const journalTotal = recentJournalEntries.reduce((s, e) => s + (Number(e.pnl) || 0), 0);
+            const journalWinDays = recentJournalEntries.filter(e => Number(e.pnl) > 0).length;
+            const journalLossDays = recentJournalEntries.filter(e => Number(e.pnl) < 0).length;
+
+            // --- Replay: heti hozam és Buy&Hold-verés ---
+            const replayAvgReturn = recentReplaySessions.length
+                ? recentReplaySessions.reduce((s, j) => s + (Number(j.totalReturn) || 0), 0) / recentReplaySessions.length
+                : null;
+            const replayBeatCount = recentReplaySessions.filter(j => j.totalReturn > j.buyHoldReturn).length;
+
+            // --- Automatikus, szöveges insight: mi a legfontosabb tanulság ---
+            const insights = [];
+            if (recentJournalEntries.length >= 2) {
+                if (journalLossDays > journalWinDays) {
+                    insights.push('Több vesztes napod volt, mint nyerő — érdemes visszanézni a Mistake Bank statisztikáját, melyik témakör okozza a legtöbb hibát.');
+                } else if (journalWinDays > 0 && journalLossDays === 0) {
+                    insights.push('Minden rögzített napod nyereséges volt ezen a héten — szép konzisztencia, ügyelj, hogy ez ne vezessen túlzott kockázatvállaláshoz.');
+                }
+            }
+            if (recentReplaySessions.length >= 2 && replayAvgReturn !== null) {
+                if (replayBeatCount / recentReplaySessions.length < 0.4) {
+                    insights.push('A Replay napjaid kevesebb, mint 40%-ában verted a Buy&Hold-ot — nézd meg a piactípus-statisztikát, melyik körülményben vagy gyengébb.');
+                }
+            }
+            if (recentLog.length >= 3) {
+                insights.push(`${recentLog.length} hibabejegyzés gyűlt össze ezen a héten — a Mistake Bank "Gyakorlás indítása" gombbal ezek pont most esedékesek lehetnek.`);
+            }
+            if (insights.length === 0) insights.push('Folytasd ugyanígy — még nincs elég adat egy konkrét, személyre szabott tanácshoz.');
+
+            el.innerHTML = `
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <div class="text-center">
+                        <div class="text-base font-extrabold ${journalTotal > 0 ? 'text-neon-green' : journalTotal < 0 ? 'text-neon-red' : 'text-slate-300'}">${recentJournalEntries.length ? (journalTotal >= 0 ? '+' : '') + '$' + journalTotal.toFixed(0) : '—'}</div>
+                        <div class="text-[9px] text-slate-500 uppercase font-bold mt-0.5">Napló P&amp;L</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-base font-extrabold text-white">${recentReplaySessions.length}</div>
+                        <div class="text-[9px] text-slate-500 uppercase font-bold mt-0.5">Replay nap</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-base font-extrabold text-white">${recentLog.length}</div>
+                        <div class="text-[9px] text-slate-500 uppercase font-bold mt-0.5">Hibabejegyzés</div>
+                    </div>
+                </div>
+                ${recentJournalEntries.length > 0 ? `<div class="text-[11px] text-slate-400 mb-2"><span class="text-neon-green font-bold">${journalWinDays}</span> nyerő / <span class="text-neon-red font-bold">${journalLossDays}</span> vesztes nap a Naplóban.</div>` : ''}
+                ${replayAvgReturn !== null ? `<div class="text-[11px] text-slate-400 mb-2">Replay átlag: <span class="font-bold ${replayAvgReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${replayAvgReturn >= 0 ? '+' : ''}${replayAvgReturn.toFixed(1)}%</span>, ${replayBeatCount}/${recentReplaySessions.length} nap verte a Buy&amp;Hold-ot.</div>` : ''}
+                <div class="mt-2 pt-2 border-t border-dark-750/60">
+                    ${insights.map(txt => `<p class="text-[11px] text-amber-400 leading-relaxed flex gap-1.5"><i class="fa-solid fa-lightbulb mt-0.5 shrink-0"></i><span>${txt}</span></p>`).join('')}
+                </div>
+            `;
         }
 
         function renderProgressRecurring() {
