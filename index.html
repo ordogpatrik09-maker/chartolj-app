@@ -6865,7 +6865,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { id: 'm3', title: 'Fejezz be 15 leckét',                icon: 'fa-book-open',      reward: 100, check: () => academyCompleted.size >= 15 },
             { id: 'm4', title: 'Gyűjts össze 100 XP-t',              icon: 'fa-bolt',           reward: 40,  check: () => academyXP >= 100 },
             { id: 'm5', title: 'Gyűjts össze 500 XP-t',              icon: 'fa-fire',           reward: 120, check: () => academyXP >= 500 },
-            { id: 'm6', title: 'Nyiss meg egy Prémium leckét',       icon: 'fa-crown',          reward: 60,  check: () => openedPremiumLessons.size >= 1 }
+            { id: 'm6', title: 'Nyiss meg egy Prémium leckét',       icon: 'fa-crown',          reward: 60,  check: () => openedPremiumLessons.size >= 1 },
+            { id: 'm7', title: 'Hozz létre egy Kereskedési Tervet',  icon: 'fa-clipboard-list', reward: 50,  check: () => typeof tradingPlan !== 'undefined' && !!tradingPlan },
+            { id: 'm8', title: 'Rögzíts legalább 5 napot a Naplóban', icon: 'fa-calendar-check', reward: 60,  check: () => typeof tradingJournal !== 'undefined' && Object.keys(tradingJournal || {}).length >= 5 },
+            { id: 'm9', title: 'Teljesíts egy Napi Kihívást a Gyakorlásban', icon: 'fa-trophy', reward: 40, check: () => typeof dailyDrillState !== 'undefined' && !!(dailyDrillState && dailyDrillState.completedDates && dailyDrillState.completedDates.length >= 1) }
         ];
 
         // IDEIGLENES DÖNTÉS: amíg nincs kész és elfogadható Adatkezelési Tájékoztató
