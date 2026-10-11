@@ -176,24 +176,16 @@
         }
 
         /* Mobilon (<1024px): a header alatti fő terület egy oszlopba
-           rendeződik, a bal eszköztár és a jobb order-panel eltűnik a
-           normál folyamból — ezeket a meglévő toggleLeftToolbar() /
-           toggleOrderDesk() vezérli, mobilon alapból összecsukott
-           állapotban. Ez a keret az alapja a további, tétel-szintű
-           mobil-reflow munkának (lásd audit-jegyzet). */
+           rendeződik. A bal eszköztár (#left-toolbar-aside) és a jobb
+           order-panel (#orderdesk-aside) normál esetben REJTVE marad
+           (lásd lejjebb), és csak a "MOBIL BOTTOM SHEET" blokk
+           (.mobile-sheet-open) teljes-szélességű, alulról felcsúszó
+           paneljeként jelenik meg — ez a korábban itt nyitott munkaként
+           jelölt tétel már megoldva, a lejjebbi blokk véglegesítette. */
         @media (max-width: 1023px) {
             #main-trade-layout {
                 flex-direction: column !important;
             }
-            /* MEGJEGYZÉS (nyitott munka, lásd audit-jegyzet):
-               A bal eszköztár (#left-toolbar-aside) és a jobb order-panel
-               (#orderdesk-aside) jelenleg fix pixel-szélességgel (56px / 320px)
-               nyílnak/csukódnak JS-ből (toggleLeftToolbar / toggleOrderDesk).
-               Oszlopos (mobil) elrendezésben ez keresztirányú (vízszintes)
-               méretként értelmeződik, ami vizuális tesztelés nélkül itt
-               biztonságosan nem véglegesíthető át teljes-szélességű,
-               bottom-sheet-szerű panellé — ez a következő fázis feladata,
-               nem ez a lépés oldja meg. */
         }
 
         /* ================= MOBIL BOTTOM SHEET: ESZKÖZTÁR / ORDER PANEL =================
