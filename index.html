@@ -1494,6 +1494,13 @@
                     </div>
                 </div>
 
+                <!-- Kereskedési Terv emlékeztető — csak ha a felhasználó már
+                     kitöltötte a saját Tervét (lásd Profil → Kereskedési Terv).
+                     A cél, hogy a szabály ne csak egy elfelejtett dokumentum
+                     legyen, hanem pont AZ ELŐTT jelenjen meg, amikor a döntés
+                     valójában megtörténik. -->
+                <div id="order-plan-reminder" class="hidden"></div>
+
                 <!-- Execute Order Primary Button -->
                 <button onclick="executeOrder()" id="btn-execute-order" aria-label="Pozíció végrehajtása" class="w-full py-3.5 rounded-xl font-extrabold text-sm uppercase bg-neon-green text-dark-950 hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
                     LONG Pozíció Nyitása
@@ -12065,6 +12072,36 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             document.getElementById('summary-liq').textContent = '$' + liqPrice.toFixed(2);
             updateMaxAmountLabel();
+            renderOrderPlanReminder(margin);
+        }
+
+        // A jelen ügylet margója hány %-át teszi ki a jelenlegi egyenlegnek —
+        // ÉS hány trade-et nyitott már ma a felhasználó a saját Terve szerinti
+        // limithez képest. Csak akkor jelenik meg, ha már van kitöltött Terv.
+        function renderOrderPlanReminder(margin) {
+            const el = document.getElementById('order-plan-reminder');
+            if (!el) return;
+            if (!tradingPlan || (!tradingPlan.maxRisk && !tradingPlan.maxTrades)) { el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
+
+            const parts = [];
+            if (tradingPlan.maxRisk && accountBalance > 0) {
+                const riskPct = (margin / accountBalance) * 100;
+                const over = riskPct > tradingPlan.maxRisk;
+                parts.push(`<span class="${over ? 'text-neon-red font-bold' : 'text-slate-300'}">Ez az ügylet: ${riskPct.toFixed(1)}% az egyenlegből (limit: ${tradingPlan.maxRisk}%)</span>`);
+            }
+            if (tradingPlan.maxTrades) {
+                const todayCount = typeof tradeHistory !== 'undefined' ? tradeHistory.length : 0;
+                const over = todayCount >= tradingPlan.maxTrades;
+                parts.push(`<span class="${over ? 'text-neon-red font-bold' : 'text-slate-300'}">Mai trade-ek: ${todayCount} / ${tradingPlan.maxTrades}</span>`);
+            }
+
+            el.innerHTML = `
+                <div class="glass-card rounded-xl border border-neon-purple/25 bg-neon-purple/[0.04] px-3 py-2 text-[10.5px] leading-relaxed">
+                    <span class="text-neon-purple font-bold"><i class="fa-solid fa-clipboard-list mr-1"></i>Terved szerint:</span>
+                    ${parts.join(' · ')}
+                </div>
+            `;
         }
 
         function toggleTPSLInputs() {
