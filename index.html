@@ -2142,6 +2142,98 @@
         </div>
     </div>
 
+    <!-- ================= STRATÉGIAI KALKULÁTOROK (MOBIL BELÉPÉSI PONT) =================
+         Ugyanazok a gombok, mint a desktop fejléken élő #tools-dropdown-ban,
+         de egy teljes képernyős, görgethető listaként — mobilon ez a
+         Profil fülről ("Stratégiai Kalkulátorok" gomb) nyitható meg, mivel
+         a #tools-dropdown desktop-only (hidden lg:flex), és a mobil
+         "Eszközök" lebegő gomb egy MÁSIK panelt (rajzeszközök) nyit meg. -->
+    <div id="mobile-tools-modal" class="hidden absolute inset-0 z-[85] bg-dark-950 flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b border-dark-750 shrink-0">
+            <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-calculator text-amber-400 mr-1.5"></i>Stratégiai Kalkulátorok</h2>
+            <button onclick="closeMobileToolsModal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="flex-grow overflow-y-auto px-4 py-4 space-y-2">
+            <button onclick="closeMobileToolsModal(); openToolModal('poscalc-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-calculator"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Pozícióméret kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mennyit kockáztass egyetlen trade-en?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('rr-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-balanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Risk/Reward kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Megéri-e a trade a vállalt kockázatot?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('dailylimit-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-high"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Napi veszteséglimit</div>
+                    <div class="text-[10px] text-slate-400">Mikor kell leállnod a mai napra?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('dailygoal-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-bullseye"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Napi Cél Követő</div>
+                    <div class="text-[10px] text-slate-400">Mikor érted el a mai célt — és mikor állj le?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('sessions-modal'); renderMarketSessions();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-earth-americas"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Piaci Szekciók Órája</div>
+                    <div class="text-[10px] text-slate-400">Melyik piac van most nyitva?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-bullhorn"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Gazdasági Hírnaptár</div>
+                    <div class="text-[10px] text-slate-400">Mikor várható nagy volatilitás ezen a héten?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('ruin-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-skull"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Csőd-kockázat (Risk of Ruin)</div>
+                    <div class="text-[10px] text-slate-400">Mekkora az esély, hogy elfogy a tőkéd?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-percent"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Kelly-kritérium kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mekkora a matematikailag optimális tétnagyság?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-fire"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Portfolio Heat</div>
+                    <div class="text-[10px] text-slate-400">Mennyi a teljes kockázatod MOST, összesítve?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-diagram-project"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Korrelációs Mátrix</div>
+                    <div class="text-[10px] text-slate-400">Mennyire mozognak együtt az eszközeid?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('preflight-modal'); preflightChecked = {}; renderPreflightChecklist();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-list-check"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Belépés Előtti Ellenőrzőlista</div>
+                    <div class="text-[10px] text-slate-400">Fegyelmezett vagy, vagy csak sietsz?</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
     <!-- ================= CHART SZÖVEGES MEGJEGYZÉS (app-szintű modal window.prompt helyett) ================= -->
     <div id="chart-text-annotation-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-80 p-4">
@@ -2383,6 +2475,18 @@
                     <span id="profile-alerts-count" class="hidden px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/40">0</span>
                     <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
                 </span>
+            </button>
+            <!-- JAVÍTÁS: a "Stratégiai kalkulátorok" (Eszközök) menü eddig
+                 KIZÁRÓLAG a desktop fejléken (hidden lg:flex) élt — mobilon
+                 (ahol maga az app neve szerint futnia KELL) a felhasználónak
+                 esélye sem volt elérni a Pozícióméret, Risk/Reward, Kelly,
+                 Risk of Ruin, Portfolio Heat, stb. kalkulátorokat, mert a
+                 mobil "Eszközök" lebegő gomb egy MÁSIK panelt (a rajzeszköz-
+                 oldalsávot) nyit meg. Ez egy mobilra is elérhető belépési
+                 pont ugyanazokhoz a kalkulátorokhoz, a Profil fülről. -->
+            <button onclick="openMobileToolsModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-amber-400/40 transition">
+                <span class="text-xs font-bold text-white"><i class="fa-solid fa-calculator text-amber-400 mr-2"></i>Stratégiai Kalkulátorok</span>
+                <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
             <div class="glass-card rounded-xl p-3">
                 <button onclick="toggleDailyReminder()" class="w-full flex items-center justify-between">
@@ -12163,6 +12267,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
         function closeTradingPlan() {
             document.getElementById('trading-plan-screen').classList.add('hidden');
+        }
+        function openMobileToolsModal() {
+            document.getElementById('mobile-tools-modal').classList.remove('hidden');
+        }
+        function closeMobileToolsModal() {
+            document.getElementById('mobile-tools-modal').classList.add('hidden');
         }
         function toggleTradingPlanSetup(label) {
             const el = document.querySelector(`[data-plan-setup="${label}"]`);
