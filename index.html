@@ -966,6 +966,13 @@
                                 <div class="text-[10px] text-slate-400">Melyik piac van most nyitva?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('ruin-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-skull"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Csőd-kockázat (Risk of Ruin)</div>
+                                <div class="text-[10px] text-slate-400">Mekkora az esély, hogy elfogy a tőkéd?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1891,6 +1898,39 @@
             <div id="sessions-now-label" class="text-center text-xs font-mono text-slate-300 mb-3"></div>
             <div id="sessions-timeline" class="space-y-2.5 mb-4"></div>
             <div id="sessions-overlap-note" class="glass-card rounded-xl p-3 text-[11px] text-slate-300 leading-relaxed"></div>
+        </div>
+    </div>
+
+    <!-- ================= CSŐD-KOCKÁZAT (RISK OF RUIN) KALKULÁTOR (OKTATÁSI) =================
+         Matematikai (nem csak intuitív) megmutatása annak, hogy a találati
+         arány és a kockázat/trade kombinációja hogyan hat drámaian a tőke
+         teljes elvesztésének esélyére — a cél, hogy a felhasználó megértse,
+         miért nem elég "jó stratégia", ha a pozícióméretezés rossz. -->
+    <div id="ruin-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-skull text-neon-red"></i> Csőd-kockázat Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('ruin-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a találati arányodat, az átlagos Risk/Reward arányodat és azt, hogy egy trade-en a tőkéd hány %-át kockáztatod — megmutatja, matematikailag mennyi az esélye, hogy teljesen elfogy a tőkéd, mielőtt elérnéd a célod.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Találati arány (win rate, %)</label>
+            <input type="number" id="ruin-winrate" value="45" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Átlagos Risk/Reward arány (pl. 2 = 1:2)</label>
+            <input type="number" id="ruin-rr" value="2" step="0.1" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Kockázat / trade (a tőke %-a)</label>
+            <input type="number" id="ruin-riskpct" value="2" step="0.1" min="0.1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcRiskOfRuin()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="ruin-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A becslés egy egyszerűsített (fix kockázat %, egymástól független kimenetelű) modellen alapul — a valóságban a sorozatok, a piaci korreláció és a végrehajtási hibák ezt tovább ronthatják. Oktatási célú közelítés, nem garancia.</p>
         </div>
     </div>
 
@@ -5257,6 +5297,77 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 noteEl.className = 'glass-card rounded-xl border border-dark-750 p-3 text-[11px] text-slate-300 leading-relaxed';
                 noteEl.innerHTML = `Jelenleg ${openNow.length > 0 ? openNow.map(s => s.name).join(' + ') + ' van nyitva' : 'minden fő szekció zárva van'}. A legaktívabb időszak jellemzően a <strong class="text-white">London–New York átfedés (13:00–17:00 UTC)</strong> alatt van — ekkor a legnagyobb a forgalom és a volatilitás.`;
             }
+        }
+
+        // ================= CSŐD-KOCKÁZAT (RISK OF RUIN) KALKULÁTOR (OKTATÁSI) =================
+        // Egyszerűsített, de valós szakirodalmi alapokon (fixed-fractional
+        // risk-of-ruin közelítés) nyugvó modell: a "statisztikai előny"
+        // (edge) és a kockázat/trade arányából kiszámolja, mekkora az esély,
+        // hogy a tőke egy (szimbolikus) nullára csökkenjen, mielőtt a
+        // kereskedő "feladná" vagy újratöltené a számlát. A cél megmutatni,
+        // hogy ugyanaz a találati arány/RR pár DRÁMAIAN más kimenetet ad,
+        // ha a kockázat/trade % változik — ez a pozícióméretezés tanulság.
+        function calcRiskOfRuin() {
+            const winRatePct = parseFloat(document.getElementById('ruin-winrate').value);
+            const rr = parseFloat(document.getElementById('ruin-rr').value);
+            const riskPct = parseFloat(document.getElementById('ruin-riskpct').value);
+            const out = document.getElementById('ruin-result');
+
+            if (!winRatePct || winRatePct <= 0 || winRatePct >= 100 || !rr || rr <= 0 || !riskPct || riskPct <= 0 || riskPct > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%), Risk/Reward arányt és kockázat %-ot!</div>`;
+                return;
+            }
+
+            const W = winRatePct / 100;
+            const L = 1 - W;
+            // "Edge" egy egységnyi kockázatra: nyereség esetén +RR egységet
+            // nyerünk, veszteség esetén -1 egységet veszítünk.
+            const edge = (W * rr) - L;
+            const units = 100 / riskPct; // hány "kockázati egység" fér a tőkébe
+
+            let ror;
+            if (edge <= 0) {
+                // Negatív (vagy nulla) matematikai előny mellett hosszú távon
+                // a csőd elkerülhetetlen — ez nem becslés, ez a várható érték
+                // negatív voltának direkt következménye.
+                ror = 1;
+            } else {
+                // Közelítő fixed-fractional Risk of Ruin formula:
+                // RoR ≈ ((1 - edge) / (1 + edge)) ^ (tőke / kockázati egység)
+                const base = (1 - edge) / (1 + edge);
+                ror = Math.pow(base, units);
+            }
+            const rorPct = Math.min(100, Math.max(0, ror * 100));
+
+            const expectancy = (W * rr) - L; // várható érték egységenként (= edge)
+
+            let colorClass, verdict;
+            if (rorPct >= 50) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Ez a paraméter-kombináció matematikailag életveszélyes a tőkédre — nagyon valószínű a teljes veszteség, ha sokáig így kereskedsz.';
+            } else if (rorPct >= 15) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Jelentős a csőd-kockázat — fontolj meg kisebb kockázat/trade %-ot vagy jobb Risk/Reward arányt.';
+            } else if (rorPct >= 2) {
+                colorClass = 'text-amber-300';
+                verdict = 'Alacsony, de nem elhanyagolható kockázat — hosszú távon még finomíthatsz a paramétereken.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Ezekkel a paraméterekkel a hosszú távú csőd-kockázat matematikailag nagyon alacsony.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Statisztikai előny (edge):</span><span class="${expectancy > 0 ? 'text-neon-green' : 'text-neon-red'}">${expectancy > 0 ? '+' : ''}${(expectancy * 100).toFixed(1)}% / trade</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Kockázati egységek a tőkében:</span><span class="text-white">${units.toFixed(0)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Csőd-kockázat (becslés):</span><span class="font-extrabold ${colorClass} text-sm">${rorPct < 0.1 && rorPct > 0 ? '<0.1' : rorPct.toFixed(1)}%</span></div>
+                    <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-1">
+                        <div class="h-full ${rorPct >= 50 ? 'bg-neon-red' : rorPct >= 15 ? 'bg-amber-400' : 'bg-neon-green'} transition-all" style="width:${Math.max(2, rorPct)}%"></div>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+                ${edge <= 0 ? '<p class="text-[10px] text-slate-400 mt-1">Negatív matematikai előny mellett a kockázat %-ának csökkentése csak LASSÍTJA a csődöt, nem szünteti meg — a találati arányt vagy a Risk/Reward arányt kell javítani.</p>' : ''}
+            `;
         }
 
         /* ================= AKADÉMIA (Oktatóközpont) ================= */
