@@ -2617,6 +2617,28 @@
                 </div>
             </div>
 
+            <!-- ================= ÉLŐ PIACI ÁRFOLYAM (VALÓS, NEM SZIMULÁLT) =================
+                 FONTOS MEGKÜLÖNBÖZTETÉS: az app kereskedési motorja (chartok,
+                 gyertyák, demó-order végrehajtás) szándékosan SZIMULÁLT árakon
+                 fut — ez egy oktatási demó-terminál, nem éles kereskedési felület,
+                 és a szimulált motor rengeteg más funkció (backtester, drill,
+                 academy) stabil alapja, amit nem lenne biztonságos minden
+                 előzetes teszt nélkül élő adatra átállítani. EZ a widget viszont
+                 KÜLÖN, valódi, publikus, kulcs nélküli API-khoz (CoinGecko,
+                 Frankfurter.app) kapcsolódik — tisztán tájékoztató jellegű,
+                 a demó-kereskedési motortól független "valóság-ellenőrzés",
+                 hogy a felhasználó lássa a TÉNYLEGES piaci árat is. -->
+            <div class="glass-card rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-satellite-dish text-neon-green text-[10px]"></i> Élő Piaci Árfolyam</h3>
+                    <button onclick="fetchLivePrices()" title="Frissítés" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-rotate text-[11px]"></i></button>
+                </div>
+                <div id="live-price-widget" class="space-y-1.5">
+                    <div class="text-[11px] text-slate-500 text-center py-2">Betöltés...</div>
+                </div>
+                <p class="text-[9px] text-slate-600 mt-2">Forrás: CoinGecko, Frankfurter.app (nyilvános, publikus API) — valódi, aktuális árfolyam, függetlenül az app demó-kereskedési szimulációjától.</p>
+            </div>
+
             <div>
                 <h3 class="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1.5"><i class="fa-solid fa-star text-amber-400 text-[10px]"></i> <span data-i18n="home_market_overview">Figyelőlista</span> <span class="text-slate-600 normal-case" data-i18n="home_market_simulated">(szimulált adat)</span></h3>
                 <div id="home-watchlist-list" class="space-y-2"></div>
@@ -11992,6 +12014,81 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
             renderHomeWatchlist();
             renderHomeContinueCard();
+            fetchLivePrices();
+        }
+
+        // ================= ÉLŐ (VALÓDI, NEM SZIMULÁLT) PIACI ÁRFOLYAM =================
+        // Két teljesen független, publikus, API-kulcs nélküli forrásból kér
+        // le valódi, aktuális árat: CoinGecko (BTC, ETH) és Frankfurter.app
+        // (EUR/USD, az Európai Központi Bank napi referenciaárfolyamán
+        // alapulva). Ez TUDATOSAN különálló az app demó-kereskedési
+        // szimulációjától (currentAsset, generateInitialCandles, stb.) —
+        // csak tájékoztató "valóság-ellenőrzés" widget a Home képernyőn.
+        let livePriceCache = null;
+        let livePriceCacheTime = 0;
+        const LIVE_PRICE_CACHE_MS = 30000; // 30 mp — ne terheljük feleslegesen az API-kat
+
+        async function fetchLivePrices() {
+            const el = document.getElementById('live-price-widget');
+            if (!el) return;
+
+            const now = Date.now();
+            if (livePriceCache && (now - livePriceCacheTime) < LIVE_PRICE_CACHE_MS) {
+                renderLivePriceWidget(livePriceCache);
+                return;
+            }
+
+            try {
+                const [cgRes, fxRes] = await Promise.all([
+                    fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true'),
+                    fetch('https://api.frankfurter.app/latest?from=EUR&to=USD')
+                ]);
+                if (!cgRes.ok || !fxRes.ok) throw new Error('API hiba');
+                const cgData = await cgRes.json();
+                const fxData = await fxRes.json();
+
+                const result = {
+                    btc: cgData && cgData.bitcoin ? { price: cgData.bitcoin.usd, change24h: cgData.bitcoin.usd_24h_change } : null,
+                    eth: cgData && cgData.ethereum ? { price: cgData.ethereum.usd, change24h: cgData.ethereum.usd_24h_change } : null,
+                    eurusd: fxData && fxData.rates ? { price: fxData.rates.USD } : null,
+                    fetchedAt: new Date()
+                };
+                livePriceCache = result;
+                livePriceCacheTime = now;
+                renderLivePriceWidget(result);
+            } catch (e) {
+                renderLivePriceWidget(null);
+            }
+        }
+
+        function renderLivePriceWidget(data) {
+            const el = document.getElementById('live-price-widget');
+            if (!el) return;
+
+            if (!data) {
+                el.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-2"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1"></i>Élő árfolyam jelenleg nem elérhető — ellenőrizd az internetkapcsolatot.</div>`;
+                return;
+            }
+
+            const rows = [];
+            if (data.btc) rows.push({ label: 'BTC/USD', icon: '₿', price: '$' + data.btc.price.toLocaleString('en-US', { maximumFractionDigits: 0 }), change: data.btc.change24h });
+            if (data.eth) rows.push({ label: 'ETH/USD', icon: 'Ξ', price: '$' + data.eth.price.toLocaleString('en-US', { maximumFractionDigits: 2 }), change: data.eth.change24h });
+            if (data.eurusd) rows.push({ label: 'EUR/USD', icon: '€', price: '$' + data.eurusd.price.toFixed(4), change: null });
+
+            if (rows.length === 0) {
+                el.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-2">Nincs elérhető adat.</div>`;
+                return;
+            }
+
+            el.innerHTML = rows.map(r => `
+                <div class="flex items-center justify-between text-xs">
+                    <span class="flex items-center gap-1.5 text-slate-300 font-semibold"><span class="w-5 h-5 rounded-full bg-dark-800 border border-dark-700 flex items-center justify-center text-[10px]">${r.icon}</span>${r.label}</span>
+                    <span class="flex items-center gap-2 font-mono">
+                        <span class="text-white font-bold">${r.price}</span>
+                        ${r.change !== null && r.change !== undefined ? `<span class="${r.change >= 0 ? 'text-neon-green' : 'text-neon-red'} text-[10px]">${r.change >= 0 ? '+' : ''}${r.change.toFixed(2)}%</span>` : ''}
+                    </span>
+                </div>
+            `).join('') + `<div class="text-[9px] text-slate-600 text-right mt-1">Frissítve: ${data.fetchedAt.toLocaleTimeString('hu-HU')}</div>`;
         }
 
         // Home képernyő figyelőlista-kártyák: a csillagozott eszközök (vagy ha a
