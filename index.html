@@ -8745,6 +8745,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { term: 'Mean-Reversion (Átlaghoz Visszahúzódás)', cat: 'technikai', def: 'Stratégia-filozófia, amely azt feltételezi, hogy a szélsőséges árfolyammozgás után az ár visszahúzódik az átlaga felé (pl. RSI túladott/túlvett szintek alapján). Oldalazó piacon jól teljesít, de veszélyes egy valódi, tartós trendfordulat előtt.' },
             { term: 'Piaci Szekció (Trading Session)', cat: 'makró', def: 'A globális piac nem egységes — a nagy pénzügyi központok (Sydney, Tokió, London, New York) eltérő időzónákban nyitnak/zárnak, saját likviditási/volatilitási jellemzőkkel. A szekciók átfedésekor (pl. London-New York) jellemzően nagyobb a volatilitás és a forgalom.' },
             { term: 'Gazdasági Hírnaptár (Economic Calendar)', cat: 'makró', def: 'Előre ismert időpontú, visszatérő makrogazdasági események (pl. jegybanki döntés, inflációs adat, munkaerőpiaci jelentés) naptára. Ezek körül a piac jellemzően hirtelen, megugró volatilitást mutat — sok kereskedő ezekre az időszakokra külön óvatosabb kockázatkezelést alkalmaz.' },
+            { term: 'MÁP+ (Magyar Állampapír Plusz)', cat: 'alapok', def: 'Az Államadósság Kezelő Központ (ÁKK) által kibocsátott, magánszemélyeknek szóló, hosszabb futamidejű (jellemzően 5 éves) állampapír, féléves kamatfizetéssel. A magánszemélyek számára Magyarországon jelenleg az állampapír-hozam SZJA-mentes, ami normál bankbetéttel szemben jelentős versenyelőnyt ad — cserébe a tőke az államkötvény-kockázatnak van kitéve, nem a bankbetét-garanciának.' },
             { term: 'Expectancy (Statisztikai Várható Érték)', cat: 'statisztika', def: 'Egy átlagos trade várható nyeresége/vesztesége, a találati arány és az átlagos nyereség/veszteség méret alapján: (találati arány × átlagos nyereség) − (vesztes arány × átlagos veszteség). Egy alacsony találati arány is lehet nyereséges, ha a nyertes trade-ek elég sokszor nagyobbak a vesztes trade-eknél.' },
             { term: 'Day Trading', cat: 'alapok', def: 'Pozíció nyitása és zárása ugyanazon a kereskedési napon, éjszakára sosem átvitt pozícióval.' },
             { term: 'Long pozíció', cat: 'alapok', def: 'Vásárlás azzal a várakozással, hogy az árfolyam EMELKEDNI fog — a nyereség az emelkedésből származik.' },
@@ -10413,7 +10414,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <i class="fa-solid fa-flag text-2xl"></i>
                         </div>
                         <h2 class="text-lg font-extrabold text-white mb-1">Magyar Piac</h2>
-                        <p class="text-xs text-slate-400 max-w-md mx-auto">A Budapesti Értéktőzsde (BÉT) és a magyar adókedvezményes befektetési számla (TBSZ) — amit egy nemzetközi appban nem találsz meg.</p>
+                        <p class="text-xs text-slate-400 max-w-md mx-auto">A Budapesti Értéktőzsde (BÉT), a TBSZ adóelőny és a Magyar Állampapír (MÁP+) — amit egy nemzetközi appban nem találsz meg.</p>
                     </div>
 
                     <!-- BÉT áttekintő kártyák -->
@@ -10460,6 +10461,37 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <p class="text-[10px] text-slate-600 mt-4 leading-relaxed">⚠️ Egyszerűsített számítás, tájékoztató jellegű — nem minősül adótanácsadásnak. A tényleges adószabályok (SZJA-kulcs, esetleges szocho) változhatnak; mindig ellenőrizd a NAV aktuális, hatályos előírásait, vagy kérj adótanácsadót.</p>
                     </div>
 
+                    <!-- MÁP+ vs. Bankbetét összehasonlító -->
+                    <div class="glass-card rounded-2xl border border-dark-750 p-5">
+                        <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-scale-balanced text-neon-cyan mr-1.5"></i> Állampapír (MÁP+) vs. Bankbetét</h3>
+                        <p class="text-[11px] text-slate-500 mb-4">Hasonlítsd össze a Magyar Állampapír Plusz (MÁP+) várható hozamát egy normál lekötött bankbetéttel, SZJA-mentesség mellett.</p>
+
+                        <div class="grid sm:grid-cols-3 gap-3 mb-4">
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Befektetett összeg (Ft)</label>
+                                <input type="number" id="map-principal" value="1000000" min="0" step="10000" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-cyan/50">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">MÁP+ átlagos éves hozam (%)</label>
+                                <input type="number" id="map-yield" value="6.5" min="0" max="100" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-cyan/50">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Bankbetét éves hozam (%)</label>
+                                <input type="number" id="deposit-yield" value="5" min="0" max="100" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-cyan/50">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 mb-4">
+                            <label class="text-[10px] text-slate-500 font-bold uppercase">Futamidő:</label>
+                            <button id="map-horizon-3" onclick="setMapHorizon(3)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition">3 év</button>
+                            <button id="map-horizon-5" onclick="setMapHorizon(5)" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">5 év</button>
+                        </div>
+
+                        <div id="map-result"></div>
+
+                        <p class="text-[10px] text-slate-600 mt-4 leading-relaxed">⚠️ Egyszerűsített, tájékoztató jellegű számítás. A MÁP+ kamatozása valójában évente változó (féléves kamatfizetés, kamatfelár-struktúra), itt egy fix átlagos hozammal közelítjük. A magánszemélyek állampapír-hozama Magyarországon jelenleg SZJA-mentes, a bankbetét hozama után viszont normál esetben kamatadó (SZJA) fizetendő. Mindig ellenőrizd az ÁKK aktuális, hatályos kondícióit.</p>
+                    </div>
+
                     <!-- Mini kvíz -->
                     <div class="glass-card rounded-2xl border border-dark-750 p-5">
                         <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-graduation-cap text-neon-green mr-1.5"></i> Magyar Piac Kvíz</h3>
@@ -10470,8 +10502,70 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
             hungarianQuizState = { idx: 0, correct: 0, answered: false };
             setTbszHorizon(3);
+            setMapHorizon(3);
             renderHungarianQuizQuestion();
         }
+
+        let mapHorizonYears = 3;
+        function setMapHorizon(years) {
+            mapHorizonYears = years;
+            const btn3 = document.getElementById('map-horizon-3');
+            const btn5 = document.getElementById('map-horizon-5');
+            const activeCls = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+            const inactiveCls = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            if (btn3) btn3.className = years === 3 ? activeCls : inactiveCls;
+            if (btn5) btn5.className = years === 5 ? activeCls : inactiveCls;
+            calculateMapComparison();
+        }
+
+        function calculateMapComparison() {
+            const principalEl = document.getElementById('map-principal');
+            const mapYieldEl = document.getElementById('map-yield');
+            const depositYieldEl = document.getElementById('deposit-yield');
+            const resultEl = document.getElementById('map-result');
+            if (!principalEl || !mapYieldEl || !depositYieldEl || !resultEl) return;
+
+            const principal = Math.max(0, parseFloat(principalEl.value) || 0);
+            const mapReturn = Math.max(0, parseFloat(mapYieldEl.value) || 0) / 100;
+            const depositReturn = Math.max(0, parseFloat(depositYieldEl.value) || 0) / 100;
+            const years = mapHorizonYears;
+
+            const DEPOSIT_TAX_RATE = 0.15; // bankbetét kamatadó (SZJA)
+
+            const mapFutureValue = principal * Math.pow(1 + mapReturn, years);
+            const mapNet = mapFutureValue; // állampapír: SZJA-mentes
+
+            const depositFutureValue = principal * Math.pow(1 + depositReturn, years);
+            const depositGain = depositFutureValue - principal;
+            const depositTax = depositGain * DEPOSIT_TAX_RATE;
+            const depositNet = depositFutureValue - depositTax;
+
+            const diff = mapNet - depositNet;
+
+            const fmt = (n) => Math.round(n).toLocaleString('hu-HU') + ' Ft';
+
+            resultEl.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-neon-cyan/5 border border-neon-cyan/30 p-3">
+                        <div class="text-[10px] text-neon-cyan uppercase font-bold mb-1">MÁP+ (0% SZJA)</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(mapNet)}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">Nincs adó</div>
+                    </div>
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Bankbetét (${(DEPOSIT_TAX_RATE*100).toFixed(0)}% SZJA)</div>
+                        <div class="text-sm font-extrabold text-slate-300">${fmt(depositNet)}</div>
+                        <div class="text-[10px] text-neon-red mt-0.5">−${fmt(depositTax)} adó</div>
+                    </div>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-amber-400/10 border border-amber-400/30">
+                    <span class="text-xs text-amber-300 font-bold">${diff >= 0 ? `💰 A MÁP+ ${fmt(Math.abs(diff))}-tal többet hoz` : `💰 A bankbetét ${fmt(Math.abs(diff))}-tal többet hoz`}</span>
+                </div>
+            `;
+        }
+
+        document.addEventListener('input', (e) => {
+            if (e.target && (e.target.id === 'map-principal' || e.target.id === 'map-yield' || e.target.id === 'deposit-yield')) calculateMapComparison();
+        });
 
         let tbszHorizonYears = 3;
         function setTbszHorizon(years) {
