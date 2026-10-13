@@ -8801,7 +8801,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const filterEl = document.getElementById('glossary-cat-filters');
             if (!listEl || !filterEl) return;
 
-            const catLabels = { alapok: 'Alapok', kockázat: 'Kockázatkezelés', technikai: 'Technikai elemzés', pszichológia: 'Pszichológia', kriptó: 'Kriptó', makró: 'Makrogazdaság' };
+            const catLabels = { alapok: 'Alapok', kockázat: 'Kockázatkezelés', technikai: 'Technikai elemzés', pszichológia: 'Pszichológia', kriptó: 'Kriptó', makró: 'Makrogazdaság', statisztika: 'Statisztika' };
             const cats = [...new Set(GLOSSARY_TERMS.map(t => t.cat))];
             filterEl.innerHTML = [`<button onclick="glossarySelectedCat=''; renderGlossaryList();" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${glossarySelectedCat === '' ? 'bg-neon-cyan/15 border-neon-cyan/40 text-neon-cyan' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">Összes</button>`]
                 .concat(cats.map(c => `<button onclick="glossarySelectedCat='${c}'; renderGlossaryList();" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${glossarySelectedCat === c ? 'bg-neon-cyan/15 border-neon-cyan/40 text-neon-cyan' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">${catLabels[c] || c}</button>`))
