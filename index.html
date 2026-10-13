@@ -1050,6 +1050,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyi nyereség kell egy veszteség után?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('feeimpact-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-receipt"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Kereskedési Díj Hatás Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mennyit visznek el a díjak valójában?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2061,6 +2068,40 @@
          automatikusan TÖBB egységet vesz alacsony áron és KEVESEBBET magas
          áron, ami csökkenti az átlagos beszerzési árat a sima "egyszerre
          mindent beletesz" stratégiához képest, ha az ár változóan mozog. -->
+    <!-- ================= KERESKEDÉSI DÍJ HATÁS KALKULÁTOR (OKTATÁSI) =================
+         Sokan alábecsülik, mennyit visznek el a tranzakciós díjak gyakori
+         kereskedésnél. Egy látszólag kis, pl. 0.04-0.1%-os díj OLDALANKÉNT
+         (belépés + kilépés = round-trip) sok trade-nél, nagy forgalom mellett
+         komoly, összeadódó költséget jelent — és minden pozíciónak ennyivel
+         KEDVEZŐBB irányba kell mozdulnia, csak hogy a díjak "elfogyjanak". -->
+    <div id="feeimpact-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-neon-red"></i> Kereskedési Díj Hatás Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('feeimpact-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Mennyit visznek el a tranzakciós díjak, és mekkora árfolyammozgás szükséges csak a díjak "kigazdálkodásához" (break-even), mielőtt egyáltalán nyereségről beszélhetnél?</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Pozícióméret ($)</label>
+            <input type="number" id="fee-position" value="1000" step="10" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Díj / oldal (%) — belépés ÉS kilépés is ennyi</label>
+            <input type="number" id="fee-pct" value="0.04" step="0.01" min="0" max="10" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Trade-ek száma (adott időszakban)</label>
+            <input type="number" id="fee-trades" value="20" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcFeeImpact()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="feeimpact-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A break-even árfolyammozgás a díj/oldal × 2 (belépés + kilépés) — ennyit KELL mozdulnia az árnak a kedvező irányba, csak hogy a díjak nullára jöjjenek ki, mielőtt egyáltalán nyereségről beszélhetnél. Magas kereskedési gyakoriságnál (pl. scalping) ez komoly, könnyen alábecsült akadály.</p>
+        </div>
+    </div>
+
     <div id="dca-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -2424,6 +2465,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Drawdown Visszanyerési Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Mennyi nyereség kell egy veszteség után?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('feeimpact-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-receipt"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Kereskedési Díj Hatás Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mennyit visznek el a díjak valójában?</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('sessions-modal'); renderMarketSessions();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -6343,6 +6391,51 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= KERESKEDÉSI DÍJ HATÁS KALKULÁTOR (OKTATÁSI) =================
+        function calcFeeImpact() {
+            const positionEl = document.getElementById('fee-position');
+            const pctEl = document.getElementById('fee-pct');
+            const tradesEl = document.getElementById('fee-trades');
+            const resultEl = document.getElementById('feeimpact-result');
+            if (!positionEl || !pctEl || !tradesEl || !resultEl) return;
+
+            const position = Math.max(0, parseFloat(positionEl.value) || 0);
+            const feePctPerSide = Math.max(0, parseFloat(pctEl.value) || 0);
+            const trades = Math.max(1, Math.round(parseFloat(tradesEl.value) || 0));
+
+            const feePerSide = position * (feePctPerSide / 100);
+            const roundTripFee = feePerSide * 2;
+            const totalFees = roundTripFee * trades;
+            const breakEvenMovePct = feePctPerSide * 2;
+            const feeAsPctOfPosition = (totalFees / position) * 100;
+
+            const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            resultEl.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Díj / round-trip</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(roundTripFee)}</div>
+                    </div>
+                    <div class="rounded-xl bg-neon-red/5 border border-neon-red/30 p-3">
+                        <div class="text-[10px] text-neon-red uppercase font-bold mb-1">Összes díj (${trades} trade)</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(totalFees)}</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Break-even árfolyammozgás (csak a díjakhoz):</span>
+                    <span class="font-extrabold text-amber-400">${breakEvenMovePct.toFixed(3)}%</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">Összes díj a pozícióméret %-ában:</span>
+                    <span class="font-bold text-white">${feeAsPctOfPosition.toFixed(2)}%</span>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-amber-400/10 border border-amber-400/30">
+                    <span class="text-xs text-amber-300 font-bold">⚠️ Minden egyes trade-nek legalább ${breakEvenMovePct.toFixed(3)}%-ot kell mozdulnia a kedvező irányba, csak hogy a díjak nullára jöjjenek ki</span>
+                </div>
+            `;
+        }
+
         // ================= DRAWDOWN VISSZANYERÉSI KALKULÁTOR (OKTATÁSI) =================
         function calcDrawdownRecovery() {
             const lossEl = document.getElementById('recovery-loss');
@@ -8941,6 +9034,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { term: 'Mean-Reversion (Átlaghoz Visszahúzódás)', cat: 'technikai', def: 'Stratégia-filozófia, amely azt feltételezi, hogy a szélsőséges árfolyammozgás után az ár visszahúzódik az átlaga felé (pl. RSI túladott/túlvett szintek alapján). Oldalazó piacon jól teljesít, de veszélyes egy valódi, tartós trendfordulat előtt.' },
             { term: 'Piaci Szekció (Trading Session)', cat: 'makró', def: 'A globális piac nem egységes — a nagy pénzügyi központok (Sydney, Tokió, London, New York) eltérő időzónákban nyitnak/zárnak, saját likviditási/volatilitási jellemzőkkel. A szekciók átfedésekor (pl. London-New York) jellemzően nagyobb a volatilitás és a forgalom.' },
             { term: 'Gazdasági Hírnaptár (Economic Calendar)', cat: 'makró', def: 'Előre ismert időpontú, visszatérő makrogazdasági események (pl. jegybanki döntés, inflációs adat, munkaerőpiaci jelentés) naptára. Ezek körül a piac jellemzően hirtelen, megugró volatilitást mutat — sok kereskedő ezekre az időszakokra külön óvatosabb kockázatkezelést alkalmaz.' },
+            { term: 'Round-trip díj (Kereskedési Díj)', cat: 'alapok', def: 'A belépési ÉS kilépési tranzakcióhoz tartozó díjak összege egy pozíción. Egy látszólag kis, pl. 0.04%-os díj/oldal már 0.08%-os teljes (round-trip) árfolyammozgást igényel, csak hogy a díjak nullára jöjjenek ki — ez minden egyes trade-nél "kemény alsó korlátot" jelent, amit az árnak előbb teljesítenie kell, mielőtt egyáltalán nyereségről beszélhetnél.' },
             { term: 'Revenge Trading (Bosszú-kereskedés)', cat: 'pszichológia', def: 'Egy veszteséges trade után az azonnali, emocionális "visszavágás" — jellemzően nagyobb pozícióval, terv nélkül, rosszabb belépési ponton. Mivel a döntés a friss frusztrációból, nem a piac elemzéséből születik, statisztikailag gyakran egy még nagyobb veszteséghez, lefelé spirálhoz vezet. Hatékony védekezés: előre rögzített napi veszteséglimit + kötelező szünet a veszteség után.' },
             { term: 'Drawdown Visszanyerés (Recovery)', cat: 'kockázat', def: 'A veszteség és a visszanyeréshez szükséges nyereség aszimmetrikus kapcsolata: egy X%-os veszteség után MINDIG nagyobb, mint X%-os nyereség kell a nullszaldóhoz, mert a veszteség után kisebb tőkealapról indulsz újra (pl. 50%-os veszteség → 100%-os nyereség kell). Ez az egyik fő ok, amiért a nagy veszteségek elkerülése fontosabb, mint a nagy nyereségek hajszolása.' },
             { term: 'DCA (Dollar-Cost Averaging)', cat: 'alapok', def: 'Rendszeres, azonos összegű befektetési stratégia, amely nem próbálja megidőzíteni a piacot: mindig ugyanannyit fektet be, függetlenül az aktuális ártól. Volatilis piacon automatikusan több egységet vesz alacsony, kevesebbet magas áron, ami csökkentheti az átlagos beszerzési árat — cserébe lemondasz arról az esélyről, hogy mindent a legalacsonyabb ponton fektesd be.' },
