@@ -1064,6 +1064,13 @@
                                 <div class="text-[10px] text-slate-400">Call/put nyereség-veszteség lejáratkor</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('portfolio-sim-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-pie"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Portfólió Szimulátor</div>
+                                <div class="text-[10px] text-slate-400">Több eszköz, súlyok, rebalancing hatása</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2085,6 +2092,64 @@
          Egyszerű, lejáratkori (nem a lejárat előtti!) kifizetés-számítás call
          és put opcióra. A cél megmutatni, hogy a mozgásnak a prémiumot is
          fedeznie kell (break-even), nem elég a "helyes irányba" mozdulnia. -->
+    <!-- ================= TELJES PORTFÓLIÓ SZIMULÁTOR (OKTATÁSI) =================
+         A DCA-szimulátor egyetlen eszközre szól — ez a bővített verzió
+         TÖBB eszközt, SÚLYOZOTT allokációt és IDŐSZAKOS REBALANCING-ot
+         (évenkénti visszaállítás a cél-súlyokra) mutat be, hogy a
+         felhasználó lássa, mekkora különbséget tehet a rebalancing egy
+         valóban diverzifikált, eltérő hozamú eszközökből álló portfólión. -->
+    <div id="portfolio-sim-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-[26rem] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-neon-purple"></i> Portfólió Szimulátor
+                </h3>
+                <button onclick="closeToolModal('portfolio-sim-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Hogyan teljesít egy 3 eszközből álló, súlyozott portfólió hosszú távon — és mennyit változtat az évenkénti rebalancing (visszaállítás a cél-súlyokra)?</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Teljes befektetett összeg ($)</label>
+            <input type="number" id="port-total" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <div class="space-y-2 mb-3">
+                <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5 text-[9px] text-slate-500 font-bold uppercase px-1">
+                    <span>Eszköz</span><span>Súly %</span><span>Éves hozam %</span>
+                </div>
+                <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
+                    <input type="text" id="port-a1-name" value="Részvény ETF" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a1-weight" value="60" step="1" min="0" max="100" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a1-return" value="8" step="0.5" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+                <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
+                    <input type="text" id="port-a2-name" value="Állampapír" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a2-weight" value="30" step="1" min="0" max="100" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a2-return" value="6" step="0.5" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+                <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
+                    <input type="text" id="port-a3-name" value="Kripto (BTC)" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a3-weight" value="10" step="1" min="0" max="100" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a3-return" value="15" step="0.5" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+            </div>
+            <div id="port-weight-warning" class="hidden text-[10px] text-amber-400 font-bold mb-2"></div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Időtáv (év)</label>
+            <input type="number" id="port-years" value="10" step="1" min="1" max="50" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <div class="flex items-center gap-2 mb-4">
+                <input type="checkbox" id="port-rebalance" checked class="rounded bg-dark-800 border-dark-700 text-neon-purple">
+                <label for="port-rebalance" class="text-[11px] text-slate-400">Évenkénti rebalancing (visszaállítás a cél-súlyokra)</label>
+            </div>
+
+            <button onclick="calcPortfolioSimulation()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Szimulálás
+            </button>
+
+            <div id="portfolio-sim-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Egyszerűsített, oktatási közelítés: minden eszköz a megadott éves hozammal, FIX, EGYENLETES ütemben nő (a valós piaci volatilitás és az évek közötti ingadozás nélkül). A rebalancing hatása a valóságban az eszközök tényleges együttmozgásától (korrelációjától) is függ.</p>
+        </div>
+    </div>
+
     <div id="optionpayoff-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -2523,6 +2588,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Opciós Kifizetés Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Call/put nyereség-veszteség lejáratkor</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('portfolio-sim-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-pie"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Portfólió Szimulátor</div>
+                    <div class="text-[10px] text-slate-400">Több eszköz, súlyok, rebalancing hatása</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('sessions-modal'); renderMarketSessions();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -6497,6 +6569,86 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-amber-400">A teljes Kelly matematikailag optimális, de a valóságban (becslési hibák, sorozatos veszteségek) túl nagy visszaeséseket okozhat. A legtöbb profi a fél-Kelly vagy negyed-Kelly szintet használja a kockázat/trade %-jaként.</p>
+            `;
+        }
+
+        // ================= TELJES PORTFÓLIÓ SZIMULÁTOR (OKTATÁSI) =================
+        function calcPortfolioSimulation() {
+            const totalEl = document.getElementById('port-total');
+            const yearsEl = document.getElementById('port-years');
+            const rebalanceEl = document.getElementById('port-rebalance');
+            const resultEl = document.getElementById('portfolio-sim-result');
+            const warningEl = document.getElementById('port-weight-warning');
+            if (!totalEl || !yearsEl || !rebalanceEl || !resultEl) return;
+
+            const total = Math.max(0, parseFloat(totalEl.value) || 0);
+            const years = Math.max(1, Math.round(parseFloat(yearsEl.value) || 0));
+            const rebalance = rebalanceEl.checked;
+
+            const assets = [1, 2, 3].map(i => ({
+                name: (document.getElementById(`port-a${i}-name`).value || `Eszköz ${i}`).trim(),
+                weightPct: Math.max(0, parseFloat(document.getElementById(`port-a${i}-weight`).value) || 0),
+                returnPct: parseFloat(document.getElementById(`port-a${i}-return`).value) || 0
+            }));
+
+            const weightSum = assets.reduce((s, a) => s + a.weightPct, 0);
+            if (warningEl) {
+                if (Math.abs(weightSum - 100) > 0.01) {
+                    warningEl.classList.remove('hidden');
+                    warningEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i>A súlyok összege ${weightSum.toFixed(1)}%, nem 100% — a számítás automatikusan arányosítva lett.`;
+                } else {
+                    warningEl.classList.add('hidden');
+                }
+            }
+            if (weightSum <= 0) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg legalább egy pozitív súlyt.</div>`;
+                return;
+            }
+
+            // Normalizált kezdő értékek a megadott súlyok alapján (ha nem pont 100%, arányosítjuk)
+            let values = assets.map(a => total * (a.weightPct / weightSum));
+
+            if (rebalance) {
+                // Minden év VÉGÉN: hozamot alkalmazunk, majd visszaállítjuk a cél-súlyokra.
+                for (let y = 0; y < years; y++) {
+                    values = values.map((v, i) => v * (1 + assets[i].returnPct / 100));
+                    const yearEndTotal = values.reduce((s, v) => s + v, 0);
+                    values = assets.map(a => yearEndTotal * (a.weightPct / weightSum));
+                }
+            } else {
+                // Buy-and-hold: minden eszköz a saját hozamával nő önállóan, nincs átcsoportosítás.
+                values = values.map((v, i) => v * Math.pow(1 + assets[i].returnPct / 100, years));
+            }
+
+            const finalTotal = values.reduce((s, v) => s + v, 0);
+            const totalReturn = finalTotal - total;
+            const totalReturnPct = (totalReturn / total) * 100;
+            const weightedAvgReturn = assets.reduce((s, a) => s + (a.weightPct / weightSum) * a.returnPct, 0);
+
+            const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+            resultEl.innerHTML = `
+                <div class="space-y-1.5 mb-3">
+                    ${assets.map((a, i) => `
+                        <div class="flex items-center justify-between text-[11px] font-mono">
+                            <span class="text-slate-400">${a.name} (${(100 * a.weightPct / weightSum).toFixed(0)}%):</span>
+                            <span class="font-bold text-white">${fmt(values[i])}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Végső portfólióérték</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(finalTotal)}</div>
+                    </div>
+                    <div class="rounded-xl ${totalReturn >= 0 ? 'bg-neon-green/5 border border-neon-green/30' : 'bg-neon-red/5 border border-neon-red/30'} p-3">
+                        <div class="text-[10px] ${totalReturn >= 0 ? 'text-neon-green' : 'text-neon-red'} uppercase font-bold mb-1">Teljes hozam</div>
+                        <div class="text-sm font-extrabold text-white">${totalReturn >= 0 ? '+' : ''}${fmt(totalReturn)} (${totalReturnPct.toFixed(1)}%)</div>
+                    </div>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <span class="text-xs text-slate-300 font-bold">📊 Súlyozott átlagos éves hozam: ${weightedAvgReturn.toFixed(2)}% | Rebalancing: ${rebalance ? 'BE' : 'KI'}</span>
+                </div>
             `;
         }
 
