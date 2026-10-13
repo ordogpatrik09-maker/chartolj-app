@@ -1043,6 +1043,13 @@
                                 <div class="text-[10px] text-slate-400">Rendszeres befektetés vs. egyszeri összeg</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('recovery-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-trend-up"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Drawdown Visszanyerési Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mennyi nyereség kell egy veszteség után?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2257,6 +2264,35 @@
          ez most azt teszi lehetővé, hogy a felhasználó a SAJÁT, aktuális
          demó-pozícióin lássa meg ugyanazt a mutatót, amit a leckében
          elméletben tanult. -->
+    <!-- ================= DRAWDOWN VISSZANYERÉSI KALKULÁTOR (OKTATÁSI) =================
+         Kulcsfontosságú, gyakran alábecsült aszimmetria: egy X%-os veszteség
+         után NEM X%-os nyereség kell a visszanyeréshez, hanem annál mindig
+         NAGYOBB — mert a veszteség után kisebb tőkealapról indulsz újra.
+         Pl. 50%-os veszteség után 100%-os (dupla) nyereség szükséges a
+         nullszaldóhoz. Ez az egyik legfontosabb ok, amiért a nagy veszteségek
+         elkerülése (kockázatkezelés) fontosabb, mint a nagy nyereségek hajszolása. -->
+    <div id="recovery-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-trend-up text-amber-400"></i> Drawdown Visszanyerési Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('recovery-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Egy veszteség után MINDIG nagyobb %-os nyereség kell a nullszaldó visszanyeréséhez, mint amennyit veszítettél — mert kisebb tőkealapról indulsz újra. Nézd meg, mennyivel nagyobb.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Elszenvedett veszteség (%)</label>
+            <input type="number" id="recovery-loss" value="20" step="1" min="0.1" max="99.9" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcDrawdownRecovery()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="recovery-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A kapcsolat nem lineáris: minél nagyobb a veszteség, annál aránytalanul nagyobb nyereség kell a visszanyeréshez (50%-os veszteség → 100%-os nyereség kell; 90%-os veszteség → 900%-os nyereség kell). Ez az elsődleges ok, amiért a szigorú kockázatkezelés (kis kockázat/trade, stop-loss) hosszú távon fontosabb, mint a nagy nyereségek hajszolása.</p>
+        </div>
+    </div>
+
     <div id="heat-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -2381,6 +2417,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">DCA Szimulátor</div>
                     <div class="text-[10px] text-slate-400">Rendszeres befektetés vs. egyszeri összeg</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('recovery-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrow-trend-up"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Drawdown Visszanyerési Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mennyi nyereség kell egy veszteség után?</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('sessions-modal'); renderMarketSessions();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -6300,6 +6343,40 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= DRAWDOWN VISSZANYERÉSI KALKULÁTOR (OKTATÁSI) =================
+        function calcDrawdownRecovery() {
+            const lossEl = document.getElementById('recovery-loss');
+            const resultEl = document.getElementById('recovery-result');
+            if (!lossEl || !resultEl) return;
+
+            const lossPct = Math.min(99.9, Math.max(0.1, parseFloat(lossEl.value) || 0));
+            const lossFrac = lossPct / 100;
+            const requiredGainFrac = lossFrac / (1 - lossFrac);
+            const requiredGainPct = requiredGainFrac * 100;
+            const multiplier = requiredGainPct / lossPct;
+
+            const startCapital = 10000;
+            const afterLoss = startCapital * (1 - lossFrac);
+
+            resultEl.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-neon-red/5 border border-neon-red/30 p-3">
+                        <div class="text-[10px] text-neon-red uppercase font-bold mb-1">Veszteség</div>
+                        <div class="text-sm font-extrabold text-white">−${lossPct.toFixed(1)}%</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">$${startCapital.toLocaleString('en-US')} → $${afterLoss.toLocaleString('en-US', {maximumFractionDigits:0})}</div>
+                    </div>
+                    <div class="rounded-xl bg-amber-400/5 border border-amber-400/30 p-3">
+                        <div class="text-[10px] text-amber-400 uppercase font-bold mb-1">Szükséges nyereség</div>
+                        <div class="text-sm font-extrabold text-white">+${requiredGainPct.toFixed(1)}%</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">a nullszaldóhoz</div>
+                    </div>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <span class="text-xs text-slate-300 font-bold">⚖️ A szükséges nyereség ${multiplier.toFixed(2)}x nagyobb, mint a veszteség %-a</span>
+                </div>
+            `;
+        }
+
         // ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
         function calcDCASimulation() {
             const monthlyEl = document.getElementById('dca-monthly');
@@ -8864,6 +8941,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { term: 'Mean-Reversion (Átlaghoz Visszahúzódás)', cat: 'technikai', def: 'Stratégia-filozófia, amely azt feltételezi, hogy a szélsőséges árfolyammozgás után az ár visszahúzódik az átlaga felé (pl. RSI túladott/túlvett szintek alapján). Oldalazó piacon jól teljesít, de veszélyes egy valódi, tartós trendfordulat előtt.' },
             { term: 'Piaci Szekció (Trading Session)', cat: 'makró', def: 'A globális piac nem egységes — a nagy pénzügyi központok (Sydney, Tokió, London, New York) eltérő időzónákban nyitnak/zárnak, saját likviditási/volatilitási jellemzőkkel. A szekciók átfedésekor (pl. London-New York) jellemzően nagyobb a volatilitás és a forgalom.' },
             { term: 'Gazdasági Hírnaptár (Economic Calendar)', cat: 'makró', def: 'Előre ismert időpontú, visszatérő makrogazdasági események (pl. jegybanki döntés, inflációs adat, munkaerőpiaci jelentés) naptára. Ezek körül a piac jellemzően hirtelen, megugró volatilitást mutat — sok kereskedő ezekre az időszakokra külön óvatosabb kockázatkezelést alkalmaz.' },
+            { term: 'Drawdown Visszanyerés (Recovery)', cat: 'kockázat', def: 'A veszteség és a visszanyeréshez szükséges nyereség aszimmetrikus kapcsolata: egy X%-os veszteség után MINDIG nagyobb, mint X%-os nyereség kell a nullszaldóhoz, mert a veszteség után kisebb tőkealapról indulsz újra (pl. 50%-os veszteség → 100%-os nyereség kell). Ez az egyik fő ok, amiért a nagy veszteségek elkerülése fontosabb, mint a nagy nyereségek hajszolása.' },
             { term: 'DCA (Dollar-Cost Averaging)', cat: 'alapok', def: 'Rendszeres, azonos összegű befektetési stratégia, amely nem próbálja megidőzíteni a piacot: mindig ugyanannyit fektet be, függetlenül az aktuális ártól. Volatilis piacon automatikusan több egységet vesz alacsony, kevesebbet magas áron, ami csökkentheti az átlagos beszerzési árat — cserébe lemondasz arról az esélyről, hogy mindent a legalacsonyabb ponton fektesd be.' },
             { term: 'MÁP+ (Magyar Állampapír Plusz)', cat: 'alapok', def: 'Az Államadósság Kezelő Központ (ÁKK) által kibocsátott, magánszemélyeknek szóló, hosszabb futamidejű (jellemzően 5 éves) állampapír, féléves kamatfizetéssel. A magánszemélyek számára Magyarországon jelenleg az állampapír-hozam SZJA-mentes, ami normál bankbetéttel szemben jelentős versenyelőnyt ad — cserébe a tőke az államkötvény-kockázatnak van kitéve, nem a bankbetét-garanciának.' },
             { term: 'Expectancy (Statisztikai Várható Érték)', cat: 'statisztika', def: 'Egy átlagos trade várható nyeresége/vesztesége, a találati arány és az átlagos nyereség/veszteség méret alapján: (találati arány × átlagos nyereség) − (vesztes arány × átlagos veszteség). Egy alacsony találati arány is lehet nyereséges, ha a nyertes trade-ek elég sokszor nagyobbak a vesztes trade-eknél.' },
