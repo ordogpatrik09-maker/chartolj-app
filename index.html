@@ -3173,6 +3173,7 @@
                 <option value="hungarian">🏳️ Magyar Piac</option>
                 <option value="calendar">📅 Makronaptár</option>
                 <option value="glossary">📚 Szószedet</option>
+                <option value="curriculum">🧭 Kezdő Tanterv</option>
             </select>
         </div>
 
@@ -3210,6 +3211,9 @@
                 </button>
                 <button id="academy-mode-glossary-btn" onclick="setAcademyMode('glossary')" class="relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
                     <i class="fa-solid fa-book-bookmark mr-1"></i> Szószedet
+                </button>
+                <button id="academy-mode-curriculum-btn" onclick="setAcademyMode('curriculum')" class="relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-route mr-1"></i> Kezdő Tanterv
                 </button>
             </div>
         </div>
@@ -3361,6 +3365,38 @@
                 </div>
                 <div id="glossary-list" class="flex-grow overflow-y-auto px-5 pb-6 space-y-2"></div>
             </section>
+        </div>
+
+        <!-- ================= KEZDŐ TANTERV (IRÁNYÍTOTT TANULÁSI ÚTVONAL) =================
+             522+ lecke szabadon böngészhető a "Leckék" fülön — ez remek azoknak,
+             akik tudják, mit keresnek, de egy teljesen új felhasználónak
+             túlságosan sok a választás. Ez a mód egy KIS, kézzel válogatott,
+             SORBA RENDEZETT alapútvonalat ad (13 lecke, 4 szakaszban) —
+             ugyanazokra a LESSONS_DATA leckékre mutat, amik a "Leckék" fülön
+             is megvannak (nincs duplikált tartalom), csak egy ajánlott
+             sorrendet és konkrét "kövesd ezt" célt ad köré. -->
+        <div id="academy-body-curriculum" class="hidden flex-grow overflow-y-auto p-6">
+            <div class="max-w-2xl mx-auto">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-neon-cyan/15 via-white/5 to-neon-green/15 border border-dark-750 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-route text-2xl text-neon-cyan"></i>
+                    </div>
+                    <h2 class="text-lg font-extrabold text-white mb-1">Kezdő Tanterv</h2>
+                    <p class="text-xs text-slate-400 max-w-md mx-auto">Nem tudod, hol kezdd az 500+ leckét? Itt egy ajánlott, lépésről lépésre sorrend — ugyanazokhoz a leckékhez, amik a Leckék fülön is megvannak.</p>
+                </div>
+
+                <div class="glass-card rounded-xl p-4 mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-300">Haladásod a tantervben</span>
+                        <span id="curriculum-progress-label" class="text-xs font-mono text-neon-cyan">0 / 0</span>
+                    </div>
+                    <div class="w-full h-2 rounded-full bg-dark-800 overflow-hidden">
+                        <div id="curriculum-progress-bar" class="h-full bg-gradient-to-r from-neon-cyan to-neon-green transition-all" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div id="curriculum-stages-list" class="space-y-6"></div>
+            </div>
         </div>
     </div>
 
@@ -8945,7 +8981,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 'ai-analyzer': document.getElementById('academy-mode-ai-analyzer-btn'),
                 hungarian: document.getElementById('academy-mode-hungarian-btn'),
                 calendar: document.getElementById('academy-mode-calendar-btn'),
-                glossary: document.getElementById('academy-mode-glossary-btn')
+                glossary: document.getElementById('academy-mode-glossary-btn'),
+                curriculum: document.getElementById('academy-mode-curriculum-btn')
             };
             const bodies = {
                 lessons: document.getElementById('academy-body-lessons'),
@@ -8957,7 +8994,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 'ai-analyzer': document.getElementById('academy-body-ai-analyzer'),
                 hungarian: document.getElementById('academy-body-hungarian'),
                 calendar: document.getElementById('academy-body-calendar'),
-                glossary: document.getElementById('academy-body-glossary')
+                glossary: document.getElementById('academy-body-glossary'),
+                curriculum: document.getElementById('academy-body-curriculum')
             };
 
             const activeClass = 'relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white shadow transition';
@@ -8990,6 +9028,80 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (mode === 'hungarian') renderHungarianMarketScreen();
             if (mode === 'calendar') renderMacroCalendar();
             if (mode === 'glossary') renderGlossaryList();
+            if (mode === 'curriculum') renderCurriculumPath();
+        }
+
+        // ================= KEZDŐ TANTERV (IRÁNYÍTOTT TANULÁSI ÚTVONAL) =================
+        // Kézzel válogatott, SORBA RENDEZETT alapútvonal a LESSONS_DATA-ban már
+        // meglévő leckékre mutatva (nincs duplikált tartalom) — a cím alapján
+        // keresi ki az indexet futásidőben, hogy a tanterv ne törjön el, ha a
+        // LESSONS_DATA tömb sorrendje/hossza később módosul.
+        const CURRICULUM_STAGES = [
+            {
+                stage: '1. szakasz — Alapfogalmak',
+                icon: 'fa-seedling',
+                lessons: ['Mi az a Day Trading?', 'Long és Short pozíciók', 'Trend és Trendvonalak', 'Támasz és Ellenállás']
+            },
+            {
+                stage: '2. szakasz — Technikai Eszközök',
+                icon: 'fa-chart-line',
+                lessons: ['Mozgóátlagok (EMA/SMA)', 'RSI Indikátor']
+            },
+            {
+                stage: '3. szakasz — Kockázatkezelés',
+                icon: 'fa-shield-halved',
+                lessons: ['Pozícióméretezés', 'Stop-Loss és Take-Profit Stratégiák', 'Risk/Reward Arány']
+            },
+            {
+                stage: '4. szakasz — Pszichológia és Fegyelem',
+                icon: 'fa-brain',
+                lessons: ['Overtrading fogalma', 'Revenge Trading (Bosszú-kereskedés): A Veszteség Utáni Csapda', 'Fegyelem és Kereskedési Terv', 'Kereskedési Napló Vezetése']
+            }
+        ];
+
+        function getCurriculumLessonIdx(title) {
+            return LESSONS_DATA.findIndex(l => l.t === title);
+        }
+
+        function renderCurriculumPath() {
+            const container = document.getElementById('curriculum-stages-list');
+            if (!container) return;
+
+            let totalLessons = 0;
+            let doneLessons = 0;
+
+            const stagesHtml = CURRICULUM_STAGES.map(stage => {
+                const rows = stage.lessons.map(title => {
+                    const idx = getCurriculumLessonIdx(title);
+                    if (idx === -1) return ''; // védelem: ha egy cím mégsem található, kihagyjuk, nem törik el a lista
+                    totalLessons++;
+                    const isDone = academyCompleted.has(idx);
+                    if (isDone) doneLessons++;
+                    return `
+                        <button onclick="setAcademyMode('lessons'); openAcademyLesson(${idx});" class="w-full flex items-center gap-3 p-3 rounded-xl glass-card hover:border-neon-cyan/40 transition text-left">
+                            <span class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs ${isDone ? 'bg-neon-green/15 text-neon-green border border-neon-green/40' : 'bg-dark-800 text-slate-500 border border-dark-700'}">
+                                <i class="fa-solid ${isDone ? 'fa-check' : 'fa-circle'} ${isDone ? '' : 'text-[6px]'}"></i>
+                            </span>
+                            <span class="flex-grow text-xs font-semibold ${isDone ? 'text-slate-400' : 'text-white'}">${title}</span>
+                            ${isDone ? '<span class="text-[9px] font-bold text-neon-green uppercase shrink-0">Kész</span>' : '<i class="fa-solid fa-chevron-right text-slate-600 text-[10px] shrink-0"></i>'}
+                        </button>
+                    `;
+                }).join('');
+
+                return `
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-300 uppercase mb-2 flex items-center gap-1.5"><i class="fa-solid ${stage.icon} text-neon-cyan"></i> ${stage.stage}</h3>
+                        <div class="space-y-1.5">${rows}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = stagesHtml;
+
+            const progressLabel = document.getElementById('curriculum-progress-label');
+            const progressBar = document.getElementById('curriculum-progress-bar');
+            if (progressLabel) progressLabel.textContent = `${doneLessons} / ${totalLessons}`;
+            if (progressBar) progressBar.style.width = totalLessons > 0 ? `${Math.round((doneLessons / totalLessons) * 100)}%` : '0%';
         }
 
         // ================= MAKROESEMÉNY-NAPTÁR (OKTATÁSI) =================
