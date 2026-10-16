@@ -14738,11 +14738,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             10: { tool: 'rsi', cta: 'Próbáld ki az RSI-t a charton' },
             11: { tool: 'bollinger', cta: 'Kapcsold be a Bollinger Szalagokat' },
             27: { tool: 'fibonacci', cta: 'Húzz egy Fibonacci-t a charton' },
+            115: { tool: 'backtest-modal', cta: 'Próbáld ki élesben a Stratégia Backtesterben' },
         };
 
         function tryToolFromLesson(lessonIdx) {
             const mapping = LESSON_TOOL_MAP[lessonIdx];
             if (!mapping) return;
+
+            // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
+            // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
+            // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
+            if (mapping.tool === 'backtest-modal') {
+                closeAcademy();
+                openToolModal('backtest-modal');
+                if (typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
+                showNotification('Most próbáld ki élesben, amit az imént tanultál!');
+                return;
+            }
 
             switchMobileTab('trade');
             // Ha épp Kezdő módban vagyunk, a legtöbb eszköz el van rejtve — a
