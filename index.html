@@ -1001,6 +1001,13 @@
                                 <div class="text-[10px] text-slate-400">Mekkora a matematikailag optimális tétnagyság?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('sharpe-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gauge-high"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Sharpe-ráta Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Kockázattal korrigált hozam mérése</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2082,6 +2089,41 @@
         </div>
     </div>
 
+    <!-- ================= SHARPE-RÁTA KALKULÁTOR (OKTATÁSI) =================
+         A nyers hozam önmagában félrevezető: egy 20%-os éves hozam, amit
+         vad, kiszámíthatatlan ingadozásokkal érsz el, KOCKÁZATTAL KORRIGÁLVA
+         rosszabb lehet, mint egy stabilabb 12%-os hozam. A Sharpe-ráta ezt
+         méri: (hozam - kockázatmentes ráta) / hozam szórása. Ez egy önálló,
+         független oktatási eszköz, nem kapcsolódik a szimulált kereskedési
+         motorhoz — a felhasználó saját, kézzel megadott adatait elemzi. -->
+    <div id="sharpe-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high text-neon-green"></i> Sharpe-ráta Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('sharpe-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Sharpe-ráta a kockázattal korrigált hozamot méri: mennyi "extra" hozamot kapsz minden egységnyi vállalt volatilitásért. Minél magasabb, annál kedvezőbb a hozam/kockázat viszony.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Éves hozam (%)</label>
+            <input type="number" id="sharpe-return" value="18" step="0.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Kockázatmentes ráta (%, pl. állampapír hozam)</label>
+            <input type="number" id="sharpe-riskfree" value="4" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Hozam szórása / volatilitása (%, éves)</label>
+            <input type="number" id="sharpe-stddev" value="22" step="0.5" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcSharpe()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="sharpe-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Tájékoztató skála: 1.0 alatt gyenge, 1.0-2.0 jó, 2.0-3.0 nagyon jó, 3.0 felett kivételes (ritka és gyakran nem fenntartható hosszú távon). A Sharpe-ráta nem veszi figyelembe az eloszlás aszimmetriáját (pl. ritka, nagy veszteségek) — kiegészítő mutatóként érdemes kezelni, nem egyedüli döntési alapként.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -2689,6 +2731,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Kelly-kritérium kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Mekkora a matematikailag optimális tétnagyság?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('sharpe-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-high"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Sharpe-ráta Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Kockázattal korrigált hozam mérése</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -6614,6 +6663,57 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-amber-400">A teljes Kelly matematikailag optimális, de a valóságban (becslési hibák, sorozatos veszteségek) túl nagy visszaeséseket okozhat. A legtöbb profi a fél-Kelly vagy negyed-Kelly szintet használja a kockázat/trade %-jaként.</p>
+            `;
+        }
+
+        // ================= SHARPE-RÁTA KALKULÁTOR (OKTATÁSI) =================
+        // Klasszikus Sharpe-formula: (hozam - kockázatmentes ráta) / szórás.
+        // A hozamot és a kockázatmentes rátát %-ban adja meg a felhasználó,
+        // a szórást szintén %-ban (éves volatilitás) - ugyanabban az
+        // időegységben kell lenniük (itt: éves), hogy az arány érvényes legyen.
+        function calcSharpe() {
+            const returnEl = document.getElementById('sharpe-return');
+            const riskfreeEl = document.getElementById('sharpe-riskfree');
+            const stddevEl = document.getElementById('sharpe-stddev');
+            const out = document.getElementById('sharpe-result');
+            if (!returnEl || !riskfreeEl || !stddevEl || !out) return;
+
+            const annualReturn = parseFloat(returnEl.value);
+            const riskFree = parseFloat(riskfreeEl.value);
+            const stdDev = parseFloat(stddevEl.value);
+
+            if (isNaN(annualReturn) || isNaN(riskFree) || !stdDev || stdDev <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes hozamot, kockázatmentes rátát, és egy nullánál nagyobb szórást!</div>`;
+                return;
+            }
+
+            const excessReturn = annualReturn - riskFree;
+            const sharpe = excessReturn / stdDev;
+
+            let colorClass, verdict;
+            if (sharpe < 0) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Negatív Sharpe-ráta: a vállalt kockázathoz képest a hozam a kockázatmentes alternatívánál (pl. állampapír) is rosszabb volt.';
+            } else if (sharpe < 1) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Gyenge kockázattal korrigált teljesítmény — a hozam nem kompenzálja megfelelően a vállalt volatilitást.';
+            } else if (sharpe < 2) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Jó kockázattal korrigált teljesítmény, elfogadható egyensúly hozam és volatilitás között.';
+            } else if (sharpe < 3) {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Nagyon jó kockázattal korrigált teljesítmény.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Kivételesen magas érték — ilyen szint ritka és hosszú távon gyakran nehezen fenntartható, érdemes ellenőrizni az adatok/időszak reprezentativitását.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Többlethozam (hozam - kockázatmentes):</span><span class="${excessReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${excessReturn >= 0 ? '+' : ''}${excessReturn.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Sharpe-ráta:</span><span class="font-extrabold ${colorClass} text-sm">${sharpe.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
         }
 
