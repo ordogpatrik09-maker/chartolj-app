@@ -1078,6 +1078,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyit visznek el a díjak valójában?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('inflation-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-money-bill-trend-up"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Inflációs Hatás Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Nominális vs. reál (vásárlóerő) hozam</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-branch"></i></span>
                             <div>
@@ -2460,6 +2467,43 @@
         </div>
     </div>
 
+    <!-- ================= INFLÁCIÓS HATÁS (REÁLHOZAM) KALKULÁTOR (KITERJESZTÉS) =================
+         Eddig semelyik eszköz nem foglalkozott az inflációval — egy nominális
+         (névleges) hozam könnyen "jó" eredménynek tűnik, miközben a reál
+         (vásárlóerőben mért) hozam akár negatív is lehet. A cél a "money
+         illusion" (pénz-illúzió) csapdájának bemutatása: a felhasználó
+         explicit módon lássa a nominális és a reál végösszeg KÖZTI
+         különbséget, nem csak egy elvont %-ot. -->
+    <div id="inflation-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-money-bill-trend-up text-amber-400"></i> Inflációs Hatás Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('inflation-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A "nominális" (névleges, %-ban kiírt) hozamod és a valódi, VÁSÁRLÓERŐBEN mért ("reál") hozamod gyakran nagyon különbözik — egy 8%-os éves hozam 6%-os inflációnál valójában csak kb. 2%-os reálhozamot jelent.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő összeg ($)</label>
+            <input type="number" id="inflation-amount" value="10000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div><label class="text-[10px] text-slate-500">Éves nominális hozam (%)</label><input type="number" id="inflation-nominal" value="8" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Éves inflációs ráta (%)</label><input type="number" id="inflation-rate" value="5" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Időtartam (év)</label>
+            <input type="number" id="inflation-years" value="10" step="1" min="1" max="60" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcInflationImpact()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="inflation-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A reál hozam pontos (nem közelítő) képlete: (1+nominális)/(1+infláció) - 1. Egyszerűsített, oktatási közelítés: fix, évenkénti, egyenletes inflációs rátát és hozamot feltételez, adók és egyéb költségek nélkül.</p>
+        </div>
+    </div>
+
     <div id="dca-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -2901,6 +2945,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Kereskedési Díj Hatás Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Mennyit visznek el a díjak valójában?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('inflation-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-money-bill-trend-up"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Inflációs Hatás Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Nominális vs. reál (vásárlóerő) hozam</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -8436,6 +8487,71 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <div class="text-center py-2 rounded-xl bg-amber-400/10 border border-amber-400/30">
                     <span class="text-xs text-amber-300 font-bold">⚠️ Minden egyes trade-nek legalább ${breakEvenMovePct.toFixed(3)}%-ot kell mozdulnia a kedvező irányba, csak hogy a díjak nullára jöjjenek ki</span>
+                </div>
+            `;
+        }
+
+        // ================= INFLÁCIÓS HATÁS (REÁLHOZAM) KALKULÁTOR (KITERJESZTÉS) =================
+        // Fisher-egyenlet (pontos, nem közelítő alak): reál = (1+nominális)/(1+infláció) - 1.
+        // A nominális és reál végösszeget évenkénti kamatos növekedéssel
+        // számoljuk, hogy a felhasználó a konkrét, dollárban/forintban mért
+        // vásárlóerő-különbséget lássa, ne csak egy elvont %-ot.
+        function calcInflationImpact() {
+            const amountEl = document.getElementById('inflation-amount');
+            const nominalEl = document.getElementById('inflation-nominal');
+            const rateEl = document.getElementById('inflation-rate');
+            const yearsEl = document.getElementById('inflation-years');
+            const resultEl = document.getElementById('inflation-result');
+            if (!amountEl || !nominalEl || !rateEl || !yearsEl || !resultEl) return;
+
+            const amount = parseFloat(amountEl.value);
+            const nominalPct = parseFloat(nominalEl.value);
+            const inflationPct = parseFloat(rateEl.value);
+            const years = parseInt(yearsEl.value, 10);
+
+            if (!amount || amount <= 0 || !Number.isFinite(nominalPct) || !Number.isFinite(inflationPct) || inflationPct < 0 || !years || years < 1) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív kezdő összeget és időtartamot (az infláció nem lehet negatív)!</div>`;
+                return;
+            }
+
+            const nominalFrac = nominalPct / 100;
+            const inflationFrac = inflationPct / 100;
+            // Pontos (nem közelítő) reálhozam-formula — a gyakori "nominális - infláció"
+            // közelítés magas ráták mellett jelentősen torzít.
+            const realFrac = (1 + nominalFrac) / (1 + inflationFrac) - 1;
+
+            const nominalFinal = amount * Math.pow(1 + nominalFrac, years);
+            // A reál végösszeg = a nominális végösszeg MAI vásárlóerőre átszámítva
+            // (azaz a kumulált inflációval deflálva) — ekvivalens azzal, mintha a
+            // realFrac rátával kamatosítanánk, csak szemléletesebb a levezetés.
+            const realFinal = nominalFinal / Math.pow(1 + inflationFrac, years);
+            const purchasingPowerLostPct = (1 - realFinal / nominalFinal) * 100;
+
+            const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            const isRealPositive = realFrac > 0;
+            const isRealNegative = realFrac < -1e-9;
+
+            resultEl.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Nominális végösszeg (${years} év)</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(nominalFinal)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">+${nominalPct.toFixed(1)}%/év névleges hozam</div>
+                    </div>
+                    <div class="rounded-xl ${isRealPositive ? 'bg-neon-green/5 border border-neon-green/30' : 'bg-neon-red/5 border border-neon-red/30'} p-3">
+                        <div class="text-[10px] ${isRealPositive ? 'text-neon-green' : 'text-neon-red'} uppercase font-bold mb-1">Reál (vásárlóerő) végösszeg</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(realFinal)}</div>
+                        <div class="text-[9.5px] ${isRealPositive ? 'text-neon-green' : 'text-neon-red'} mt-0.5">${realFrac >= 0 ? '+' : ''}${(realFrac * 100).toFixed(2)}%/év reálhozam</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">Vásárlóerőben "elvitt" rész az inflációtól:</span>
+                    <span class="font-extrabold text-amber-400">${purchasingPowerLostPct.toFixed(1)}%</span>
+                </div>
+                <div class="text-center py-2 rounded-xl ${isRealNegative ? 'bg-neon-red/10 border border-neon-red/30' : 'bg-amber-400/10 border border-amber-400/30'}">
+                    <span class="text-xs ${isRealNegative ? 'text-neon-red' : 'text-amber-300'} font-bold">${isRealNegative
+                        ? `⚠️ A nominális hozam POZITÍV volt, de a reál (vásárlóerőben mért) hozamod NEGATÍV — a "pénz-illúzió" csapdája: gazdagabbnak tűnsz a számok alapján, valójában kevesebbet tudsz venni a pénzedért.`
+                        : `A nominális hozam önmagában félrevezető lehet — mindig a REÁL (infláció utáni) hozamot nézd, ha a tényleges vásárlóerő-növekedésre vagy kíváncsi.`}</span>
                 </div>
             `;
         }
