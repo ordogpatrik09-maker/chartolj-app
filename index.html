@@ -2422,6 +2422,7 @@
             <select id="backtest-strategy" onchange="renderBacktestStrategyInputs()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 text-xs text-white focus:outline-none focus:border-neon-purple/50">
                 <option value="ema">EMA-keresztezés (trendkövető)</option>
                 <option value="rsi">RSI Mean-Reversion (ellentétes)</option>
+                <option value="bollinger">Bollinger-szalag Mean-Reversion (ellentétes)</option>
             </select>
 
             <div id="backtest-strategy-inputs"></div>
@@ -4931,6 +4932,74 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             };
         }
 
+        // ================= BOLLINGER-SZALAG MEAN-REVERSION BACKTEST (OKTATÁSI) =================
+        // Harmadik, önálló backtest-szabály: long belépés, amikor az ár az alsó
+        // Bollinger-szalag ALÁ záródik (statisztikailag szokatlanul alacsony,
+        // potenciális "túladott" állapot), zárás, amikor az ár visszatér a
+        // középvonalra (SMA) — klasszikus "visszatérés az átlaghoz" (mean-reversion)
+        // logika, szemben az EMA-keresztezés trendkövető megközelítésével.
+        function runBollingerReversionBacktest(candles, period, stdDevMultiplier, startEquity) {
+            const closes = candles.map(c => c.close);
+            const middle = new Array(closes.length).fill(null);
+            const lower = new Array(closes.length).fill(null);
+
+            for (let i = 0; i < closes.length; i++) {
+                const sma = calcSMA(closes, period, i);
+                if (sma === null) continue;
+                const sd = calcStdDev(closes, period, i, sma);
+                middle[i] = sma;
+                lower[i] = sma - (stdDevMultiplier * sd);
+            }
+
+            let equity = startEquity;
+            let position = null;
+            const trades = [];
+            const equityCurve = [{ index: 0, equity: startEquity }];
+            let peakEquity = startEquity;
+            let maxDrawdownPct = 0;
+
+            for (let i = 1; i < closes.length; i++) {
+                if (middle[i] === null || lower[i] === null) continue;
+
+                const closedBelowLower = closes[i] < lower[i];
+                const closedBackAboveMiddle = closes[i] >= middle[i];
+
+                if (!position && closedBelowLower) {
+                    position = { entryPrice: closes[i], entryIndex: i };
+                } else if (position && closedBackAboveMiddle) {
+                    const retPct = (closes[i] - position.entryPrice) / position.entryPrice;
+                    equity = equity * (1 + retPct);
+                    trades.push({ entryIndex: position.entryIndex, exitIndex: i, entryPrice: position.entryPrice, exitPrice: closes[i], returnPct: retPct });
+                    position = null;
+                }
+
+                equityCurve.push({ index: i, equity });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            if (position) {
+                const lastClose = closes[closes.length - 1];
+                const retPct = (lastClose - position.entryPrice) / position.entryPrice;
+                equity = equity * (1 + retPct);
+                trades.push({ entryIndex: position.entryIndex, exitIndex: closes.length - 1, entryPrice: position.entryPrice, exitPrice: lastClose, returnPct: retPct, stillOpenAtEnd: true });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            const wins = trades.filter(t => t.returnPct > 0).length;
+            const winRatePct = trades.length ? (wins / trades.length * 100) : 0;
+            const totalReturnPct = (equity - startEquity) / startEquity * 100;
+            const buyHoldReturnPct = closes.length > 1 ? (closes[closes.length - 1] - closes[0]) / closes[0] * 100 : 0;
+
+            return {
+                trades, equityCurve, winRatePct, totalReturnPct, maxDrawdownPct,
+                finalEquity: equity, buyHoldReturnPct, tradeCount: trades.length
+            };
+        }
+
         // Nagyon egyszerű, függőségmentes equity-görbe sparkline egy kis
         // canvasre — nem a fő chart-motort használja (az sokkal komplexebb
         // dolgokra van hangolva), csak egy gyors vizuális áttekintést ad.
@@ -4978,7 +5047,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function renderBacktestStrategyInputs() {
             const strategy = document.getElementById('backtest-strategy').value;
             const el = document.getElementById('backtest-strategy-inputs');
-            if (strategy === 'rsi') {
+            if (strategy === 'bollinger') {
+                el.innerHTML = `
+                    <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Long belépés, amikor az ár az alsó Bollinger-szalag ALÁ záródik (statisztikailag szokatlanul alacsony), zárás, amikor az ár visszatér a középvonalra (SMA).</p>
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-400">SMA periódus</label>
+                            <input type="number" id="backtest-bb-period" value="20" step="1" min="2" max="200" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-400">Szórás-szorzó</label>
+                            <input type="number" id="backtest-bb-stddev" value="2" step="0.1" min="0.5" max="5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                        </div>
+                    </div>
+                `;
+            } else if (strategy === 'rsi') {
                 el.innerHTML = `
                     <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Long belépés, amikor az RSI lefelé keresztezi a túladott szintet (potenciális visszapattanás), zárás, amikor felfelé keresztezi a túlvett szintet.</p>
                     <div class="grid grid-cols-3 gap-2 mb-3">
@@ -5025,7 +5108,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             let result, minCandlesNeeded;
 
-            if (strategy === 'rsi') {
+            if (strategy === 'bollinger') {
+                const bbPeriod = parseInt(document.getElementById('backtest-bb-period').value, 10);
+                const bbStdDev = parseFloat(document.getElementById('backtest-bb-stddev').value);
+                if (!bbPeriod || bbPeriod < 2 || !bbStdDev || bbStdDev <= 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes SMA periódust és egy nullánál nagyobb szórás-szorzót!</div>`;
+                    return;
+                }
+                minCandlesNeeded = bbPeriod + 2;
+                if (typeof candleData === 'undefined' || !candleData || candleData.length < minCandlesNeeded) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton ehhez a backteszthez — válts hosszabb idősíkra vagy csökkentsd az SMA periódust.</div>`;
+                    return;
+                }
+                result = runBollingerReversionBacktest(candleData, bbPeriod, bbStdDev, startEquity);
+            } else if (strategy === 'rsi') {
                 const rsiPeriod = parseInt(document.getElementById('backtest-rsi-period').value, 10);
                 const oversold = parseFloat(document.getElementById('backtest-rsi-oversold').value);
                 const overbought = parseFloat(document.getElementById('backtest-rsi-overbought').value);
@@ -5079,7 +5175,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${beatBuyHold ? 'text-neon-green' : 'text-amber-400'}">${result.tradeCount === 0
-                    ? 'Ebben az időszakban nem volt EMA-keresztezés — próbálj más periódust vagy hosszabb idősíkot.'
+                    ? 'Ebben az időszakban nem keletkezett belépési jelzés ezzel a stratégiával — próbálj más periódust/paramétert vagy hosszabb idősíkot.'
                     : beatBuyHold
                         ? `Ez a stratégia ezen az időszakon felülteljesítette az egyszerű Buy & Hold-ot.`
                         : `Ez a stratégia ezen az időszakon ALULteljesítette az egyszerű Buy & Hold-ot — egy mechanikus szabály nem automatikusan jobb, mint egyszerűen megvenni és tartani.`}</p>
