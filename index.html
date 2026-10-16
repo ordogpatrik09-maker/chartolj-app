@@ -3391,6 +3391,7 @@
                 <option value="calendar">📅 Makronaptár</option>
                 <option value="glossary">📚 Szószedet</option>
                 <option value="curriculum">🧭 Kezdő Tanterv</option>
+                <option value="review">🔄 Ismétlés</option>
             </select>
         </div>
 
@@ -3431,6 +3432,9 @@
                 </button>
                 <button id="academy-mode-curriculum-btn" onclick="setAcademyMode('curriculum')" class="relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
                     <i class="fa-solid fa-route mr-1"></i> Kezdő Tanterv
+                </button>
+                <button id="academy-mode-review-btn" onclick="setAcademyMode('review')" class="relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-rotate mr-1"></i> Ismétlés
                 </button>
             </div>
         </div>
@@ -3613,6 +3617,23 @@
                 </div>
 
                 <div id="curriculum-stages-list" class="space-y-6"></div>
+            </div>
+        </div>
+
+        <!-- ================= ISMÉTLŐ RENDSZER (SPACED REPETITION) NÉZET ================= -->
+        <div id="academy-body-review" class="hidden flex-grow overflow-y-auto p-6">
+            <div class="max-w-2xl mx-auto">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-neon-purple/15 via-white/5 to-neon-cyan/15 border border-dark-750 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-rotate text-2xl text-neon-purple"></i>
+                    </div>
+                    <h2 class="text-lg font-extrabold text-white mb-1">Ismétlés</h2>
+                    <p class="text-xs text-slate-400 max-w-md mx-auto">Az időben elosztott ismétlés (spaced repetition) jóval hatékonyabb, mint egyszer végigolvasni egy leckét. Minden teljesített kvíz automatikusan bekerül ide — helyes válasz esetén ritkábban, hibás válasz esetén hamarabb kerül vissza eléd.</p>
+                </div>
+
+                <div id="srs-stats-row" class="grid grid-cols-3 gap-2 mb-6"></div>
+
+                <div id="srs-review-list" class="space-y-2"></div>
             </div>
         </div>
     </div>
@@ -9432,7 +9453,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 hungarian: document.getElementById('academy-mode-hungarian-btn'),
                 calendar: document.getElementById('academy-mode-calendar-btn'),
                 glossary: document.getElementById('academy-mode-glossary-btn'),
-                curriculum: document.getElementById('academy-mode-curriculum-btn')
+                curriculum: document.getElementById('academy-mode-curriculum-btn'),
+                review: document.getElementById('academy-mode-review-btn')
             };
             const bodies = {
                 lessons: document.getElementById('academy-body-lessons'),
@@ -9445,7 +9467,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 hungarian: document.getElementById('academy-body-hungarian'),
                 calendar: document.getElementById('academy-body-calendar'),
                 glossary: document.getElementById('academy-body-glossary'),
-                curriculum: document.getElementById('academy-body-curriculum')
+                curriculum: document.getElementById('academy-body-curriculum'),
+                review: document.getElementById('academy-body-review')
             };
 
             const activeClass = 'relative whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white shadow transition';
@@ -9479,6 +9502,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (mode === 'calendar') renderMacroCalendar();
             if (mode === 'glossary') renderGlossaryList();
             if (mode === 'curriculum') renderCurriculumPath();
+            if (mode === 'review') renderSrsReview();
         }
 
         // ================= KEZDŐ TANTERV (IRÁNYÍTOTT TANULÁSI ÚTVONAL) =================
@@ -9552,6 +9576,130 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const progressBar = document.getElementById('curriculum-progress-bar');
             if (progressLabel) progressLabel.textContent = `${doneLessons} / ${totalLessons}`;
             if (progressBar) progressBar.style.width = totalLessons > 0 ? `${Math.round((doneLessons / totalLessons) * 100)}%` : '0%';
+        }
+
+        // ================= ISMÉTLŐ RENDSZER (SPACED REPETITION / LEITNER) =================
+        // A puszta "egyszer végigcsinált lecke" nem garantálja a hosszú távú
+        // megjegyzést — a kutatás szerint az időben elosztott ismétlés (spaced
+        // repetition) sokkal hatékonyabb, mint az egyszeri áttekintés. Ez egy
+        // egyszerű, 5 "dobozos" Leitner-rendszer: helyes kvíz-eredmény esetén a
+        // lecke eggyel "feljebb" lép (ritkábban kell ismételni), helytelen/bukott
+        // kísérlet esetén visszaesik az 1. dobozba (holnap újra esedékes).
+        // Teljesen független a szimulált kereskedési motortól és a Supabase
+        // adatmodelltől — csak a böngésző localStorage-ában tárolt, kliens-oldali
+        // tanulási segédlet.
+        const SRS_BOX_INTERVAL_DAYS = [1, 1, 3, 7, 16, 35]; // index: box (0 nem használt, 1-5 a dobozok)
+        let srsState = {};
+
+        function srsTodayKey() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        function srsAddDays(dateKey, days) {
+            const [y, m, d] = dateKey.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            dt.setDate(dt.getDate() + days);
+            return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        }
+        function loadSrsState() {
+            try {
+                const raw = localStorage.getItem('chartolj_srs_state');
+                srsState = raw ? JSON.parse(raw) : {};
+            } catch (e) { srsState = {}; }
+        }
+        function saveSrsState() {
+            try { localStorage.setItem('chartolj_srs_state', JSON.stringify(srsState)); } catch (e) {}
+        }
+        function updateSrsAfterLesson(lessonIdx, passed, pct) {
+            if (typeof lessonIdx !== 'number' || lessonIdx < 0) return;
+            if (!srsState || typeof srsState !== 'object') loadSrsState();
+            const prev = srsState[lessonIdx] || { box: 0 };
+            const newBox = passed ? Math.min((prev.box || 0) + 1, 5) : 1;
+            const today = srsTodayKey();
+            srsState[lessonIdx] = {
+                box: newBox,
+                due: srsAddDays(today, SRS_BOX_INTERVAL_DAYS[newBox]),
+                lastReviewed: today,
+                lastPct: typeof pct === 'number' ? pct : null
+            };
+            saveSrsState();
+            // Ha éppen az Ismétlés nézet van nyitva, frissítsük azonnal a listát is.
+            if (academyMode === 'review') renderSrsReview();
+        }
+        function getSrsDueLessons() {
+            loadSrsState();
+            const today = srsTodayKey();
+            const due = [];
+            Object.keys(srsState).forEach(key => {
+                const idx = parseInt(key, 10);
+                if (isNaN(idx) || !LESSONS_DATA[idx]) return;
+                const entry = srsState[idx];
+                if (entry.due <= today) due.push({ idx, lesson: LESSONS_DATA[idx], box: entry.box, due: entry.due });
+            });
+            due.sort((a, b) => a.due.localeCompare(b.due));
+            return due;
+        }
+        function renderSrsReview() {
+            const container = document.getElementById('srs-review-list');
+            if (!container) return;
+            loadSrsState();
+
+            const trackedCount = Object.keys(srsState).length;
+            const dueList = getSrsDueLessons();
+            const masteredCount = Object.values(srsState).filter(e => e.box >= 5).length;
+
+            const statsEl = document.getElementById('srs-stats-row');
+            if (statsEl) {
+                statsEl.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 text-center">
+                        <div class="text-xl font-mono font-extrabold text-neon-cyan">${dueList.length}</div>
+                        <div class="text-[9.5px] text-slate-500 uppercase mt-0.5">Ma esedékes</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-3 text-center">
+                        <div class="text-xl font-mono font-extrabold text-white">${trackedCount}</div>
+                        <div class="text-[9.5px] text-slate-500 uppercase mt-0.5">Nyomon követett</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-3 text-center">
+                        <div class="text-xl font-mono font-extrabold text-neon-green">${masteredCount}</div>
+                        <div class="text-[9.5px] text-slate-500 uppercase mt-0.5">Elsajátítva (5. doboz)</div>
+                    </div>
+                `;
+            }
+
+            if (trackedCount === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10">
+                        <i class="fa-solid fa-rotate text-3xl text-slate-700 mb-3"></i>
+                        <p class="text-xs text-slate-500">Még nincs nyomon követett lecke — teljesíts egy kvízt a Leckék fülön, és az automatikusan bekerül az ismétlő-rendszerbe.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (dueList.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10">
+                        <i class="fa-solid fa-circle-check text-3xl text-neon-green mb-3"></i>
+                        <p class="text-xs text-slate-400">Nincs ma esedékes ismétlés — minden nyomon követett leckéd friss. Gyere vissza később!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = dueList.map(item => {
+                const accent = academyAccentColor(item.lesson.c);
+                const boxLabel = item.box >= 5 ? 'Elsajátítva (karbantartó ismétlés)' : `${item.box}. doboz`;
+                return `
+                    <button onclick="setAcademyMode('lessons'); openAcademyLesson(${item.idx});" class="w-full flex items-center gap-3 p-3 rounded-xl glass-card hover:border-${accent}/40 transition text-left">
+                        <span class="w-9 h-9 shrink-0 rounded-lg bg-${accent}/10 border border-${accent}/30 flex items-center justify-center text-sm">${item.lesson.e || '📘'}</span>
+                        <div class="flex-grow min-w-0">
+                            <div class="text-xs font-bold text-white truncate">${item.lesson.t}</div>
+                            <div class="text-[9.5px] text-slate-500 mt-0.5">${boxLabel} · ${ACADEMY_MODULES[item.lesson.m] ? ACADEMY_MODULES[item.lesson.m].n : ''}</div>
+                        </div>
+                        <i class="fa-solid fa-rotate text-slate-600 text-xs shrink-0"></i>
+                    </button>
+                `;
+            }).join('');
         }
 
         // ================= MAKROESEMÉNY-NAPTÁR (OKTATÁSI) =================
@@ -14369,6 +14517,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         checkMissionAvailability();
                     }
                 }
+                // Minden kvíz-kísérlet (sikeres VAGY sikertelen) frissíti az
+                // ismétlő-rendszer (spaced repetition) ütemezését erre a leckére —
+                // ez táplálja az "Ismétlés" Akadémia-módot.
+                updateSrsAfterLesson(academyLessonIdx, passed, pct);
             }
         }
 
