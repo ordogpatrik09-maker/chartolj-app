@@ -14971,6 +14971,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             115: { tool: 'backtest-modal', cta: 'Próbáld ki élesben a Stratégia Backtesterben' },
             26: { tool: 'backtest-modal', backtestStrategy: 'macd', cta: 'Backteszteld a MACD-keresztezést a múltbeli adaton' },
             517: { tool: 'backtest-modal', backtestStrategy: 'bollinger', cta: 'Hasonlítsd össze: backteszteld a mean-reversion stratégiát' },
+            268: { tool: 'montecarlo-modal', cta: 'Futtasd le élesben a Monte Carlo Szimulátort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -14980,10 +14981,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            if (mapping.tool === 'backtest-modal') {
+            if (mapping.tool === 'backtest-modal' || mapping.tool === 'montecarlo-modal') {
                 closeAcademy();
-                openToolModal('backtest-modal');
-                if (typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
+                openToolModal(mapping.tool);
+                if (mapping.tool === 'backtest-modal' && typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
                 if (mapping.backtestStrategy) {
                     const sel = document.getElementById('backtest-strategy');
                     if (sel) { sel.value = mapping.backtestStrategy; renderBacktestStrategyInputs(); }
