@@ -1071,6 +1071,13 @@
                                 <div class="text-[10px] text-slate-400">Több eszköz, súlyok, rebalancing hatása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('pipvalue-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Forex Pip Érték Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mennyit ér dollárban egy pip mozgás?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2098,6 +2105,37 @@
          (évenkénti visszaállítás a cél-súlyokra) mutat be, hogy a
          felhasználó lássa, mekkora különbséget tehet a rebalancing egy
          valóban diverzifikált, eltérő hozamú eszközökből álló portfólión. -->
+    <!-- ================= FOREX PIP ÉRTÉK KALKULÁTOR (OKTATÁSI) =================
+         A forexben a stop/take-profit szinteket jellemzően PIP-ben (0.0001
+         árfolyamváltozás, a legtöbb párnál) adják meg, nem dollárban — ez
+         sok kezdőnek zavaró, mert a "hány pip" és a "mennyi pénz" közötti
+         átváltás nem intuitív. Ez a kalkulátor az USD-kvótált párokra
+         (pl. EUR/USD, GBP/USD) ad egyszerű, standard átváltást. -->
+    <div id="pipvalue-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-ruler text-neon-cyan"></i> Forex Pip Érték Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('pipvalue-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Mennyit ér dollárban egyetlen pip (0.0001 árfolyamváltozás), és mennyi a várható nyereség/veszteség egy adott pip-mozgásnál? (USD-kvótált párokra, pl. EUR/USD, GBP/USD.)</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Pozícióméret (egység, pl. 100 000 = 1 standard lot)</label>
+            <input type="number" id="pip-units" value="100000" step="1000" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Pip-ek száma (a mozgás mérete)</label>
+            <input type="number" id="pip-count" value="50" step="1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcPipValue()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="pipvalue-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Standard közelítés USD-kvótált párokra (pl. EUR/USD): 1 pip = 0.0001 árfolyamváltozás, pip érték = 0.0001 × pozícióméret. Más kvótálású pároknál (pl. USD/JPY, ahol 1 pip = 0.01) vagy nem-USD számlapénznemnél a számítás eltérő — ez egyszerűsített, oktatási közelítés.</p>
+        </div>
+    </div>
+
     <div id="portfolio-sim-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-[26rem] p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -2595,6 +2633,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Portfólió Szimulátor</div>
                     <div class="text-[10px] text-slate-400">Több eszköz, súlyok, rebalancing hatása</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('pipvalue-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-ruler"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Forex Pip Érték Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mennyit ér dollárban egy pip mozgás?</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('sessions-modal'); renderMarketSessions();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -6572,6 +6617,39 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= FOREX PIP ÉRTÉK KALKULÁTOR (OKTATÁSI) =================
+        function calcPipValue() {
+            const unitsEl = document.getElementById('pip-units');
+            const countEl = document.getElementById('pip-count');
+            const resultEl = document.getElementById('pipvalue-result');
+            if (!unitsEl || !countEl || !resultEl) return;
+
+            const units = Math.max(0, parseFloat(unitsEl.value) || 0);
+            const pipCount = Math.max(0, parseFloat(countEl.value) || 0);
+
+            const PIP_SIZE = 0.0001; // standard USD-kvótált pároknál (pl. EUR/USD)
+            const pipValueUsd = units * PIP_SIZE;
+            const totalValueUsd = pipValueUsd * pipCount;
+
+            const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            resultEl.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">1 pip értéke</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(pipValueUsd)}</div>
+                    </div>
+                    <div class="rounded-xl bg-neon-cyan/5 border border-neon-cyan/30 p-3">
+                        <div class="text-[10px] text-neon-cyan uppercase font-bold mb-1">${pipCount} pip összesen</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(totalValueUsd)}</div>
+                    </div>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <span class="text-xs text-slate-300 font-bold">📏 ${units.toLocaleString('en-US')} egység pozícióméretnél minden 1 pip mozgás ${fmt(pipValueUsd)}-t jelent</span>
+                </div>
+            `;
+        }
+
         // ================= TELJES PORTFÓLIÓ SZIMULÁTOR (OKTATÁSI) =================
         function calcPortfolioSimulation() {
             const totalEl = document.getElementById('port-total');
@@ -9433,6 +9511,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { term: 'Mean-Reversion (Átlaghoz Visszahúzódás)', cat: 'technikai', def: 'Stratégia-filozófia, amely azt feltételezi, hogy a szélsőséges árfolyammozgás után az ár visszahúzódik az átlaga felé (pl. RSI túladott/túlvett szintek alapján). Oldalazó piacon jól teljesít, de veszélyes egy valódi, tartós trendfordulat előtt.' },
             { term: 'Piaci Szekció (Trading Session)', cat: 'makró', def: 'A globális piac nem egységes — a nagy pénzügyi központok (Sydney, Tokió, London, New York) eltérő időzónákban nyitnak/zárnak, saját likviditási/volatilitási jellemzőkkel. A szekciók átfedésekor (pl. London-New York) jellemzően nagyobb a volatilitás és a forgalom.' },
             { term: 'Gazdasági Hírnaptár (Economic Calendar)', cat: 'makró', def: 'Előre ismert időpontú, visszatérő makrogazdasági események (pl. jegybanki döntés, inflációs adat, munkaerőpiaci jelentés) naptára. Ezek körül a piac jellemzően hirtelen, megugró volatilitást mutat — sok kereskedő ezekre az időszakokra külön óvatosabb kockázatkezelést alkalmaz.' },
+            { term: 'Pip (Percentage in Point)', cat: 'alapok', def: 'A forex árfolyamváltozás legkisebb szabványos mértékegysége, a legtöbb párnál 0.0001 (pl. EUR/USD 1.1420 → 1.1421 = 1 pip). A pip dollárértéke a pozícióméret függvénye: 1 standard lot (100 000 egység) esetén 1 pip ≈ $10 (USD-kvótált pároknál).' },
             { term: 'Rug Pull', cat: 'kriptó', def: 'Kripto csalás-típus: egy token/projekt fejlesztői befektetőktől gyűjtött likviditást hirtelen kivonnak és eltűnnek, a token értéke percek alatt nullára esik. Jellemzően zárolatlan likviditás és erős, koordinált hype előzi meg.' },
             { term: 'Pump-and-Dump', cat: 'kriptó', def: 'Koordinált manipuláció: egy csoport hype-pal és hamis hírekkel felhajtja egy kis kapitalizációjú token árát (pump), majd a csúcson eladja a saját állományát (dump) — a később belépő, FOMO-zó kereskedők a veszteséggel maradnak.' },
             { term: 'Phishing (Adathalászat)', cat: 'kriptó', def: 'Csalás, amelynél egy valódinak tűnő weboldal, e-mail vagy üzenet próbálja kicsalni a seed phrase-t, jelszót vagy privát kulcsot, jellemzően sürgető hamis riasztással vagy hamis domainnel. Legitim support SOHA nem kéri el ezeket az adatokat.' },
