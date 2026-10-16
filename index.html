@@ -1085,6 +1085,13 @@
                                 <div class="text-[10px] text-slate-400">Nominális vs. reál (vásárlóerő) hozam</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('funding-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-money-bill-transfer"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Funding Rate Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Perpetual futures finanszírozási díja</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-branch"></i></span>
                             <div>
@@ -2504,6 +2511,45 @@
         </div>
     </div>
 
+    <!-- ================= FUNDING RATE KALKULÁTOR (KITERJESZTÉS) =================
+         A Funding Rate Akadémia-lecke (145-ös index) eddig csak elméletben
+         magyarázta el a perpetual futures finanszírozási díját — eszköz
+         nélkül. Ez pótolja: adott pozícióméret, tőkeáttétel, funding ráta
+         (8 óránkénti %) és tartási időtartam mellett konkrét dollárösszegben
+         mutatja meg, mennyit fizetne/kapna a felhasználó — ez a rejtett,
+         sokak által alábecsült, FOLYAMATOSAN összeadódó költség. -->
+    <div id="funding-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-money-bill-transfer text-neon-red"></i> Funding Rate Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('funding-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A perpetual (lejárat nélküli) futures kontraktusoknál periodikusan (jellemzően 8 óránként) finanszírozási díjat fizetnek/kapnak a Long és Short pozícióban lévők — ez egy könnyen alábecsült, FOLYAMATOSAN összeadódó költség hosszabb tartásnál.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Pozícióméret, teljes névérték ($)</label>
+            <input type="number" id="funding-position" value="5000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <div class="flex items-center gap-2 mb-3">
+                <button id="funding-side-long" onclick="setFundingSide('long')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition">Long</button>
+                <button id="funding-side-short" onclick="setFundingSide('short')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Short</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div><label class="text-[10px] text-slate-500">Funding ráta / 8 óra (%)</label><input type="number" id="funding-rate" value="0.01" step="0.001" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Tartási időtartam (nap)</label><input type="number" id="funding-days" value="14" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+
+            <button onclick="calcFundingCost()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="funding-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Egyszerűsített, oktatási közelítés: fix, egyenletes funding rátát feltételez a teljes időszakra (a valóságban a ráta 8 óránként változik, a piaci hangulattól függően) — a tényleges, elszámolt összeg eltérhet ettől.</p>
+        </div>
+    </div>
+
     <div id="dca-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -2952,6 +2998,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Inflációs Hatás Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Nominális vs. reál (vásárlóerő) hozam</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('funding-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-money-bill-transfer"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Funding Rate Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Perpetual futures finanszírozási díja</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -8556,6 +8609,77 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= FUNDING RATE KALKULÁTOR (KITERJESZTÉS) =================
+        let currentFundingSide = 'long';
+        function setFundingSide(side) {
+            currentFundingSide = side;
+            const longBtn = document.getElementById('funding-side-long');
+            const shortBtn = document.getElementById('funding-side-short');
+            if (side === 'long') {
+                longBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                shortBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            } else {
+                shortBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                longBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            }
+        }
+
+        function calcFundingCost() {
+            const positionEl = document.getElementById('funding-position');
+            const rateEl = document.getElementById('funding-rate');
+            const daysEl = document.getElementById('funding-days');
+            const resultEl = document.getElementById('funding-result');
+            if (!positionEl || !rateEl || !daysEl || !resultEl) return;
+
+            const position = parseFloat(positionEl.value);
+            const ratePerInterval = parseFloat(rateEl.value); // % / 8 óra
+            const days = parseFloat(daysEl.value);
+
+            if (!position || position <= 0 || !Number.isFinite(ratePerInterval) || !days || days <= 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív pozícióméretet és tartási időtartamot!</div>`;
+                return;
+            }
+
+            const intervalsPerDay = 24 / 8; // 3 elszámolás naponta (jellemző tőzsdei gyakorlat)
+            const numIntervals = days * intervalsPerDay;
+            const totalFundingPctOfPosition = (ratePerInterval / 100) * numIntervals * 100;
+
+            // Pozitív ráta esetén a Long FIZET a Short-nak (és fordítva negatív
+            // rátánál) — ezért a Long pozíció nettó cash flow-ja a ráta
+            // ELLENTÉTES előjelű, mint a Short pozícióé.
+            const netCashFlow = currentFundingSide === 'long'
+                ? -(position * (totalFundingPctOfPosition / 100))
+                : (position * (totalFundingPctOfPosition / 100));
+
+            const fmt = (n) => (n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            const isPayment = netCashFlow < 0;
+            const dailyAvg = netCashFlow / days;
+
+            resultEl.innerHTML = `
+                <div class="rounded-xl ${isPayment ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-neon-green/5 border border-neon-green/30'} p-3 mb-3">
+                    <div class="text-[10px] ${isPayment ? 'text-neon-red' : 'text-neon-green'} uppercase font-bold mb-1">${isPayment ? 'Összesen fizetnél' : 'Összesen kapnál'} (${days} nap)</div>
+                    <div class="text-xl font-extrabold text-white">${fmt(Math.abs(netCashFlow))}</div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Elszámolások száma (8 óránként):</span>
+                    <span class="font-bold text-white">${numIntervals.toFixed(0)} db</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Napi átlagos nettó cash flow:</span>
+                    <span class="font-bold ${dailyAvg < 0 ? 'text-neon-red' : 'text-neon-green'}">${fmt(dailyAvg)}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">A pozícióméret %-ában:</span>
+                    <span class="font-bold text-amber-400">${totalFundingPctOfPosition >= 0 ? '+' : ''}${totalFundingPctOfPosition.toFixed(3)}%</span>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <span class="text-[11px] text-slate-300 font-bold">${isPayment
+                        ? '⚠️ Ez egy FOLYAMATOS, könnyen alábecsült költség — minél tovább tartod a pozíciót, annál jobban összeadódik, függetlenül attól, nyereségben vagy veszteségben vagy éppen.'
+                        : '✅ Ebben a forgatókönyvben a piaci hangulat kedvez a pozíciódnak — a másik oldal fizet neked, amíg a ráta ilyen irányú marad.'}</span>
+                </div>
+            `;
+        }
+
         // ================= DRAWDOWN VISSZANYERÉSI KALKULÁTOR (OKTATÁSI) =================
         function calcDrawdownRecovery() {
             const lossEl = document.getElementById('recovery-loss');
@@ -11352,6 +11476,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // szerint szűrhető, a keresés a kifejezésben ÉS a definícióban is
         // keres, hogy köznyelvi rákereséssel is megtalálható legyen.
         const GLOSSARY_TERMS = [
+            { term: 'Funding Rate (Finanszírozási Ráta)', cat: 'kriptó', def: 'Periodikus (jellemzően 8 óránkénti) fizetés a Long és Short pozícióban lévők között a perpetual (lejárat nélküli) futures kontraktusoknál, amely az árat a spot árhoz közel tartja. Pozitív ráta esetén a Long fizet a Shortnak, negatív ráta esetén fordítva — hosszabb tartásnál jelentősen összeadódhat.' },
             { term: 'Algoritmikus Kereskedés', cat: 'technikai', def: 'Előre meghatározott, matematikai szabályok alapján automatikusan generált és/vagy végrehajtott kereskedés, emberi beavatkozás nélkül vagy minimális felügyelet mellett. Három szintje: manuális, szisztematikus (kézi végrehajtású) és teljesen automatizált.' },
             { term: 'ESG (Environmental, Social, Governance)', cat: 'alapok', def: 'Környezeti, társadalmi és vállalatirányítási szempontok, amelyek alapján befektetők értékelik egy vállalat fenntarthatósági profilját a hagyományos pénzügyi mutatók mellett. Nincs egységesen szabályozva, így a minősítő cégek módszertana eltérhet.' },
             { term: 'Greenwashing', cat: 'alapok', def: 'Amikor egy vállalat a tényleges fenntarthatósági gyakorlatánál kedvezőbb, "zöldebb" képet fest magáról marketing céllal, kihasználva, hogy az ESG-minősítés nincs egységesen szabályozva és nehéz ellenőrizni.' },
@@ -16139,6 +16264,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             26: { tool: 'backtest-modal', backtestStrategy: 'macd', cta: 'Backteszteld a MACD-keresztezést a múltbeli adaton' },
             517: { tool: 'backtest-modal', backtestStrategy: 'bollinger', cta: 'Hasonlítsd össze: backteszteld a mean-reversion stratégiát' },
             268: { tool: 'montecarlo-modal', cta: 'Futtasd le élesben a Monte Carlo Szimulátort' },
+            145: { tool: 'funding-modal', cta: 'Számold ki, mennyi funding díjat fizetnél/kapnál' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -16148,7 +16274,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            if (mapping.tool === 'backtest-modal' || mapping.tool === 'montecarlo-modal') {
+            if (mapping.tool === 'backtest-modal' || mapping.tool === 'montecarlo-modal' || mapping.tool === 'funding-modal') {
                 closeAcademy();
                 openToolModal(mapping.tool);
                 if (mapping.tool === 'backtest-modal' && typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
