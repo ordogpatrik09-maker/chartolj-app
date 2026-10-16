@@ -1001,6 +1001,13 @@
                                 <div class="text-[10px] text-slate-400">EMA-keresztezés teszt a múltbeli adaton</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('strategy-builder-modal'); renderStrategyBuilderAssetLabel()" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-puzzle-piece"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Vizuális Stratégia-építő</div>
+                                <div class="text-[10px] text-slate-400">Állítsd össze saját belépés+kilépés szabályaidat</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-percent"></i></span>
                             <div>
@@ -2501,6 +2508,57 @@
         </div>
     </div>
 
+    <!-- ================= VIZUÁLIS STRATÉGIA-ÉPÍTŐ (OKTATÁSI, NAGY FEJLESZTÉS) =================
+         A Stratégia Backtester 4 FIX, előre bekötött stratégiát kínál. Ez az
+         eszköz egy szinttel tovább megy: a felhasználó saját maga válogathatja
+         össze a BELÉPÉSI jelzést (4 lehetőség közül) ÉS a KILÉPÉSI logikát
+         (ellentétes jelzés VAGY saját stop-loss/take-profit %) — ez egy
+         egyszerűsített, de valódi "no-code" szabály-kombinátor, ami a
+         kockázatkezelési leckékben tanított stop-loss/take-profit fogalmakat
+         köti össze a Backtester gépezetével. A motor (runCustomStrategyBacktest)
+         teljesen önálló, nem nyúl a 4 fix stratégia meglévő kódjához. -->
+    <div id="strategy-builder-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-puzzle-piece text-amber-400"></i> Vizuális Stratégia-építő
+                </h3>
+                <button onclick="closeToolModal('strategy-builder-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Állítsd össze saját, egyedi szabályaidat — válassz belépési jelzést ÉS kilépési logikát, majd futtasd le a jelenleg betöltött <span id="sb-asset-label" class="text-white font-bold">—</span> charton.</p>
+
+            <div class="glass-card rounded-xl p-3 mb-3">
+                <label class="text-[11px] font-bold text-neon-green uppercase mb-2 block"><i class="fa-solid fa-right-to-bracket mr-1"></i> 1. Belépési jelzés</label>
+                <select id="sb-entry-type" onchange="renderStrategyBuilderInputs()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-neon-green/50 mb-2">
+                    <option value="ema_cross">EMA Arany Kereszt (gyors EMA a lassú fölé kerül)</option>
+                    <option value="rsi_oversold">RSI Túladott Zónából Kilépés</option>
+                    <option value="bollinger_break">Bollinger Alsó Szalag Törése</option>
+                    <option value="macd_cross">MACD Bullish Keresztezés</option>
+                </select>
+                <div id="sb-entry-inputs"></div>
+            </div>
+
+            <div class="glass-card rounded-xl p-3 mb-4">
+                <label class="text-[11px] font-bold text-neon-red uppercase mb-2 block"><i class="fa-solid fa-right-from-bracket mr-1"></i> 2. Kilépési logika</label>
+                <select id="sb-exit-type" onchange="renderStrategyBuilderInputs()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-neon-red/50 mb-2">
+                    <option value="signal_reverse">Ellentétes jelzés (a belépési feltétel megfordulása)</option>
+                    <option value="stop_take">Saját Stop-Loss / Take-Profit %</option>
+                </select>
+                <div id="sb-exit-inputs"></div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke ($)</label>
+            <input type="number" id="sb-equity" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="runStrategyBuilderBacktest()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Egyedi stratégia tesztelése
+            </button>
+
+            <div id="sb-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
+        </div>
+    </div>
+
     <!-- ================= GAZDASÁGI HÍRNAPTÁR (OKTATÁSI, SZIMULÁLT) =================
          A cél NEM valós piaci hírek megjelenítése (ez demó app, nincs valós
          adatforrás), hanem OKTATÁSI bemutatása annak, hogy milyen típusú
@@ -2794,6 +2852,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Stratégia Backtester</div>
                     <div class="text-[10px] text-slate-400">EMA-keresztezés teszt a múltbeli adaton</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('strategy-builder-modal'); renderStrategyBuilderAssetLabel()" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-puzzle-piece"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Vizuális Stratégia-építő</div>
+                    <div class="text-[10px] text-slate-400">Állítsd össze saját belépés+kilépés szabályaidat</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('kelly-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -5141,6 +5206,322 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 trades, equityCurve, winRatePct, totalReturnPct, maxDrawdownPct,
                 finalEquity: equity, buyHoldReturnPct, tradeCount: trades.length
             };
+        }
+
+        // ================= VIZUÁLIS STRATÉGIA-ÉPÍTŐ MOTORJA (OKTATÁSI, NAGY FEJLESZTÉS) =================
+        // Négy ÖNÁLLÓ "jelzés-generátor" függvény — mindegyik egy boolean
+        // tömböt ad vissza (igaz azon az indexen, ahol a belépési feltétel
+        // teljesül azon a gyertyán). Ezek a meglévő calcEMASeries/calcRSISeries/
+        // calcSMA/calcStdDev segédfüggvényekre épülnek, de SEMMILYEN meglévő
+        // backtest-függvényt nem módosítanak — teljesen párhuzamos, önálló kód.
+        function sbGetEmaCrossSignals(closes, fastPeriod, slowPeriod) {
+            const fastEma = calcEMASeries(closes, fastPeriod);
+            const slowEma = calcEMASeries(closes, slowPeriod);
+            const up = new Array(closes.length).fill(false);
+            const down = new Array(closes.length).fill(false);
+            for (let i = 1; i < closes.length; i++) {
+                if (fastEma[i] === null || slowEma[i] === null || fastEma[i - 1] === null || slowEma[i - 1] === null) continue;
+                const wasBelow = fastEma[i - 1] <= slowEma[i - 1];
+                const isAbove = fastEma[i] > slowEma[i];
+                up[i] = wasBelow && isAbove;
+                down[i] = !wasBelow && !isAbove;
+            }
+            return { up, down };
+        }
+        function sbGetRsiOversoldSignals(closes, period, oversold, overbought) {
+            const rsi = calcRSISeries(closes, period);
+            const up = new Array(closes.length).fill(false);
+            const down = new Array(closes.length).fill(false);
+            for (let i = 1; i < closes.length; i++) {
+                if (rsi[i] === null || rsi[i - 1] === null) continue;
+                up[i] = rsi[i - 1] >= oversold && rsi[i] < oversold;
+                down[i] = rsi[i - 1] <= overbought && rsi[i] > overbought;
+            }
+            return { up, down };
+        }
+        function sbGetBollingerBreakSignals(closes, period, stdDevMultiplier) {
+            const middle = new Array(closes.length).fill(null);
+            const lower = new Array(closes.length).fill(null);
+            for (let i = 0; i < closes.length; i++) {
+                const sma = calcSMA(closes, period, i);
+                if (sma === null) continue;
+                const sd = calcStdDev(closes, period, i, sma);
+                middle[i] = sma;
+                lower[i] = sma - (stdDevMultiplier * sd);
+            }
+            const up = new Array(closes.length).fill(false);
+            const down = new Array(closes.length).fill(false);
+            for (let i = 1; i < closes.length; i++) {
+                if (middle[i] === null || lower[i] === null) continue;
+                up[i] = closes[i] < lower[i];
+                down[i] = closes[i] >= middle[i];
+            }
+            return { up, down };
+        }
+        function sbGetMacdCrossSignals(closes, fastPeriod, slowPeriod, signalPeriod) {
+            const fastEma = calcEMASeries(closes, fastPeriod);
+            const slowEma = calcEMASeries(closes, slowPeriod);
+            const macdLine = closes.map((_, i) => (fastEma[i] !== null && slowEma[i] !== null) ? (fastEma[i] - slowEma[i]) : null);
+            const firstValidIdx = macdLine.findIndex(v => v !== null);
+            const signalLine = new Array(closes.length).fill(null);
+            if (firstValidIdx !== -1) {
+                const macdValuesOnly = macdLine.slice(firstValidIdx);
+                const signalOnValid = calcEMASeries(macdValuesOnly, signalPeriod);
+                signalOnValid.forEach((v, i) => { signalLine[firstValidIdx + i] = v; });
+            }
+            const up = new Array(closes.length).fill(false);
+            const down = new Array(closes.length).fill(false);
+            for (let i = 1; i < closes.length; i++) {
+                if (macdLine[i] === null || signalLine[i] === null || macdLine[i - 1] === null || signalLine[i - 1] === null) continue;
+                const wasBelow = macdLine[i - 1] <= signalLine[i - 1];
+                const isAbove = macdLine[i] > signalLine[i];
+                up[i] = wasBelow && isAbove;
+                down[i] = !wasBelow && !isAbove;
+            }
+            return { up, down };
+        }
+
+        // A tényleges, egységes backtest-motor: a `config.entryType` alapján
+        // kiválasztja a megfelelő jelzés-generátort, majd a `config.exitType`
+        // szerint VAGY az ellentétes jelzésre, VAGY egy fix stop-loss/take-profit
+        // %-ra zár. Ugyanazt az equity-curve/drawdown logikát követi, mint a
+        // 4 fix Backtester-stratégia, így az eredmény-objektum formátuma
+        // kompatibilis a meglévő drawBacktestEquitySparkline függvénnyel.
+        function runCustomStrategyBacktest(candles, config, startEquity) {
+            const closes = candles.map(c => c.close);
+            let signals;
+            if (config.entryType === 'ema_cross') {
+                signals = sbGetEmaCrossSignals(closes, config.entryParams.fast, config.entryParams.slow);
+            } else if (config.entryType === 'rsi_oversold') {
+                signals = sbGetRsiOversoldSignals(closes, config.entryParams.period, config.entryParams.oversold, config.entryParams.overbought);
+            } else if (config.entryType === 'bollinger_break') {
+                signals = sbGetBollingerBreakSignals(closes, config.entryParams.period, config.entryParams.stdDev);
+            } else { // macd_cross
+                signals = sbGetMacdCrossSignals(closes, config.entryParams.fast, config.entryParams.slow, config.entryParams.signal);
+            }
+
+            let equity = startEquity;
+            let position = null;
+            const trades = [];
+            const equityCurve = [{ index: 0, equity: startEquity }];
+            let peakEquity = startEquity;
+            let maxDrawdownPct = 0;
+
+            const closePosition = (i, exitPrice) => {
+                const retPct = (exitPrice - position.entryPrice) / position.entryPrice;
+                equity = equity * (1 + retPct);
+                trades.push({ entryIndex: position.entryIndex, exitIndex: i, entryPrice: position.entryPrice, exitPrice, returnPct: retPct });
+                position = null;
+            };
+
+            for (let i = 1; i < closes.length; i++) {
+                if (!position && signals.up[i]) {
+                    position = { entryPrice: closes[i], entryIndex: i };
+                } else if (position) {
+                    if (config.exitType === 'stop_take') {
+                        const currentRetPct = (closes[i] - position.entryPrice) / position.entryPrice;
+                        if (currentRetPct <= -config.exitParams.stopLossPct / 100) {
+                            closePosition(i, closes[i]);
+                        } else if (currentRetPct >= config.exitParams.takeProfitPct / 100) {
+                            closePosition(i, closes[i]);
+                        }
+                    } else { // signal_reverse
+                        if (signals.down[i]) closePosition(i, closes[i]);
+                    }
+                }
+
+                equityCurve.push({ index: i, equity });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            if (position) {
+                const lastClose = closes[closes.length - 1];
+                const retPct = (lastClose - position.entryPrice) / position.entryPrice;
+                equity = equity * (1 + retPct);
+                trades.push({ entryIndex: position.entryIndex, exitIndex: closes.length - 1, entryPrice: position.entryPrice, exitPrice: lastClose, returnPct: retPct, stillOpenAtEnd: true });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            const wins = trades.filter(t => t.returnPct > 0).length;
+            const winRatePct = trades.length ? (wins / trades.length * 100) : 0;
+            const totalReturnPct = (equity - startEquity) / startEquity * 100;
+            const buyHoldReturnPct = closes.length > 1 ? (closes[closes.length - 1] - closes[0]) / closes[0] * 100 : 0;
+
+            return {
+                trades, equityCurve, winRatePct, totalReturnPct, maxDrawdownPct,
+                finalEquity: equity, buyHoldReturnPct, tradeCount: trades.length
+            };
+        }
+
+        function renderStrategyBuilderAssetLabel() {
+            const el = document.getElementById('sb-asset-label');
+            if (!el) return;
+            el.textContent = (typeof currentAsset !== 'undefined' && currentAsset && currentAsset.symbol) ? currentAsset.symbol : 'eszköz';
+            renderStrategyBuilderInputs();
+        }
+
+        function renderStrategyBuilderInputs() {
+            const entryType = document.getElementById('sb-entry-type').value;
+            const exitType = document.getElementById('sb-exit-type').value;
+            const entryEl = document.getElementById('sb-entry-inputs');
+            const exitEl = document.getElementById('sb-exit-inputs');
+
+            if (entryType === 'rsi_oversold') {
+                entryEl.innerHTML = `
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="text-[10px] text-slate-500">RSI periódus</label><input type="number" id="sb-rsi-period" value="14" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500">Túladott</label><input type="number" id="sb-rsi-oversold" value="30" step="1" min="1" max="49" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500">Túlvett</label><input type="number" id="sb-rsi-overbought" value="70" step="1" min="51" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                    </div>
+                `;
+            } else if (entryType === 'bollinger_break') {
+                entryEl.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[10px] text-slate-500">SMA periódus</label><input type="number" id="sb-bb-period" value="20" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500">Szórás-szorzó</label><input type="number" id="sb-bb-stddev" value="2" step="0.1" min="0.5" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                    </div>
+                `;
+            } else if (entryType === 'macd_cross') {
+                entryEl.innerHTML = `
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="text-[10px] text-slate-500">Gyors EMA</label><input type="number" id="sb-macd-fast" value="12" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500">Lassú EMA</label><input type="number" id="sb-macd-slow" value="26" step="1" min="3" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500">Jelvonal</label><input type="number" id="sb-macd-signal" value="9" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                    </div>
+                `;
+            } else { // ema_cross (default)
+                entryEl.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[10px] text-slate-500">Gyors EMA</label><input type="number" id="sb-ema-fast" value="9" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500">Lassú EMA</label><input type="number" id="sb-ema-slow" value="21" step="1" min="3" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                    </div>
+                `;
+            }
+
+            if (exitType === 'stop_take') {
+                exitEl.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[10px] text-slate-500">Stop-Loss (%)</label><input type="number" id="sb-stoploss" value="2" step="0.1" min="0.1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500">Take-Profit (%)</label><input type="number" id="sb-takeprofit" value="4" step="0.1" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                    </div>
+                `;
+            } else {
+                exitEl.innerHTML = `<p class="text-[10px] text-slate-500">A pozíció a belépési feltétel ELLENTÉTJÉNEK bekövetkeztekor zár (pl. EMA Arany Kereszt esetén a lassú EMA visszakeresztezésekor).</p>`;
+            }
+        }
+
+        function runStrategyBuilderBacktest() {
+            const out = document.getElementById('sb-result');
+            const startEquity = parseFloat(document.getElementById('sb-equity').value);
+            if (!startEquity || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív kezdő tőkét!</div>`;
+                return;
+            }
+
+            const entryType = document.getElementById('sb-entry-type').value;
+            const exitType = document.getElementById('sb-exit-type').value;
+            let entryParams = {};
+            let minCandlesNeeded = 30;
+
+            if (entryType === 'rsi_oversold') {
+                entryParams = {
+                    period: parseInt(document.getElementById('sb-rsi-period').value, 10),
+                    oversold: parseFloat(document.getElementById('sb-rsi-oversold').value),
+                    overbought: parseFloat(document.getElementById('sb-rsi-overbought').value)
+                };
+                if (!entryParams.period || entryParams.period < 2 || !Number.isFinite(entryParams.oversold) || !Number.isFinite(entryParams.overbought) || entryParams.oversold >= entryParams.overbought) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes RSI periódust és szinteket (a túladott legyen kisebb, mint a túlvett)!</div>`;
+                    return;
+                }
+                minCandlesNeeded = entryParams.period + 2;
+            } else if (entryType === 'bollinger_break') {
+                entryParams = {
+                    period: parseInt(document.getElementById('sb-bb-period').value, 10),
+                    stdDev: parseFloat(document.getElementById('sb-bb-stddev').value)
+                };
+                if (!entryParams.period || entryParams.period < 2 || !entryParams.stdDev || entryParams.stdDev <= 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes SMA periódust és egy nullánál nagyobb szórás-szorzót!</div>`;
+                    return;
+                }
+                minCandlesNeeded = entryParams.period + 2;
+            } else if (entryType === 'macd_cross') {
+                entryParams = {
+                    fast: parseInt(document.getElementById('sb-macd-fast').value, 10),
+                    slow: parseInt(document.getElementById('sb-macd-slow').value, 10),
+                    signal: parseInt(document.getElementById('sb-macd-signal').value, 10)
+                };
+                if (!entryParams.fast || !entryParams.slow || !entryParams.signal || entryParams.fast < 2 || entryParams.slow <= entryParams.fast || entryParams.signal < 2) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódusokat (a lassú EMA legyen nagyobb, mint a gyors)!</div>`;
+                    return;
+                }
+                minCandlesNeeded = entryParams.slow + entryParams.signal + 2;
+            } else { // ema_cross
+                entryParams = {
+                    fast: parseInt(document.getElementById('sb-ema-fast').value, 10),
+                    slow: parseInt(document.getElementById('sb-ema-slow').value, 10)
+                };
+                if (!entryParams.fast || !entryParams.slow || entryParams.fast < 2 || entryParams.slow <= entryParams.fast) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódusokat (a lassú EMA legyen nagyobb, mint a gyors)!</div>`;
+                    return;
+                }
+                minCandlesNeeded = entryParams.slow + 2;
+            }
+
+            let exitParams = {};
+            if (exitType === 'stop_take') {
+                exitParams = {
+                    stopLossPct: parseFloat(document.getElementById('sb-stoploss').value),
+                    takeProfitPct: parseFloat(document.getElementById('sb-takeprofit').value)
+                };
+                if (!exitParams.stopLossPct || exitParams.stopLossPct <= 0 || !exitParams.takeProfitPct || exitParams.takeProfitPct <= 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb Stop-Loss és Take-Profit %-okat!</div>`;
+                    return;
+                }
+            }
+
+            if (typeof candleData === 'undefined' || !candleData || candleData.length < minCandlesNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton ehhez a szimulációhoz — válts hosszabb idősíkra vagy csökkentsd a paramétereket.</div>`;
+                return;
+            }
+
+            const result = runCustomStrategyBacktest(candleData, { entryType, entryParams, exitType, exitParams }, startEquity);
+            const beatBuyHold = result.totalReturnPct > result.buyHoldReturnPct;
+            const isPositive = result.totalReturnPct > 0;
+
+            out.innerHTML = `
+                <canvas id="sb-sparkline" width="320" height="70" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
+                <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Teljes hozam (${result.tradeCount} trade)</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toFixed(2)}%</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toFixed(2)}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Találati arány:</span>
+                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toFixed(1)}%</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Max. visszaesés (drawdown):</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toFixed(2)}%</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Buy & Hold hozam (összehasonlításként):</span>
+                        <span class="font-extrabold text-slate-300 text-sm">${result.buyHoldReturnPct >= 0 ? '+' : ''}${result.buyHoldReturnPct.toFixed(2)}%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${beatBuyHold ? 'text-neon-green' : 'text-amber-400'}">${result.tradeCount === 0
+                    ? 'Ezekkel a beállításokkal nem keletkezett belépési jelzés ebben az időszakban — próbálj más paramétereket vagy hosszabb idősíkot.'
+                    : beatBuyHold
+                        ? `Ez az egyedi stratégia ezen az időszakon felülteljesítette az egyszerű Buy & Hold-ot.`
+                        : `Ez az egyedi stratégia ezen az időszakon ALULteljesítette az egyszerű Buy & Hold-ot.`}</p>
+            `;
+
+            const canvas = document.getElementById('sb-sparkline');
+            drawBacktestEquitySparkline(canvas, result.equityCurve, startEquity);
         }
 
         // Nagyon egyszerű, függőségmentes equity-görbe sparkline egy kis
