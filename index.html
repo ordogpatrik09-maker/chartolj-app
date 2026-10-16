@@ -1092,6 +1092,13 @@
                                 <div class="text-[10px] text-slate-400">Spread, Straddle, Covered Call görbékkel</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('pairs-modal'); if(!pairsSampleData) generatePairsSampleData();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-compare"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Párkereskedés Szimulátor</div>
+                                <div class="text-[10px] text-slate-400">Z-score alapú statisztikai arbitrázs</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('portfolio-sim-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-pie"></i></span>
                             <div>
@@ -2347,6 +2354,51 @@
         </div>
     </div>
 
+    <!-- ================= PÁRKERESKEDÉS (PAIRS TRADING) SZIMULÁTOR (NAGY KITERJESZTÉS) =================
+         A Párkereskedés koncepciója eddig csak egy Akadémia-leckében szerepelt,
+         ESZKÖZ nélkül. Ez pótolja: KÉT korrelált (szintetikusan generált,
+         oktatási célú) eszköz árarányát (ratio) követi, kiszámolja a
+         gördülő átlagtól való eltérés Z-score-ját, és egy klasszikus
+         "statisztikai arbitrázs" (spread mean-reversion) stratégiát futtat
+         le rajta: amikor a Z-score szélsőséges, a modell "szétnyíló" spread
+         visszazáródására fogad (long az egyik, short a másik eszközön,
+         dollár-neutrális méretben). Teljesen önálló motor — nem nyúl a
+         meglévő élő Binance-adathoz vagy a fő charthoz. -->
+    <div id="pairs-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-code-compare text-neon-cyan"></i> Párkereskedés Szimulátor
+                </h3>
+                <button onclick="closeToolModal('pairs-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Két, erősen korrelált (szintetikus, oktatási célú) eszköz árarányát figyeljük: amikor az arány statisztikailag "szélsőségesen" eltér a saját átlagától (magas Z-score), a stratégia arra fogad, hogy visszatér — long az egyik, short a másik eszközön.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div><label class="text-[10px] text-slate-500">Korreláció erőssége</label><input type="range" id="pairs-correlation" value="0.9" step="0.01" min="0.5" max="0.99" class="w-full mt-2"></div>
+                <div><label class="text-[10px] text-slate-500">Gyertyák száma</label><input type="number" id="pairs-numbars" value="200" step="10" min="60" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+            <button onclick="generatePairsSampleData()" class="w-full py-1.5 mb-3 rounded-lg text-[11px] font-bold border border-dark-700 text-slate-300 hover:bg-dark-800 transition">
+                <i class="fa-solid fa-dice mr-1"></i> Új mintaadat generálása
+            </button>
+
+            <div class="grid grid-cols-3 gap-2 mb-2.5">
+                <div><label class="text-[10px] text-slate-500">Lookback periódus</label><input type="number" id="pairs-lookback" value="20" step="1" min="5" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Belépő Z-score</label><input type="number" id="pairs-entry-z" value="2" step="0.1" min="0.5" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Kilépő Z-score</label><input type="number" id="pairs-exit-z" value="0.5" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke ($)</label>
+            <input type="number" id="pairs-equity" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="runPairsTradingUI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Statisztikai arbitrázs tesztelése
+            </button>
+
+            <div id="pairs-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Teljesen szintetikus, oktatási célú mintaadaton fut — a cél a Z-score/mean-reversion LOGIKA megértése, nem valós eszközpár kereskedése. Dollár-neutrális pozícióméretezést feltételez (egyenlő dollárösszeg long és short oldalon), tranzakciós díjak és finanszírozási (short) költségek nélkül.</p>
+        </div>
+    </div>
+
     <div id="optionpayoff-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -2863,6 +2915,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Opciós Stratégia-vizualizáló</div>
                     <div class="text-[10px] text-slate-400">Spread, Straddle, Covered Call görbékkel</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('pairs-modal'); if(!pairsSampleData) generatePairsSampleData();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-code-compare"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Párkereskedés Szimulátor</div>
+                    <div class="text-[10px] text-slate-400">Z-score alapú statisztikai arbitrázs</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('portfolio-sim-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -5979,6 +6038,160 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ctx.arc(x, toY(0), 3.5, 0, Math.PI * 2);
                 ctx.fill();
             });
+        }
+
+        // ================= PÁRKERESKEDÉS (PAIRS TRADING) SZIMULÁTOR MOTORJA (NAGY KITERJESZTÉS) =================
+        let pairsSampleData = null; // { pricesA: [...], pricesB: [...] }
+
+        // Két KORRELÁLT, szintetikus árfolyam-sorozatot generál: egy közös
+        // ("szisztematikus") random-walk komponens + mindkét eszköznek saját,
+        // egymástól független ("idioszinkratikus") zaja. A korreláció
+        // erőssége (0.5-0.99) azt szabályozza, mekkora súlyt kap a közös
+        // komponens a saját zajhoz képest — tisztán oktatási demóadat,
+        // NEM valós eszközök árfolyama.
+        function generatePairsSampleData() {
+            const corr = parseFloat(document.getElementById('pairs-correlation').value) || 0.9;
+            const numBars = Math.max(60, Math.min(1000, parseInt(document.getElementById('pairs-numbars').value, 10) || 200));
+
+            const pricesA = [100];
+            const pricesB = [50];
+            const commonVol = 0.012;
+            const idioVol = 0.012 * (1 - corr) / Math.max(0.01, corr); // minél erősebb a korreláció, annál kisebb a saját zaj súlya
+
+            for (let i = 1; i < numBars; i++) {
+                const commonShock = (Math.random() - 0.5) * commonVol;
+                const idioShockA = (Math.random() - 0.5) * idioVol;
+                const idioShockB = (Math.random() - 0.5) * idioVol;
+                pricesA.push(pricesA[i - 1] * (1 + commonShock + idioShockA));
+                pricesB.push(pricesB[i - 1] * (1 + commonShock * 1.0 + idioShockB));
+            }
+            pairsSampleData = { pricesA, pricesB };
+            showNotification('Új korrelált mintaadat generálva — most futtathatod a tesztet.');
+        }
+
+        // Gördülő átlag/szórás alapú Z-score sorozat az A/B árarányra.
+        // A `lookback` indexnél kezdődően (annál korábban null, nincs elég
+        // adat) mindegyik pontra kiszámolja: ratio = pricesA[i]/pricesB[i],
+        // mean/std a megelőző `lookback` db ratio-ra, z = (ratio-mean)/std.
+        function calcPairsRatioZScoreSeries(pricesA, pricesB, lookback) {
+            const n = Math.min(pricesA.length, pricesB.length);
+            const ratio = new Array(n).fill(null);
+            for (let i = 0; i < n; i++) ratio[i] = pricesA[i] / pricesB[i];
+
+            const z = new Array(n).fill(null);
+            for (let i = lookback; i < n; i++) {
+                const window = ratio.slice(i - lookback, i);
+                const mean = window.reduce((s, v) => s + v, 0) / lookback;
+                const variance = window.reduce((s, v) => s + (v - mean) * (v - mean), 0) / lookback;
+                const std = Math.sqrt(variance);
+                z[i] = std > 0 ? (ratio[i] - mean) / std : 0;
+            }
+            return { ratio, z };
+        }
+
+        // A tényleges statisztikai-arbitrázs backtest: dollár-neutrális
+        // pozíció (egyenlő $ long és short oldalon). Amikor flat és z >
+        // entryZ: a ráta "túl magas" — short A / long B (a spread szűkülésére
+        // fogad). Amikor flat és z < -entryZ: a ráta "túl alacsony" — long A
+        // / short B. Zárás, amikor |z| visszatér exitZ alá. A pozíció P&L-je
+        // minden gyertyán a két eszköz relatív (egymáshoz viszonyított, nem
+        // abszolút) hozamkülönbségéből adódik.
+        function runPairsTradingBacktest(pricesA, pricesB, lookback, entryZ, exitZ, startEquity) {
+            const { z } = calcPairsRatioZScoreSeries(pricesA, pricesB, lookback);
+            const n = Math.min(pricesA.length, pricesB.length);
+
+            let equity = startEquity;
+            let position = null; // { direction: 'short_spread' | 'long_spread', entryIndex, entryA, entryB }
+            const trades = [];
+            const equityCurve = [{ index: 0, equity: startEquity }];
+            let peakEquity = startEquity;
+            let maxDrawdownPct = 0;
+
+            const closePosition = (i) => {
+                const retA = (pricesA[i] - position.entryA) / position.entryA;
+                const retB = (pricesB[i] - position.entryB) / position.entryB;
+                // short_spread: short A, long B → nyereség, ha A csökken / B nő
+                // long_spread: long A, short B → nyereség, ha A nő / B csökken
+                const spreadReturn = position.direction === 'short_spread' ? (retB - retA) : (retA - retB);
+                equity = equity * (1 + spreadReturn / 2); // dollár-neutrális: a tőke fele van minden lábon
+                trades.push({ entryIndex: position.entryIndex, exitIndex: i, direction: position.direction, returnPct: spreadReturn / 2 });
+                position = null;
+            };
+
+            for (let i = lookback; i < n; i++) {
+                if (z[i] === null) continue;
+                if (!position) {
+                    if (z[i] > entryZ) {
+                        position = { direction: 'short_spread', entryIndex: i, entryA: pricesA[i], entryB: pricesB[i] };
+                    } else if (z[i] < -entryZ) {
+                        position = { direction: 'long_spread', entryIndex: i, entryA: pricesA[i], entryB: pricesB[i] };
+                    }
+                } else if (Math.abs(z[i]) < exitZ) {
+                    closePosition(i);
+                }
+
+                equityCurve.push({ index: i, equity });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            if (position) closePosition(n - 1);
+
+            const wins = trades.filter(t => t.returnPct > 0).length;
+            const winRatePct = trades.length ? (wins / trades.length * 100) : 0;
+            const totalReturnPct = (equity - startEquity) / startEquity * 100;
+
+            return { trades, equityCurve, winRatePct, totalReturnPct, maxDrawdownPct, finalEquity: equity, tradeCount: trades.length };
+        }
+
+        function runPairsTradingUI() {
+            const out = document.getElementById('pairs-result');
+            if (!pairsSampleData) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Előbb generálj mintaadatot a "Új mintaadat generálása" gombbal!</div>`;
+                return;
+            }
+            const lookback = parseInt(document.getElementById('pairs-lookback').value, 10);
+            const entryZ = parseFloat(document.getElementById('pairs-entry-z').value);
+            const exitZ = parseFloat(document.getElementById('pairs-exit-z').value);
+            const startEquity = parseFloat(document.getElementById('pairs-equity').value);
+
+            if (!lookback || lookback < 5 || !Number.isFinite(entryZ) || entryZ <= 0 || !Number.isFinite(exitZ) || exitZ < 0 || exitZ >= entryZ || !startEquity || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes értékeket — a kilépő Z-score legyen kisebb, mint a belépő, és minden érték pozitív!</div>`;
+                return;
+            }
+            if (pairsSampleData.pricesA.length < lookback + 10) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Túl kevés gyertya ehhez a lookback periódushoz — generálj hosszabb mintaadatot!</div>`;
+                return;
+            }
+
+            const result = runPairsTradingBacktest(pairsSampleData.pricesA, pairsSampleData.pricesB, lookback, entryZ, exitZ, startEquity);
+            const isPositive = result.totalReturnPct > 0;
+
+            out.innerHTML = `
+                <canvas id="pairs-sparkline" width="320" height="70" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
+                <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Teljes hozam (${result.tradeCount} trade)</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toFixed(2)}%</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toFixed(2)}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Találati arány:</span>
+                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toFixed(1)}%</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Max. visszaesés (drawdown):</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toFixed(2)}%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-slate-400">${result.tradeCount === 0
+                    ? 'Ezekkel a beállításokkal nem keletkezett belépési jelzés — próbálj alacsonyabb belépő Z-score küszöböt vagy hosszabb mintaadatot.'
+                    : 'Emlékezz: ez szintetikus, oktatási mintaadaton fut — a valós piacokon a korreláció/kointegráció IDŐVEL megszűnhet, ami a stratégia legnagyobb kockázata.'}</p>
+            `;
+
+            const canvas = document.getElementById('pairs-sparkline');
+            drawBacktestEquitySparkline(canvas, result.equityCurve, startEquity);
         }
 
         // Nagyon egyszerű, függőségmentes equity-görbe sparkline egy kis
