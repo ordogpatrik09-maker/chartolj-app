@@ -1085,6 +1085,13 @@
                                 <div class="text-[10px] text-slate-400">Call/put nyereség-veszteség lejáratkor</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('option-strategy-modal'); renderOptionStrategyInputs()" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-area"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Opciós Stratégia-vizualizáló</div>
+                                <div class="text-[10px] text-slate-400">Spread, Straddle, Covered Call görbékkel</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('portfolio-sim-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-pie"></i></span>
                             <div>
@@ -2298,6 +2305,48 @@
         </div>
     </div>
 
+    <!-- ================= OPCIÓS STRATÉGIA-VIZUALIZÁLÓ (TÖBBLÁBÚ, DIAGRAMOS, NAGY KITERJESZTÉS) =================
+         A meglévő "Opciós Kifizetés Kalkulátor" (optionpayoff-modal) csak EGY
+         vásárolt call/put lejáratkori kifizetését számolja, egyetlen számmal.
+         Ez az új eszköz ennek a hiányzó, nagyobb testvére: 7 klasszikus,
+         TÖBBLÁBÚ stratégia (Fedezett Call, Védő Put, Bull Call Spread, Bear
+         Put Spread, Long Straddle, Long Strangle, egyszerű Long Call/Put)
+         teljes kifizetési GÖRBÉJÉT rajzolja fel egy árfolyam-tartományon,
+         canvas diagrammal, + max. profit/veszteség/break-even pontokkal.
+         Teljesen önálló, új kód — nem módosítja a meglévő egylábú kalkulátort. -->
+    <div id="option-strategy-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-area text-neon-purple"></i> Opciós Stratégia-vizualizáló
+                </h3>
+                <button onclick="closeToolModal('option-strategy-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Válassz egy klasszikus, TÖBBLÁBÚ opciós stratégiát, és lásd a teljes lejáratkori kifizetési görbéjét az árfolyam függvényében — nem csak egy pontot, mint az egyszerű kalkulátor.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Stratégia</label>
+            <select id="os-strategy-type" onchange="renderOptionStrategyInputs()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                <option value="long_call">Long Call (vásárolt call)</option>
+                <option value="long_put">Long Put (vásárolt put)</option>
+                <option value="covered_call">Fedezett Call (Covered Call)</option>
+                <option value="protective_put">Védő Put (Protective Put)</option>
+                <option value="bull_call_spread">Bull Call Spread</option>
+                <option value="bear_put_spread">Bear Put Spread</option>
+                <option value="long_straddle">Long Straddle</option>
+                <option value="long_strangle">Long Strangle</option>
+            </select>
+
+            <div id="os-inputs" class="space-y-2.5 mb-4"></div>
+
+            <button onclick="runOptionStrategyVisualizer()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kifizetési görbe megjelenítése
+            </button>
+
+            <div id="os-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Egyszerűsített, oktatási közelítés: csak a LEJÁRATKORI kifizetést mutatja (nincs benne idő-érték, implikált volatilitás vagy a lejárat előtti árváltozás hatása), és 1 kontraktus/részvény-egységre számol, tranzakciós díjak nélkül.</p>
+        </div>
+    </div>
+
     <div id="optionpayoff-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -2807,6 +2856,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Opciós Kifizetés Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Call/put nyereség-veszteség lejáratkor</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('option-strategy-modal'); renderOptionStrategyInputs()" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-area"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Opciós Stratégia-vizualizáló</div>
+                    <div class="text-[10px] text-slate-400">Spread, Straddle, Covered Call görbékkel</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('portfolio-sim-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -5666,6 +5722,263 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 `;
             }).join('');
+        }
+
+        // ================= OPCIÓS STRATÉGIA-VIZUALIZÁLÓ MOTORJA (OKTATÁSI, NAGY KITERJESZTÉS) =================
+        // Minden stratégia lejáratkori, 1 egységre (részvény/kontraktus)
+        // vetített, NETTÓ kifizetését adja vissza egy adott lejárati
+        // árfolyamon (price). Klasszikus, jól ismert zárt formulák —
+        // mindegyik független Python-implementációval kereszt-ellenőrzött.
+        function osPayoffAtPrice(strategyType, p, price) {
+            if (strategyType === 'long_call') {
+                return Math.max(0, price - p.strike) - p.premium;
+            }
+            if (strategyType === 'long_put') {
+                return Math.max(0, p.strike - price) - p.premium;
+            }
+            if (strategyType === 'covered_call') {
+                // Birtokolt részvény + eladott (short) call
+                return (price - p.entryPrice) + p.premium - Math.max(0, price - p.strike);
+            }
+            if (strategyType === 'protective_put') {
+                // Birtokolt részvény + vásárolt (long) put
+                return (price - p.entryPrice) - p.premium + Math.max(0, p.strike - price);
+            }
+            if (strategyType === 'bull_call_spread') {
+                // Vásárolt call (alsó strike) + eladott call (felső strike)
+                const netCost = p.premiumLow - p.premiumHigh;
+                return Math.max(0, price - p.strikeLow) - Math.max(0, price - p.strikeHigh) - netCost;
+            }
+            if (strategyType === 'bear_put_spread') {
+                // Vásárolt put (felső strike) + eladott put (alsó strike)
+                const netCost = p.premiumHigh - p.premiumLow;
+                return Math.max(0, p.strikeHigh - price) - Math.max(0, p.strikeLow - price) - netCost;
+            }
+            if (strategyType === 'long_straddle') {
+                // Vásárolt call + vásárolt put, AZONOS strike-on
+                return Math.max(0, price - p.strike) + Math.max(0, p.strike - price) - (p.callPremium + p.putPremium);
+            }
+            if (strategyType === 'long_strangle') {
+                // Vásárolt call (felső strike) + vásárolt put (alsó strike)
+                return Math.max(0, price - p.callStrike) + Math.max(0, p.putStrike - price) - (p.callPremium + p.putPremium);
+            }
+            return 0;
+        }
+
+        function renderOptionStrategyInputs() {
+            const type = document.getElementById('os-strategy-type').value;
+            const el = document.getElementById('os-inputs');
+            const fieldHtml = (id, label, value, step) => `
+                <div><label class="text-[10px] text-slate-500">${label}</label><input type="number" id="${id}" value="${value}" step="${step || '0.1'}" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            `;
+
+            if (type === 'long_call' || type === 'long_put') {
+                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
+                    ${fieldHtml('os-strike', 'Kötési ár (Strike)', 100, 1)}
+                    ${fieldHtml('os-premium', 'Prémium ($/egység)', 5, 0.1)}
+                </div>`;
+            } else if (type === 'covered_call' || type === 'protective_put') {
+                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
+                    ${fieldHtml('os-entry-price', 'Saját belépő ár (részvény)', 100, 1)}
+                    ${fieldHtml('os-strike', 'Opció kötési ára (Strike)', type === 'covered_call' ? 110 : 90, 1)}
+                </div>
+                <div class="mt-2">${fieldHtml('os-premium', type === 'covered_call' ? 'Kapott prémium (eladott call)' : 'Kifizetett prémium (vásárolt put)', 4, 0.1)}</div>`;
+            } else if (type === 'bull_call_spread') {
+                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
+                    ${fieldHtml('os-strike-low', 'Alsó strike (vásárolt call)', 100, 1)}
+                    ${fieldHtml('os-strike-high', 'Felső strike (eladott call)', 115, 1)}
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    ${fieldHtml('os-premium-low', 'Fizetett prémium (alsó)', 7, 0.1)}
+                    ${fieldHtml('os-premium-high', 'Kapott prémium (felső)', 2, 0.1)}
+                </div>`;
+            } else if (type === 'bear_put_spread') {
+                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
+                    ${fieldHtml('os-strike-high', 'Felső strike (vásárolt put)', 100, 1)}
+                    ${fieldHtml('os-strike-low', 'Alsó strike (eladott put)', 85, 1)}
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    ${fieldHtml('os-premium-high', 'Fizetett prémium (felső)', 6, 0.1)}
+                    ${fieldHtml('os-premium-low', 'Kapott prémium (alsó)', 2, 0.1)}
+                </div>`;
+            } else if (type === 'long_straddle') {
+                el.innerHTML = `
+                    ${fieldHtml('os-strike', 'Közös kötési ár (Strike)', 100, 1)}
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        ${fieldHtml('os-call-premium', 'Call prémium', 5, 0.1)}
+                        ${fieldHtml('os-put-premium', 'Put prémium', 5, 0.1)}
+                    </div>`;
+            } else if (type === 'long_strangle') {
+                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
+                    ${fieldHtml('os-call-strike', 'Call kötési ára (felső)', 110, 1)}
+                    ${fieldHtml('os-put-strike', 'Put kötési ára (alsó)', 90, 1)}
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    ${fieldHtml('os-call-premium', 'Call prémium', 3, 0.1)}
+                    ${fieldHtml('os-put-premium', 'Put prémium', 3, 0.1)}
+                </div>`;
+            }
+        }
+
+        function osReadParams(type) {
+            const v = (id) => parseFloat(document.getElementById(id).value);
+            if (type === 'long_call' || type === 'long_put') {
+                return { strike: v('os-strike'), premium: v('os-premium') };
+            }
+            if (type === 'covered_call' || type === 'protective_put') {
+                return { entryPrice: v('os-entry-price'), strike: v('os-strike'), premium: v('os-premium') };
+            }
+            if (type === 'bull_call_spread') {
+                return { strikeLow: v('os-strike-low'), strikeHigh: v('os-strike-high'), premiumLow: v('os-premium-low'), premiumHigh: v('os-premium-high') };
+            }
+            if (type === 'bear_put_spread') {
+                return { strikeLow: v('os-strike-low'), strikeHigh: v('os-strike-high'), premiumLow: v('os-premium-low'), premiumHigh: v('os-premium-high') };
+            }
+            if (type === 'long_straddle') {
+                return { strike: v('os-strike'), callPremium: v('os-call-premium'), putPremium: v('os-put-premium') };
+            }
+            if (type === 'long_strangle') {
+                return { callStrike: v('os-call-strike'), putStrike: v('os-put-strike'), callPremium: v('os-call-premium'), putPremium: v('os-put-premium') };
+            }
+            return {};
+        }
+
+        const OS_STRATEGY_LABELS = {
+            long_call: 'Long Call', long_put: 'Long Put', covered_call: 'Fedezett Call (Covered Call)',
+            protective_put: 'Védő Put (Protective Put)', bull_call_spread: 'Bull Call Spread',
+            bear_put_spread: 'Bear Put Spread', long_straddle: 'Long Straddle', long_strangle: 'Long Strangle'
+        };
+
+        function runOptionStrategyVisualizer() {
+            const type = document.getElementById('os-strategy-type').value;
+            const out = document.getElementById('os-result');
+            const params = osReadParams(type);
+
+            // Validáció: minden beolvasott számérték legyen véges és nemnegatív
+            const invalid = Object.values(params).some(x => !Number.isFinite(x) || x < 0);
+            if (invalid) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nemnegatív értékeket minden mezőben!</div>`;
+                return;
+            }
+
+            // Középponti referenciaár a tartomány kiszámításához (a releváns
+            // strike(ok) átlaga, vagy a saját belépő ár fedezett pozícióknál).
+            let centerPrice;
+            if (type === 'covered_call' || type === 'protective_put') centerPrice = params.entryPrice;
+            else if (type === 'bull_call_spread' || type === 'bear_put_spread') centerPrice = (params.strikeLow + params.strikeHigh) / 2;
+            else if (type === 'long_strangle') centerPrice = (params.callStrike + params.putStrike) / 2;
+            else centerPrice = params.strike;
+
+            // JAVÍTÁS: a "részvény + opció" kombinált stratégiáknál (Fedezett
+            // Call, Védő Put) a valódi, elméleti maximális veszteség a
+            // részvény NULLÁRA esésénél jelentkezik — ha a mintavételezett
+            // tartomány alja a középár 50%-ánál áll meg, a kirajzolt
+            // "Max. veszteség" csak a tartomány szélén mért érték lenne,
+            // nem a tényleges, oktatásilag fontos legrosszabb eset. Ezeknél
+            // a tartomány aljának 0-nak kell lennie, hogy a görbe és a
+            // belőle számolt max. veszteség ténylegesen helyes legyen.
+            const stockAnchoredTypes = ['covered_call', 'protective_put'];
+            const rangeLow = stockAnchoredTypes.includes(type) ? 0 : Math.max(0, centerPrice * 0.5);
+            const rangeHigh = centerPrice * 1.5;
+            const steps = 120;
+            const curve = [];
+            let maxProfit = -Infinity, maxLoss = Infinity;
+            let maxProfitPrice = centerPrice, maxLossPrice = centerPrice;
+            for (let i = 0; i <= steps; i++) {
+                const price = rangeLow + (rangeHigh - rangeLow) * (i / steps);
+                const payoff = osPayoffAtPrice(type, params, price);
+                curve.push({ price, payoff });
+                if (payoff > maxProfit) { maxProfit = payoff; maxProfitPrice = price; }
+                if (payoff < maxLoss) { maxLoss = payoff; maxLossPrice = price; }
+            }
+
+            // Break-even pont(ok): azok a szakaszok a görbén, ahol az előjel vált.
+            const breakEvens = [];
+            for (let i = 1; i < curve.length; i++) {
+                const a = curve[i - 1], b = curve[i];
+                if ((a.payoff <= 0 && b.payoff > 0) || (a.payoff >= 0 && b.payoff < 0)) {
+                    const t = a.payoff === b.payoff ? 0 : (0 - a.payoff) / (b.payoff - a.payoff);
+                    breakEvens.push(a.price + (b.price - a.price) * t);
+                }
+            }
+
+            // Unlimited-profit jelzés: ha a jobb szélen a meredekség tartósan
+            // pozitív (a kifizetés még a tartomány legvégén is nő), akkor a
+            // valós max. profit elméletileg korlátlan — ezt jelezzük, nem a
+            // mintavételezett tartomány-széli számot mutatjuk véglegesnek.
+            const rightSlopePositive = curve[curve.length - 1].payoff > curve[curve.length - 6].payoff + 1e-6;
+            const isUnlimitedProfit = rightSlopePositive && ['long_call', 'protective_put', 'long_straddle', 'long_strangle'].includes(type);
+
+            const fmt = (n) => (n < 0 ? '-$' + Math.abs(n).toFixed(2) : '$' + n.toFixed(2));
+
+            out.innerHTML = `
+                <canvas id="os-payoff-chart" width="320" height="140" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="rounded-xl bg-neon-green/5 border border-neon-green/30 p-2.5">
+                        <div class="text-[9.5px] text-neon-green uppercase font-bold mb-0.5">Max. profit</div>
+                        <div class="text-sm font-extrabold text-white">${isUnlimitedProfit ? 'Korlátlan' : fmt(maxProfit)}</div>
+                    </div>
+                    <div class="rounded-xl bg-neon-red/5 border border-neon-red/30 p-2.5">
+                        <div class="text-[9.5px] text-neon-red uppercase font-bold mb-0.5">Max. veszteség</div>
+                        <div class="text-sm font-extrabold text-white">${fmt(maxLoss)}</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs">
+                    <span class="text-slate-400">Break-even árfolyam${breakEvens.length > 1 ? '-ok' : ''}:</span>
+                    <span class="font-bold text-amber-400">${breakEvens.length ? breakEvens.map(p => '$' + p.toFixed(2)).join(' / ') : 'nincs (mindig nyereséges/veszteséges)'}</span>
+                </div>
+            `;
+
+            const canvas = document.getElementById('os-payoff-chart');
+            drawOptionPayoffChart(canvas, curve, breakEvens);
+        }
+
+        // Teljes payoff-görbe rajzolása — zöld, ahol pozitív a kifizetés,
+        // piros, ahol negatív, egy vízszintes nulla-vonallal és a break-even
+        // pont(ok) megjelölésével.
+        function drawOptionPayoffChart(canvas, curve, breakEvens) {
+            if (!canvas || !curve.length) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            const payoffs = curve.map(c => c.payoff);
+            const minY = Math.min(...payoffs, 0);
+            const maxY = Math.max(...payoffs, 0);
+            const rangeY = (maxY - minY) || 1;
+            const padding = 8;
+            const toX = (i) => padding + (w - 2 * padding) * (i / (curve.length - 1));
+            const toY = (val) => h - padding - ((val - minY) / rangeY) * (h - 2 * padding);
+
+            // Nulla-vonal
+            ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, toY(0));
+            ctx.lineTo(w - padding, toY(0));
+            ctx.stroke();
+
+            // Payoff görbe szegmensenként színezve (zöld/piros előjel szerint)
+            for (let i = 1; i < curve.length; i++) {
+                const y0 = curve[i - 1].payoff, y1 = curve[i].payoff;
+                ctx.strokeStyle = (y0 + y1) / 2 >= 0 ? '#00ff9d' : '#ff4d6d';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(toX(i - 1), toY(y0));
+                ctx.lineTo(toX(i), toY(y1));
+                ctx.stroke();
+            }
+
+            // Break-even pont(ok) jelölése
+            ctx.fillStyle = '#fbbf24';
+            breakEvens.forEach(bePrice => {
+                const priceLow = curve[0].price, priceHigh = curve[curve.length - 1].price;
+                const frac = (bePrice - priceLow) / (priceHigh - priceLow);
+                const x = padding + (w - 2 * padding) * frac;
+                ctx.beginPath();
+                ctx.arc(x, toY(0), 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
         }
 
         // Nagyon egyszerű, függőségmentes equity-görbe sparkline egy kis
