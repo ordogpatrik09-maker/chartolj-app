@@ -14739,6 +14739,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             11: { tool: 'bollinger', cta: 'Kapcsold be a Bollinger Szalagokat' },
             27: { tool: 'fibonacci', cta: 'Húzz egy Fibonacci-t a charton' },
             115: { tool: 'backtest-modal', cta: 'Próbáld ki élesben a Stratégia Backtesterben' },
+            26: { tool: 'backtest-modal', backtestStrategy: 'macd', cta: 'Backteszteld a MACD-keresztezést a múltbeli adaton' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -14752,6 +14753,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 closeAcademy();
                 openToolModal('backtest-modal');
                 if (typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
+                if (mapping.backtestStrategy) {
+                    const sel = document.getElementById('backtest-strategy');
+                    if (sel) { sel.value = mapping.backtestStrategy; renderBacktestStrategyInputs(); }
+                }
                 showNotification('Most próbáld ki élesben, amit az imént tanultál!');
                 return;
             }
