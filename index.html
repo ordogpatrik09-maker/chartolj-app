@@ -2423,6 +2423,7 @@
                 <option value="ema">EMA-keresztezés (trendkövető)</option>
                 <option value="rsi">RSI Mean-Reversion (ellentétes)</option>
                 <option value="bollinger">Bollinger-szalag Mean-Reversion (ellentétes)</option>
+                <option value="macd">MACD-keresztezés (momentum)</option>
             </select>
 
             <div id="backtest-strategy-inputs"></div>
@@ -5000,6 +5001,80 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             };
         }
 
+        // ================= MACD-KERESZTEZÉS BACKTEST (OKTATÁSI) =================
+        // Negyedik backtest-szabály: a MACD-vonal (gyors EMA - lassú EMA) és a
+        // jelvonal (a MACD-vonal EMA-ja) keresztezésén alapul — hasonló szellemű,
+        // mint az EMA-keresztezés, de a momentum VÁLTOZÁSÁRA reagál, nem csak
+        // két árfolyam-EMA viszonyára. Long belépés, amikor a MACD-vonal felfelé
+        // keresztezi a jelvonalat, zárás, amikor visszakeresztez alá.
+        function runMACDCrossoverBacktest(candles, fastPeriod, slowPeriod, signalPeriod, startEquity) {
+            const closes = candles.map(c => c.close);
+            const fastEma = calcEMASeries(closes, fastPeriod);
+            const slowEma = calcEMASeries(closes, slowPeriod);
+
+            const macdLine = closes.map((_, i) => (fastEma[i] !== null && slowEma[i] !== null) ? (fastEma[i] - slowEma[i]) : null);
+            // A jelvonalhoz a MACD-vonal EMA-ját kell venni — mivel a calcEMASeries
+            // null-okkal kezdődő tömböt vár, a null-mentes szakaszt adjuk át, majd
+            // visszaillesztjük az eredeti indexekre.
+            const firstValidIdx = macdLine.findIndex(v => v !== null);
+            const signalLine = new Array(closes.length).fill(null);
+            if (firstValidIdx !== -1) {
+                const macdValuesOnly = macdLine.slice(firstValidIdx);
+                const signalOnValid = calcEMASeries(macdValuesOnly, signalPeriod);
+                signalOnValid.forEach((v, i) => { signalLine[firstValidIdx + i] = v; });
+            }
+
+            let equity = startEquity;
+            let position = null;
+            const trades = [];
+            const equityCurve = [{ index: 0, equity: startEquity }];
+            let peakEquity = startEquity;
+            let maxDrawdownPct = 0;
+
+            for (let i = 1; i < closes.length; i++) {
+                if (macdLine[i] === null || signalLine[i] === null || macdLine[i - 1] === null || signalLine[i - 1] === null) continue;
+
+                const wasBelow = macdLine[i - 1] <= signalLine[i - 1];
+                const isAbove = macdLine[i] > signalLine[i];
+                const crossedUp = wasBelow && isAbove;
+                const crossedDown = !wasBelow && !isAbove;
+
+                if (!position && crossedUp) {
+                    position = { entryPrice: closes[i], entryIndex: i };
+                } else if (position && crossedDown) {
+                    const retPct = (closes[i] - position.entryPrice) / position.entryPrice;
+                    equity = equity * (1 + retPct);
+                    trades.push({ entryIndex: position.entryIndex, exitIndex: i, entryPrice: position.entryPrice, exitPrice: closes[i], returnPct: retPct });
+                    position = null;
+                }
+
+                equityCurve.push({ index: i, equity });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            if (position) {
+                const lastClose = closes[closes.length - 1];
+                const retPct = (lastClose - position.entryPrice) / position.entryPrice;
+                equity = equity * (1 + retPct);
+                trades.push({ entryIndex: position.entryIndex, exitIndex: closes.length - 1, entryPrice: position.entryPrice, exitPrice: lastClose, returnPct: retPct, stillOpenAtEnd: true });
+                if (equity > peakEquity) peakEquity = equity;
+                const drawdownPct = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            const wins = trades.filter(t => t.returnPct > 0).length;
+            const winRatePct = trades.length ? (wins / trades.length * 100) : 0;
+            const totalReturnPct = (equity - startEquity) / startEquity * 100;
+            const buyHoldReturnPct = closes.length > 1 ? (closes[closes.length - 1] - closes[0]) / closes[0] * 100 : 0;
+
+            return {
+                trades, equityCurve, winRatePct, totalReturnPct, maxDrawdownPct,
+                finalEquity: equity, buyHoldReturnPct, tradeCount: trades.length
+            };
+        }
+
         // Nagyon egyszerű, függőségmentes equity-görbe sparkline egy kis
         // canvasre — nem a fő chart-motort használja (az sokkal komplexebb
         // dolgokra van hangolva), csak egy gyors vizuális áttekintést ad.
@@ -5047,7 +5122,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function renderBacktestStrategyInputs() {
             const strategy = document.getElementById('backtest-strategy').value;
             const el = document.getElementById('backtest-strategy-inputs');
-            if (strategy === 'bollinger') {
+            if (strategy === 'macd') {
+                el.innerHTML = `
+                    <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Long belépés, amikor a MACD-vonal felfelé keresztezi a jelvonalat (momentum-fordulat), zárás, amikor visszakeresztez alá.</p>
+                    <div class="grid grid-cols-3 gap-2 mb-3">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-400">Gyors EMA</label>
+                            <input type="number" id="backtest-macd-fast" value="12" step="1" min="2" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-400">Lassú EMA</label>
+                            <input type="number" id="backtest-macd-slow" value="26" step="1" min="3" max="200" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-400">Jelvonal</label>
+                            <input type="number" id="backtest-macd-signal" value="9" step="1" min="2" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                        </div>
+                    </div>
+                `;
+            } else if (strategy === 'bollinger') {
                 el.innerHTML = `
                     <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Long belépés, amikor az ár az alsó Bollinger-szalag ALÁ záródik (statisztikailag szokatlanul alacsony), zárás, amikor az ár visszatér a középvonalra (SMA).</p>
                     <div class="grid grid-cols-2 gap-2 mb-3">
@@ -5108,7 +5201,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             let result, minCandlesNeeded;
 
-            if (strategy === 'bollinger') {
+            if (strategy === 'macd') {
+                const macdFast = parseInt(document.getElementById('backtest-macd-fast').value, 10);
+                const macdSlow = parseInt(document.getElementById('backtest-macd-slow').value, 10);
+                const macdSignal = parseInt(document.getElementById('backtest-macd-signal').value, 10);
+                if (!macdFast || !macdSlow || !macdSignal || macdFast < 2 || macdSlow <= macdFast || macdSignal < 2) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódusokat (a lassú EMA legyen nagyobb, mint a gyors, a jelvonal periódusa legalább 2)!</div>`;
+                    return;
+                }
+                minCandlesNeeded = macdSlow + macdSignal + 2;
+                if (typeof candleData === 'undefined' || !candleData || candleData.length < minCandlesNeeded) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton ehhez a backteszthez — válts hosszabb idősíkra vagy csökkentsd a periódusokat.</div>`;
+                    return;
+                }
+                result = runMACDCrossoverBacktest(candleData, macdFast, macdSlow, macdSignal, startEquity);
+            } else if (strategy === 'bollinger') {
                 const bbPeriod = parseInt(document.getElementById('backtest-bb-period').value, 10);
                 const bbStdDev = parseFloat(document.getElementById('backtest-bb-stddev').value);
                 if (!bbPeriod || bbPeriod < 2 || !bbStdDev || bbStdDev <= 0) {
