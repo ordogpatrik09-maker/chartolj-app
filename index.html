@@ -6424,6 +6424,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             else if (ratio >= 1.5) { verdict = 'Elfogadható arány'; verdictColor = 'text-amber-400'; }
             else { verdict = 'Gyenge arány — a legtöbb tapasztalt kereskedő kerülné'; verdictColor = 'text-neon-red'; }
 
+            // Break-even találati arány: az a minimális win rate, ami mellett
+            // ennél az R/R aránynál a stratégia se nem nyer, se nem veszít
+            // hosszú távon. Képlet: 1 / (1 + R/R arány).
+            const breakEvenWinRatePct = (1 / (1 + ratio)) * 100;
+
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Kockázat / egység:</span><span class="text-neon-red">$${riskPerUnit.toLocaleString('en-US', {maximumFractionDigits: 4})} (${riskPct.toFixed(2)}%)</span></div>
@@ -6433,8 +6438,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Teljes potenciális nyereség:</span><span class="text-neon-green font-bold">$${totalReward.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                     ` : ''}
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Risk/Reward arány:</span><span class="font-bold text-white text-sm">1 : ${ratio.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Szükséges break-even találati arány:</span><span class="font-bold text-neon-cyan text-sm">${breakEvenWinRatePct.toFixed(1)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${verdictColor}">${verdict}</p>
+                <p class="text-[9.5px] text-slate-500 mt-1.5 leading-relaxed">Ennél az R/R aránynál legalább ${breakEvenWinRatePct.toFixed(1)}% találati arány szükséges ahhoz, hogy a stratégia hosszú távon ne veszítsen — minden efölötti találati arány pozitív matematikai előnyt (edge-et) jelent.</p>
             `;
         }
 
