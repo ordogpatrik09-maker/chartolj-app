@@ -973,6 +973,13 @@
                                 <div class="text-[10px] text-slate-400">Mekkora az esély, hogy elfogy a tőkéd?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('montecarlo-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-area"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Monte Carlo Szimulátor</div>
+                                <div class="text-[10px] text-slate-400">Sokszáz véletlenszerű útvonal egy stratégiára</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('atr-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
                             <div>
@@ -2058,6 +2065,60 @@
         </div>
     </div>
 
+    <!-- ================= MONTE CARLO SZIMULÁTOR (OKTATÁSI, NAGY FEJLESZTÉS) =================
+         Az egyszeri backtest (lásd Stratégia Backtester) EGYETLEN, determinisztikus
+         "útvonalat" mutat meg a múltbeli adaton. A valóságban, ugyanazzal a
+         találati aránnyal és R/R aránnyal, a trade-ek SORRENDJE (melyik nyer,
+         melyik veszít, és MIKOR) alapvetően más equity-görbét eredményezhet —
+         egy "szerencsés" sorrend simán felfelé ível, egy "szerencsétlen" pedig
+         mély, korai visszaesésekkel indulhat, UGYANAZZAL a hosszú távú
+         matematikai előnnyel (edge-dzsel). A Monte Carlo szimuláció ezt teszi
+         láthatóvá: SOK (pl. 300) véletlenszerű útvonalat generál ugyanazokkal
+         a paraméterekkel, és megmutatja az EREDMÉNYEK TELJES ELOSZLÁSÁT — nem
+         csak egyetlen várható kimenetelt. Ez direkt folytatása/kiegészítése a
+         Kelly-kritérium és Csőd-kockázat kalkulátoroknak: amíg azok egyetlen
+         számot adnak, ez a teljes valószínűségi "legyezőt" vizualizálja. -->
+    <div id="montecarlo-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-lg p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-area text-neon-purple"></i> Monte Carlo Szimulátor
+                </h3>
+                <button onclick="closeToolModal('montecarlo-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Egyetlen backtest csak EGY lehetséges kimenetelt mutat. Ez az eszköz ugyanazzal a találati aránnyal és R/R aránnyal SOKSZÁZ véletlenszerű trade-sorrendet szimulál, hogy lásd a lehetséges kimenetelek teljes szórását — nem csak az "átlagos" forgatókönyvet.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Találati arány (%)</label>
+                    <input type="number" id="mc-winrate" value="45" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Risk/Reward arány</label>
+                    <input type="number" id="mc-rr" value="2" step="0.1" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Kockázat / trade (%)</label>
+                    <input type="number" id="mc-riskpct" value="1" step="0.1" min="0.1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Trade-ek száma / út</label>
+                    <input type="number" id="mc-numtrades" value="100" step="10" min="10" max="2000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Szimulált útvonalak száma</label>
+            <input type="number" id="mc-numsims" value="300" step="50" min="20" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="runMonteCarloSimulation()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Szimuláció futtatása
+            </button>
+
+            <canvas id="mc-fanchart" width="440" height="160" class="w-full mt-4 rounded-lg bg-dark-900/60"></canvas>
+            <div id="mc-result" class="mt-3"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minden trade-nél a kimenetel (nyer/veszít) egymástól FÜGGETLEN, véletlenszerű esemény a megadott találati arány szerint — ez egy egyszerűsített modell, a valóságban a trade-ek korrelálhatnak (pl. hasonló piaci körülmények sorozatos vesztes/nyertes szériákat okozhatnak). A cél nem a pontos előrejelzés, hanem annak megmutatása, hogy UGYANAZ a matematikai előny (edge) mennyire eltérő rövid-/középtávú útvonalakat eredményezhet.</p>
+        </div>
+    </div>
+
     <!-- ================= KELLY-KRITÉRIUM KALKULÁTOR (OKTATÁSI) =================
          A Kelly-formula a matematikailag optimális tétnagyságot adja meg
          egy adott találati arány + Risk/Reward mellett — a cél megmutatni,
@@ -2705,6 +2766,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Csőd-kockázat (Risk of Ruin)</div>
                     <div class="text-[10px] text-slate-400">Mekkora az esély, hogy elfogy a tőkéd?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('montecarlo-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-area"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Monte Carlo Szimulátor</div>
+                    <div class="text-[10px] text-slate-400">Sokszáz véletlenszerű útvonal egy stratégiára</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('atr-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -6843,6 +6911,160 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
                 ${edge <= 0 ? '<p class="text-[10px] text-slate-400 mt-1">Negatív matematikai előny mellett a kockázat %-ának csökkentése csak LASSÍTJA a csődöt, nem szünteti meg — a találati arányt vagy a Risk/Reward arányt kell javítani.</p>' : ''}
+            `;
+        }
+
+        // ================= MONTE CARLO SZIMULÁTOR (OKTATÁSI, NAGY FEJLESZTÉS) =================
+        // Tiszta, side-effect mentes szimulációs mag: adott találati arány,
+        // R/R arány és kockázat/trade % mellett generál egyetlen véletlenszerű
+        // equity-útvonalat (fixed-fractional pozícióméretezéssel: minden trade
+        // a JELENLEGI tőke adott %-át kockáztatja, nem egy fix dollárösszeget —
+        // ez a reálisabb, "compounding" modell). Visszaadja a végső tőkét, a
+        // maximális drawdown-t, és magát az útvonalat (equity-görbét).
+        function simulateMonteCarloPath(winRateFrac, rr, riskPctFrac, numTrades) {
+            let equity = 1; // normalizált, 1 = kezdő tőke (100%)
+            let peak = 1;
+            let maxDrawdown = 0;
+            const path = [1];
+            for (let i = 0; i < numTrades; i++) {
+                const isWin = Math.random() < winRateFrac;
+                if (isWin) {
+                    equity *= (1 + riskPctFrac * rr);
+                } else {
+                    equity *= (1 - riskPctFrac);
+                }
+                if (equity < 0) equity = 0; // elvi védelem, riskPctFrac<=1 esetén nem fordulhat elő
+                path.push(equity);
+                if (equity > peak) peak = equity;
+                const dd = peak > 0 ? (peak - equity) / peak : 1;
+                if (dd > maxDrawdown) maxDrawdown = dd;
+            }
+            return { finalEquity: equity, maxDrawdown, path };
+        }
+
+        function runMonteCarloSimulation() {
+            const winRatePct = parseFloat(document.getElementById('mc-winrate').value);
+            const rr = parseFloat(document.getElementById('mc-rr').value);
+            const riskPct = parseFloat(document.getElementById('mc-riskpct').value);
+            const numTrades = parseInt(document.getElementById('mc-numtrades').value, 10);
+            const numSims = parseInt(document.getElementById('mc-numsims').value, 10);
+            const out = document.getElementById('mc-result');
+            const canvas = document.getElementById('mc-fanchart');
+
+            if (!winRatePct || winRatePct <= 0 || winRatePct >= 100 || !rr || rr <= 0 || !riskPct || riskPct <= 0 || riskPct >= 100 || !numTrades || numTrades < 1 || !numSims || numSims < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%), R/R arányt, kockázat/trade %-ot (1-99%) és pozitív egész számokat a trade-ek/szimulációk számához!</div>`;
+                return;
+            }
+
+            const winRateFrac = winRatePct / 100;
+            const riskPctFrac = riskPct / 100;
+
+            const results = [];
+            for (let s = 0; s < numSims; s++) {
+                results.push(simulateMonteCarloPath(winRateFrac, rr, riskPctFrac, numTrades));
+            }
+
+            const finalEquities = results.map(r => r.finalEquity).sort((a, b) => a - b);
+            const maxDrawdowns = results.map(r => r.maxDrawdown);
+            const percentile = (arr, p) => arr[Math.min(arr.length - 1, Math.max(0, Math.floor(p * (arr.length - 1))))];
+
+            const median = percentile(finalEquities, 0.5);
+            const p10 = percentile(finalEquities, 0.10);
+            const p90 = percentile(finalEquities, 0.90);
+            const profitableCount = finalEquities.filter(e => e > 1).length;
+            const profitablePct = (profitableCount / numSims) * 100;
+            const ruinThreshold = 0.5; // 50%-os vagy nagyobb drawdown = "csőd-közeli" küszöb, oktatási definíció
+            const ruinCount = maxDrawdowns.filter(dd => dd >= ruinThreshold).length;
+            const ruinPct = (ruinCount / numSims) * 100;
+            const avgMaxDrawdown = maxDrawdowns.reduce((s, v) => s + v, 0) / maxDrawdowns.length;
+
+            // --- Fan chart rajzolása ---
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                const w = canvas.width, h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                // Legfeljebb ~60 utat rajzolunk ki ténylegesen (teljesítmény
+                // és olvashatóság miatt), de a statisztika a TELJES mintán alapul.
+                const maxPathsToDraw = Math.min(60, results.length);
+                const step = Math.max(1, Math.floor(results.length / maxPathsToDraw));
+                const sampledPaths = [];
+                for (let i = 0; i < results.length; i += step) sampledPaths.push(results[i].path);
+
+                let globalMin = 1, globalMax = 1;
+                sampledPaths.forEach(p => p.forEach(v => { if (v < globalMin) globalMin = v; if (v > globalMax) globalMax = v; }));
+                const range = (globalMax - globalMin) || 1;
+
+                const toXY = (i, v, len) => [
+                    (i / Math.max(1, len - 1)) * (w - 4) + 2,
+                    h - 2 - ((v - globalMin) / range) * (h - 4)
+                ];
+
+                // Nullvonal (kezdő tőke)
+                const [, zeroY] = toXY(0, 1, numTrades + 1);
+                ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, zeroY);
+                ctx.lineTo(w, zeroY);
+                ctx.stroke();
+
+                sampledPaths.forEach(path => {
+                    ctx.strokeStyle = path[path.length - 1] >= 1 ? 'rgba(57,255,136,0.18)' : 'rgba(255,59,92,0.18)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    path.forEach((v, i) => {
+                        const [x, y] = toXY(i, v, path.length);
+                        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                    });
+                    ctx.stroke();
+                });
+
+                // Medián útvonal kiemelése (a legközelebbi a medián végértékhez)
+                let medianPathIdx = 0, closestDiff = Infinity;
+                results.forEach((r, i) => {
+                    const diff = Math.abs(r.finalEquity - median);
+                    if (diff < closestDiff) { closestDiff = diff; medianPathIdx = i; }
+                });
+                const medianPath = results[medianPathIdx].path;
+                ctx.strokeStyle = '#00d4ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                medianPath.forEach((v, i) => {
+                    const [x, y] = toXY(i, v, medianPath.length);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            }
+
+            const medianPct = (median - 1) * 100;
+            const p10Pct = (p10 - 1) * 100;
+            const p90Pct = (p90 - 1) * 100;
+            const fmtPct = (n) => (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
+
+            let verdictColor, verdictText;
+            if (ruinPct >= 20) {
+                verdictColor = 'text-neon-red';
+                verdictText = `🚨 A szimulált utak ${ruinPct.toFixed(0)}%-a legalább ${(ruinThreshold * 100).toFixed(0)}%-os visszaesést szenvedett el — ez a paraméter-kombináció matematikailag túl kockázatos, még akkor is, ha az átlagos edge pozitív.`;
+            } else if (ruinPct >= 5) {
+                verdictColor = 'text-amber-400';
+                verdictText = `⚠️ A szimulált utak ${ruinPct.toFixed(0)}%-ában legalább ${(ruinThreshold * 100).toFixed(0)}%-os visszaesés fordult elő — érdemes alacsonyabb kockázat/trade %-ot fontolóra venni.`;
+            } else {
+                verdictColor = 'text-neon-green';
+                verdictText = `✅ A szimulált utak csak ${ruinPct.toFixed(0)}%-ában fordult elő súlyos (${(ruinThreshold * 100).toFixed(0)}%+) visszaesés — ezekkel a paraméterekkel a hosszú távú kockázat kezelhetőnek tűnik.`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Medián végeredmény (${numTrades} trade után):</span><span class="font-extrabold ${medianPct >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtPct(medianPct)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">10. percentilis (rossz forgatókönyv):</span><span class="text-neon-red">${fmtPct(p10Pct)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">90. percentilis (jó forgatókönyv):</span><span class="text-neon-green">${fmtPct(p90Pct)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Nyereséges utak aránya:</span><span class="text-white">${profitablePct.toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos max. visszaesés:</span><span class="text-amber-400">${(avgMaxDrawdown * 100).toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Utak ≥${(ruinThreshold*100).toFixed(0)}%-os visszaeséssel:</span><span class="font-extrabold ${verdictColor}">${ruinPct.toFixed(1)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${verdictColor}">${verdictText}</p>
+                <p class="text-[9.5px] text-slate-500 mt-1.5">A kék vonal a medián (középső) útvonal — a halvány zöld/piros vonalak egy-egy önálló, véletlenszerű szimulációt mutatnak.</p>
             `;
         }
 
