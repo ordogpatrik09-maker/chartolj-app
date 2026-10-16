@@ -2556,6 +2556,24 @@
 
             <div id="sb-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
+
+            <!-- ======== SAJÁT STRATÉGIÁK MENTÉSE ÉS ÖSSZEHASONLÍTÁSA (KITERJESZTÉS) ========
+                 A cél: a felhasználó ne csak egyszer futtassa le egy ötletét, hanem
+                 localStorage-ban elmentve VISSZATÉRHESSEN hozzá, és több saját
+                 variánsát egymás mellett összehasonlíthassa (melyik hozott jobb
+                 hozamot / kisebb drawdownt). Ez teljesen a jelenlegi futtatás
+                 eredményére épül (sbLastRunResult + sbLastRunConfig), semmit nem
+                 módosít a már meglévő motorban. -->
+            <div class="border-t border-dark-750 mt-4 pt-4">
+                <button id="sb-save-btn" onclick="saveCurrentStrategyBuilderRun()" disabled class="w-full py-2 rounded-xl text-[11px] font-bold border border-amber-400/40 text-amber-400 hover:bg-amber-400/10 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-bookmark mr-1"></i> Jelenlegi eredmény elmentése
+                </button>
+                <div class="flex items-center justify-between mt-3 mb-1.5">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase">Mentett stratégiáim</label>
+                    <span id="sb-saved-count" class="text-[10px] text-slate-500"></span>
+                </div>
+                <div id="sb-saved-list" class="space-y-1.5"></div>
+            </div>
         </div>
     </div>
 
@@ -5362,6 +5380,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!el) return;
             el.textContent = (typeof currentAsset !== 'undefined' && currentAsset && currentAsset.symbol) ? currentAsset.symbol : 'eszköz';
             renderStrategyBuilderInputs();
+            loadSbSavedStrategies();
+            renderSbSavedList();
+            const saveBtn = document.getElementById('sb-save-btn');
+            if (saveBtn) saveBtn.disabled = true;
+            sbLastRunConfig = null;
+            sbLastRunResult = null;
         }
 
         function renderStrategyBuilderInputs() {
@@ -5522,6 +5546,126 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const canvas = document.getElementById('sb-sparkline');
             drawBacktestEquitySparkline(canvas, result.equityCurve, startEquity);
+
+            // A legutóbbi futtatás konfigurációja + eredménye elmentésre
+            // készen áll — a mentés gomb csak EZUTÁN válik elérhetővé, hogy
+            // ne lehessen validáció nélküli/hibás futtatást elmenteni.
+            sbLastRunConfig = { entryType, entryParams, exitType, exitParams, startEquity };
+            sbLastRunResult = result;
+            const saveBtn = document.getElementById('sb-save-btn');
+            if (saveBtn) saveBtn.disabled = false;
+        }
+
+        let sbLastRunConfig = null;
+        let sbLastRunResult = null;
+        let sbSavedStrategies = [];
+
+        const SB_ENTRY_LABELS = { ema_cross: 'EMA Arany Kereszt', rsi_oversold: 'RSI Túladott-kilépés', bollinger_break: 'Bollinger-törés', macd_cross: 'MACD Keresztezés' };
+        const SB_EXIT_LABELS = { signal_reverse: 'Ellentétes jelzés', stop_take: 'Stop-Loss/Take-Profit' };
+
+        function loadSbSavedStrategies() {
+            try {
+                const raw = localStorage.getItem('chartolj_sb_strategies');
+                sbSavedStrategies = raw ? JSON.parse(raw) : [];
+            } catch (e) { sbSavedStrategies = []; }
+        }
+        function saveSbSavedStrategies() {
+            try { localStorage.setItem('chartolj_sb_strategies', JSON.stringify(sbSavedStrategies)); } catch (e) {}
+        }
+
+        function saveCurrentStrategyBuilderRun() {
+            if (!sbLastRunConfig || !sbLastRunResult) return;
+            const entryLabel = SB_ENTRY_LABELS[sbLastRunConfig.entryType] || sbLastRunConfig.entryType;
+            const exitLabel = SB_EXIT_LABELS[sbLastRunConfig.exitType] || sbLastRunConfig.exitType;
+            sbSavedStrategies.unshift({
+                id: 'sb_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                savedAt: Date.now(),
+                asset: (typeof currentAsset !== 'undefined' && currentAsset && currentAsset.symbol) ? currentAsset.symbol : '—',
+                config: sbLastRunConfig,
+                entryLabel, exitLabel,
+                totalReturnPct: sbLastRunResult.totalReturnPct,
+                maxDrawdownPct: sbLastRunResult.maxDrawdownPct,
+                winRatePct: sbLastRunResult.winRatePct,
+                tradeCount: sbLastRunResult.tradeCount,
+                buyHoldReturnPct: sbLastRunResult.buyHoldReturnPct
+            });
+            if (sbSavedStrategies.length > 20) sbSavedStrategies = sbSavedStrategies.slice(0, 20);
+            saveSbSavedStrategies();
+            renderSbSavedList();
+            showNotification('Stratégia elmentve — alul összehasonlíthatod a korábbiakkal!');
+        }
+
+        function deleteSbSavedStrategy(id) {
+            sbSavedStrategies = sbSavedStrategies.filter(s => s.id !== id);
+            saveSbSavedStrategies();
+            renderSbSavedList();
+        }
+
+        function loadSbSavedStrategyIntoForm(id) {
+            const s = sbSavedStrategies.find(x => x.id === id);
+            if (!s) return;
+            const cfg = s.config;
+            document.getElementById('sb-entry-type').value = cfg.entryType;
+            document.getElementById('sb-exit-type').value = cfg.exitType;
+            renderStrategyBuilderInputs();
+            document.getElementById('sb-equity').value = cfg.startEquity;
+            if (cfg.entryType === 'rsi_oversold') {
+                document.getElementById('sb-rsi-period').value = cfg.entryParams.period;
+                document.getElementById('sb-rsi-oversold').value = cfg.entryParams.oversold;
+                document.getElementById('sb-rsi-overbought').value = cfg.entryParams.overbought;
+            } else if (cfg.entryType === 'bollinger_break') {
+                document.getElementById('sb-bb-period').value = cfg.entryParams.period;
+                document.getElementById('sb-bb-stddev').value = cfg.entryParams.stdDev;
+            } else if (cfg.entryType === 'macd_cross') {
+                document.getElementById('sb-macd-fast').value = cfg.entryParams.fast;
+                document.getElementById('sb-macd-slow').value = cfg.entryParams.slow;
+                document.getElementById('sb-macd-signal').value = cfg.entryParams.signal;
+            } else {
+                document.getElementById('sb-ema-fast').value = cfg.entryParams.fast;
+                document.getElementById('sb-ema-slow').value = cfg.entryParams.slow;
+            }
+            if (cfg.exitType === 'stop_take') {
+                document.getElementById('sb-stoploss').value = cfg.exitParams.stopLossPct;
+                document.getElementById('sb-takeprofit').value = cfg.exitParams.takeProfitPct;
+            }
+            runStrategyBuilderBacktest();
+            showNotification('Mentett stratégia betöltve és újrafuttatva a jelenlegi adaton.');
+        }
+
+        function renderSbSavedList() {
+            const listEl = document.getElementById('sb-saved-list');
+            const countEl = document.getElementById('sb-saved-count');
+            if (!listEl) return;
+            countEl.textContent = sbSavedStrategies.length ? `${sbSavedStrategies.length} / 20` : '';
+            if (sbSavedStrategies.length === 0) {
+                listEl.innerHTML = `<p class="text-[10px] text-slate-600 italic">Még nincs elmentett egyedi stratégiád — futtass egyet fent, majd mentsd el!</p>`;
+                return;
+            }
+            // A legjobb (legnagyobb hozamú) mentett stratégia kiemelése, hogy
+            // a felhasználó azonnal lássa, melyik variánsa teljesített a
+            // legjobban a saját próbálkozásai közül.
+            const bestId = sbSavedStrategies.reduce((best, s) => (!best || s.totalReturnPct > best.totalReturnPct) ? s : best, null).id;
+            listEl.innerHTML = sbSavedStrategies.map(s => {
+                const isPositive = s.totalReturnPct > 0;
+                const isBest = s.id === bestId && sbSavedStrategies.length > 1;
+                return `
+                    <div class="glass-card rounded-lg p-2.5 ${isBest ? 'border border-amber-400/50' : ''}">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-bold text-white truncate">${s.entryLabel} <i class="fa-solid fa-arrow-right text-[8px] text-slate-500 mx-0.5"></i> ${s.exitLabel} ${isBest ? '<span class="text-amber-400">★ Legjobb</span>' : ''}</div>
+                                <div class="text-[9.5px] text-slate-500">${s.asset} · ${s.tradeCount} trade · ${new Date(s.savedAt).toLocaleDateString('hu-HU')}</div>
+                            </div>
+                            <button onclick="deleteSbSavedStrategy('${s.id}')" class="text-slate-600 hover:text-neon-red transition shrink-0"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                        </div>
+                        <div class="flex items-center gap-3 mt-1.5 font-mono text-[10px]">
+                            <span class="${isPositive ? 'text-neon-green' : 'text-neon-red'} font-bold">${s.totalReturnPct >= 0 ? '+' : ''}${s.totalReturnPct.toFixed(2)}%</span>
+                            <span class="text-slate-500">DD: <span class="text-amber-400">${s.maxDrawdownPct.toFixed(1)}%</span></span>
+                            <span class="text-slate-500">Win: ${s.winRatePct.toFixed(0)}%</span>
+                            <button onclick="loadSbSavedStrategyIntoForm('${s.id}')" class="ml-auto text-neon-cyan hover:underline">Betöltés</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Nagyon egyszerű, függőségmentes equity-görbe sparkline egy kis
