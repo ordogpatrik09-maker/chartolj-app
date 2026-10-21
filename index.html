@@ -1155,6 +1155,13 @@
                                 <div class="text-[10px] text-slate-400">Árváltozás × volumen, EMA-simítással</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('tii-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-percent"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Trend Intensity Index (TII) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mozgóátlag feletti árak statisztikai aránya</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3104,6 +3111,35 @@
         </div>
     </div>
 
+    <!-- ================= TREND INTENSITY INDEX (TII) KALKULÁTOR (OKTATÁSI) =================
+         SMA a periódus utolsó N árából; TII = (hány ár van az SMA
+         FÖLÖTT a periódusban / N) × 100. 0-100 közötti skála, ahol
+         80 fölött erős emelkedő, 20 alatt erős csökkenő trendet jelez. -->
+    <div id="tii-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-percent text-neon-cyan"></i> Trend Intensity Index (TII) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('tii-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A TII azt méri, az árak hány százaléka van a mozgóátlag FÖLÖTT egy adott periódusban — statisztikai erősséget adva a trendnek. 80 fölött erős emelkedő, 20 alatt erős csökkenő trendet jelezhet. Ellentétben az ADX-szel, ami az árelmozdulás nagyságára fókuszál, a TII arra, hány periódus van a mozgóátlag adott oldalán. Add meg az árfolyam-sorozatot.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Árfolyam sorozat (vesszővel elválasztva, legrégebbitől a legfrissebbig)</label>
+            <textarea id="tii-series" rows="3" placeholder="pl. 10, 10.3, 10.1, 10.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">10, 10.3, 10.1, 10.5, 10.6, 10.9, 11.2, 11.5, 11.8, 12.0, 12.3, 12.5, 12.8, 13.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">TII periódus (hány utolsó árat vegyünk figyelembe)</label>
+            <input type="number" id="tii-period" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcTII()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="tii-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az árak egyenlőek is lehetnek az SMA-val (nem feltétlenül csak fölötte/alatta) — ezek nem számítanak "fölötte" lévőnek, ezért a TII nem feltétlenül 100 vagy 0, ha minden ár egy irányba tér el az átlagtól, de néhány pontosan egyenlő vele.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4328,6 +4364,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Force Index Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Árváltozás × volumen, EMA-simítással</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('tii-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-percent"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Trend Intensity Index (TII) Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mozgóátlag feletti árak statisztikai aránya</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -10535,6 +10578,58 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Legutóbbi nyers Force Index:</span><span class="${latestRawForce >= 0 ? 'text-neon-green' : 'text-neon-red'}">${latestRawForce >= 0 ? '+' : ''}${latestRawForce.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított Force Index (${period} EMA):</span><span class="font-extrabold ${colorClass} text-sm">${smoothedForce >= 0 ? '+' : ''}${smoothedForce.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= TREND INTENSITY INDEX (TII) KALKULÁTOR (OKTATÁSI) =================
+        // SMA a periódus utolsó N árából. TII = (SMA fölötti árak száma
+        // a periódusban / N) × 100. Pontosan SMA-val egyenlő ár nem
+        // számít "fölötte" lévőnek.
+        function calcTII() {
+            const seriesEl = document.getElementById('tii-series');
+            const periodEl = document.getElementById('tii-period');
+            const out = document.getElementById('tii-result');
+            if (!seriesEl || !periodEl || !out) return;
+
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1 || values.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (periódus) érvényes, vesszővel elválasztott árat, és egy érvényes (legalább 1) periódust!</div>`;
+                return;
+            }
+
+            const n = values.length;
+            const window = values.slice(n - period, n);
+            const sma = window.reduce((a, b) => a + b, 0) / period;
+            const aboveCount = window.filter(v => v > sma).length;
+            const tii = (aboveCount / period) * 100;
+
+            let colorClass, verdict;
+            if (tii >= 80) {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Erős emelkedő trend (TII ≥80) — a periódus árainak nagy része a mozgóátlag fölött volt, konzisztens felfelé irányuló mozgást jelez.';
+            } else if (tii >= 60) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Közepesen erős, inkább emelkedő jellegű trend — az árak többsége a mozgóátlag fölött volt, de nem extrém mértékben.';
+            } else if (tii > 40) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Bizonytalan, oldalazó jellegű mozgás — az árak közel egyenlő arányban voltak a mozgóátlag fölött és alatt.';
+            } else if (tii > 20) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Közepesen erős, inkább csökkenő jellegű trend — az árak többsége a mozgóátlag alatt volt, de nem extrém mértékben.';
+            } else {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Erős csökkenő trend (TII ≤20) — a periódus árainak nagy része a mozgóátlag alatt volt, konzisztens lefelé irányuló mozgást jelez.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">SMA (periódus átlag):</span><span class="text-white">${sma.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">SMA fölötti árak a periódusban:</span><span class="text-white">${aboveCount} / ${period}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Trend Intensity Index (TII):</span><span class="font-extrabold ${colorClass} text-sm">${tii.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
