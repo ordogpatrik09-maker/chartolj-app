@@ -1092,6 +1092,13 @@
                                 <div class="text-[10px] text-slate-400">Tranche-ekre bontott be- vagy kilépés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('liquiditysize-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-droplet"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Likviditás-alapú Pozícióméretezés</div>
+                                <div class="text-[10px] text-slate-400">Max. pozíció a napi átlagos volumen alapján</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2699,6 +2706,44 @@
         </div>
     </div>
 
+    <!-- ================= LIKVIDITÁS-ALAPÚ POZÍCIÓMÉRETEZÉS KALKULÁTOR (OKTATÁSI) =================
+         Gyakorlati ökölszabály: egyetlen pozíció ne haladja meg a napi
+         átlagos kereskedési VOLUMEN (ADV — Average Daily Volume) egy kis
+         százalékát (pl. 1%) — ez segít elkerülni, hogy a saját megbízás
+         aránytalanul nagy hatással legyen az árra (self-inflicted
+         slippage), és hogy vészhelyzetben is reálisan zárható legyen a
+         pozíció. Ez a kalkulátor a megadott ADV és max. %-os korlát
+         alapján kiszámolja a maximálisan ajánlott pozícióméretet, majd
+         összeveti a tervezett pozícióval. Ez ÖNÁLLÓ kalkulátor, nem épül
+         más eszközre. -->
+    <div id="liquiditysize-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-droplet text-neon-cyan"></i> Likviditás-alapú Pozícióméretezés
+                </h3>
+                <button onclick="closeToolModal('liquiditysize-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Minél illikvidebb egy eszköz, annál kisebb pozíciót ajánlott nyitni, hogy a saját megbízásod ne mozgassa jelentősen az árat. A gyakorlati ökölszabály: a pozíció ne haladja meg a napi átlagos volumen (ADV) egy kis %-át. Add meg az eszköz ADV-jét és a tervezett pozícióméretet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Napi átlagos volumen / ADV (egység, pl. darab/coin/részvény)</label>
+            <input type="number" id="liqsize-adv" value="500000" step="1000" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Max. ajánlott ADV-részesedés (%, az ökölszabály)</label>
+            <input type="number" id="liqsize-max-pct" value="1" step="0.1" min="0.01" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Tervezett pozícióméret (egység)</label>
+            <input type="number" id="liqsize-planned" value="3000" step="100" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcLiquidityBasedSizing()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="liqsize-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy irányadó ökölszabály, nem egzakt matematikai határ — nagyon illikvid, szűk ajánlati könyvű eszközöknél (pl. kisebb kapitalizációjú kriptók vagy small-cap részvények) érdemes még az 1%-nál is óvatosabban eljárni, különösen ha a pozíciót gyorsan, vészhelyzetben kellene zárni.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3860,6 +3905,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Lépcsőzetes Be-/Kiszállás Tervező</div>
                     <div class="text-[10px] text-slate-400">Tranche-ekre bontott be- vagy kilépés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('liquiditysize-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-droplet"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Likviditás-alapú Pozícióméretezés</div>
+                    <div class="text-[10px] text-slate-400">Max. pozíció a napi átlagos volumen alapján</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -9837,6 +9889,51 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <p class="text-[10px] font-semibold mt-2 text-neon-green">${isDescending
                     ? 'Mivel az árszintek CSÖKKENNEK, az átlagár jobb (alacsonyabb), mint ha a teljes pozíciót a kezdő árszinten nyitottad volna meg.'
                     : 'Mivel az árszintek NÖVEKEDNEK, az átlagár jobb (magasabb), mint ha a teljes pozíciót a kezdő árszinten zártad volna le.'}</p>
+            `;
+        }
+
+        // ================= LIKVIDITÁS-ALAPÚ POZÍCIÓMÉRETEZÉS KALKULÁTOR (OKTATÁSI) =================
+        // maxPozíció = ADV × (maxPct / 100) — egyszerű, lineáris ökölszabály.
+        // Önálló logika, nem épül más eszközre.
+        function calcLiquidityBasedSizing() {
+            const advEl = document.getElementById('liqsize-adv');
+            const maxPctEl = document.getElementById('liqsize-max-pct');
+            const plannedEl = document.getElementById('liqsize-planned');
+            const out = document.getElementById('liqsize-result');
+            if (!advEl || !maxPctEl || !plannedEl || !out) return;
+
+            const adv = parseFloat(advEl.value);
+            const maxPct = parseFloat(maxPctEl.value);
+            const planned = parseFloat(plannedEl.value);
+
+            if (!adv || adv <= 0 || !maxPct || maxPct <= 0 || isNaN(planned) || planned < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb ADV-t és max. %-ot, valamint egy nullánál nem kisebb tervezett pozícióméretet!</div>`;
+                return;
+            }
+
+            const maxRecommended = adv * (maxPct / 100);
+            const plannedPctOfAdv = (planned / adv) * 100;
+            const isWithinLimit = planned <= maxRecommended;
+            const excessAmount = planned - maxRecommended;
+
+            const fmt = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            let verdictHtml;
+            if (planned === 0) {
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-slate-400">Adj meg egy tervezett pozícióméretet az összehasonlításhoz.</p>`;
+            } else if (isWithinLimit) {
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A tervezett pozíció BELÜL van az ajánlott likviditási korláton (a napi volumen ${plannedPctOfAdv.toFixed(3)}%-a) — a saját megbízásod valószínűleg nem mozgatja jelentősen az árat.</p>`;
+            } else {
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-red">🚨 A tervezett pozíció TÚLLÉPI az ajánlott likviditási korlátot ${fmt(excessAmount)} egységgel (a napi volumen ${plannedPctOfAdv.toFixed(3)}%-a, a megengedett ${maxPct}% helyett) — fontold meg a lépcsőzetes belépést/kiszállást, vagy csökkentsd a pozícióméretet.</p>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Max. ajánlott pozícióméret:</span><span class="font-extrabold text-neon-cyan text-sm">${fmt(maxRecommended)} egység</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Tervezett pozícióméret:</span><span class="text-white">${fmt(planned)} egység</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Tervezett pozíció / ADV:</span><span class="${isWithinLimit ? 'text-neon-green' : 'text-neon-red'} font-bold">${plannedPctOfAdv.toFixed(3)}%</span></div>
+                </div>
+                ${verdictHtml}
             `;
         }
 
@@ -18215,6 +18312,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             268: { tool: 'montecarlo-modal', cta: 'Futtasd le élesben a Monte Carlo Szimulátort' },
             145: { tool: 'funding-modal', cta: 'Számold ki, mennyi funding díjat fizetnél/kapnál' },
             434: { tool: 'var-modal', cta: 'Számold ki élesben a VaR, CVaR és LVaR értékeket' },
+            208: { tool: 'liquiditysize-modal', cta: 'Számold ki a likviditás-alapú max. pozícióméretet' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -18224,7 +18322,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            if (mapping.tool === 'backtest-modal' || mapping.tool === 'montecarlo-modal' || mapping.tool === 'funding-modal' || mapping.tool === 'var-modal') {
+            if (mapping.tool === 'backtest-modal' || mapping.tool === 'montecarlo-modal' || mapping.tool === 'funding-modal' || mapping.tool === 'var-modal' || mapping.tool === 'liquiditysize-modal') {
                 closeAcademy();
                 openToolModal(mapping.tool);
                 if (mapping.tool === 'backtest-modal' && typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
