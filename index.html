@@ -9282,6 +9282,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const confidencePct = parseFloat(confidence) * 100;
             const exceedPct = 100 - confidencePct;
 
+            // ================= CONDITIONAL VaR / EXPECTED SHORTFALL (KITERJESZTÉS) =================
+            // A VaR maga csak egy KÜSZÖBÖT ad, de nem mondja meg, mekkora a
+            // veszteség ÁTLAGOSAN azokban az esetekben, amikor a küszöböt
+            // átlépjük. A CVaR (Expected Shortfall) pontosan ezt a hiányzó
+            // választ adja: a normális eloszlás alatti "farok" (tail) feletti
+            // feltételes várható érték. Paraméteres (normális eloszlás)
+            // zárt alakú formula: ES = portfólió × [φ(z) / (1-konfidencia)]
+            // × skálázott volatilitás, ahol φ a standard normál SŰRŰSÉG-
+            // függvény (nem a CDF) a z-score-nál.
+            const esMultiplier = bsNormalPdf(z) / (1 - parseFloat(confidence));
+            const esAmount = portfolio * esMultiplier * scaledVolFrac;
+            const esPct = esMultiplier * scaledVolFrac * 100;
+
             const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
             out.innerHTML = `
@@ -9293,8 +9306,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="text-center py-2.5 rounded-xl bg-dark-850/60 border border-dark-750 mb-3">
                     <span class="text-[11px] text-slate-300 leading-relaxed">"Normál piaci körülmények között, ${confidencePct}% eséllyel NEM veszítesz ${fmt(varAmount)}-nál többet ${days} nap alatt."</span>
                 </div>
+                <div class="rounded-xl bg-neon-red/5 border border-neon-red/30 p-3 mb-3">
+                    <div class="text-[10px] text-neon-red uppercase font-bold mb-1">CVaR / Expected Shortfall (ha átlépjük a VaR-t)</div>
+                    <div class="text-xl font-extrabold text-white">${fmt(esAmount)}</div>
+                    <div class="text-[9.5px] text-slate-500 mt-0.5">A portfólió ${esPct.toFixed(2)}%-a — a ROSSZABB ${exceedPct}%-nyi eset ÁTLAGOS veszteségmértéke</div>
+                </div>
                 <div class="text-center py-2 rounded-xl bg-neon-red/10 border border-neon-red/30">
-                    <span class="text-[10.5px] text-neon-red font-bold">⚠️ A maradék ${exceedPct}%-ban (pl. piaci stressz, "black swan" esemény) a veszteség EZT MEGHALADHATJA — a VaR NEM a maximális lehetséges veszteség, csak egy küszöb, amit normál körülmények közt jellemzően nem lépünk túl.</span>
+                    <span class="text-[10.5px] text-neon-red font-bold">⚠️ A VaR csak egy küszöb — a CVaR azt mutatja, MENNYIVEL rosszabb a helyzet, ha a küszöböt mégis átlépjük. A kettő közötti különbség a "farok-kockázat" (tail risk) mértéke: minél nagyobb a rés, annál inkább számíthatsz szélsőséges napokra.</span>
                 </div>
             `;
         }
