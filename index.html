@@ -1134,6 +1134,13 @@
                                 <div class="text-[10px] text-slate-400">Átlagtól való eltérés mérése, korlátlan tartományban</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('pe-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-building-columns"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">P/E Ráta & EPS Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Ár/Nyereség arány, iparági összevetéssel</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2960,6 +2967,43 @@
         </div>
     </div>
 
+    <!-- ================= P/E RÁTA & EPS KALKULÁTOR (OKTATÁSI) =================
+         EPS = nettó nyereség / forgalomban lévő részvények száma.
+         P/E = részvényár / EPS. Opcionális iparági átlag P/E megadása
+         esetén egyszerű relatív összevetést is mutatunk — ez NEM
+         minősítés, csak kontextus, a lecke explicit figyelmeztetése
+         szerint a P/E önmagában soha nem elég egy döntéshez. -->
+    <div id="pe-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-building-columns text-neon-cyan"></i> P/E Ráta & EPS Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('pe-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A P/E (Price-to-Earnings) ráta azt mutatja, a részvény ára hányszorosa az egy részvényre jutó éves nyereségnek (EPS). Add meg a részvényárat és a vállalat adatait — az EPS-t a nettó nyereségből és a forgalomban lévő részvények számából számoljuk. Opcionálisan add meg az iparági átlag P/E-t egyszerű kontextushoz.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Részvényár ($)</label>
+            <input type="number" id="pe-price" value="150" step="0.01" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Nettó nyereség ($, éves)</label>
+            <input type="number" id="pe-net-income" value="5000000" step="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Forgalomban lévő részvények száma</label>
+            <input type="number" id="pe-shares" value="1000000" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Iparági átlag P/E (opcionális, hagyd 0-n, ha nincs)</label>
+            <input type="number" id="pe-industry-avg" value="0" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcPeRatio()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="pe-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A P/E rátát csak hasonló iparágon belüli cégek között érdemes összevetni. Negatív EPS esetén a P/E nem értelmezhető hagyományos módon (a cég veszteséges) — ezt a kalkulátor jelzi, de nem számol ki belőle "negatív P/E"-t, mert az félrevezető lenne.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4163,6 +4207,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">CCI (Commodity Channel Index) Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Átlagtól való eltérés mérése, korlátlan tartományban</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('pe-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-building-columns"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">P/E Ráta & EPS Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Ár/Nyereség arány, iparági összevetéssel</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -10177,6 +10228,78 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Átlagos abszolút eltérés:</span><span class="text-white">${meanAbsDeviation.toFixed(4)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Aktuális ár:</span><span class="text-white">${currentPrice}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">CCI:</span><span class="font-extrabold ${colorClass} text-sm">${cci >= 0 ? '+' : ''}${cci.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= P/E RÁTA & EPS KALKULÁTOR (OKTATÁSI) =================
+        // EPS = nettó nyereség / részvényszám. P/E = ár / EPS. Negatív
+        // EPS esetén a hagyományos P/E nem értelmezhető, ezt explicit
+        // jelezzük, nem számolunk ki belőle félrevezető negatív P/E-t.
+        function calcPeRatio() {
+            const priceEl = document.getElementById('pe-price');
+            const netIncomeEl = document.getElementById('pe-net-income');
+            const sharesEl = document.getElementById('pe-shares');
+            const industryAvgEl = document.getElementById('pe-industry-avg');
+            const out = document.getElementById('pe-result');
+            if (!priceEl || !netIncomeEl || !sharesEl || !industryAvgEl || !out) return;
+
+            const price = parseFloat(priceEl.value);
+            const netIncome = parseFloat(netIncomeEl.value);
+            const shares = parseFloat(sharesEl.value);
+            const industryAvg = parseFloat(industryAvgEl.value) || 0;
+
+            if (!price || price <= 0 || isNaN(netIncome) || !shares || shares <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb részvényárat, egy érvényes nettó nyereséget, és egy nullánál nagyobb részvényszámot!</div>`;
+                return;
+            }
+
+            const eps = netIncome / shares;
+
+            if (eps <= 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">EPS (egy részvényre jutó nyereség):</span><span class="text-neon-red">$${eps.toFixed(4)}</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">P/E ráta:</span><span class="text-white">Nem értelmezhető</span></div>
+                    </div>
+                    <p class="text-[10px] font-semibold mt-2 text-neon-red">🚨 Negatív vagy nulla EPS — a vállalat veszteséges (vagy nullszaldós) volt az időszakban. A hagyományos P/E ráta ilyenkor nem ad hasznos információt; ehelyett más mutatókat (pl. P/S, cash flow alapú mutatók) érdemes nézni.</p>
+                `;
+                return;
+            }
+
+            const peRatio = price / eps;
+
+            let colorClass, verdict;
+            if (peRatio < 10) {
+                colorClass = 'text-neon-green';
+                verdict = 'Alacsony P/E — olcsóbb beárazást jelezhet a nyereséghez képest, de ez gyakran azért alacsony, mert a piac gyenge kilátásokat lát (ciklikus iparág, lassú növekedés, vagy kockázat). Mindig vesd össze hasonló iparágban működő cégekkel.';
+            } else if (peRatio < 25) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Közepes tartomány — sok stabil, érett vállalat P/E-je ebbe a sávba esik. Az értékeléshez szükséges az iparági átlaggal való összevetés.';
+            } else if (peRatio < 50) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Magas P/E — a piac erős jövőbeli növekedést árazhat be, vagy a részvény túlárazott lehet. Növekedési cégeknél (pl. tech) ez önmagában nem feltétlenül vörös zászló.';
+            } else {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Nagyon magas P/E — jelentős jövőbeli növekedési várakozást tükröz, vagy komoly túlárazottságot jelez. Érdemes alaposan megvizsgálni a növekedési kilátásokat (pl. PEG rátával) a puszta P/E helyett.';
+            }
+
+            let industryHtml = '';
+            if (industryAvg > 0) {
+                const diffPct = ((peRatio - industryAvg) / industryAvg) * 100;
+                const diffLabel = diffPct >= 0
+                    ? `${diffPct.toFixed(1)}%-kal MAGASABB, mint az iparági átlag`
+                    : `${Math.abs(diffPct).toFixed(1)}%-kal ALACSONYABB, mint az iparági átlag`;
+                industryHtml = `<div class="flex justify-between"><span class="text-slate-400">Eltérés az iparági átlagtól:</span><span class="${diffPct >= 0 ? 'text-amber-400' : 'text-neon-cyan'}">${diffLabel}</span></div>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">EPS (egy részvényre jutó nyereség):</span><span class="text-neon-green">$${eps.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">P/E ráta:</span><span class="font-extrabold ${colorClass} text-sm">${peRatio.toFixed(2)}</span></div>
+                    ${industryAvg > 0 ? `<div class="flex justify-between"><span class="text-slate-400">Iparági átlag P/E:</span><span class="text-white">${industryAvg.toFixed(2)}</span></div>` : ''}
+                    ${industryHtml}
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
