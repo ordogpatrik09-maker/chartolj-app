@@ -1071,6 +1071,13 @@
                                 <div class="text-[10px] text-slate-400">Évesített hozam / legrosszabb visszaesés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('betasize-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-unbalanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Béta-Kiegyensúlyozott Pozícióméretezés</div>
+                                <div class="text-[10px] text-slate-400">Egyenlő Béta-súlyozott kitettség eszközönként</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2561,6 +2568,44 @@
         </div>
     </div>
 
+    <!-- ================= BÉTA-KIEGYENSÚLYOZOTT POZÍCIÓMÉRETEZÉS KALKULÁTOR (OKTATÁSI) =================
+         Ha egy portfólióban több eszköz van, és mindegyiket AZONOS
+         DOLLÁR-összegben tartjuk, a nagyobb Béta-jú (piacra érzékenyebb)
+         eszközök ARÁNYTALANUL nagyobb súllyal adják hozzá a kockázatot a
+         portfólióhoz, mint a kisebb Béta-júak. A Béta-kiegyensúlyozott
+         pozícióméretezés ehelyett úgy osztja el a tőkét, hogy minden
+         pozíció UGYANANNYI "Béta-súlyozott kitettséget" (pozícióérték ×
+         Béta) adjon — ez egy matematikailag levezethető, zárt formulával:
+         ha capital_i ∝ 1/Béta_i, akkor Béta_i × capital_i MINDEN i-re
+         ugyanaz lesz. Formula: capital_i = TőkeÖsszes × (1/Béta_i) /
+         Σ(1/Béta_j). Ez ÖNÁLLÓ kalkulátor — a Bétát itt a felhasználó
+         adja meg közvetlenül (nem a Treynor/Jensen kalkulátorból
+         számolja ki), hogy a két eszköz független maradjon. -->
+    <div id="betasize-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-unbalanced text-neon-purple"></i> Béta-Kiegyensúlyozott Pozícióméretezés
+                </h3>
+                <button onclick="closeToolModal('betasize-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Ha minden eszközt azonos dollár-összegben tartasz, a nagyobb Béta-jú (piacra érzékenyebb) eszközök aránytalanul nagy kockázatot adnak a portfólióhoz. Ez a kalkulátor úgy osztja el a tőkét, hogy minden pozíció Béta-súlyozott kitettsége (pozícióérték × Béta) EGYENLŐ legyen. Add meg az eszközök Bétáját, vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Összes elosztandó tőke ($)</label>
+            <input type="number" id="betasize-capital" value="30000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Eszközök Bétája (vesszővel elválasztva, egy sorrendben)</label>
+            <textarea id="betasize-betas" rows="2" placeholder="pl. 1.8, 1.0, 0.6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">1.8, 1.0, 0.6</textarea>
+
+            <button onclick="calcBetaBalancedSizing()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="betasize-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél nagyobb egy eszköz Bétája, annál KISEBB dollár-összeget kap — így minden pozíció egyformán "húz" a portfólió piaci kockázatán, nem csak a nyers dollár-kitettség egyenlő. Negatív vagy 0 Béta esetén a formula nem alkalmazható (a fordított arányosság nem értelmezhető), ezeket az eszközöket hagyd ki a listából, vagy kezeld külön.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3701,6 +3746,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Calmar Ratio Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Évesített hozam / legrosszabb visszaesés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('betasize-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-unbalanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Béta-Kiegyensúlyozott Pozícióméretezés</div>
+                    <div class="text-[10px] text-slate-400">Egyenlő Béta-súlyozott kitettség eszközönként</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -9490,6 +9542,61 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Calmar Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${calmar.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= BÉTA-KIEGYENSÚLYOZOTT POZÍCIÓMÉRETEZÉS KALKULÁTOR (OKTATÁSI) =================
+        // capital_i = TőkeÖsszes × (1/Béta_i) / Σ(1/Béta_j) — ez a
+        // fordítottan-arányos elosztás garantálja, hogy Béta_i × capital_i
+        // MINDEN i-re ugyanaz legyen. Önálló logika, a Bétát a felhasználó
+        // adja meg közvetlenül, nem a Treynor/Jensen kalkulátorból jön.
+        function calcBetaBalancedSizing() {
+            const capitalEl = document.getElementById('betasize-capital');
+            const betasEl = document.getElementById('betasize-betas');
+            const out = document.getElementById('betasize-result');
+            if (!capitalEl || !betasEl || !out) return;
+
+            const totalCapital = parseFloat(capitalEl.value);
+            const betas = betasEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+
+            if (!totalCapital || totalCapital <= 0 || betas.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, pozitív tőkeösszeget és legalább 1 érvényes Bétát!</div>`;
+                return;
+            }
+
+            const nonPositiveBetas = betas.filter(b => b <= 0);
+            if (nonPositiveBetas.length > 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden megadott Béta legyen NULLÁNÁL NAGYOBB — negatív vagy 0 Béta esetén a fordított-arányos elosztás nem értelmezhető, ezeket az eszközöket vedd ki a listából!</div>`;
+                return;
+            }
+
+            const n = betas.length;
+            const inverseSum = betas.reduce((acc, b) => acc + (1 / b), 0);
+            const allocations = betas.map(b => (1 / b) / inverseSum * totalCapital);
+            const betaWeightedExposures = betas.map((b, i) => b * allocations[i]);
+
+            const fmt = (v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            let rowsHtml = '';
+            for (let i = 0; i < n; i++) {
+                rowsHtml += `
+                    <div class="flex justify-between items-center py-1.5 ${i > 0 ? 'border-t border-dark-750' : ''}">
+                        <span class="text-slate-400">#${i + 1} (Béta ${betas[i].toFixed(2)}):</span>
+                        <span class="text-white font-bold">${fmt(allocations[i])}</span>
+                    </div>
+                `;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-xs mb-3">
+                    <div class="text-[10px] text-neon-purple uppercase font-bold mb-1">Tőkeallokáció eszközönként</div>
+                    ${rowsHtml}
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-xs">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Ellenőrzés: Béta-súlyozott kitettség (Béta × tőke) — mindegyiknek egyeznie kell</div>
+                    ${betaWeightedExposures.map((e, i) => `<div class="flex justify-between"><span class="text-slate-400">#${i + 1}:</span><span class="text-neon-green">${fmt(e)}</span></div>`).join('')}
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-neon-purple">A magasabb Bétájú eszköz(ök) KISEBB dollár-összeget kapnak — így minden pozíció egyformán járul hozzá a portfólió piaci (szisztematikus) kockázatához, nem csak a nyers dollár-kitettség egyenlő.</p>
             `;
         }
 
