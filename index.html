@@ -1064,6 +1064,13 @@
                                 <div class="text-[10px] text-slate-400">A hozameloszlás alakja: ferdeség és csúcsosság</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('calmar-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-mountain"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Calmar Ratio Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Évesített hozam / legrosszabb visszaesés</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2516,6 +2523,44 @@
         </div>
     </div>
 
+    <!-- ================= CALMAR RATIO KALKULÁTOR (OKTATÁSI) =================
+         A Calmar Ratio egy "gyors, praktikus" kockázattal korrigált
+         teljesítménymutató, amit sok alapkezelő a havi/éves jelentésekben
+         használ: az ÉVESÍTETT hozamot (CAGR) osztja a sorozat Maximum
+         Drawdownjának ABSZOLÚT értékével. Szemléletesen: "mennyi évesített
+         hozamot kapok minden egységnyi, a legrosszabb visszaesés során
+         elszenvedett %-os fájdalomért". A Sharpe/Sortino-tól eltérően nem
+         a volatilitást, hanem KONKRÉTAN a legrosszabb historikus esést
+         használja nevezőként — ez intuitívabb, de érzékenyebb egyetlen
+         szélsőséges eseményre. Formula: CAGR = (végérték/kezdőérték)^
+         (évesítési tényező) - 1, Calmar = CAGR / |Max Drawdown|. Ez
+         ÖNÁLLÓ kalkulátor, nem épül az Ulcer Index vagy más eszközre
+         (a Max Drawdown számítás saját, külön logika itt). -->
+    <div id="calmar-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-mountain text-neon-red"></i> Calmar Ratio Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('calmar-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Calmar Ratio az évesített hozamot (CAGR) osztja a sorozat legrosszabb historikus visszaesésével (Max Drawdown) — minél magasabb, annál kedvezőbb a hosszú távú hozam a vállalt legrosszabb esés fájdalmához képest. Add meg az árfolyam/egyenleg sorozatot és az évesítéshez szükséges adatokat.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Árfolyam / egyenleg sorozat (vesszővel elválasztva)</label>
+            <textarea id="calmar-series" rows="3" placeholder="pl. 10000, 10500, 11200, 9800, 10100, 11800" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">10000, 10500, 11200, 9800, 10100, 11800, 12500, 11900, 13200, 14100, 13500, 15000</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Adatpontok évesítési szorzója (pl. 12 = havi adatok, 252 = napi, 1 = éves)</label>
+            <input type="number" id="calmar-periods-per-year" value="12" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcCalmarRatio()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="calmar-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A Calmar Ratio érzékeny egyetlen, szélsőséges visszaesésre — egy rövid, de nagyon mély esés drasztikusan megnövelheti a nevezőt, még ha a stratégia egyébként stabil is volt. Ezért érdemes az Ulcer Indexszel vagy a Sortino-rátával együtt értelmezni, nem egyedüli döntési alapként.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3646,6 +3691,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Skewness & Kurtosis Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">A hozameloszlás alakja: ferdeség és csúcsosság</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('calmar-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-mountain"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Calmar Ratio Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Évesített hozam / legrosszabb visszaesés</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -9362,6 +9414,79 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${skewColorClass}">${skewVerdict}</p>
                 <p class="text-[10px] font-semibold mt-1 ${kurtColorClass}">${kurtVerdict}</p>
+            `;
+        }
+
+        // ================= CALMAR RATIO KALKULÁTOR (OKTATÁSI) =================
+        // CAGR = (végérték/kezdőérték)^(periódusPerÉv / (n-1)) - 1. Max
+        // Drawdown: a futó csúcstól mért legnagyobb %-os elmaradás — ez
+        // SAJÁT, önálló számítás itt, nem hívja az Ulcer Index kalkulátort.
+        function calcCalmarRatio() {
+            const seriesEl = document.getElementById('calmar-series');
+            const periodsEl = document.getElementById('calmar-periods-per-year');
+            const out = document.getElementById('calmar-result');
+            if (!seriesEl || !periodsEl || !out) return;
+
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+            const periodsPerYear = parseFloat(periodsEl.value);
+
+            if (values.length < 2 || !periodsPerYear || periodsPerYear <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, nullánál nagyobb, vesszővel elválasztott értéket, és egy érvényes évesítési szorzót!</div>`;
+                return;
+            }
+
+            const n = values.length;
+            const numIntervals = n - 1;
+            const totalReturnMultiple = values[n - 1] / values[0];
+            const annualizationExponent = periodsPerYear / numIntervals;
+            const cagr = Math.pow(totalReturnMultiple, annualizationExponent) - 1;
+
+            let runningPeak = values[0];
+            let maxDrawdownPct = 0;
+            for (let i = 0; i < n; i++) {
+                if (values[i] > runningPeak) runningPeak = values[i];
+                const drawdownPct = (runningPeak - values[i]) / runningPeak * 100;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+
+            if (maxDrawdownPct === 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-white">0.00%</span></div>
+                    </div>
+                    <p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A sorozatban nem volt visszaesés (minden érték egyenlő vagy magasabb volt az előzőnél) — a Calmar Ratio nevezője 0, így nem fejezhető ki véges számmal.</p>
+                `;
+                return;
+            }
+
+            const calmar = cagr / (maxDrawdownPct / 100);
+
+            let colorClass, verdict;
+            if (calmar < 0) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Negatív Calmar Ratio: a sorozat évesített hozama negatív volt — a stratégia a vállalt legrosszabb visszaesés ellenére sem produkált pozitív hosszú távú hozamot.';
+            } else if (calmar < 1) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Gyenge-közepes Calmar Ratio — az évesített hozam alacsonyabb, mint a legrosszabb historikus visszaesés mértéke.';
+            } else if (calmar < 3) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Jó Calmar Ratio — az évesített hozam jól kompenzálja a legrosszabb historikus visszaesést.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Kiemelkedően magas Calmar Ratio — ilyen szint ritka, érdemes ellenőrizni az adatsor hosszát és reprezentativitását is.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes hozam:</span><span class="text-white">${((totalReturnMultiple - 1) * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-neon-red">-${maxDrawdownPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Calmar Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${calmar.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
         }
 
