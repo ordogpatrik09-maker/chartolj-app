@@ -2931,6 +2931,7 @@
                     <option value="signal_reverse">Ellentétes jelzés (a belépési feltétel megfordulása)</option>
                     <option value="stop_take">Saját Stop-Loss / Take-Profit %</option>
                     <option value="trailing_stop">Trailing Stop (követő stop)</option>
+                    <option value="atr_trailing">ATR Trailing Stop (volatilitás-alapú)</option>
                 </select>
                 <div id="sb-exit-inputs"></div>
             </div>
@@ -5749,8 +5750,41 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // %-ra zár. Ugyanazt az equity-curve/drawdown logikát követi, mint a
         // 4 fix Backtester-stratégia, így az eredmény-objektum formátuma
         // kompatibilis a meglévő drawBacktestEquitySparkline függvénnyel.
+        // Wilder-féle Average True Range sorozat — a candles tömb high/low/
+        // close mezőit használja. Standard, szabványos formula: az első
+        // érvényes ATR a kezdő `period` db True Range egyszerű átlaga, majd
+        // onnantól Wilder-simítással (exponenciális, de nem a szokásos
+        // EMA-képlettel) frissül. Ez ÖNÁLLÓ, új indikátor-sorozat — nem
+        // módosítja a meglévő ATR-alapú pozícióméret-kalkulátort (ami egy
+        // manuálisan megadott ATR-értékkel dolgozik, nem sorozattal).
+        function calcATRSeries(candles, period) {
+            const n = candles.length;
+            const tr = new Array(n).fill(null);
+            for (let i = 0; i < n; i++) {
+                const { high, low, close } = candles[i];
+                if (i === 0) {
+                    tr[i] = high - low;
+                } else {
+                    const prevClose = candles[i - 1].close;
+                    tr[i] = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+                }
+            }
+            const atr = new Array(n).fill(null);
+            if (n < period) return atr;
+            let sum = 0;
+            for (let i = 0; i < period; i++) sum += tr[i];
+            atr[period - 1] = sum / period;
+            for (let i = period; i < n; i++) {
+                atr[i] = (atr[i - 1] * (period - 1) + tr[i]) / period;
+            }
+            return atr;
+        }
+
         function runCustomStrategyBacktest(candles, config, startEquity) {
             const closes = candles.map(c => c.close);
+            const atrSeries = config.exitType === 'atr_trailing'
+                ? calcATRSeries(candles, config.exitParams.atrPeriod)
+                : null;
             let signals;
             if (config.entryType === 'ema_cross') {
                 signals = sbGetEmaCrossSignals(closes, config.entryParams.fast, config.entryParams.slow);
@@ -5801,6 +5835,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         const drawdownFromPeak = (position.peakPrice - closes[i]) / position.peakPrice;
                         if (drawdownFromPeak >= config.exitParams.trailingStopPct / 100) {
                             closePosition(i, closes[i]);
+                        }
+                    } else if (config.exitType === 'atr_trailing') {
+                        // Ugyanaz az elv, mint a %-os trailing stopnál, csak a
+                        // távolságot a piac AKTUÁLIS volatilitása (ATR) alapján
+                        // dinamikusan számoljuk, nem fix %-ban — így csendesebb
+                        // piacon szűkebb, volatilisebb piacon tágabb a stop.
+                        const currentAtr = atrSeries[i];
+                        if (currentAtr !== null) {
+                            const stopLevel = position.peakPrice - config.exitParams.atrMultiplier * currentAtr;
+                            if (closes[i] <= stopLevel) {
+                                closePosition(i, closes[i]);
+                            }
                         }
                     } else { // signal_reverse
                         if (signals.down[i]) closePosition(i, closes[i]);
@@ -5897,6 +5943,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div><label class="text-[10px] text-slate-500">Trailing Stop távolság (%)</label><input type="number" id="sb-trailing-pct" value="3" step="0.1" min="0.1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
                     <p class="text-[10px] text-slate-500 mt-1.5">A stop a belépés óta elért LEGMAGASABB árhoz igazodik — amint az ár ennyi %-ot esik a csúcstól, zár. Így a már elért nyereség egy részét zárolja, nem engedi vissza az eredeti belépési árig.</p>
                 `;
+            } else if (exitType === 'atr_trailing') {
+                exitEl.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[10px] text-slate-500">ATR periódus</label><input type="number" id="sb-atr-period" value="14" step="1" min="2" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500">ATR szorzó</label><input type="number" id="sb-atr-mult" value="2.5" step="0.1" min="0.1" max="20" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1.5">Ugyanaz az elv, mint a %-os trailing stopnál, de a távolság a piac AKTUÁLIS volatilitásához (Wilder-féle ATR) igazodik, nem fix %-hoz — csendes piacon szűkebb, mozgalmas piacon tágabb a stop.</p>
+                `;
             } else {
                 exitEl.innerHTML = `<p class="text-[10px] text-slate-500">A pozíció a belépési feltétel ELLENTÉTJÉNEK bekövetkeztekor zár (pl. EMA Arany Kereszt esetén a lassú EMA visszakeresztezésekor).</p>`;
             }
@@ -5975,6 +6029,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb Trailing Stop távolságot!</div>`;
                     return;
                 }
+            } else if (exitType === 'atr_trailing') {
+                exitParams = {
+                    atrPeriod: parseInt(document.getElementById('sb-atr-period').value),
+                    atrMultiplier: parseFloat(document.getElementById('sb-atr-mult').value)
+                };
+                if (!exitParams.atrPeriod || exitParams.atrPeriod < 2 || !exitParams.atrMultiplier || exitParams.atrMultiplier <= 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes ATR periódust (min. 2) és nullánál nagyobb ATR szorzót!</div>`;
+                    return;
+                }
+                minCandlesNeeded = Math.max(minCandlesNeeded, exitParams.atrPeriod + 2);
             }
 
             if (typeof candleData === 'undefined' || !candleData || candleData.length < minCandlesNeeded) {
@@ -6031,7 +6095,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         let sbSavedStrategies = [];
 
         const SB_ENTRY_LABELS = { ema_cross: 'EMA Arany Kereszt', rsi_oversold: 'RSI Túladott-kilépés', bollinger_break: 'Bollinger-törés', macd_cross: 'MACD Keresztezés' };
-        const SB_EXIT_LABELS = { signal_reverse: 'Ellentétes jelzés', stop_take: 'Stop-Loss/Take-Profit', trailing_stop: 'Trailing Stop' };
+        const SB_EXIT_LABELS = { signal_reverse: 'Ellentétes jelzés', stop_take: 'Stop-Loss/Take-Profit', trailing_stop: 'Trailing Stop', atr_trailing: 'ATR Trailing Stop' };
 
         function loadSbSavedStrategies() {
             try {
@@ -6099,6 +6163,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 document.getElementById('sb-takeprofit').value = cfg.exitParams.takeProfitPct;
             } else if (cfg.exitType === 'trailing_stop') {
                 document.getElementById('sb-trailing-pct').value = cfg.exitParams.trailingStopPct;
+            } else if (cfg.exitType === 'atr_trailing') {
+                document.getElementById('sb-atr-period').value = cfg.exitParams.atrPeriod;
+                document.getElementById('sb-atr-mult').value = cfg.exitParams.atrMultiplier;
             }
             runStrategyBuilderBacktest();
             showNotification('Mentett stratégia betöltve és újrafuttatva a jelenlegi adaton.');
