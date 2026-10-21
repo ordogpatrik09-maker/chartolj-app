@@ -1113,6 +1113,13 @@
                                 <div class="text-[10px] text-slate-400">EMA/RSI/MACD egyezés 4 idősíkon</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('var-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Value at Risk (VaR) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Intézményi szintű kockázati mutató</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-branch"></i></span>
                             <div>
@@ -2692,6 +2699,53 @@
         </div>
     </div>
 
+    <!-- ================= VALUE AT RISK (VaR) KALKULÁTOR (NAGY KITERJESZTÉS) =================
+         A VaR egy klasszikus, intézményi szinten is széles körben használt
+         kockázati mutató, eddig semelyik eszköz nem foglalkozott vele. A
+         paraméteres (variancia-kovariancia) módszert implementáljuk: adott
+         portfólióérték, napi volatilitás és konfidencia-szint (95%/99%)
+         mellett megmondja, "normál piaci körülmények között" mekkora
+         veszteséget NEM haladunk túl X% eséllyel egy adott tartási
+         időszakon — ez a VaR. Fontos: a VaR NEM a lehetséges maximális
+         veszteség (azt a definíció szerint túllépheti a maradék X%
+         esetben) — ezt az eszköz is explicit módon kiemeli. -->
+    <div id="var-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Value at Risk (VaR) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('var-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A VaR megmondja: "normál piaci körülmények között, X% eséllyel NEM veszítesz ennél többet" egy adott tartási időszakon. Ez a leggyakrabban idézett intézményi kockázati mutató — de FONTOS: a maradék (1-X)% esetben a veszteség ennél NAGYOBB is lehet, akár sokkal nagyobb.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Portfólió/pozíció értéke ($)</label>
+            <input type="number" id="var-portfolio" value="10000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Napi volatilitás (szórás, %)</label>
+            <input type="number" id="var-vol" value="3" step="0.1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[10px] text-slate-500">Konfidencia-szint</label>
+                    <select id="var-confidence" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 text-xs text-white focus:outline-none">
+                        <option value="0.90">90%</option>
+                        <option value="0.95" selected>95%</option>
+                        <option value="0.99">99%</option>
+                    </select>
+                </div>
+                <div><label class="text-[10px] text-slate-500">Tartási időszak (nap)</label><input type="number" id="var-days" value="1" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+
+            <button onclick="calcValueAtRisk()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                VaR kiszámolása
+            </button>
+
+            <div id="var-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Paraméteres (variancia-kovariancia) módszer: feltételezi, hogy a hozamok normális eloszlást követnek — a valóságban a piaci hozamok jellemzően "vastagabb szélűek" (gyakrabban fordulnak elő szélsőséges mozgások, mint egy normális eloszlás alapján várnánk), így a valós kockázat gyakran NAGYOBB, mint a paraméteres VaR mutatja.</p>
+        </div>
+    </div>
+
     <div id="dca-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -3168,6 +3222,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Multi-Idősík Elemző</div>
                     <div class="text-[10px] text-slate-400">EMA/RSI/MACD egyezés 4 idősíkon</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('var-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Value at Risk (VaR) Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Intézményi szintű kockázati mutató</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -9184,6 +9245,57 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </thead>
                     <tbody>${rowsHtml}</tbody>
                 </table>
+            `;
+        }
+
+        // ================= VALUE AT RISK (VaR) KALKULÁTOR MOTORJA (NAGY KITERJESZTÉS) =================
+        // Paraméteres (variancia-kovariancia) VaR: feltételezi, hogy a
+        // hozamok normális eloszlást követnek. A z-score a bsNormalCdf
+        // inverze a kívánt konfidencia-szinten — mivel nincs zárt alakú
+        // inverzünk, és a bsNormalCdf-et már a Black-Scholes modulnál
+        // független Python-referenciával ellenőriztük, itt egy KÉZZEL
+        // ellenőrzött, fix táblázatból vesszük a standard z-score
+        // értékeket (ezek közismert, könyvekben/szabványokban rögzített
+        // konstansok — 90%: 1.2816, 95%: 1.6449, 99%: 2.3263).
+        const VAR_Z_SCORES = { '0.90': 1.2816, '0.95': 1.6449, '0.99': 2.3263 };
+
+        function calcValueAtRisk() {
+            const out = document.getElementById('var-result');
+            const portfolio = parseFloat(document.getElementById('var-portfolio').value);
+            const dailyVolPct = parseFloat(document.getElementById('var-vol').value);
+            const confidence = document.getElementById('var-confidence').value;
+            const days = parseFloat(document.getElementById('var-days').value);
+
+            if (!portfolio || portfolio <= 0 || !dailyVolPct || dailyVolPct <= 0 || !days || days <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív portfólióértéket, napi volatilitást és tartási időszakot!</div>`;
+                return;
+            }
+
+            const z = VAR_Z_SCORES[confidence] || VAR_Z_SCORES['0.95'];
+            const dailyVolFrac = dailyVolPct / 100;
+            // A volatilitás az IDŐ négyzetgyökével skálázódik (a hozamok
+            // függetlensége/random-walk feltevés mellett) — ez a "square
+            // root of time" szabály, a VaR-számítás egyik alapköve.
+            const scaledVolFrac = dailyVolFrac * Math.sqrt(days);
+            const varAmount = portfolio * z * scaledVolFrac;
+            const varPct = z * scaledVolFrac * 100;
+            const confidencePct = parseFloat(confidence) * 100;
+            const exceedPct = 100 - confidencePct;
+
+            const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            out.innerHTML = `
+                <div class="rounded-xl bg-amber-400/5 border border-amber-400/30 p-3 mb-3">
+                    <div class="text-[10px] text-amber-400 uppercase font-bold mb-1">${confidencePct}%-os VaR (${days} nap)</div>
+                    <div class="text-xl font-extrabold text-white">${fmt(varAmount)}</div>
+                    <div class="text-[9.5px] text-slate-500 mt-0.5">A portfólió ${varPct.toFixed(2)}%-a</div>
+                </div>
+                <div class="text-center py-2.5 rounded-xl bg-dark-850/60 border border-dark-750 mb-3">
+                    <span class="text-[11px] text-slate-300 leading-relaxed">"Normál piaci körülmények között, ${confidencePct}% eséllyel NEM veszítesz ${fmt(varAmount)}-nál többet ${days} nap alatt."</span>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-neon-red/10 border border-neon-red/30">
+                    <span class="text-[10.5px] text-neon-red font-bold">⚠️ A maradék ${exceedPct}%-ban (pl. piaci stressz, "black swan" esemény) a veszteség EZT MEGHALADHATJA — a VaR NEM a maximális lehetséges veszteség, csak egy küszöb, amit normál körülmények közt jellemzően nem lépünk túl.</span>
+                </div>
             `;
         }
 
