@@ -1050,6 +1050,13 @@
                                 <div class="text-[10px] text-slate-400">Teljes eloszlás-alapú teljesítménymutató</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('treynor-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Béta / Treynor / Jensen's Alpha</div>
+                                <div class="text-[10px] text-slate-400">Teljesítmény a piaci benchmarkhoz viszonyítva</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2422,6 +2429,48 @@
         </div>
     </div>
 
+    <!-- ================= BÉTA / TREYNOR / JENSEN'S ALPHA KALKULÁTOR (OKTATÁSI) =================
+         A Sharpe/Sortino/Ulcer/Omega mind az eszköz SAJÁT hozamsorozatát
+         nézi önmagában. A Treynor Ratio és a Jensen's Alpha ehelyett a
+         piaci (benchmark) hozamokhoz VISZONYÍTVA értékeli a teljesítményt
+         — ehhez először a Béta-t (a piaci mozgásra való érzékenységet)
+         kell megbecsülni: Béta = Cov(eszköz, piac) / Var(piac). A Treynor
+         Ratio a Sharpe "szórás helyett Béta" verziója: (eszköz hozam -
+         kockázatmentes) / Béta — azt méri, mennyi többlethozamot kapsz
+         minden egységnyi PIACI (szisztematikus) kockázatért, a nem-piaci
+         (diverzifikálható) kockázatot kihagyva. A Jensen's Alpha pedig a
+         CAPM-modell által "elvárt" hozamhoz képesti TÖBBLETTELJESÍTMÉNYT
+         adja meg: Alpha = eszköz hozam - [kockázatmentes + Béta ×
+         (piac hozam - kockázatmentes)]. Ez ÖNÁLLÓ kalkulátor, nem épül a
+         meglévő Sharpe/Sortino/Omega eszközökre. -->
+    <div id="treynor-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-neon-cyan"></i> Béta / Treynor / Jensen's Alpha
+                </h3>
+                <button onclick="closeToolModal('treynor-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Ezek a mutatók a teljesítményt egy piaci benchmarkhoz (pl. index) VISZONYÍTVA értékelik, nem önmagukban. Add meg az eszköz és a benchmark időszaki hozamait %-ban, azonos számú, egymásnak megfelelő értékkel, vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Eszköz időszaki hozamai (%, vesszővel elválasztva)</label>
+            <textarea id="treynor-asset-returns" rows="2" placeholder="pl. 3.5, -1.2, 2.8, -4.0, 1.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">4.2, -2.1, 3.0, -1.5, 5.8, -0.8, 2.4, -3.2</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Benchmark (piac) időszaki hozamai (%, ugyanannyi érték)</label>
+            <textarea id="treynor-market-returns" rows="2" placeholder="pl. 2.0, -0.8, 1.5, -2.2, 0.9" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">2.5, -1.0, 1.8, -1.0, 3.0, -0.5, 1.2, -2.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kockázatmentes ráta (%, időszakra)</label>
+            <input type="number" id="treynor-riskfree" value="0.1" step="0.05" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcTreynorJensen()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="treynor-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Béta > 1: a piacnál volatilisebb mozgás; Béta < 1: a piacnál kevésbé érzékeny; Béta < 0: a piaccal ellentétesen mozog. A Jensen's Alpha pozitív értéke azt jelzi, hogy a vállalt piaci kockázathoz (Béta) képest a CAPM-modell elvárásánál jobb volt a tényleges hozam.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3538,6 +3587,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Omega Ratio Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Teljes eloszlás-alapú teljesítménymutató</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('treynor-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-line"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Béta / Treynor / Jensen's Alpha</div>
+                    <div class="text-[10px] text-slate-400">Teljesítmény a piaci benchmarkhoz viszonyítva</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -9095,6 +9151,87 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             out.innerHTML = bodyHtml + verdictHtml;
+        }
+
+        // ================= BÉTA / TREYNOR / JENSEN'S ALPHA KALKULÁTOR (OKTATÁSI) =================
+        // Béta = Cov(eszköz, piac) / Var(piac), mindkettőt az n-re (NEM
+        // n-1-re) osztott, "population" kovariancia/varianciaként számolva
+        // — ez a konvenció, amit a Python-ellenőrzésben is ugyanígy
+        // reprodukálunk, hogy a két oldal bit-egyezzen. Treynor = (eszköz
+        // átlaghozam - kockázatmentes) / Béta. Jensen's Alpha = eszköz
+        // átlaghozam - [kockázatmentes + Béta × (piac átlaghozam -
+        // kockázatmentes)]. Önálló logika, nem épül más kalkulátorra.
+        function calcTreynorJensen() {
+            const assetEl = document.getElementById('treynor-asset-returns');
+            const marketEl = document.getElementById('treynor-market-returns');
+            const riskfreeEl = document.getElementById('treynor-riskfree');
+            const out = document.getElementById('treynor-result');
+            if (!assetEl || !marketEl || !riskfreeEl || !out) return;
+
+            const assetReturns = assetEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const marketReturns = marketEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const riskFree = parseFloat(riskfreeEl.value);
+
+            if (assetReturns.length < 2 || assetReturns.length !== marketReturns.length || isNaN(riskFree)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes hozamot MINDKÉT sorozatban, PONTOSAN egyező darabszámmal, és egy érvényes kockázatmentes rátát!</div>`;
+                return;
+            }
+
+            const n = assetReturns.length;
+            const meanAsset = assetReturns.reduce((a, b) => a + b, 0) / n;
+            const meanMarket = marketReturns.reduce((a, b) => a + b, 0) / n;
+
+            let covariance = 0;
+            let marketVariance = 0;
+            for (let i = 0; i < n; i++) {
+                covariance += (assetReturns[i] - meanAsset) * (marketReturns[i] - meanMarket);
+                marketVariance += (marketReturns[i] - meanMarket) * (marketReturns[i] - meanMarket);
+            }
+            covariance /= n;
+            marketVariance /= n;
+
+            if (marketVariance === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A benchmark hozamsorozat varianciája 0 (minden érték azonos) — a Béta nem számítható ki ilyen adatokból!</div>`;
+                return;
+            }
+
+            const beta = covariance / marketVariance;
+
+            let treynorHtml;
+            if (beta === 0) {
+                treynorHtml = `<div class="flex justify-between"><span class="text-slate-400">Treynor Ratio:</span><span class="text-amber-400 font-bold">nem értelmezhető (Béta = 0)</span></div>`;
+            } else {
+                const treynor = (meanAsset - riskFree) / beta;
+                treynorHtml = `<div class="flex justify-between"><span class="text-slate-400">Treynor Ratio:</span><span class="font-extrabold text-sm ${treynor >= 0 ? 'text-neon-green' : 'text-neon-red'}">${treynor.toFixed(3)}</span></div>`;
+            }
+
+            const expectedReturn = riskFree + beta * (meanMarket - riskFree);
+            const jensensAlpha = meanAsset - expectedReturn;
+
+            let betaDesc;
+            if (beta > 1.2) betaDesc = 'a piacnál ÉRZÉKENYEBBEN (volatilisebben) mozog';
+            else if (beta > 0.8) betaDesc = 'nagyjából a piaccal EGYÜTT mozog';
+            else if (beta >= 0) betaDesc = 'a piacnál KEVÉSBÉ érzékenyen mozog';
+            else betaDesc = 'a piaccal ELLENTÉTES irányban mozog (negatív Béta)';
+
+            const alphaColorClass = jensensAlpha >= 0 ? 'text-neon-green' : 'text-neon-red';
+            const alphaVerdict = jensensAlpha >= 0
+                ? '✅ Pozitív Jensen\'s Alpha: a vállalt piaci kockázathoz (Béta) képest a CAPM-modell elvárásánál JOBB volt a tényleges hozam.'
+                : '🚨 Negatív Jensen\'s Alpha: a vállalt piaci kockázathoz (Béta) képest a CAPM-modell elvárásánál ROSSZABB volt a tényleges hozam.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eszköz átlaghozam:</span><span class="text-white">${meanAsset.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Piac átlaghozam:</span><span class="text-white">${meanMarket.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Béta:</span><span class="font-extrabold text-neon-cyan text-sm">${beta.toFixed(3)}</span></div>
+                    ${treynorHtml}
+                    <div class="flex justify-between"><span class="text-slate-400">CAPM elvárt hozam:</span><span class="text-white">${expectedReturn.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jensen's Alpha:</span><span class="font-extrabold ${alphaColorClass} text-sm">${jensensAlpha >= 0 ? '+' : ''}${jensensAlpha.toFixed(3)}%</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2">A Béta ${beta.toFixed(2)} azt jelenti, hogy az eszköz ${betaDesc}.</p>
+                <p class="text-[10px] font-semibold mt-1 ${alphaColorClass}">${alphaVerdict}</p>
+            `;
         }
 
         // ================= FOREX PIP ÉRTÉK KALKULÁTOR (OKTATÁSI) =================
