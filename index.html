@@ -1099,6 +1099,13 @@
                                 <div class="text-[10px] text-slate-400">Max. pozíció a napi átlagos volumen alapján</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('optimalf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Optimal f Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Matematikailag optimális tétméretezés</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2744,6 +2751,42 @@
         </div>
     </div>
 
+    <!-- ================= OPTIMAL F KALKULÁTOR (OKTATÁSI) =================
+         Ralph Vince "Optimal f" módszere: egy múltbeli trade-sorozatból
+         (dollár P&L-ekből) megkeresi azt az f törtet (0 és 1 között),
+         amely MAXIMALIZÁLJA a geometriai (összetett) növekedési rátát,
+         ha minden trade-nél a tőke f-ed részét "kockáztatod" a legnagyobb
+         historikus VESZTESÉGHEZ viszonyítva. A módszer: TWR(f) = Π_i
+         (1 + f × (-trade_i / legnagyobbVeszteség)) — a Terminal Wealth
+         Relative (TWR) az a szorzó, amennyivel a tőke nő/csökken, ha a
+         teljes trade-sorozatot f méretezéssel futtatnánk le újra. Az
+         "optimal f" az f, amely ezt a szorzót MAXIMALIZÁLJA. Finom rácsos
+         kereséssel (grid search) közelítjük — ez egy standard,
+         determinisztikus numerikus módszer, nem valószínűségi becslés,
+         így a JS és Python oldal AZONOS rács mellett bit-pontosan
+         egyezik. Ez ÖNÁLLÓ kalkulátor, nem épül más eszközre. -->
+    <div id="optimalf-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass-chart text-neon-purple"></i> Optimal f Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('optimalf-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Az Optimal f (Ralph Vince módszere) egy múltbeli trade-sorozatból megkeresi azt a tétméretezési törtet, amely MATEMATIKAILAG maximalizálja a hosszú távú, összetett (geometriai) tőkenövekedést. FIGYELEM: a matematikailag "optimális" f a valóságban gyakran TÚL AGRESSZÍV (nagy visszaeséssel jár) — oktatási célra, nem közvetlen ajánlásként használd. Add meg a historikus trade-ek dollár P&L-jét, vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Historikus trade-ek P&L-je ($, vesszővel elválasztva)</label>
+            <textarea id="optimalf-trades" rows="4" placeholder="pl. 150, -80, 200, -300, 120, -60, 180" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">150, -80, 200, -300, 120, -60, 180, -150, 90, -400, 220, -50, 160, -200, 300</textarea>
+
+            <button onclick="calcOptimalF()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="optimalf-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az Optimal f mögötti f* minden trade-nél "veszélyzónaként" kezeli a legnagyobb historikus veszteséget — ezért EXTRÉM érzékeny egyetlen, szélsőséges veszteségre a mintában, és a múltbeli adatra optimalizál (overfitting veszélye), nem garantálja a jövőbeli teljesítményt. A gyakorlatban sokan az f* egy TÖREDÉKÉT (pl. fele-harmada, "fractional f") használják, hogy csökkentsék a visszaesés mértékét.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3912,6 +3955,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Likviditás-alapú Pozícióméretezés</div>
                     <div class="text-[10px] text-slate-400">Max. pozíció a napi átlagos volumen alapján</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('optimalf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Optimal f Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Matematikailag optimális tétméretezés</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -9934,6 +9984,78 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Tervezett pozíció / ADV:</span><span class="${isWithinLimit ? 'text-neon-green' : 'text-neon-red'} font-bold">${plannedPctOfAdv.toFixed(3)}%</span></div>
                 </div>
                 ${verdictHtml}
+            `;
+        }
+
+        // ================= OPTIMAL F KALKULÁTOR (OKTATÁSI) =================
+        // TWR(f) = Π_i (1 + f × (-trade_i / legnagyobbVeszteség)). Finom,
+        // determinisztikus grid search (0.001-es lépésköz 0.01 és 0.99
+        // között) az f*-ot maximalizáló értékhez — NEM valószínűségi
+        // módszer, ezért a JS és Python oldal azonos rács mellett
+        // bit-pontosan egyezik. Önálló logika, nem épül más eszközre.
+        function calcOptimalF() {
+            const tradesEl = document.getElementById('optimalf-trades');
+            const out = document.getElementById('optimalf-result');
+            if (!tradesEl || !out) return;
+
+            const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n !== 0);
+
+            if (trades.length < 3) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 3 érvényes, nullától különböző, vesszővel elválasztott trade P&L-t!</div>`;
+                return;
+            }
+
+            const biggestLoss = Math.min(...trades);
+            if (biggestLoss >= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A trade-sorozatban nincs egyetlen veszteséges (negatív) trade sem — az Optimal f formula ilyenkor nem értelmezhető (a nevező nulla/pozitív lenne)!</div>`;
+                return;
+            }
+
+            let bestF = 0;
+            let bestTwr = 1;
+            for (let f = 0.01; f <= 0.99; f += 0.001) {
+                let twr = 1;
+                for (const trade of trades) {
+                    twr *= (1 + f * (-trade / biggestLoss));
+                }
+                if (twr > bestTwr) {
+                    bestTwr = twr;
+                    bestF = f;
+                }
+            }
+
+            const n = trades.length;
+            // Geometriai átlagos növekedési ráta trade-enként: a TWR n-edik
+            // gyöke, mínusz 1 — ez mutatja meg, hogy TRADE-ENKÉNT átlagosan
+            // hány %-kal nő a tőke optimális méretezés mellett.
+            const geometricGrowthPerTrade = Math.pow(bestTwr, 1 / n) - 1;
+            const impliedRiskAmount = Math.abs(biggestLoss) * bestF;
+
+            const wins = trades.filter(t => t > 0).length;
+            const winRatePct = (wins / n) * 100;
+
+            let riskVerdict, riskColorClass;
+            if (bestF > 0.5) {
+                riskColorClass = 'text-neon-red';
+                riskVerdict = '🚨 Nagyon magas optimal f — a matematikailag "legjobb" méretezés itt extrém agresszív lenne, valószínűleg elviselhetetlen visszaeséssel. Erősen fontold meg egy "fractional f" (pl. f*/3 vagy f*/4) használatát.';
+            } else if (bestF > 0.25) {
+                riskColorClass = 'text-amber-400';
+                riskVerdict = '⚠️ Magas optimal f — a teljes f* alkalmazása valószínűleg jelentős, nehezen elviselhető visszaeséssel járna. Fractional f (pl. f* fele) reálisabb kompromisszum lehet.';
+            } else {
+                riskColorClass = 'text-neon-cyan';
+                riskVerdict = 'Mérsékeltebb optimal f — de minden esetben vedd figyelembe, hogy ez egy MÚLTBELI adatsorra optimalizált érték, ami nem garantálja a jövőbeli teljesítményt.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Trade-ek száma / Win Rate:</span><span class="text-white">${n} / ${winRatePct.toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Legnagyobb historikus veszteség:</span><span class="text-neon-red">$${Math.abs(biggestLoss).toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Optimal f*:</span><span class="font-extrabold ${riskColorClass} text-sm">${bestF.toFixed(3)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Implikált kockáztatott összeg / trade:</span><span class="text-white">$${impliedRiskAmount.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">TWR a teljes sorozaton:</span><span class="text-white">${bestTwr.toFixed(4)}×</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Geometriai növekedés / trade:</span><span class="text-neon-green">${(geometricGrowthPerTrade * 100).toFixed(3)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${riskColorClass}">${riskVerdict}</p>
             `;
         }
 
