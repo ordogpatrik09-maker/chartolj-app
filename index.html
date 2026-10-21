@@ -1099,6 +1099,13 @@
                                 <div class="text-[10px] text-slate-400">Black-Scholes ár + Delta/Gamma/Theta/Vega/Rho</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('iv-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Implikált Volatilitás Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Piaci árból visszafejtett IV</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-branch"></i></span>
                             <div>
@@ -2601,6 +2608,52 @@
         </div>
     </div>
 
+    <!-- ================= IMPLIKÁLT VOLATILITÁS KALKULÁTOR (BLACK-SCHOLES INVERZE, NAGY KITERJESZTÉS) =================
+         A Black-Scholes Greeks Kalkulátor csak EGY irányban működik:
+         paraméterek (S, K, T, r, volatilitás) → elméleti ár. A valós piacon
+         viszont az ÁR adott (amit a piac jegyez), és a kérdés az, MEKKORA
+         volatilitást "áraz be" a piac ehhez az árhoz — ez az implikált
+         volatilitás (IV), talán a leggyakrabban idézett opciós mutató
+         (lásd: VIX index). Mivel a BS formulának nincs zárt alakú inverze
+         volatilitásra, bisection (intervallum-felezéses) gyökkereséssel
+         oldjuk meg: adott IV-sávban addig felezzük az intervallumot, amíg
+         a BS-ár a piaci árhoz tetszőlegesen közel nem kerül. -->
+    <div id="iv-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass-chart text-neon-cyan"></i> Implikált Volatilitás Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('iv-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">A Greeks Kalkulátor fordítottja: itt a PIACI (jegyzett) opciós árból indulunk ki, és visszafejtjük, MEKKORA volatilitást áraz be ehhez a piac — ez az "implikált volatilitás" (IV), ami a piaci félelem/bizonytalanság egyik legfontosabb mérőszáma.</p>
+
+            <div class="flex items-center gap-2 mb-3">
+                <button id="iv-type-call" onclick="setIvOptionType('call')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition">Call</button>
+                <button id="iv-type-put" onclick="setIvOptionType('put')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Put</button>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Piaci (jegyzett) opciós ár ($)</label>
+            <input type="number" id="iv-market-price" value="5" step="0.1" min="0.001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div><label class="text-[10px] text-slate-500">Jelenlegi árfolyam (S)</label><input type="number" id="iv-spot" value="100" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Kötési ár (Strike, K)</label><input type="number" id="iv-strike" value="100" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div><label class="text-[10px] text-slate-500">Napok a lejáratig</label><input type="number" id="iv-days" value="30" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Kockázatmentes ráta (%/év)</label><input type="number" id="iv-rate" value="4" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+
+            <button onclick="runImpliedVolatilitySolver()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Implikált volatilitás visszafejtése
+            </button>
+
+            <div id="iv-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Bisection (intervallum-felezéses) numerikus gyökkereséssel old meg, 0.01%-500% volatilitás-sávban, 100 lépésig — ha a megadott piaci ár a Black-Scholes modell szerint elérhetetlen (pl. kisebb, mint a belső érték), nincs megoldás, és ezt az eszköz jelzi.</p>
+        </div>
+    </div>
+
     <div id="dca-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -3063,6 +3116,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Opciós Árazó és Greeks</div>
                     <div class="text-[10px] text-slate-400">Black-Scholes ár + Delta/Gamma/Theta/Vega/Rho</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('iv-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Implikált Volatilitás Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Piaci árból visszafejtett IV</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -8860,6 +8920,96 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-[9px] text-slate-600 mt-0.5">Ár-változás +1%p kockázatmentes rátára</div>
                 </div>
                 <p class="text-[10px] text-slate-500 leading-relaxed">A Theta MINDIG a vásárló (long) oldal szempontjából van feltüntetve — a legtöbb opciónál negatív, mert minden elteltnapon kevesebb idő marad az opciónak "igazat bizonyítani", ez az időérték folyamatos erodálódása.</p>
+            `;
+        }
+
+        // ================= IMPLIKÁLT VOLATILITÁS KALKULÁTOR MOTORJA (BISECTION, NAGY KITERJESZTÉS) =================
+        // A Black-Scholes formulának nincs zárt alakú inverze volatilitásra,
+        // ezért numerikus gyökkereséssel oldjuk meg. A bisection (intervallum-
+        // felezés) módszert választottuk a Newton-Raphson helyett, mert:
+        // garantáltan konvergál (amíg a megoldás a [lo, hi] intervallumban
+        // van), nem igényel deriváltat (Vega-t), és nem "ugrik ki" szélsőséges
+        // kezdőértékeknél — oktatási eszköznél a robusztusság fontosabb, mint
+        // a konvergencia sebessége.
+        function solveImpliedVolatility(marketPrice, S, K, T, r, isCall) {
+            let lo = 0.0001; // 0.01% vol
+            let hi = 5.0;    // 500% vol
+            const priceLo = calcBlackScholes(S, K, T, r, lo, isCall).price;
+            const priceHi = calcBlackScholes(S, K, T, r, hi, isCall).price;
+
+            // Ha a piaci ár a [priceLo, priceHi] tartományon KÍVÜL esik, nincs
+            // megoldás ebben a volatilitás-sávban (pl. a piaci ár kisebb, mint
+            // a belső érték — ilyen ár a BS-modell szerint sosem jöhetne ki).
+            if (marketPrice <= priceLo || marketPrice >= priceHi) return null;
+
+            for (let i = 0; i < 100; i++) {
+                const mid = (lo + hi) / 2;
+                const midPrice = calcBlackScholes(S, K, T, r, mid, isCall).price;
+                if (Math.abs(midPrice - marketPrice) < 1e-7) return mid;
+                if (midPrice < marketPrice) lo = mid; else hi = mid;
+            }
+            return (lo + hi) / 2; // 100 lépés után a legjobb közelítés
+        }
+
+        let currentIvOptionType = 'call';
+        function setIvOptionType(type) {
+            currentIvOptionType = type;
+            const callBtn = document.getElementById('iv-type-call');
+            const putBtn = document.getElementById('iv-type-put');
+            if (type === 'call') {
+                callBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                putBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            } else {
+                putBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                callBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            }
+        }
+
+        function runImpliedVolatilitySolver() {
+            const out = document.getElementById('iv-result');
+            const marketPrice = parseFloat(document.getElementById('iv-market-price').value);
+            const S = parseFloat(document.getElementById('iv-spot').value);
+            const K = parseFloat(document.getElementById('iv-strike').value);
+            const days = parseFloat(document.getElementById('iv-days').value);
+            const ratePct = parseFloat(document.getElementById('iv-rate').value);
+
+            if (!marketPrice || marketPrice <= 0 || !S || S <= 0 || !K || K <= 0 || !days || days <= 0 || !Number.isFinite(ratePct) || ratePct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív piaci árat, árfolyamot, kötési árat és napok számát (a ráta nem lehet negatív)!</div>`;
+                return;
+            }
+
+            const T = days / 365;
+            const r = ratePct / 100;
+            const isCall = currentIvOptionType === 'call';
+            const iv = solveImpliedVolatility(marketPrice, S, K, T, r, isCall);
+
+            if (iv === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Ez a piaci ár a Black-Scholes modell szerint NEM érhető el semmilyen volatilitással (0.01%-500% sávban) ezekkel a paraméterekkel — valószínűleg a megadott ár kisebb, mint az opció belső értéke, vagy irreálisan magas.</div>`;
+                return;
+            }
+
+            // A megoldott IV-vel visszaszámolt Greeks is hasznos — megmutatja,
+            // mi lenne az opció Delta/Gamma/stb. ÉRTÉKE a piac által beárazott
+            // volatilitás mellett, nem csak egy becsült számmal.
+            const g = calcBlackScholes(S, K, T, r, iv, isCall);
+            const fmtNum = (n, d = 4) => (n >= 0 ? '+' : '') + n.toFixed(d);
+
+            out.innerHTML = `
+                <div class="rounded-xl bg-neon-cyan/5 border border-neon-cyan/30 p-3 mb-3">
+                    <div class="text-[10px] text-neon-cyan uppercase font-bold mb-1">Implikált volatilitás (IV)</div>
+                    <div class="text-xl font-extrabold text-white">${(iv * 100).toFixed(2)}% <span class="text-xs text-slate-500 font-normal">/ év</span></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5">
+                        <div class="text-[9.5px] text-slate-500 uppercase font-bold mb-0.5">Delta (ezzel az IV-vel)</div>
+                        <div class="text-sm font-bold text-white">${fmtNum(g.delta)}</div>
+                    </div>
+                    <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5">
+                        <div class="text-[9.5px] text-slate-500 uppercase font-bold mb-0.5">Gamma (ezzel az IV-vel)</div>
+                        <div class="text-sm font-bold text-white">${fmtNum(g.gamma)}</div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-relaxed">A magas IV azt jelenti, a piac NAGY jövőbeli árfolyam-mozgásra számít (akár fel, akár le) — ezért a bizonytalanság/félelem időszakaiban (pl. hírek előtt) jellemzően megemelkedik, függetlenül attól, hogy végül merre mozdul az árfolyam.</p>
             `;
         }
 
