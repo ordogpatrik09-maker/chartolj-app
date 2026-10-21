@@ -1022,6 +1022,13 @@
                                 <div class="text-[10px] text-slate-400">Kockázattal korrigált hozam mérése</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('sortino-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-trend-down"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Sortino-ráta Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Csak a lefelé irányuló kockázatot méri</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2248,6 +2255,41 @@
         </div>
     </div>
 
+    <!-- ================= SORTINO-RÁTA KALKULÁTOR (OKTATÁSI) =================
+         A Sharpe-ráta a TELJES szórást bünteti — azt is, ha a hozam felfelé
+         ingadozik, ami valójában nem "kockázat" a kereskedő szemszögéből.
+         A Sortino-ráta ehelyett csak a LEFELÉ irányuló ingadozást (downside
+         deviation) veszi figyelembe egy célzott minimális hozamhoz (MAR —
+         Minimum Acceptable Return) képest, így pontosabban méri a tényleges
+         "rossz" kockázatot. Formula: downside deviation = sqrt( (1/n) *
+         Σ min(0, r_i - MAR)² ), Sortino = (átlaghozam - MAR) / downside
+         deviation. Ez egy ÖNÁLLÓ, új kalkulátor — nem módosítja a meglévő
+         Sharpe-ráta kalkulátort. -->
+    <div id="sortino-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-trend-down text-neon-green"></i> Sortino-ráta Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('sortino-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Sortino-ráta a Sharpe-hoz hasonló, kockázattal korrigált teljesítménymutató, de CSAK a lefelé irányuló ingadozást (downside deviation) bünteti egy minimális elfogadható hozamhoz (MAR) képest — a felfelé mozgást nem tekinti "kockázatnak". Add meg az időszaki (pl. havi) hozamaidat %-ban, vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Időszaki hozamok (%, vesszővel elválasztva)</label>
+            <textarea id="sortino-returns" rows="3" placeholder="pl. 4.2, -2.1, 3.0, -1.5, 5.8, -0.8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">4.2, -2.1, 3.0, -1.5, 5.8, -0.8, 2.4, -3.2</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Minimális elfogadható hozam / MAR (%, időszakra)</label>
+            <input type="number" id="sortino-mar" value="0" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcSortino()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="sortino-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A downside deviation csak a MAR alatti időszakokat veszi figyelembe (a MAR felettieket 0-nak számítja a négyzetes átlagban) — ezért a Sortino-ráta jellemzően magasabb, mint ugyanazon adatsor Sharpe-rátája. Ha nincs egyetlen MAR alatti időszak sem, a downside deviation 0, és a ráta nem definiálható (végtelen/nem értelmezhető).</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3336,6 +3378,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Sharpe-ráta Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Kockázattal korrigált hozam mérése</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('sortino-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrow-trend-down"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Sortino-ráta Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Csak a lefelé irányuló kockázatot méri</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -8643,6 +8692,76 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
+        }
+
+        // ================= SORTINO-RÁTA KALKULÁTOR (OKTATÁSI) =================
+        // Csak a MAR (minimális elfogadható hozam) ALATTI időszaki hozamokat
+        // bünteti a szórásban — a MAR felettieket a négyzetes átlagban 0-nak
+        // veszi. Ez ÖNÁLLÓ logika, nem a Sharpe `calcSharpe()` függvényre épül.
+        function calcSortino() {
+            const returnsEl = document.getElementById('sortino-returns');
+            const marEl = document.getElementById('sortino-mar');
+            const out = document.getElementById('sortino-result');
+            if (!returnsEl || !marEl || !out) return;
+
+            const raw = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const mar = parseFloat(marEl.value);
+
+            if (raw.length < 2 || isNaN(mar)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott időszaki hozamot és egy érvényes MAR-t!</div>`;
+                return;
+            }
+
+            const n = raw.length;
+            const meanReturn = raw.reduce((a, b) => a + b, 0) / n;
+
+            // Downside deviation: csak a MAR alatti hozamok négyzetes eltérése
+            // számít — a MAR feletti időszakokhoz 0-t rendelünk a négyzetes
+            // átlagban (NEM hagyjuk ki a nevezőből az n-et, ez a definíció
+            // szerinti, teljes mintaszámra vonatkozó downside deviation).
+            const sumSquaredDownside = raw.reduce((acc, r) => acc + Math.pow(Math.min(0, r - mar), 2), 0);
+            const downsideDeviation = Math.sqrt(sumSquaredDownside / n);
+            const downsidePeriods = raw.filter(r => r < mar).length;
+
+            let bodyHtml, verdictHtml;
+            if (downsideDeviation === 0) {
+                bodyHtml = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Átlagos időszaki hozam:</span><span class="text-neon-green">${meanReturn >= 0 ? '+' : ''}${meanReturn.toFixed(3)}%</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">MAR alatti időszakok:</span><span class="text-white">0</span></div>
+                    </div>
+                `;
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">✅ Egyetlen időszak sem volt a MAR alatt — a downside deviation 0, ezért a Sortino-ráta nem értelmezhető hagyományos számmal (nincs lefelé irányuló kockázat a mintában).</p>`;
+            } else {
+                const sortino = (meanReturn - mar) / downsideDeviation;
+                let colorClass, verdict;
+                if (sortino < 0) {
+                    colorClass = 'text-neon-red';
+                    verdict = '🚨 Negatív Sortino-ráta: az átlaghozam a MAR alatt van — a stratégia a célzott minimális hozamot sem érte el.';
+                } else if (sortino < 1) {
+                    colorClass = 'text-amber-400';
+                    verdict = '⚠️ Gyenge: a lefelé irányuló kockázathoz képest alacsony a MAR feletti többlethozam.';
+                } else if (sortino < 2) {
+                    colorClass = 'text-neon-cyan';
+                    verdict = 'Jó kockázattal korrigált teljesítmény a lefelé irányuló kockázat szemszögéből.';
+                } else {
+                    colorClass = 'text-neon-green';
+                    verdict = '✅ Erős teljesítmény: a lefelé irányuló kockázathoz képest kiemelkedő a többlethozam.';
+                }
+                bodyHtml = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Átlagos időszaki hozam:</span><span class="${meanReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${meanReturn >= 0 ? '+' : ''}${meanReturn.toFixed(3)}%</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Downside deviation:</span><span class="text-white">${downsideDeviation.toFixed(3)}%</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">MAR alatti időszakok:</span><span class="text-white">${downsidePeriods} / ${n}</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Sortino-ráta:</span><span class="font-extrabold ${colorClass} text-sm">${sortino.toFixed(2)}</span></div>
+                    </div>
+                `;
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>`;
+            }
+
+            out.innerHTML = bodyHtml + verdictHtml;
         }
 
         // ================= FOREX PIP ÉRTÉK KALKULÁTOR (OKTATÁSI) =================
