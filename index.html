@@ -1029,6 +1029,13 @@
                                 <div class="text-[10px] text-slate-400">Csak a lefelé irányuló kockázatot méri</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('ulcer-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-heart-crack"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Ulcer Index Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">A visszaesés mélységét ÉS hosszát is bünteti</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2290,6 +2297,41 @@
         </div>
     </div>
 
+    <!-- ================= ULCER INDEX KALKULÁTOR (OKTATÁSI) =================
+         A Maximum Drawdown csak a LEGROSSZABB egyetlen visszaesést mutatja,
+         a Drawdown Duration csak az időtartamot — az Ulcer Index mindkettőt
+         egyben bünteti: a teljes árfolyam/egyenleg-sorozat MINDEN pontján
+         megnézi, mennyire van a futó csúcs alatt (%), ezeket négyzetesen
+         átlagolja, majd gyököt von. Így egy HOSSZAN tartó, bár nem
+         feltétlenül mély visszaesés magasabb Ulcer Indexet ad, mint egy
+         rövid, gyorsan kiheverhető esés — pontosabban tükrözi a befektető
+         tényleges "gyötrelmét" (innen a név), mint a sima Max Drawdown.
+         Formula: UI = sqrt( (1/n) × Σ drawdown_i² ), ahol drawdown_i =
+         (futóCsúcs_i - érték_i) / futóCsúcs_i × 100. Ez ÖNÁLLÓ kalkulátor,
+         nem módosítja a meglévő Maximum Drawdown vagy Risk-of-Ruin
+         eszközöket. -->
+    <div id="ulcer-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-heart-crack text-neon-red"></i> Ulcer Index Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('ulcer-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Az Ulcer Index a Maximum Drawdowntól eltérően nem csak a legrosszabb visszaesést nézi, hanem a sorozat MINDEN pontján a futó csúcstól mért elmaradást — így a hosszan tartó visszaesést súlyosabban bünteti, mint egy rövid, gyors esést. Add meg az árfolyam vagy portfólió-egyenleg sorozatot (pl. napi záróértékek), vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Árfolyam / egyenleg sorozat (vesszővel elválasztva)</label>
+            <textarea id="ulcer-series" rows="3" placeholder="pl. 100, 105, 102, 98, 95, 97, 101, 108" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">100, 105, 102, 98, 95, 97, 101, 108, 112, 109, 104, 110</textarea>
+
+            <button onclick="calcUlcerIndex()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="ulcer-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél alacsonyabb az Ulcer Index, annál "simább" volt az út a hozamig — kevesebb és/vagy rövidebb visszaesésekkel. Két hasonló végső hozamú stratégia közül jellemzően az alacsonyabb Ulcer Indexű a kevésbé stresszes, kiszámíthatóbb választás.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3385,6 +3427,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Sortino-ráta Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Csak a lefelé irányuló kockázatot méri</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('ulcer-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-heart-crack"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Ulcer Index Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">A visszaesés mélységét ÉS hosszát is bünteti</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -8762,6 +8811,66 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             out.innerHTML = bodyHtml + verdictHtml;
+        }
+
+        // ================= ULCER INDEX KALKULÁTOR (OKTATÁSI) =================
+        // A sorozat MINDEN pontján méri a futó csúcstól mért %-os elmaradást
+        // (NEM csak a legrosszabb pillanatot, mint a Max Drawdown), ezeket
+        // négyzetesen átlagolja, majd gyököt von. Önálló logika, nem épül
+        // más drawdown-eszközre.
+        function calcUlcerIndex() {
+            const seriesEl = document.getElementById('ulcer-series');
+            const out = document.getElementById('ulcer-result');
+            if (!seriesEl || !out) return;
+
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+
+            if (values.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, nullánál nagyobb, vesszővel elválasztott értéket!</div>`;
+                return;
+            }
+
+            const n = values.length;
+            let runningPeak = values[0];
+            let sumSquaredDrawdown = 0;
+            let maxDrawdownPct = 0;
+            const drawdowns = [];
+            for (let i = 0; i < n; i++) {
+                if (values[i] > runningPeak) runningPeak = values[i];
+                const drawdownPct = (runningPeak - values[i]) / runningPeak * 100;
+                drawdowns.push(drawdownPct);
+                sumSquaredDrawdown += drawdownPct * drawdownPct;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+            const ulcerIndex = Math.sqrt(sumSquaredDrawdown / n);
+            const avgDrawdownPct = drawdowns.reduce((a, b) => a + b, 0) / n;
+            const periodsUnderwater = drawdowns.filter(d => d > 0).length;
+
+            let colorClass, verdict;
+            if (ulcerIndex < 1) {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Nagyon alacsony Ulcer Index — az út a hozamig sima volt, rövid és/vagy enyhe visszaesésekkel.';
+            } else if (ulcerIndex < 3) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Alacsony-közepes Ulcer Index — kezelhető, nem túl hosszan tartó visszaesések.';
+            } else if (ulcerIndex < 7) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Közepes-magas Ulcer Index — vagy mély, vagy hosszan tartó visszaesések jellemzik a sorozatot.';
+            } else {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Magas Ulcer Index — a sorozat nagy részében jelentős, tartós visszaesésben volt az érték, pszichológiailag megterhelő lehet végigkövetni.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-neon-red">-${maxDrawdownPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos drawdown (minden ponton):</span><span class="text-white">-${avgDrawdownPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Visszaesésben töltött pontok:</span><span class="text-white">${periodsUnderwater} / ${n}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ulcer Index:</span><span class="font-extrabold ${colorClass} text-sm">${ulcerIndex.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
         }
 
         // ================= FOREX PIP ÉRTÉK KALKULÁTOR (OKTATÁSI) =================
