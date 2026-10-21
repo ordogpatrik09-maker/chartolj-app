@@ -2930,6 +2930,7 @@
                 <select id="sb-exit-type" onchange="renderStrategyBuilderInputs()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-neon-red/50 mb-2">
                     <option value="signal_reverse">Ellentétes jelzés (a belépési feltétel megfordulása)</option>
                     <option value="stop_take">Saját Stop-Loss / Take-Profit %</option>
+                    <option value="trailing_stop">Trailing Stop (követő stop)</option>
                 </select>
                 <div id="sb-exit-inputs"></div>
             </div>
@@ -5777,13 +5778,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             for (let i = 1; i < closes.length; i++) {
                 if (!position && signals.up[i]) {
-                    position = { entryPrice: closes[i], entryIndex: i };
+                    position = { entryPrice: closes[i], entryIndex: i, peakPrice: closes[i] };
                 } else if (position) {
+                    // A "peak price" a belépés ÓTA elért legmagasabb ár — ezt
+                    // MINDEN gyertyán frissítjük, mielőtt a kilépési
+                    // feltételt kiértékelnénk, hogy a trailing stop a
+                    // legfrissebb csúcshoz igazodjon.
+                    if (closes[i] > position.peakPrice) position.peakPrice = closes[i];
+
                     if (config.exitType === 'stop_take') {
                         const currentRetPct = (closes[i] - position.entryPrice) / position.entryPrice;
                         if (currentRetPct <= -config.exitParams.stopLossPct / 100) {
                             closePosition(i, closes[i]);
                         } else if (currentRetPct >= config.exitParams.takeProfitPct / 100) {
+                            closePosition(i, closes[i]);
+                        }
+                    } else if (config.exitType === 'trailing_stop') {
+                        // A csúcstól mért visszaesés — NEM a belépési ártól,
+                        // ez a trailing stop és a fix stop-loss közti lényegi
+                        // különbség: a stop "követi" az árat felfelé, és
+                        // zárolja a már elért nyereség egy részét.
+                        const drawdownFromPeak = (position.peakPrice - closes[i]) / position.peakPrice;
+                        if (drawdownFromPeak >= config.exitParams.trailingStopPct / 100) {
                             closePosition(i, closes[i]);
                         }
                     } else { // signal_reverse
@@ -5876,6 +5892,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <div><label class="text-[10px] text-slate-500">Take-Profit (%)</label><input type="number" id="sb-takeprofit" value="4" step="0.1" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
                     </div>
                 `;
+            } else if (exitType === 'trailing_stop') {
+                exitEl.innerHTML = `
+                    <div><label class="text-[10px] text-slate-500">Trailing Stop távolság (%)</label><input type="number" id="sb-trailing-pct" value="3" step="0.1" min="0.1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                    <p class="text-[10px] text-slate-500 mt-1.5">A stop a belépés óta elért LEGMAGASABB árhoz igazodik — amint az ár ennyi %-ot esik a csúcstól, zár. Így a már elért nyereség egy részét zárolja, nem engedi vissza az eredeti belépési árig.</p>
+                `;
             } else {
                 exitEl.innerHTML = `<p class="text-[10px] text-slate-500">A pozíció a belépési feltétel ELLENTÉTJÉNEK bekövetkeztekor zár (pl. EMA Arany Kereszt esetén a lassú EMA visszakeresztezésekor).</p>`;
             }
@@ -5948,6 +5969,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb Stop-Loss és Take-Profit %-okat!</div>`;
                     return;
                 }
+            } else if (exitType === 'trailing_stop') {
+                exitParams = { trailingStopPct: parseFloat(document.getElementById('sb-trailing-pct').value) };
+                if (!exitParams.trailingStopPct || exitParams.trailingStopPct <= 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb Trailing Stop távolságot!</div>`;
+                    return;
+                }
             }
 
             if (typeof candleData === 'undefined' || !candleData || candleData.length < minCandlesNeeded) {
@@ -6004,7 +6031,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         let sbSavedStrategies = [];
 
         const SB_ENTRY_LABELS = { ema_cross: 'EMA Arany Kereszt', rsi_oversold: 'RSI Túladott-kilépés', bollinger_break: 'Bollinger-törés', macd_cross: 'MACD Keresztezés' };
-        const SB_EXIT_LABELS = { signal_reverse: 'Ellentétes jelzés', stop_take: 'Stop-Loss/Take-Profit' };
+        const SB_EXIT_LABELS = { signal_reverse: 'Ellentétes jelzés', stop_take: 'Stop-Loss/Take-Profit', trailing_stop: 'Trailing Stop' };
 
         function loadSbSavedStrategies() {
             try {
@@ -6070,6 +6097,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (cfg.exitType === 'stop_take') {
                 document.getElementById('sb-stoploss').value = cfg.exitParams.stopLossPct;
                 document.getElementById('sb-takeprofit').value = cfg.exitParams.takeProfitPct;
+            } else if (cfg.exitType === 'trailing_stop') {
+                document.getElementById('sb-trailing-pct').value = cfg.exitParams.trailingStopPct;
             }
             runStrategyBuilderBacktest();
             showNotification('Mentett stratégia betöltve és újrafuttatva a jelenlegi adaton.');
