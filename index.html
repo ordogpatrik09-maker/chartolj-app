@@ -1113,6 +1113,13 @@
                                 <div class="text-[10px] text-slate-400">Ryan Jones delta-alapú egységnövelés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('sterling-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-column"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Sterling Ratio Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Calmar-rokon, átlagos visszaesésen alapuló mutató</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2832,6 +2839,39 @@
         </div>
     </div>
 
+    <!-- ================= STERLING RATIO KALKULÁTOR (OKTATÁSI) =================
+         A Calmar Ratio rokona: a nevezőben nem a puszta maximum
+         drawdownot, hanem a LEGNAGYOBB N visszaesés ÁTLAGÁT használja,
+         plusz egy szokásos 10%-os korrekciós tagot — ez kevésbé
+         érzékeny egyetlen extrém, kiugró eseményre, mint a sima Calmar. -->
+    <div id="sterling-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-column text-neon-cyan"></i> Sterling Ratio Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('sterling-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Sterling Ratio a Calmar Ratio rokona: az évesített hozamot (CAGR) nem a legrosszabb egyetlen visszaeséshez, hanem a LEGNAGYOBB N visszaesés átlagához (+10%-os korrekciós taghoz) viszonyítja — így kevésbé torzítja el egyetlen, rendkívüli esemény okozta kiugró drawdown.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Árfolyam / egyenleg sorozat (vesszővel elválasztva)</label>
+            <textarea id="sterling-series" rows="3" placeholder="pl. 10000, 10500, 11200, 9800, 10100, 11800" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">10000, 10500, 11200, 9800, 10100, 11800, 12500, 9900, 13200, 14100, 12200, 15000</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Adatpontok évesítési szorzója (pl. 12 = havi adatok, 252 = napi, 1 = éves)</label>
+            <input type="number" id="sterling-periods-per-year" value="12" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Figyelembe vett legnagyobb visszaesések száma (N)</label>
+            <input type="number" id="sterling-n-drawdowns" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcSterlingRatio()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="sterling-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha a sorozatban kevesebb különálló visszaesés-esemény van, mint a megadott N, a kalkulátor az összes megtalált visszaesést átlagolja. A +10%-os korrekciós tag a Sterling Ratio szokásos, eredeti definíciójának része — ez csökkenti a nevezőt extrémen stabil sorozatoknál, hogy a mutató ne legyen irreálisan magas.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4014,6 +4054,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Fixed Ratio Méretezés Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Ryan Jones delta-alapú egységnövelés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('sterling-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-column"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Sterling Ratio Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Calmar-rokon, átlagos visszaesésen alapuló mutató</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -9801,6 +9848,95 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-neon-red">-${maxDrawdownPct.toFixed(2)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Calmar Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${calmar.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= STERLING RATIO KALKULÁTOR (OKTATÁSI) =================
+        // CAGR ugyanúgy, mint a Calmar Ratiónál. A nevező viszont NEM a
+        // puszta maximum drawdown, hanem: minden önálló csúcs→mélypont
+        // visszaesés-episódot külön azonosítunk (új csúcs zárja le az
+        // előzőt), a legnagyobb N episódot átlagoljuk, és hozzáadunk egy
+        // szokásos 10%-os korrekciós tagot.
+        function calcSterlingRatio() {
+            const seriesEl = document.getElementById('sterling-series');
+            const periodsEl = document.getElementById('sterling-periods-per-year');
+            const nDrawdownsEl = document.getElementById('sterling-n-drawdowns');
+            const out = document.getElementById('sterling-result');
+            if (!seriesEl || !periodsEl || !nDrawdownsEl || !out) return;
+
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+            const periodsPerYear = parseFloat(periodsEl.value);
+            const requestedN = parseInt(nDrawdownsEl.value);
+
+            if (values.length < 2 || !periodsPerYear || periodsPerYear <= 0 || !requestedN || requestedN < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, nullánál nagyobb, vesszővel elválasztott értéket, egy érvényes évesítési szorzót, és egy érvényes N értéket (legalább 1)!</div>`;
+                return;
+            }
+
+            const n = values.length;
+            const numIntervals = n - 1;
+            const totalReturnMultiple = values[n - 1] / values[0];
+            const cagr = Math.pow(totalReturnMultiple, periodsPerYear / numIntervals) - 1;
+
+            // Önálló visszaesés-episódok azonosítása: egy új all-time
+            // csúcs lezárja az addigi episódot (ha volt), és új episód
+            // kezdődik.
+            let peak = values[0];
+            let episodeMaxDD = 0;
+            const episodes = [];
+            for (let i = 1; i < n; i++) {
+                if (values[i] >= peak) {
+                    if (episodeMaxDD > 0) episodes.push(episodeMaxDD);
+                    peak = values[i];
+                    episodeMaxDD = 0;
+                } else {
+                    const dd = (peak - values[i]) / peak * 100;
+                    if (dd > episodeMaxDD) episodeMaxDD = dd;
+                }
+            }
+            if (episodeMaxDD > 0) episodes.push(episodeMaxDD);
+
+            if (episodes.length === 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Visszaesés-episódok száma:</span><span class="text-white">0</span></div>
+                    </div>
+                    <p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A sorozatban nem volt visszaesés-episód (minden érték egyenlő vagy magasabb volt az előzőnél) — a Sterling Ratio nevezője ebben az esetben csak a 10%-os korrekciós tag.</p>
+                `;
+                return;
+            }
+
+            const usedN = Math.min(requestedN, episodes.length);
+            const topEpisodes = [...episodes].sort((a, b) => b - a).slice(0, usedN);
+            const avgTopDrawdownPct = topEpisodes.reduce((a, b) => a + b, 0) / topEpisodes.length;
+            const denominator = (avgTopDrawdownPct / 100) + 0.10;
+            const sterling = cagr / denominator;
+
+            let colorClass, verdict;
+            if (sterling < 0) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Negatív Sterling Ratio: a sorozat évesített hozama negatív volt, az átlagos nagy visszaesések ellenére sem produkált pozitív hosszú távú hozamot.';
+            } else if (sterling < 1) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Gyenge-közepes Sterling Ratio — az évesített hozam alacsonyabb, mint a figyelembe vett átlagos legnagyobb visszaesések mértéke.';
+            } else if (sterling < 3) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Jó Sterling Ratio — az évesített hozam jól kompenzálja az átlagos legnagyobb visszaeséseket.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Kiemelkedően magas Sterling Ratio — ilyen szint ritka, érdemes ellenőrizni az adatsor hosszát és reprezentativitását is.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Talált visszaesés-episódok:</span><span class="text-white">${episodes.length}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Figyelembe vett legnagyobb ${usedN} átlaga:</span><span class="text-neon-red">-${avgTopDrawdownPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Sterling Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${sterling.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
