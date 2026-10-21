@@ -1036,6 +1036,13 @@
                                 <div class="text-[10px] text-slate-400">A visszaesés mélységét ÉS hosszát is bünteti</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('vwap-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">VWAP Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Volumen-súlyozott átlagár "fair value"</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2332,6 +2339,46 @@
         </div>
     </div>
 
+    <!-- ================= VWAP (VOLUMEN-SÚLYOZOTT ÁTLAGÁR) KALKULÁTOR (OKTATÁSI) =================
+         A VWAP egy adott időszakra (pl. kereskedési nap) számolt átlagár,
+         ahol minden gyertya árát a SAJÁT volumenével súlyozzuk — így a nagy
+         volumenű gyertyák jobban befolyásolják az eredményt, mint a csendes,
+         alacsony volumenű periódusok. Sok intézményi kereskedő a VWAP-ot
+         egyfajta "fair value" referenciának használja napon belül: ár a
+         VWAP felett = a nap átlagához képest "drágán" vásárolnak, VWAP
+         alatt = "olcsón". Formula: VWAP = Σ(ár_i × volumen_i) / Σ(volumen_i).
+         Ez ÖNÁLLÓ kalkulátor, nem igényli és nem módosítja a chart élő
+         gyertyaadatait — a felhasználó saját ár/volumen párokat ad meg. -->
+    <div id="vwap-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-neon-cyan"></i> VWAP Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('vwap-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A VWAP (Volume Weighted Average Price) egy időszak volumennel súlyozott átlagára — minél nagyobb volumenen történt egy árszint, annál jobban húzza arra a VWAP-ot. Add meg az egyes gyertyák (jellemzően: nyitó, maximum, minimum, záró átlaga) árát és volumenét, egy sorban egy gyertya, "ár,volumen" formában.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák (ár,volumen soronként)</label>
+            <textarea id="vwap-candles" rows="5" placeholder="100.5,1200&#10;101.2,800&#10;99.8,1500" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">100.5,1200
+101.2,800
+99.8,1500
+102.4,2200
+103.1,900
+101.9,1700</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Jelenlegi ár (a VWAP-hoz hasonlítva)</label>
+            <input type="number" id="vwap-current-price" value="103.5" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcVwap()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="vwap-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A VWAP csak az adott, lezárt időszakra érvényes "fair value" referencia — nem előrejelzés. Sok intraday kereskedő a VWAP-tól való jelentős eltérést mean-reversion jelzésként, a VWAP irányába történő visszatérést pedig trendmegerősítésként használja, más eszközökkel kombinálva.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3434,6 +3481,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Ulcer Index Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">A visszaesés mélységét ÉS hosszát is bünteti</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('vwap-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-balanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">VWAP Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Volumen-súlyozott átlagár "fair value"</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -8868,6 +8922,61 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Átlagos drawdown (minden ponton):</span><span class="text-white">-${avgDrawdownPct.toFixed(2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Visszaesésben töltött pontok:</span><span class="text-white">${periodsUnderwater} / ${n}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ulcer Index:</span><span class="font-extrabold ${colorClass} text-sm">${ulcerIndex.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= VWAP (VOLUMEN-SÚLYOZOTT ÁTLAGÁR) KALKULÁTOR (OKTATÁSI) =================
+        // VWAP = Σ(ár_i × volumen_i) / Σ(volumen_i) — egyszerű, szabványos
+        // formula. A felhasználó saját ár/volumen sorokat ad meg, nem
+        // nyúlunk a chart élő gyertyaadataihoz.
+        function calcVwap() {
+            const candlesEl = document.getElementById('vwap-candles');
+            const priceEl = document.getElementById('vwap-current-price');
+            const out = document.getElementById('vwap-result');
+            if (!candlesEl || !priceEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const bars = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] > 0 && parts[1] > 0) {
+                    bars.push({ price: parts[0], volume: parts[1] });
+                }
+            }
+            const currentPrice = parseFloat(priceEl.value);
+
+            if (bars.length < 1 || isNaN(currentPrice) || currentPrice <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 érvényes "ár,volumen" sort (mindkét érték legyen nullánál nagyobb), és egy érvényes jelenlegi árat!</div>`;
+                return;
+            }
+
+            const sumPriceVolume = bars.reduce((acc, b) => acc + b.price * b.volume, 0);
+            const totalVolume = bars.reduce((acc, b) => acc + b.volume, 0);
+            const vwap = sumPriceVolume / totalVolume;
+
+            const deviationPct = (currentPrice - vwap) / vwap * 100;
+
+            let colorClass, verdict;
+            if (Math.abs(deviationPct) < 0.3) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'A jelenlegi ár közel van a VWAP-hoz — nincs jelentős eltérés a napi "fair value" referenciától.';
+            } else if (deviationPct >= 0.3) {
+                colorClass = 'text-neon-green';
+                verdict = `Az ár ${deviationPct.toFixed(2)}%-kal a VWAP FELETT van — a nap átlagához képest "drágán" vásárolnak jelenleg. Trendkövetők erősítésnek, mean-reversion kereskedők esetleg túlvettnek tekinthetik.`;
+            } else {
+                colorClass = 'text-neon-red';
+                verdict = `Az ár ${Math.abs(deviationPct).toFixed(2)}%-kal a VWAP ALATT van — a nap átlagához képest "olcsón" adnak-vesznek jelenleg. Trendkövetők gyengeségnek, mean-reversion kereskedők esetleg túladottnak tekinthetik.`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Gyertyák száma:</span><span class="text-white">${bars.length}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Összes volumen:</span><span class="text-white">${totalVolume.toLocaleString('en-US')}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">VWAP:</span><span class="font-extrabold text-neon-cyan text-sm">${vwap.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Jelenlegi ár:</span><span class="text-white">${currentPrice.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eltérés a VWAP-tól:</span><span class="${colorClass} font-bold">${deviationPct >= 0 ? '+' : ''}${deviationPct.toFixed(2)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
