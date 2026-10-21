@@ -1127,6 +1127,13 @@
                                 <div class="text-[10px] text-slate-400">Volumen-súlyozott RSI-oszcillátor</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('cci-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">CCI (Commodity Channel Index) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Átlagtól való eltérés mérése, korlátlan tartományban</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2923,6 +2930,36 @@
         </div>
     </div>
 
+    <!-- ================= CCI (COMMODITY CHANNEL INDEX) KALKULÁTOR (OKTATÁSI) =================
+         CCI = (aktuálisÁr - SMA) / (0.015 × átlagosAbszolútEltérés).
+         Az SMA és az átlagos abszolút eltérés a megadott periódus utolsó
+         N árából számolódik, a 0.015 a klasszikus Lambert-féle
+         skálázási konstans. -->
+    <div id="cci-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-neon-purple"></i> CCI (Commodity Channel Index) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('cci-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A CCI azt méri, mennyire tér el az aktuális ár a periódus átlagárától, az árak átlagos abszolút eltérésével normalizálva. +100 fölött hagyományosan túlvett, -100 alatt túladott állapotot jelezhet — de a CCI elméletileg korlátlan tartományban mozoghat, ellentétben az RSI 0-100-as skálájával. Add meg az árfolyam- (vagy tipikus ár-) sorozatot.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Árfolyam sorozat (vesszővel elválasztva, legrégebbitől a legfrissebbig)</label>
+            <textarea id="cci-series" rows="3" placeholder="pl. 20, 20.5, 21, 20.8, 21.2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">20, 20.5, 21, 20.8, 21.2, 21.5, 21.3, 21.6, 22, 21.8, 22.2, 22.5, 22.3, 22.6, 23</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">CCI periódus (hány utolsó árat vegyünk figyelembe)</label>
+            <input type="number" id="cci-period" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcCCI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="cci-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A CCI a periódus utolsó N árának mozgóátlagát (SMA) és az azoktól mért átlagos abszolút eltérést használja viszonyítási alapként — ha a sorozat utolsó N eleme mind azonos, az eltérés 0, és a CCI nem fejezhető ki véges számmal.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4119,6 +4156,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Money Flow Index (MFI) Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Volumen-súlyozott RSI-oszcillátor</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('cci-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">CCI (Commodity Channel Index) Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Átlagtól való eltérés mérése, korlátlan tartományban</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -10071,6 +10115,68 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Pozitív pénzáramlás összeg:</span><span class="text-neon-green">${positiveSum.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Negatív pénzáramlás összeg:</span><span class="text-neon-red">${negativeSum.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Money Flow Index (MFI):</span><span class="font-extrabold ${colorClass} text-sm">${mfi.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= CCI (COMMODITY CHANNEL INDEX) KALKULÁTOR (OKTATÁSI) =================
+        // SMA és átlagos abszolút eltérés a periódus utolsó N árából;
+        // CCI = (utolsóÁr - SMA) / (0.015 × átlagosAbszolútEltérés).
+        function calcCCI() {
+            const seriesEl = document.getElementById('cci-series');
+            const periodEl = document.getElementById('cci-period');
+            const out = document.getElementById('cci-result');
+            if (!seriesEl || !periodEl || !out) return;
+
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1 || values.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (periódus) érvényes, vesszővel elválasztott árat, és egy érvényes (legalább 1) periódust!</div>`;
+                return;
+            }
+
+            const n = values.length;
+            const window = values.slice(n - period, n);
+            const sma = window.reduce((a, b) => a + b, 0) / period;
+            const meanAbsDeviation = window.reduce((acc, v) => acc + Math.abs(v - sma), 0) / period;
+            const currentPrice = values[n - 1];
+
+            if (meanAbsDeviation === 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">SMA (periódus átlag):</span><span class="text-white">${sma.toFixed(4)}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Átlagos abszolút eltérés:</span><span class="text-white">0</span></div>
+                    </div>
+                    <p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ A periódus utolsó ${period} ára mind megegyezik, így az átlagos abszolút eltérés 0 — a CCI nem fejezhető ki véges számmal.</p>
+                `;
+                return;
+            }
+
+            const cci = (currentPrice - sma) / (0.015 * meanAbsDeviation);
+
+            let colorClass, verdict;
+            if (cci >= 100) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Túlvett tartomány (≥+100) — az ár a periódus átlagához képest statisztikailag szokatlanul magasan van, korrekció vagy konszolidáció kockázata nő.';
+            } else if (cci >= 0) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Pozitív, de nem extrém tartomány — az ár az átlag felett van, de nem jelez kifejezett túlvett állapotot.';
+            } else if (cci > -100) {
+                colorClass = 'text-amber-400';
+                verdict = 'Negatív, de nem extrém tartomány — az ár az átlag alatt van, de nem jelez kifejezett túladott állapotot.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Túladott tartomány (≤-100) — az ár a periódus átlagához képest statisztikailag szokatlanul alacsonyan van, visszapattanás lehetősége nő, de ez önmagában nem belépési szignál.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">SMA (periódus átlag):</span><span class="text-white">${sma.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos abszolút eltérés:</span><span class="text-white">${meanAbsDeviation.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Aktuális ár:</span><span class="text-white">${currentPrice}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">CCI:</span><span class="font-extrabold ${colorClass} text-sm">${cci >= 0 ? '+' : ''}${cci.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
