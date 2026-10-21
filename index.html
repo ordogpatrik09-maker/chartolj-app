@@ -1092,6 +1092,13 @@
                                 <div class="text-[10px] text-slate-400">Perpetual futures finanszírozási díja</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Opciós Árazó és Greeks</div>
+                                <div class="text-[10px] text-slate-400">Black-Scholes ár + Delta/Gamma/Theta/Vega/Rho</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-branch"></i></span>
                             <div>
@@ -2550,6 +2557,50 @@
         </div>
     </div>
 
+    <!-- ================= OPCIÓS ÁRAZÓ ÉS GREEKS KALKULÁTOR (BLACK-SCHOLES, NAGY KITERJESZTÉS) =================
+         Az eddigi 2 opciós eszköz (Kifizetés Kalkulátor, Stratégia-vizualizáló)
+         KIZÁRÓLAG a LEJÁRATKORI kifizetést számolta — a lejárat ELŐTTI
+         elméleti árról, vagy arról, hogy egy opció ára MENNYIRE érzékeny az
+         egyes piaci tényezőkre (árfolyam, idő, volatilitás, kamat), eddig
+         semmilyen eszköz nem szólt. Ez a valódi hiányzó "nagy dolog": a
+         klasszikus Black-Scholes modell teljes implementációja — elméleti
+         opciós ár + mind az 5 fő "Greek" (Delta, Gamma, Theta, Vega, Rho),
+         minden egyes paraméterhez rövid, oktatási magyarázattal. -->
+    <div id="greeks-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-square-root-variable text-neon-purple"></i> Opciós Árazó és Greeks (Black-Scholes)
+                </h3>
+                <button onclick="closeToolModal('greeks-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">A korábbi opciós eszközök csak a LEJÁRATKORI kifizetést mutatták. Ez a klasszikus Black-Scholes modellel az opció MAI, elméleti árát és az 5 fő "Greek"-et (érzékenységi mutatót) számolja ki — ezek mutatják, hogyan mozog az opció ára, ha egy-egy piaci tényező (árfolyam, idő, volatilitás, kamat) megváltozik.</p>
+
+            <div class="flex items-center gap-2 mb-3">
+                <button id="greeks-type-call" onclick="setGreeksOptionType('call')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition">Call</button>
+                <button id="greeks-type-put" onclick="setGreeksOptionType('put')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Put</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div><label class="text-[10px] text-slate-500">Jelenlegi árfolyam (S)</label><input type="number" id="greeks-spot" value="100" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Kötési ár (Strike, K)</label><input type="number" id="greeks-strike" value="100" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div><label class="text-[10px] text-slate-500">Napok a lejáratig</label><input type="number" id="greeks-days" value="30" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Implikált volatilitás (% / év)</label><input type="number" id="greeks-vol" value="40" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Kockázatmentes ráta (% / év)</label>
+            <input type="number" id="greeks-rate" value="4" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="runGreeksCalculator()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Elméleti ár és Greeks kiszámolása
+            </button>
+
+            <div id="greeks-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A Black-Scholes modell egyszerűsítő feltételei: állandó volatilitás és kockázatmentes ráta, nincs osztalékfizetés, folyamatos (nem diszkrét) kereskedés, és csak európai-stílusú (csak lejáratkor élhető) opciókra pontos — amerikai opcióknál és osztalékot fizető részvényeknél a valós ár eltérhet ettől.</p>
+        </div>
+    </div>
+
     <div id="dca-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -3005,6 +3056,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Funding Rate Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Perpetual futures finanszírozási díja</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-square-root-variable"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Opciós Árazó és Greeks</div>
+                    <div class="text-[10px] text-slate-400">Black-Scholes ár + Delta/Gamma/Theta/Vega/Rho</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -8677,6 +8735,131 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         ? '⚠️ Ez egy FOLYAMATOS, könnyen alábecsült költség — minél tovább tartod a pozíciót, annál jobban összeadódik, függetlenül attól, nyereségben vagy veszteségben vagy éppen.'
                         : '✅ Ebben a forgatókönyvben a piaci hangulat kedvez a pozíciódnak — a másik oldal fizet neked, amíg a ráta ilyen irányú marad.'}</span>
                 </div>
+            `;
+        }
+
+        // ================= OPCIÓS ÁRAZÓ ÉS GREEKS KALKULÁTOR MOTORJA (BLACK-SCHOLES, NAGY KITERJESZTÉS) =================
+        // Standard normál eloszlás sűrűségfüggvénye (PDF) és kumulatív
+        // eloszlásfüggvénye (CDF) — a CDF-et az Abramowitz & Stegun 7.1.26
+        // hibafüggvény-közelítéssel számoljuk (max. hiba ~1.5e-7), ez a
+        // Black-Scholes modell szabványos, széles körben használt közelítése.
+        function bsNormalPdf(x) {
+            return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+        }
+        function bsErf(x) {
+            const sign = x < 0 ? -1 : 1;
+            x = Math.abs(x);
+            const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+            const t = 1 / (1 + p * x);
+            const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            return sign * y;
+        }
+        function bsNormalCdf(x) {
+            return 0.5 * (1 + bsErf(x / Math.SQRT2));
+        }
+
+        // A teljes Black-Scholes elméleti ár + mind az 5 fő Greek egy objektumban.
+        // S = jelenlegi árfolyam, K = kötési ár, T = lejáratig hátralévő idő
+        // ÉVEKBEN, r = kockázatmentes ráta (tizedes tört, pl. 0.04), sigma =
+        // implikált volatilitás (tizedes tört, pl. 0.40), isCall = bool.
+        function calcBlackScholes(S, K, T, r, sigma, isCall) {
+            const sqrtT = Math.sqrt(T);
+            const d1 = (Math.log(S / K) + (r + (sigma * sigma) / 2) * T) / (sigma * sqrtT);
+            const d2 = d1 - sigma * sqrtT;
+            const Nd1 = bsNormalCdf(d1);
+            const Nd2 = bsNormalCdf(d2);
+            const NnegD1 = bsNormalCdf(-d1);
+            const NnegD2 = bsNormalCdf(-d2);
+            const pdfD1 = bsNormalPdf(d1);
+            const discK = K * Math.exp(-r * T);
+
+            const price = isCall
+                ? S * Nd1 - discK * Nd2
+                : discK * NnegD2 - S * NnegD1;
+
+            const delta = isCall ? Nd1 : (Nd1 - 1);
+            const gamma = pdfD1 / (S * sigma * sqrtT);
+            // Vega: az ár változása 1 százalékpontos (0.01) volatilitás-változásra
+            const vega = (S * pdfD1 * sqrtT) / 100;
+            // Theta: az ár változása NAPONTA (ezért / 365 az éves alakból)
+            const thetaCall = (-(S * pdfD1 * sigma) / (2 * sqrtT) - r * discK * Nd2) / 365;
+            const thetaPut = (-(S * pdfD1 * sigma) / (2 * sqrtT) + r * discK * NnegD2) / 365;
+            const theta = isCall ? thetaCall : thetaPut;
+            // Rho: az ár változása 1 százalékpontos (0.01) kamatváltozásra
+            const rho = isCall ? (K * T * discK * Nd2) / 100 : (-K * T * discK * NnegD2) / 100;
+
+            return { price, delta, gamma, theta, vega, rho, d1, d2 };
+        }
+
+        let currentGreeksOptionType = 'call';
+        function setGreeksOptionType(type) {
+            currentGreeksOptionType = type;
+            const callBtn = document.getElementById('greeks-type-call');
+            const putBtn = document.getElementById('greeks-type-put');
+            if (type === 'call') {
+                callBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                putBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            } else {
+                putBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                callBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            }
+        }
+
+        function runGreeksCalculator() {
+            const out = document.getElementById('greeks-result');
+            const S = parseFloat(document.getElementById('greeks-spot').value);
+            const K = parseFloat(document.getElementById('greeks-strike').value);
+            const days = parseFloat(document.getElementById('greeks-days').value);
+            const volPct = parseFloat(document.getElementById('greeks-vol').value);
+            const ratePct = parseFloat(document.getElementById('greeks-rate').value);
+
+            if (!S || S <= 0 || !K || K <= 0 || !days || days <= 0 || !volPct || volPct <= 0 || !Number.isFinite(ratePct) || ratePct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív árfolyamot, kötési árat, napok számát és volatilitást (a ráta nem lehet negatív)!</div>`;
+                return;
+            }
+
+            const T = days / 365;
+            const sigma = volPct / 100;
+            const r = ratePct / 100;
+            const isCall = currentGreeksOptionType === 'call';
+            const g = calcBlackScholes(S, K, T, r, sigma, isCall);
+
+            const fmt = (n, d = 2) => (n < 0 ? '-$' + Math.abs(n).toFixed(d) : '$' + n.toFixed(d));
+            const fmtNum = (n, d = 4) => (n >= 0 ? '+' : '') + n.toFixed(d);
+
+            out.innerHTML = `
+                <div class="rounded-xl bg-neon-purple/5 border border-neon-purple/30 p-3 mb-3">
+                    <div class="text-[10px] text-neon-purple uppercase font-bold mb-1">Elméleti opciós ár (Black-Scholes)</div>
+                    <div class="text-xl font-extrabold text-white">${fmt(g.price)}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5">
+                        <div class="text-[9.5px] text-slate-500 uppercase font-bold mb-0.5">Delta (Δ)</div>
+                        <div class="text-sm font-bold text-white">${fmtNum(g.delta)}</div>
+                        <div class="text-[9px] text-slate-600 mt-0.5">Árérzékenység: +$1 árfolyam → ${fmtNum(g.delta)} ár-változás</div>
+                    </div>
+                    <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5">
+                        <div class="text-[9.5px] text-slate-500 uppercase font-bold mb-0.5">Gamma (Γ)</div>
+                        <div class="text-sm font-bold text-white">${fmtNum(g.gamma)}</div>
+                        <div class="text-[9px] text-slate-600 mt-0.5">Mennyire gyorsan változik a Delta</div>
+                    </div>
+                    <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5">
+                        <div class="text-[9.5px] text-slate-500 uppercase font-bold mb-0.5">Theta (Θ) / nap</div>
+                        <div class="text-sm font-bold ${g.theta < 0 ? 'text-neon-red' : 'text-neon-green'}">${fmt(g.theta)}</div>
+                        <div class="text-[9px] text-slate-600 mt-0.5">Időérték-vesztés naponta ("time decay")</div>
+                    </div>
+                    <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5">
+                        <div class="text-[9.5px] text-slate-500 uppercase font-bold mb-0.5">Vega (ν)</div>
+                        <div class="text-sm font-bold text-white">${fmt(g.vega)}</div>
+                        <div class="text-[9px] text-slate-600 mt-0.5">Ár-változás +1%p volatilitásra</div>
+                    </div>
+                </div>
+                <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5 mb-3">
+                    <div class="text-[9.5px] text-slate-500 uppercase font-bold mb-0.5">Rho (ρ)</div>
+                    <div class="text-sm font-bold text-white">${fmt(g.rho)}</div>
+                    <div class="text-[9px] text-slate-600 mt-0.5">Ár-változás +1%p kockázatmentes rátára</div>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-relaxed">A Theta MINDIG a vásárló (long) oldal szempontjából van feltüntetve — a legtöbb opciónál negatív, mert minden elteltnapon kevesebb idő marad az opciónak "igazat bizonyítani", ez az időérték folyamatos erodálódása.</p>
             `;
         }
 
