@@ -1141,6 +1141,13 @@
                                 <div class="text-[10px] text-slate-400">Ár/Nyereség arány, iparági összevetéssel</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('elderray-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrows-up-down"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Elder Ray Index Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Bull Power / Bear Power, EMA-hoz viszonyítva</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3004,6 +3011,49 @@
         </div>
     </div>
 
+    <!-- ================= ELDER RAY INDEX KALKULÁTOR (OKTATÁSI) =================
+         Bull Power = legutóbbi Magas - EMA; Bear Power = legutóbbi
+         Alacsony - EMA. Az EMA-t a záróárak sorozatából számoljuk,
+         a szokásos SMA-seedelt EMA-rekurzióval. -->
+    <div id="elderray-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-up-down text-neon-green"></i> Elder Ray Index Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('elderray-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Alexander Elder indikátora külön méri a vevők (Bull Power) és az eladók (Bear Power) erejét, egy EMA-hoz viszonyítva. Bull Power = legutóbbi Magas − EMA (minél nagyobb, annál erősebb a vételi nyomás). Bear Power = legutóbbi Alacsony − EMA (minél negatívabb, annál erősebb az eladási nyomás). Add meg a gyertyákat (Magas, Alacsony, Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró (soronként egy)</label>
+            <textarea id="elderray-candles" rows="6" placeholder="10.2,9.8,10.0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">10.2,9.8,10.0
+10.5,10.0,10.3
+10.6,10.1,10.4
+10.8,10.2,10.5
+10.9,10.3,10.6
+11.0,10.5,10.8
+11.2,10.6,11.0
+11.3,10.8,11.1
+11.5,10.9,11.3
+11.6,11.0,11.4
+11.8,11.2,11.6
+11.9,11.3,11.7
+12.1,11.5,11.9
+12.3,11.7,12.1
+12.4,11.8,12.2</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">EMA periódus (tipikusan 13)</label>
+            <input type="number" id="elderray-period" value="13" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcElderRay()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="elderray-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A számításhoz legalább (periódus) záróárra van szükség az EMA inicializálásához — az EMA-t a megadott záróár-sorozat teljes hosszán futtatjuk, az SMA-seedelt szokásos rekurzióval.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4214,6 +4264,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">P/E Ráta & EPS Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Ár/Nyereség arány, iparági összevetéssel</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('elderray-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrows-up-down"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Elder Ray Index Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Bull Power / Bear Power, EMA-hoz viszonyítva</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -10302,6 +10359,68 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${industryHtml}
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= ELDER RAY INDEX KALKULÁTOR (OKTATÁSI) =================
+        // EMA a záróár-sorozatból, szokásos SMA-seedelt rekurzióval:
+        // EMA[period-1] = SMA(values[0..period-1]), majd
+        // EMA[i] = value[i]×k + EMA[i-1]×(1-k), k = 2/(period+1).
+        // Bull Power = legutóbbi Magas - legutóbbi EMA.
+        // Bear Power = legutóbbi Alacsony - legutóbbi EMA.
+        function calcElderRay() {
+            const candlesEl = document.getElementById('elderray-candles');
+            const periodEl = document.getElementById('elderray-period');
+            const out = document.getElementById('elderray-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2] });
+                }
+            }
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1 || candles.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (periódus) érvényes gyertyát "Magas,Alacsony,Záró" formátumban, soronként egyet, és egy érvényes (legalább 1) EMA periódust!</div>`;
+                return;
+            }
+
+            const closes = candles.map(c => c.close);
+            const k = 2 / (period + 1);
+            let ema = closes.slice(0, period).reduce((a, b) => a + b, 0) / period;
+            for (let i = period; i < closes.length; i++) {
+                ema = closes[i] * k + ema * (1 - k);
+            }
+
+            const lastCandle = candles[candles.length - 1];
+            const bullPower = lastCandle.high - ema;
+            const bearPower = lastCandle.low - ema;
+
+            let bullColorClass = bullPower >= 0 ? 'text-neon-green' : 'text-neon-red';
+            let bearColorClass = bearPower <= 0 ? 'text-neon-red' : 'text-neon-green';
+
+            let verdict;
+            if (bullPower > 0 && bearPower > 0) {
+                verdict = '✅ Mindkét erő pozitív — nagyon erős, egyoldalú vételi nyomás, az eladók alig tudtak ellenállni.';
+            } else if (bullPower < 0 && bearPower < 0) {
+                verdict = '🚨 Mindkét erő negatív — nagyon erős, egyoldalú eladási nyomás, a vevők alig tudtak ellenállni.';
+            } else if (bullPower > 0 && bearPower < 0) {
+                verdict = 'Normális, kiegyensúlyozott állapot — mindkét oldal aktív volt, se a vevők, se az eladók nem domináltak teljesen.';
+            } else {
+                verdict = '⚠️ Mindkét erő enyhén az EMA körül mozog — gyenge, bizonytalan irányú piac, megerősítésre van szükség más eszközökből.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">EMA (${period} periódus):</span><span class="text-white">${ema.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Bull Power (vevők ereje):</span><span class="font-extrabold ${bullColorClass} text-sm">${bullPower >= 0 ? '+' : ''}${bullPower.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Bear Power (eladók ereje):</span><span class="font-extrabold ${bearColorClass} text-sm">${bearPower >= 0 ? '+' : ''}${bearPower.toFixed(4)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-amber-400">${verdict}</p>
             `;
         }
 
