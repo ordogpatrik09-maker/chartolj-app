@@ -1106,6 +1106,13 @@
                                 <div class="text-[10px] text-slate-400">Piaci árból visszafejtett IV</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('confluence-modal'); renderConfluenceAssetLabel();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Multi-Idősík Elemző</div>
+                                <div class="text-[10px] text-slate-400">EMA/RSI/MACD egyezés 4 idősíkon</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-branch"></i></span>
                             <div>
@@ -2654,6 +2661,37 @@
         </div>
     </div>
 
+    <!-- ================= MULTI-IDŐSÍK ELEMZŐ (CONFLUENCE SCANNER, NAGY KITERJESZTÉS) =================
+         Professzionális kereskedői alapelv: egy jelzés sokkal megbízhatóbb,
+         ha TÖBB idősíkon (pl. 15m, 1h, 4h, 1D) EGYSZERRE ugyanabba az
+         irányba mutat ("multi-timeframe confluence") — eddig semmilyen
+         eszköz nem foglalkozott ezzel. Ez 4 idősíkon egyszerre futtatja le
+         a 3 alap-indikátort (EMA-trend, RSI-szint, MACD-állás), és egy
+         összesített "egyezési pontszámot" ad. TELJESEN ÖNÁLLÓ, a saját
+         (mintavételezett) árfolyam-adatán fut — NEM nyúl a fő chart
+         candleData/currentTF állapotához, hogy semmit ne destabilizáljon
+         a már élő kereskedési felületen. -->
+    <div id="confluence-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-neon-green"></i> Multi-Idősík Elemző
+                </h3>
+                <button onclick="closeToolModal('confluence-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Egyszerre lefuttatja az EMA-trend, RSI-szint és MACD-állás vizsgálatát 4 idősíkon (15m, 1h, 4h, 1D) — minél TÖBB idősík mutat ugyanabba az irányba, annál erősebb a "confluence" (egyezés), amire a professzionális traderek is figyelnek.</p>
+
+            <p class="text-[10px] text-slate-500 mb-3">Elemzett eszköz: <span id="confluence-asset-label" class="text-white font-bold">—</span></p>
+
+            <button onclick="runConfluenceScanner()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Idősíkok elemzése
+            </button>
+
+            <div id="confluence-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Oktatási célú, mintavételezett (szintetikus) árfolyam-adaton fut minden idősíkon — nem a fő chart LIVE adatát használja, hogy a módszer bemutatása ne függjön a pillanatnyi piaci helyzettől. A confluence magas pontszáma NEM garancia, csak statisztikailag erősebb jelzés.</p>
+        </div>
+    </div>
+
     <div id="dca-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -3123,6 +3161,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Implikált Volatilitás Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Piaci árból visszafejtett IV</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('confluence-modal'); renderConfluenceAssetLabel();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Multi-Idősík Elemző</div>
+                    <div class="text-[10px] text-slate-400">EMA/RSI/MACD egyezés 4 idősíkon</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('optionpayoff-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -9010,6 +9055,135 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] text-slate-500 leading-relaxed">A magas IV azt jelenti, a piac NAGY jövőbeli árfolyam-mozgásra számít (akár fel, akár le) — ezért a bizonytalanság/félelem időszakaiban (pl. hírek előtt) jellemzően megemelkedik, függetlenül attól, hogy végül merre mozdul az árfolyam.</p>
+            `;
+        }
+
+        // ================= MULTI-IDŐSÍK ELEMZŐ (CONFLUENCE SCANNER) MOTORJA (NAGY KITERJESZTÉS) =================
+        // Teljesen ÖNÁLLÓ, pure szintetikus close-ár generátor — NEM a
+        // globális candleData/currentTF-et használja, hogy a fő chartot
+        // semmilyen módon ne érintse. A generateSyntheticCandles()
+        // meglévő logikáját követi (ugyanazok a TF_CONFIG volatilitás-
+        // értékek), csak egy sima closes[] tömböt ad vissza egy adott
+        // kezdőár körül, bármikor, bárhányszor hívható mellékhatás nélkül.
+        function generateConfluenceCloses(basePrice, tf, numCandles) {
+            const cfg = TF_CONFIG[tf] || TF_CONFIG['1h'];
+            const closes = [];
+            let price = basePrice;
+            for (let i = 0; i < numCandles; i++) {
+                const volatility = price * cfg.volatility;
+                const close = price + (Math.random() - 0.48) * volatility;
+                closes.push(close);
+                price = close;
+            }
+            return closes;
+        }
+
+        // Egy adott closes[] sorozaton lefuttatja mind a 3 alap-indikátort,
+        // és egy -3..+3 "bullish pontszámot" ad vissza (minden indikátor
+        // +1-et ad bullish, -1-et bearish irányban), a diagnosztikai
+        // részletekkel együtt.
+        function analyzeConfluenceTimeframe(closes) {
+            const ema9 = calcEMASeries(closes, 9);
+            const ema21 = calcEMASeries(closes, 21);
+            const rsi = calcRSISeries(closes, 14);
+            const fastEma = calcEMASeries(closes, 12);
+            const slowEma = calcEMASeries(closes, 26);
+            const macdLine = closes.map((_, i) => (fastEma[i] !== null && slowEma[i] !== null) ? (fastEma[i] - slowEma[i]) : null);
+            const firstValidIdx = macdLine.findIndex(v => v !== null);
+            let macdSignalLast = null, macdLineLast = null;
+            if (firstValidIdx !== -1) {
+                const macdValuesOnly = macdLine.slice(firstValidIdx);
+                const signalOnValid = calcEMASeries(macdValuesOnly, 9);
+                macdSignalLast = signalOnValid[signalOnValid.length - 1];
+                macdLineLast = macdLine[macdLine.length - 1];
+            }
+
+            const lastIdx = closes.length - 1;
+            const emaBullish = (ema9[lastIdx] !== null && ema21[lastIdx] !== null) ? (ema9[lastIdx] > ema21[lastIdx]) : null;
+            const rsiLast = rsi[lastIdx];
+            const rsiBullish = rsiLast !== null ? (rsiLast > 50) : null;
+            const macdBullish = (macdLineLast !== null && macdSignalLast !== null) ? (macdLineLast > macdSignalLast) : null;
+
+            let score = 0;
+            if (emaBullish === true) score++; else if (emaBullish === false) score--;
+            if (rsiBullish === true) score++; else if (rsiBullish === false) score--;
+            if (macdBullish === true) score++; else if (macdBullish === false) score--;
+
+            return { emaBullish, rsiLast, rsiBullish, macdBullish, score };
+        }
+
+        function renderConfluenceAssetLabel() {
+            const el = document.getElementById('confluence-asset-label');
+            if (!el) return;
+            el.textContent = (typeof currentAsset !== 'undefined' && currentAsset && currentAsset.symbol) ? currentAsset.symbol : 'eszköz';
+        }
+
+        function runConfluenceScanner() {
+            const out = document.getElementById('confluence-result');
+            const basePrice = (typeof currentAsset !== 'undefined' && currentAsset && currentAsset.price) ? currentAsset.price : 100;
+            const timeframes = [
+                { key: '15m', label: '15 perc' },
+                { key: '1h', label: '1 óra' },
+                { key: '4h', label: '4 óra' },
+                { key: '1D', label: '1 nap' }
+            ];
+
+            const rows = timeframes.map(tf => {
+                const closes = generateConfluenceCloses(basePrice, tf.key, 80);
+                const analysis = analyzeConfluenceTimeframe(closes);
+                return { ...tf, ...analysis };
+            });
+
+            const totalScore = rows.reduce((s, r) => s + r.score, 0);
+            const maxScore = rows.length * 3;
+            const bullishTfCount = rows.filter(r => r.score > 0).length;
+            const bearishTfCount = rows.filter(r => r.score < 0).length;
+
+            const verdictLabel = (score) => {
+                if (score >= 2) return { text: 'Erősen bullish', color: 'text-neon-green' };
+                if (score === 1) return { text: 'Enyhén bullish', color: 'text-neon-green' };
+                if (score === 0) return { text: 'Semleges', color: 'text-slate-400' };
+                if (score === -1) return { text: 'Enyhén bearish', color: 'text-neon-red' };
+                return { text: 'Erősen bearish', color: 'text-neon-red' };
+            };
+
+            const rowsHtml = rows.map(r => {
+                const v = verdictLabel(r.score);
+                const rsiLabel = r.rsiLast === null ? '—' : r.rsiLast.toFixed(0) + (r.rsiLast > 70 ? ' (túlvett)' : r.rsiLast < 30 ? ' (túladott)' : '');
+                const boolIcon = (b) => b === null ? '<span class="text-slate-600">—</span>' : b ? '<i class="fa-solid fa-arrow-up text-neon-green"></i>' : '<i class="fa-solid fa-arrow-down text-neon-red"></i>';
+                return `
+                    <tr class="border-t border-dark-750">
+                        <td class="py-2 text-xs font-bold text-white">${r.label}</td>
+                        <td class="py-2 text-center">${boolIcon(r.emaBullish)}</td>
+                        <td class="py-2 text-center text-[10px] text-slate-400">${rsiLabel}</td>
+                        <td class="py-2 text-center">${boolIcon(r.macdBullish)}</td>
+                        <td class="py-2 text-right text-[10px] font-bold ${v.color}">${v.text}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const overallVerdict = totalScore >= 4 ? { text: `Erős BULLISH egyezés (${bullishTfCount}/4 idősík bullish)`, color: 'text-neon-green' }
+                : totalScore <= -4 ? { text: `Erős BEARISH egyezés (${bearishTfCount}/4 idősík bearish)`, color: 'text-neon-red' }
+                : { text: 'Vegyes / nincs erős egyezés az idősíkok között', color: 'text-amber-400' };
+
+            out.innerHTML = `
+                <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3 mb-3 text-center">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Összesített Confluence Pontszám</div>
+                    <div class="text-xl font-extrabold ${overallVerdict.color}">${totalScore >= 0 ? '+' : ''}${totalScore} / ${maxScore}</div>
+                    <div class="text-[10.5px] font-bold mt-1 ${overallVerdict.color}">${overallVerdict.text}</div>
+                </div>
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-[9.5px] text-slate-500 uppercase">
+                            <th class="pb-1.5">Idősík</th>
+                            <th class="pb-1.5 text-center">EMA(9/21)</th>
+                            <th class="pb-1.5 text-center">RSI(14)</th>
+                            <th class="pb-1.5 text-center">MACD</th>
+                            <th class="pb-1.5 text-right">Állás</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
             `;
         }
 
