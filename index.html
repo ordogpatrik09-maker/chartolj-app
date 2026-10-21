@@ -1085,6 +1085,13 @@
                                 <div class="text-[10px] text-slate-400">Egyenlő dollár-volatilitás eszközönként</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('scaling-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-stairs"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Lépcsőzetes Be-/Kiszállás Tervező</div>
+                                <div class="text-[10px] text-slate-400">Tranche-ekre bontott be- vagy kilépés</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2649,6 +2656,49 @@
         </div>
     </div>
 
+    <!-- ================= LÉPCSŐZETES BE-/KISZÁLLÁS (POSITION SCALING) TERVEZŐ (OKTATÁSI) =================
+         A "mindent egyszerre" belépés/kilépés helyett a lépcsőzetes
+         (scaled) be- és kiszállás a teljes pozíciót EGYENLŐ méretű
+         "tranche"-ekre (részletekre) bontja, egy ártartományon belül
+         egyenletesen elosztott árszinteken. Ez csökkenti annak kockázatát,
+         hogy az EGÉSZ pozíció egyetlen, rosszul időzített árszinten nyíljon
+         meg/záruljon le — a "belépési/kilépési ár bizonytalanságát"
+         átlagolja ki több szint között. Mivel minden tranche AZONOS
+         méretű, az átlagár egyszerűen az árszintek egyenletesen súlyozott
+         (aritmetikai) átlaga. Ez ÖNÁLLÓ kalkulátor, nem épül a DCA
+         szimulátorra vagy más eszközre (bár a "többször, kisebb
+         adagokban" elv hasonló, itt egy ELŐRE MEGHATÁROZOTT ártartományon
+         belüli tervezésről van szó, nem időbeli, rendszeres befektetésről). -->
+    <div id="scaling-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-stairs text-neon-green"></i> Lépcsőzetes Be-/Kiszállás Tervező
+                </h3>
+                <button onclick="closeToolModal('scaling-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A teljes pozíciót egy ártartományon belül egyenletesen elosztott, egyenlő méretű "tranche"-ekre bontja — így nem egyetlen, esetleg rosszul időzített árszinten nyitod/zárod a teljes pozíciót. Add meg a tartomány két végpontját és a tranche-ek számát.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Teljes pozícióméret (egység, pl. darab/coin/lot)</label>
+            <input type="number" id="scaling-total-size" value="100" step="1" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div><label class="text-[10px] text-slate-500">Tartomány kezdő ára</label><input type="number" id="scaling-start-price" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Tartomány vég ára</label><input type="number" id="scaling-end-price" value="90" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Tranche-ek száma (hány részletben)</label>
+            <input type="number" id="scaling-tranches" value="4" step="1" min="2" max="20" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcPositionScaling()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Terv kiszámolása
+            </button>
+
+            <div id="scaling-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha a kezdő ár nagyobb, mint a vég ár, a terv egy LEFELÉ lépcsőző BELÉPÉST ad (pl. limitáras vásárlás egyre alacsonyabb szinteken) — ha a kezdő ár kisebb, mint a vég ár, egy FELFELÉ lépcsőző KISZÁLLÁST (pl. profit realizálása egyre magasabb szinteken). A módszer nem garantálja a legjobb árat, de csökkenti az "egyetlen rossz időzítés" kockázatát.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3803,6 +3853,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Volatilitás-alapú Pozícióméretezés</div>
                     <div class="text-[10px] text-slate-400">Egyenlő dollár-volatilitás eszközönként</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('scaling-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-stairs"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Lépcsőzetes Be-/Kiszállás Tervező</div>
+                    <div class="text-[10px] text-slate-400">Tranche-ekre bontott be- vagy kilépés</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -9702,6 +9759,84 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${dollarVolatilities.map((d, i) => `<div class="flex justify-between"><span class="text-slate-400">#${i + 1}:</span><span class="text-neon-green">${fmt(d)}</span></div>`).join('')}
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-neon-cyan">A legvolatilisabb eszköz(ök) KISEBB dollár-összeget kapnak — így minden pozíció egyformán "lélegzik" a portfólió teljes ingadozásával, nem csak a nyers dollár-kitettség egyenlő.</p>
+            `;
+        }
+
+        // ================= LÉPCSŐZETES BE-/KISZÁLLÁS (POSITION SCALING) TERVEZŐ (OKTATÁSI) =================
+        // Az árszinteket a kezdő és vég ár között EGYENLETESEN osztja el
+        // (tranches db pontra, a két végpontot is beleértve), minden
+        // tranche-hez azonos méretet rendelve. Mivel a méretek egyenlők,
+        // az átlagár a szintek egyszerű (nem súlyozott) aritmetikai
+        // átlaga. Önálló logika, nem hívja a DCA szimulátort.
+        function calcPositionScaling() {
+            const totalSizeEl = document.getElementById('scaling-total-size');
+            const startPriceEl = document.getElementById('scaling-start-price');
+            const endPriceEl = document.getElementById('scaling-end-price');
+            const tranchesEl = document.getElementById('scaling-tranches');
+            const out = document.getElementById('scaling-result');
+            if (!totalSizeEl || !startPriceEl || !endPriceEl || !tranchesEl || !out) return;
+
+            const totalSize = parseFloat(totalSizeEl.value);
+            const startPrice = parseFloat(startPriceEl.value);
+            const endPrice = parseFloat(endPriceEl.value);
+            const numTranches = parseInt(tranchesEl.value);
+
+            if (!totalSize || totalSize <= 0 || !startPrice || startPrice <= 0 || !endPrice || endPrice <= 0 || !numTranches || numTranches < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb pozícióméretet, mindkét árszintet, és legalább 2 tranche-t!</div>`;
+                return;
+            }
+            if (startPrice === endPrice) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kezdő és vég ár nem lehet azonos — adj meg egy valódi ártartományt!</div>`;
+                return;
+            }
+
+            const isDescending = endPrice < startPrice;
+            const sizePerTranche = totalSize / numTranches;
+            const priceStep = (endPrice - startPrice) / (numTranches - 1);
+
+            const priceLevels = [];
+            for (let i = 0; i < numTranches; i++) {
+                priceLevels.push(startPrice + i * priceStep);
+            }
+
+            const avgPrice = priceLevels.reduce((a, b) => a + b, 0) / numTranches;
+            const costAtStartOnly = totalSize * startPrice;
+            const costAtAvg = totalSize * avgPrice;
+            // Belépésnél (csökkenő árszintek) a MEGTAKARÍTÁS akkor pozitív,
+            // ha az átlagár ALACSONYABB a kezdő árnál (kevesebbet fizetünk).
+            // Kiszállásnál (növekvő árszintek) a TÖBBLET akkor pozitív, ha
+            // az átlagár MAGASABB a kezdő árnál (többet kapunk) — ez a
+            // fordított előjelű mennyiség, ezért a kiszállás ágon a
+            // kivonás sorrendje is megfordul.
+            const savingsVsStartOnly = isDescending
+                ? (costAtStartOnly - costAtAvg)
+                : (costAtAvg - costAtStartOnly);
+
+            const fmt = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 4 });
+
+            let rowsHtml = '';
+            for (let i = 0; i < numTranches; i++) {
+                rowsHtml += `
+                    <div class="flex justify-between items-center py-1.5 ${i > 0 ? 'border-t border-dark-750' : ''}">
+                        <span class="text-slate-400">${i + 1}. tranche:</span>
+                        <span class="text-white font-bold">${fmt(sizePerTranche)} egység @ ${fmt(priceLevels[i])}</span>
+                    </div>
+                `;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-xs mb-3">
+                    <div class="text-[10px] text-neon-green uppercase font-bold mb-1">${isDescending ? 'Lépcsőzetes BELÉPÉS' : 'Lépcsőzetes KISZÁLLÁS'} terv (${numTranches} tranche)</div>
+                    ${rowsHtml}
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagár (${numTranches} szint átlaga):</span><span class="font-extrabold text-neon-green text-sm">${fmt(avgPrice)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes pozícióméret:</span><span class="text-white">${fmt(totalSize)} egység</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">${isDescending ? 'Megtakarítás' : 'Többlet'} a kezdő árhoz képest:</span><span class="${savingsVsStartOnly >= 0 ? 'text-neon-green' : 'text-neon-red'}">${savingsVsStartOnly >= 0 ? '+' : ''}$${fmt(savingsVsStartOnly)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-neon-green">${isDescending
+                    ? 'Mivel az árszintek CSÖKKENNEK, az átlagár jobb (alacsonyabb), mint ha a teljes pozíciót a kezdő árszinten nyitottad volna meg.'
+                    : 'Mivel az árszintek NÖVEKEDNEK, az átlagár jobb (magasabb), mint ha a teljes pozíciót a kezdő árszinten zártad volna le.'}</p>
             `;
         }
 
