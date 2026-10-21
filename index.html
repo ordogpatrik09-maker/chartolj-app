@@ -1148,6 +1148,13 @@
                                 <div class="text-[10px] text-slate-400">Bull Power / Bear Power, EMA-hoz viszonyítva</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('forceindex-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bolt"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Force Index Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Árváltozás × volumen, EMA-simítással</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3054,6 +3061,49 @@
         </div>
     </div>
 
+    <!-- ================= FORCE INDEX KALKULÁTOR (OKTATÁSI) =================
+         Nyers Force Index_i = (záróár_i - záróár_{i-1}) × volumen_i.
+         A szokásos, simított formát a nyers sorozat EMA-jával kapjuk,
+         a Elder Ray-nél is használt SMA-seedelt EMA-rekurzióval. -->
+    <div id="forceindex-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-neon-red"></i> Force Index Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('forceindex-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Alexander Elder Force Index indikátora az árváltozás irányát és nagyságát egyesíti a volumennel: nyers Force Index = (mai záróár − tegnapi záróár) × volumen. Nagy pozitív érték erős vételi erőt, nagy negatív erős eladási erőt jelez. A kalkulátor a nyers értéket és a szokásos, EMA-val simított változatot is kiszámolja. Add meg a záróár és volumen sorozatot, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Záróár,Volumen (soronként egy)</label>
+            <textarea id="forceindex-candles" rows="6" placeholder="10.0,1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">10.0,1000
+10.3,1200
+10.4,1500
+10.5,900
+10.6,1100
+10.8,1300
+11.0,800
+11.1,1400
+11.3,1600
+11.4,700
+11.6,1700
+11.7,900
+11.9,1800
+12.1,2000
+12.2,1000</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">EMA simítási periódus (tipikusan 13, vagy 2 a rövid távú verzióhoz)</label>
+            <input type="number" id="forceindex-period" value="13" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcForceIndex()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="forceindex-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A nyers Force Index sorozat egy elemmel rövidebb, mint a bevitt gyertyák száma (az első gyertyának nincs előző záróára). A simításhoz ezért legalább (periódus + 1) gyertyára van szükség.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4271,6 +4321,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Elder Ray Index Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Bull Power / Bear Power, EMA-hoz viszonyítva</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('forceindex-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-bolt"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Force Index Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Árváltozás × volumen, EMA-simítással</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -10421,6 +10478,65 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Bear Power (eladók ereje):</span><span class="font-extrabold ${bearColorClass} text-sm">${bearPower >= 0 ? '+' : ''}${bearPower.toFixed(4)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-amber-400">${verdict}</p>
+            `;
+        }
+
+        // ================= FORCE INDEX KALKULÁTOR (OKTATÁSI) =================
+        // rawForce_i = (záróár_i - záróár_{i-1}) × volumen_i, i=1..n-1.
+        // A simított verzió a nyers sorozat EMA-ja, ugyanazzal az
+        // SMA-seedelt EMA-rekurzióval, mint az Elder Ray kalkulátornál.
+        function calcForceIndex() {
+            const candlesEl = document.getElementById('forceindex-candles');
+            const periodEl = document.getElementById('forceindex-period');
+            const out = document.getElementById('forceindex-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    candles.push({ close: parts[0], volume: parts[1] });
+                }
+            }
+            const period = parseInt(periodEl.value);
+
+            const rawForce = [];
+            for (let i = 1; i < candles.length; i++) {
+                rawForce.push((candles[i].close - candles[i - 1].close) * candles[i].volume);
+            }
+
+            if (!period || period < 1 || rawForce.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (periódus + 1) érvényes gyertyát "Záróár,Volumen" formátumban, soronként egyet, és egy érvényes (legalább 1) EMA periódust!</div>`;
+                return;
+            }
+
+            const k = 2 / (period + 1);
+            let smoothedForce = rawForce.slice(0, period).reduce((a, b) => a + b, 0) / period;
+            for (let i = period; i < rawForce.length; i++) {
+                smoothedForce = rawForce[i] * k + smoothedForce * (1 - k);
+            }
+
+            const latestRawForce = rawForce[rawForce.length - 1];
+
+            let colorClass, verdict;
+            if (smoothedForce > 0) {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Pozitív, simított Force Index — a közelmúltban a vételi erő (árváltozás × volumen) dominált, trendkövető megerősítésnek tekinthető.';
+            } else if (smoothedForce < 0) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Negatív, simított Force Index — a közelmúltban az eladási erő (árváltozás × volumen) dominált.';
+            } else {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Nulla közeli, simított Force Index — kiegyensúlyozott vételi/eladási erő, nincs kifejezett irány.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Legutóbbi nyers Force Index:</span><span class="${latestRawForce >= 0 ? 'text-neon-green' : 'text-neon-red'}">${latestRawForce >= 0 ? '+' : ''}${latestRawForce.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított Force Index (${period} EMA):</span><span class="font-extrabold ${colorClass} text-sm">${smoothedForce >= 0 ? '+' : ''}${smoothedForce.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
         }
 
