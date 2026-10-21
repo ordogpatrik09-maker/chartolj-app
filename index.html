@@ -1043,6 +1043,13 @@
                                 <div class="text-[10px] text-slate-400">Volumen-súlyozott átlagár "fair value"</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('omega-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-infinity"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Omega Ratio Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Teljes eloszlás-alapú teljesítménymutató</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2379,6 +2386,42 @@
         </div>
     </div>
 
+    <!-- ================= OMEGA RATIO KALKULÁTOR (OKTATÁSI) =================
+         A Sharpe és Sortino is csak a hozamok SZÓRÁSÁT (vagy downside
+         deviationjét) nézi — feltételezik, hogy egy-két szám (átlag,
+         szórás) elég jól leírja az eloszlást. Az Omega Ratio ehelyett a
+         TELJES eloszlást figyelembe veszi: egy küszöb (threshold) felett
+         és alatt lévő hozamok ÖSSZEGÉT hasonlítja össze — nem csak azt,
+         hogy mekkora az átlagos eltérés, hanem azt is, hogy a nyereség/
+         veszteség hányszorosa egymásnak. Formula: Omega = Σ max(0, r_i -
+         threshold) / Σ max(0, threshold - r_i). >1 = összességében több
+         "nyereség-súly" van a küszöb felett, mint "veszteség-súly" alatta.
+         Ez ÖNÁLLÓ kalkulátor, nem épül a Sharpe/Sortino kalkulátorokra. -->
+    <div id="omega-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-infinity text-neon-green"></i> Omega Ratio Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('omega-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Az Omega Ratio a Sharpe/Sortino-tól eltérően a hozamok TELJES eloszlását figyelembe veszi, nem csak az átlagot és a szórást — a küszöb feletti "nyereség-súlyt" osztja a küszöb alatti "veszteség-súllyal". Add meg az időszaki hozamaidat %-ban, vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Időszaki hozamok (%, vesszővel elválasztva)</label>
+            <textarea id="omega-returns" rows="3" placeholder="pl. 3.5, -1.2, 2.8, -4.0, 1.5, 0.6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">3.5, -1.2, 2.8, -4.0, 1.5, 0.6, -2.5, 4.1, -0.9, 2.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Küszöbérték / threshold (%, időszakra)</label>
+            <input type="number" id="omega-threshold" value="0" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcOmegaRatio()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="omega-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Omega = 1 esetén a küszöb feletti és alatti "súly" pontosan egyenlő. 1 felett egyre kedvezőbb a hozam/kockázat viszony a küszöbhöz képest, 1 alatt kedvezőtlen. Ha minden hozam a küszöb felett van, a nevező 0, és az arány nem fejezhető ki véges számmal.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3488,6 +3531,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">VWAP Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Volumen-súlyozott átlagár "fair value"</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('omega-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-infinity"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Omega Ratio Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Teljes eloszlás-alapú teljesítménymutató</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -8980,6 +9030,71 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
+        }
+
+        // ================= OMEGA RATIO KALKULÁTOR (OKTATÁSI) =================
+        // Omega = Σ max(0, r_i - threshold) / Σ max(0, threshold - r_i) —
+        // a TELJES eloszlást nézi, nem csak átlagot/szórást. Önálló logika,
+        // nem épül a Sharpe/Sortino kalkulátorokra.
+        function calcOmegaRatio() {
+            const returnsEl = document.getElementById('omega-returns');
+            const thresholdEl = document.getElementById('omega-threshold');
+            const out = document.getElementById('omega-result');
+            if (!returnsEl || !thresholdEl || !out) return;
+
+            const raw = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const threshold = parseFloat(thresholdEl.value);
+
+            if (raw.length < 2 || isNaN(threshold)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott időszaki hozamot és egy érvényes küszöbértéket!</div>`;
+                return;
+            }
+
+            const n = raw.length;
+            const gainSum = raw.reduce((acc, r) => acc + Math.max(0, r - threshold), 0);
+            const lossSum = raw.reduce((acc, r) => acc + Math.max(0, threshold - r), 0);
+            const aboveCount = raw.filter(r => r > threshold).length;
+            const belowCount = raw.filter(r => r < threshold).length;
+
+            let bodyHtml, verdictHtml;
+            if (lossSum === 0) {
+                bodyHtml = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Küszöb feletti időszakok:</span><span class="text-white">${aboveCount} / ${n}</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Küszöb alatti "veszteség-súly":</span><span class="text-white">0</span></div>
+                    </div>
+                `;
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">✅ Egyetlen hozam sem volt a küszöb alatt — a nevező 0, így az Omega Ratio nem fejezhető ki véges számmal (végtelenhez tart).</p>`;
+            } else {
+                const omega = gainSum / lossSum;
+                let colorClass, verdict;
+                if (omega < 1) {
+                    colorClass = 'text-neon-red';
+                    verdict = '🚨 Omega < 1: a küszöb alatti "veszteség-súly" nagyobb, mint a feletti "nyereség-súly" — összességében kedvezőtlen a hozam/kockázat viszony a küszöbhöz képest.';
+                } else if (omega < 1.5) {
+                    colorClass = 'text-amber-400';
+                    verdict = '⚠️ Omega enyhén 1 felett — a küszöb feletti és alatti súlyok közel egyenlők, a teljesítmény csak kis mértékben kedvezőbb a küszöbnél.';
+                } else if (omega < 3) {
+                    colorClass = 'text-neon-cyan';
+                    verdict = 'Jó Omega Ratio — a küszöb feletti "nyereség-súly" jelentősen nagyobb, mint az alatti "veszteség-súly".';
+                } else {
+                    colorClass = 'text-neon-green';
+                    verdict = '✅ Kiemelkedően magas Omega Ratio — a teljes eloszlás alapján nagyon kedvező hozam/kockázat viszony a küszöbhöz képest.';
+                }
+                bodyHtml = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Küszöb feletti időszakok:</span><span class="text-white">${aboveCount} / ${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Küszöb alatti időszakok:</span><span class="text-white">${belowCount} / ${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">"Nyereség-súly" / "Veszteség-súly":</span><span class="text-white">${gainSum.toFixed(2)} / ${lossSum.toFixed(2)}</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Omega Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${omega.toFixed(2)}</span></div>
+                    </div>
+                `;
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>`;
+            }
+
+            out.innerHTML = bodyHtml + verdictHtml;
         }
 
         // ================= FOREX PIP ÉRTÉK KALKULÁTOR (OKTATÁSI) =================
