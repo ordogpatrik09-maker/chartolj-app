@@ -1106,6 +1106,13 @@
                                 <div class="text-[10px] text-slate-400">Matematikailag optimális tétméretezés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('fixedratio-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fixed Ratio Méretezés Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Ryan Jones delta-alapú egységnövelés</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2787,6 +2794,44 @@
         </div>
     </div>
 
+    <!-- ================= FIXED RATIO MÉRETEZÉS KALKULÁTOR (OKTATÁSI) =================
+         Ryan Jones "Fixed Ratio" módszere: a kontraktusok/egységek számát
+         NEM a tőke %-ában (mint a Fixed Fractional), hanem egy "delta"
+         paraméter alapján növeli — minden alkalommal, amikor a FELHALMOZOTT
+         profit elér egy bizonyos, egyre NÖVEKVŐ küszöböt, egy újabb
+         egységgel nő a méret. Ez egy KONZERVATÍVABB görbét ad, mint a
+         Fixed Fractional kis tőkénél, mert kezdetben lassabban nő a
+         méret. Standard, zárt alakú formula: egységek száma = floor(
+         (1 + sqrt(1 + 8 × felhalmozottProfit / delta)) / 2 ) + (kezdeti
+         egységek - 1). Ez ÖNÁLLÓ kalkulátor, nem épül más eszközre. -->
+    <div id="fixedratio-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-amber-400"></i> Fixed Ratio Méretezés Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('fixedratio-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Fixed Ratio (Ryan Jones módszere) a Fixed Fractional (tőke %-a) alternatívája: egy "delta" küszöb alapján növeli az egységek számát, minél nagyobb a felhalmozott profit. Add meg a kezdeti egységszámot, a delta paramétert és a jelenlegi felhalmozott profitot.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdeti egységek száma (pl. 1 kontraktus/lot)</label>
+            <input type="number" id="fixedratio-start-units" value="1" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Delta ($, mennyi profit kell 1 egység növeléshez)</label>
+            <input type="number" id="fixedratio-delta" value="2000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Jelenlegi felhalmozott profit ($, a kezdet óta)</label>
+            <input type="number" id="fixedratio-profit" value="5500" step="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcFixedRatioSizing()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="fixedratio-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél KISEBB a delta, annál GYORSABBAN nő az egységek száma a profit függvényében (agresszívebb) — minél NAGYOBB a delta, annál lassabban (konzervatívabb). A módszer veszteség esetén is működik: ha a felhalmozott profit negatívba fordul, a formula visszaadhatja a kezdeti egységszámot (az egységszám minimum 1 marad, nem megy negatívba).</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3962,6 +4007,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Optimal f Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Matematikailag optimális tétméretezés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('fixedratio-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Fixed Ratio Méretezés Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Ryan Jones delta-alapú egységnövelés</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -10056,6 +10108,64 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Geometriai növekedés / trade:</span><span class="text-neon-green">${(geometricGrowthPerTrade * 100).toFixed(3)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${riskColorClass}">${riskVerdict}</p>
+            `;
+        }
+
+        // ================= FIXED RATIO MÉRETEZÉS KALKULÁTOR (OKTATÁSI) =================
+        // Standard Ryan Jones zárt-alakú formula: egységek =
+        // floor( (1 + sqrt(1 + 8×felhalmozottProfit/delta)) / 2 ) +
+        // (kezdetiEgységek - 1). Veszteség (negatív profit) esetén a
+        // gyök alatti kifejezés 1-nél kisebb is lehet, de a teljes
+        // kifejezés (1+sqrt(...))/2 ekkor is >= 0.5-nél marad, amíg a
+        // profit nem megy -delta/8 alá — ez utóbbi esetet a formula
+        // nem kezeli értelmesen, ezért explicit alsó korlátot adunk:
+        // az egységszám soha nem lehet a kezdeti alatt.
+        function calcFixedRatioSizing() {
+            const startUnitsEl = document.getElementById('fixedratio-start-units');
+            const deltaEl = document.getElementById('fixedratio-delta');
+            const profitEl = document.getElementById('fixedratio-profit');
+            const out = document.getElementById('fixedratio-result');
+            if (!startUnitsEl || !deltaEl || !profitEl || !out) return;
+
+            const startUnits = parseInt(startUnitsEl.value);
+            const delta = parseFloat(deltaEl.value);
+            const profit = parseFloat(profitEl.value);
+
+            if (!startUnits || startUnits < 1 || !delta || delta <= 0 || isNaN(profit)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 kezdeti egységet, egy nullánál nagyobb delta-t, és egy érvényes felhalmozott profitot!</div>`;
+                return;
+            }
+
+            // A gyök alatti kifejezés negatívba fordulna nagyon nagy
+            // veszteségnél (profit < -delta/8) — ilyenkor a kezdeti
+            // egységszámot adjuk vissza, nem egy komplex/érvénytelen
+            // számot.
+            const radicand = 1 + (8 * profit / delta);
+            let computedUnits;
+            if (radicand < 1) {
+                computedUnits = startUnits;
+            } else {
+                const rawUnits = Math.floor((1 + Math.sqrt(radicand)) / 2) + (startUnits - 1);
+                computedUnits = Math.max(startUnits, rawUnits);
+            }
+
+            // A KÖVETKEZŐ egység-növeléshez szükséges profit-küszöb: az a
+            // profit, amelynél computedUnits+1-re nőne a formula.
+            const nextUnitIndex = (computedUnits - (startUnits - 1)) + 1;
+            const profitForNextUnit = delta * (nextUnitIndex * (nextUnitIndex - 1)) / 2;
+
+            const fmt = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Felhalmozott profit:</span><span class="${profit >= 0 ? 'text-neon-green' : 'text-neon-red'}">${profit >= 0 ? '+' : ''}$${fmt(profit)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelenleg kereskedhető egységek:</span><span class="font-extrabold text-amber-400 text-sm">${computedUnits}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Profit-küszöb a következő egységhez:</span><span class="text-white">$${fmt(profitForNextUnit)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Hiányzó profit a következő egységhez:</span><span class="text-slate-300">$${fmt(Math.max(0, profitForNextUnit - profit))}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-amber-400">${computedUnits > startUnits
+                    ? `A felhalmozott profit alapján a kezdeti ${startUnits} egységről ${computedUnits}-re nőtt a Fixed Ratio módszer szerinti ajánlott méret.`
+                    : 'A felhalmozott profit még nem érte el az első egység-növeléshez szükséges küszöböt — a kezdeti méret marad érvényben.'}</p>
             `;
         }
 
