@@ -1078,6 +1078,13 @@
                                 <div class="text-[10px] text-slate-400">Egyenlő Béta-súlyozott kitettség eszközönként</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('volscale-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-sliders"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Volatilitás-alapú Pozícióméretezés</div>
+                                <div class="text-[10px] text-slate-400">Egyenlő dollár-volatilitás eszközönként</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -2606,6 +2613,42 @@
         </div>
     </div>
 
+    <!-- ================= VOLATILITÁS-ALAPÚ POZÍCIÓMÉRETEZÉS (SCALING) KALKULÁTOR (OKTATÁSI) =================
+         Ugyanaz a matematikai elv, mint a Béta-kiegyensúlyozott
+         pozícióméretezésnél, de itt a súlyozó mennyiség nem a Béta
+         (piaci érzékenység), hanem az eszköz SAJÁT volatilitása
+         (pl. napi szórás %). Cél: ha több, eltérő volatilitású eszközt
+         kereskedsz egyszerre, mindegyik UGYANANNYI dollár-volatilitást
+         ("kockázat-egységet") adjon a portfólióhoz, ne a nyers dollár-
+         kitettség legyen egyenlő. Formula: capital_i = TőkeÖsszes ×
+         (1/vol_i) / Σ(1/vol_j) — ez garantálja, hogy vol_i × capital_i
+         minden i-re ugyanaz. Ez ÖNÁLLÓ kalkulátor, nem hívja a Béta-
+         kiegyensúlyozott eszközt, bár a formula szerkezete azonos. -->
+    <div id="volscale-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-neon-cyan"></i> Volatilitás-alapú Pozícióméretezés
+                </h3>
+                <button onclick="closeToolModal('volscale-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Ha több, eltérő volatilitású eszközt tartasz azonos dollár-összegben, a volatilisebb eszköz aránytalanul nagy kockázatot ad hozzá. Ez a kalkulátor úgy osztja el a tőkét, hogy minden pozíció dollár-volatilitása (pozícióérték × volatilitás%) EGYENLŐ legyen. Add meg az eszközök volatilitását (%, pl. napi szórás), vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Összes elosztandó tőke ($)</label>
+            <input type="number" id="volscale-capital" value="30000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Eszközök volatilitása (%, vesszővel elválasztva, egy sorrendben)</label>
+            <textarea id="volscale-vols" rows="2" placeholder="pl. 5.0, 2.0, 1.2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">5.0, 2.0, 1.2</textarea>
+
+            <button onclick="calcVolatilityBasedSizing()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="volscale-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A legvolatilisabb eszköz kapja a LEGKISEBB dollár-összeget — így minden pozíció hasonló mértékben "lélegzik" együtt a portfólió teljes ingadozásával. Ez a "risk parity" / inverz-volatilitás súlyozás alapötlete, amelyet sok intézményi alapkezelő is használ a portfólió-szintű kockázat egyenletesebb elosztására.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -3753,6 +3796,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Béta-Kiegyensúlyozott Pozícióméretezés</div>
                     <div class="text-[10px] text-slate-400">Egyenlő Béta-súlyozott kitettség eszközönként</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('volscale-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-sliders"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Volatilitás-alapú Pozícióméretezés</div>
+                    <div class="text-[10px] text-slate-400">Egyenlő dollár-volatilitás eszközönként</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -9597,6 +9647,61 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${betaWeightedExposures.map((e, i) => `<div class="flex justify-between"><span class="text-slate-400">#${i + 1}:</span><span class="text-neon-green">${fmt(e)}</span></div>`).join('')}
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-neon-purple">A magasabb Bétájú eszköz(ök) KISEBB dollár-összeget kapnak — így minden pozíció egyformán járul hozzá a portfólió piaci (szisztematikus) kockázatához, nem csak a nyers dollár-kitettség egyenlő.</p>
+            `;
+        }
+
+        // ================= VOLATILITÁS-ALAPÚ POZÍCIÓMÉRETEZÉS (SCALING) KALKULÁTOR (OKTATÁSI) =================
+        // capital_i = TőkeÖsszes × (1/vol_i) / Σ(1/vol_j) — ugyanaz a
+        // fordítottan-arányos szerkezet, mint a Béta-kiegyensúlyozott
+        // eszköznél, de itt a súlyozó mennyiség a saját volatilitás, nem
+        // a Béta. Önálló implementáció, nem hívja a másik kalkulátort.
+        function calcVolatilityBasedSizing() {
+            const capitalEl = document.getElementById('volscale-capital');
+            const volsEl = document.getElementById('volscale-vols');
+            const out = document.getElementById('volscale-result');
+            if (!capitalEl || !volsEl || !out) return;
+
+            const totalCapital = parseFloat(capitalEl.value);
+            const vols = volsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+
+            if (!totalCapital || totalCapital <= 0 || vols.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, pozitív tőkeösszeget és legalább 1 érvényes volatilitás-értéket!</div>`;
+                return;
+            }
+
+            const nonPositiveVols = vols.filter(v => v <= 0);
+            if (nonPositiveVols.length > 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden megadott volatilitás legyen NULLÁNÁL NAGYOBB — 0 vagy negatív volatilitás esetén a fordított-arányos elosztás nem értelmezhető!</div>`;
+                return;
+            }
+
+            const n = vols.length;
+            const inverseSum = vols.reduce((acc, v) => acc + (1 / v), 0);
+            const allocations = vols.map(v => (1 / v) / inverseSum * totalCapital);
+            const dollarVolatilities = vols.map((v, i) => (v / 100) * allocations[i]);
+
+            const fmt = (v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            let rowsHtml = '';
+            for (let i = 0; i < n; i++) {
+                rowsHtml += `
+                    <div class="flex justify-between items-center py-1.5 ${i > 0 ? 'border-t border-dark-750' : ''}">
+                        <span class="text-slate-400">#${i + 1} (vol ${vols[i].toFixed(2)}%):</span>
+                        <span class="text-white font-bold">${fmt(allocations[i])}</span>
+                    </div>
+                `;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-xs mb-3">
+                    <div class="text-[10px] text-neon-cyan uppercase font-bold mb-1">Tőkeallokáció eszközönként</div>
+                    ${rowsHtml}
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-xs">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Ellenőrzés: dollár-volatilitás (vol% × tőke) — mindegyiknek egyeznie kell</div>
+                    ${dollarVolatilities.map((d, i) => `<div class="flex justify-between"><span class="text-slate-400">#${i + 1}:</span><span class="text-neon-green">${fmt(d)}</span></div>`).join('')}
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-neon-cyan">A legvolatilisabb eszköz(ök) KISEBB dollár-összeget kapnak — így minden pozíció egyformán "lélegzik" a portfólió teljes ingadozásával, nem csak a nyers dollár-kitettség egyenlő.</p>
             `;
         }
 
