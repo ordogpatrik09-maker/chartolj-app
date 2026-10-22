@@ -24018,6 +24018,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             527: { tool: 'iv-modal', cta: 'Számold ki élesben az implikált volatilitást' },
             518: { tool: 'dca-modal', cta: 'Szimuláld élesben a DCA stratégiát' },
             542: { tool: 'pairs-modal', cta: 'Elemezd élesben a párkereskedési lehetőséget' },
+            17: { tool: 'poscalc-modal', cta: 'Számold ki élesben a megfelelő tételméretet' },
+            19: { tool: 'rr-modal', cta: 'Vizualizáld élesben a Risk/Reward arányodat' },
+            117: { tool: 'confluence-modal', cta: 'Futtasd le élesben a Confluence szkennert' },
+            365: { tool: 'feeimpact-modal', cta: 'Számold ki élesben a kereskedési díjak hatását' },
+            521: { tool: 'feeimpact-modal', cta: 'Számold ki élesben a round-trip díjak hatását' },
+            511: { tool: 'greeks-modal', cta: 'Számold ki élesben az opció Greeks mutatóit' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -24027,13 +24033,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
                 if (mapping.tool === 'backtest-modal' && typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
                 if (mapping.tool === 'heat-modal' && typeof renderPortfolioHeat === 'function') renderPortfolioHeat();
                 if (mapping.tool === 'pairs-modal' && typeof pairsSampleData !== 'undefined' && !pairsSampleData && typeof generatePairsSampleData === 'function') generatePairsSampleData();
+                if (mapping.tool === 'confluence-modal' && typeof renderConfluenceAssetLabel === 'function') renderConfluenceAssetLabel();
                 if (mapping.backtestStrategy) {
                     const sel = document.getElementById('backtest-strategy');
                     if (sel) { sel.value = mapping.backtestStrategy; renderBacktestStrategyInputs(); }
