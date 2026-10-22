@@ -1309,6 +1309,13 @@
                                 <div class="text-[10px] text-slate-400">Záróárak konvertálása Renko téglákká</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('volumedelta-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-unbalanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Volume Delta Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Vételi/eladási nyomás és divergencia</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5788,6 +5795,41 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          ez szűri ki a "zajt". Ez a leegyszerűsített, fordulás-puffer nélküli
          klasszikus verzió (némely platform 2×téglaméretet követel a
          fordulathoz, itt ez nem szerepel az oktatási egyszerűség kedvéért). -->
+    <!-- ================= VOLUME DELTA KALKULÁTOR (OKTATÁSI) =================
+         Delta = Vételi Volumen - Eladási Volumen (agresszív vétel vs eladás
+         egy adott perióduson); Kumulatív Delta = az eddigi delták összege.
+         Divergencia: ha az ár az utolsó periódusban EMELKEDETT, de a Delta
+         NEGATÍV (vagy fordítva), az gyengülő mögöttes erőt jelezhet, még ha
+         az ár az ellenkező irányba is mozog. -->
+    <div id="volumedelta-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-unbalanced text-amber-400"></i> Volume Delta Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('volumedelta-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Volume Delta az agresszív (piaci áras) vételi és eladási megbízások volumene közti különbség — pozitív érték több vételi, negatív érték több eladási nyomást jelez. A Kumulatív Delta az eddigi delták összege, ami a mögöttes trendet mutatja. Ha az ár emelkedik, de a Delta negatívba fordul, az divergenciát (gyengülő vételi erőt) jelezhet. Add meg az adatokat (Záróár,Vételi Volumen,Eladási Volumen) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróár,Vételi Volumen,Eladási Volumen (soronként egy)</label>
+            <textarea id="volumedelta-rows" rows="7" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100.5,1200,800
+101.2,1500,900
+102.0,900,1400
+102.8,1100,700
+101.9,700,1300
+102.5,1600,600
+103.4,1400,800
+104.1,800,1500</textarea>
+
+            <button onclick="calcVolumeDelta()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="volumedelta-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A valós Volume Delta valós idejű, tick-szintű (bid/ask) adatot igényel, ami nem minden platformon elérhető — ez a kalkulátor a koncepciót tanítja meg kézzel megadott, egyszerűsített vételi/eladási volumen adatokkal.</p>
+        </div>
+    </div>
+
     <div id="renko-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -6534,6 +6576,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Renko Chart Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Záróárak konvertálása Renko téglákká</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('volumedelta-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-unbalanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Volume Delta Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Vételi/eladási nyomás és divergencia</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -13975,6 +14024,67 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcVolumeDelta() {
+            const rowsEl = document.getElementById('volumedelta-rows');
+            const out = document.getElementById('volumedelta-result');
+            if (!rowsEl || !out) return;
+
+            const lines = rowsEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const rows = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    rows.push({ close: parts[0], buy: parts[1], sell: parts[2] });
+                }
+            }
+
+            if (rows.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes Záróár,Vételi Volumen,Eladási Volumen sort!</div>`;
+                return;
+            }
+
+            let cum = 0;
+            const deltas = [];
+            const cums = [];
+            for (const r of rows) {
+                const d = r.buy - r.sell;
+                cum += d;
+                deltas.push(d);
+                cums.push(cum);
+            }
+
+            const priceDir = rows[rows.length - 1].close - rows[rows.length - 2].close;
+            const lastDelta = deltas[deltas.length - 1];
+            const divergence = (priceDir > 0 && lastDelta < 0) || (priceDir < 0 && lastDelta > 0);
+
+            const rowsHtml = rows.map((r, i) => {
+                const colorClass = deltas[i] >= 0 ? 'text-neon-green' : 'text-neon-red';
+                return `
+                    <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
+                        <span class="text-slate-400">#${i + 1} (záróár ${r.close.toFixed(2)}):</span>
+                        <span class="font-extrabold ${colorClass}">Δ ${deltas[i] >= 0 ? '+' : ''}${deltas[i].toFixed(0)} · Kum. ${cums[i] >= 0 ? '+' : ''}${cums[i].toFixed(0)}</span>
+                    </div>
+                `;
+            }).join('');
+
+            let verdict;
+            if (divergence) {
+                verdict = priceDir > 0
+                    ? '⚠️ Divergencia: az ár EMELKEDETT, de a legutóbbi Delta NEGATÍV — ez gyengülő mögöttes vételi erőt jelezhet, a felfelé mozgás ellenére.'
+                    : '⚠️ Divergencia: az ár ESETT, de a legutóbbi Delta POZITÍV — ez gyengülő mögöttes eladási erőt jelezhet, a lefelé mozgás ellenére.';
+            } else {
+                verdict = 'Nincs divergencia — az ár iránya és a legutóbbi Delta iránya összhangban van, megerősítve a jelenlegi mozgást.';
+            }
+            const verdictColorClass = divergence ? 'text-neon-amber' : 'text-neon-green';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3 max-h-56 overflow-y-auto">
+                    ${rowsHtml}
+                </div>
+                <p class="text-[10px] font-semibold ${verdictColorClass}">${verdict}</p>
             `;
         }
 
@@ -24544,6 +24654,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             242: { tool: 'harmonic-modal', cta: 'Ellenőrizd élesben a Butterfly minta arányait' },
             250: { tool: 'harmonic-modal', cta: 'Ellenőrizd élesben a Bat minta arányait' },
             129: { tool: 'renko-modal', cta: 'Alakítsd át élesben a záróárakat Renko téglákká' },
+            220: { tool: 'volumedelta-modal', cta: 'Számold ki élesben a Volume Deltát' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -24553,7 +24664,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
