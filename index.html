@@ -20830,6 +20830,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             168: { tool: 'multikelly-modal', cta: 'Számold ki élesben a több pozíciós, korrigált Kelly-összeget' },
             197: { tool: 'milestone-modal', cta: 'Számold ki élesben a tőke-mérföldkő szerinti tétméretet' },
             312: { tool: 'kellydd-modal', cta: 'Nézd meg élesben a Kelly-frakció és a drawdown kapcsolatát' },
+            274: { tool: 'sortino-modal', cta: 'Számold ki élesben a Sortino-rátát' },
+            487: { tool: 'ulcer-modal', cta: 'Számold ki élesben az Ulcer Indexet' },
+            13: { tool: 'vwap-modal', cta: 'Számold ki élesben a VWAP-ot' },
+            439: { tool: 'omega-modal', cta: 'Számold ki élesben az Omega Ratiót' },
+            471: { tool: 'treynor-modal', cta: 'Számold ki élesben a Treynor Ratiót és Jensen Alfát' },
+            405: { tool: 'skewkurt-modal', cta: 'Számold ki élesben a Skewness és Kurtosis mutatókat' },
+            424: { tool: 'skewkurt-modal', cta: 'Számold ki élesben a Skewness és Kurtosis mutatókat' },
+            178: { tool: 'betasize-modal', cta: 'Számold ki élesben a Béta-kiegyensúlyozott pozícióméretezést' },
+            330: { tool: 'volscale-modal', cta: 'Számold ki élesben a volatilitás-alapú pozícióméretezést' },
+            68: { tool: 'scaling-modal', cta: 'Tervezd meg élesben a lépcsőzetes be-/kiszállást' },
+            265: { tool: 'optimalf-modal', cta: 'Számold ki élesben az Optimal f-et' },
+            266: { tool: 'fixedratio-modal', cta: 'Számold ki élesben a Fixed Ratio méretezést' },
+            465: { tool: 'sterling-modal', cta: 'Számold ki élesben a Sterling Ratiót' },
+            151: { tool: 'mfi-modal', cta: 'Számold ki élesben a Money Flow Indexet' },
+            253: { tool: 'cci-modal', cta: 'Számold ki élesben a CCI-t' },
+            531: { tool: 'pe-modal', cta: 'Számold ki élesben a P/E rátát és EPS-t' },
+            290: { tool: 'elderray-modal', cta: 'Számold ki élesben az Elder Ray Indexet' },
+            309: { tool: 'forceindex-modal', cta: 'Számold ki élesben a Force Indexet' },
+            333: { tool: 'tii-modal', cta: 'Számold ki élesben a Trend Intensity Indexet' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -20839,7 +20858,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            if (mapping.tool === 'backtest-modal' || mapping.tool === 'montecarlo-modal' || mapping.tool === 'funding-modal' || mapping.tool === 'var-modal' || mapping.tool === 'liquiditysize-modal' || mapping.tool === 'massindex-modal' || mapping.tool === 'rvi-modal' || mapping.tool === 'volratio-modal' || mapping.tool === 'trendexhaustion-modal' || mapping.tool === 'corrmatrix-modal' || mapping.tool === 'ddduration-modal' || mapping.tool === 'ruinprob-modal' || mapping.tool === 'pathdep-modal' || mapping.tool === 'multikelly-modal' || mapping.tool === 'milestone-modal' || mapping.tool === 'kellydd-modal') {
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal'];
+            if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
                 if (mapping.tool === 'backtest-modal' && typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
