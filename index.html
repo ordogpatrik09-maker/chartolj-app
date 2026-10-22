@@ -1470,6 +1470,20 @@
                                 <div class="text-[10px] text-slate-400">MACD volumen-súlyozott mozgóátlagokkal</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('betacalc-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-indigo-400/10 text-indigo-400 border border-indigo-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gauge-high"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Béta Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Piaci érzékenység: Cov/Var hozamokból</div>
+                            </div>
+                        </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('measuredmove-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler-combined"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Mért Mozgás Célár Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">H&S, Dupla Csúcs/Alj, Flag, Háromszög, Ék</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6414,6 +6428,68 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= BÉTA KALKULÁTOR (OKTATÁSI) =================
+         Béta = Cov(EszközHozamok, PiacHozamok) / Var(PiacHozamok), populációs (n-osztós) becsléssel. -->
+    <div id="betacalc-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high text-indigo-400"></i> Béta Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('betacalc-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az eszköz és a piaci benchmark (pl. index) időszaki hozamait soronként (Eszköz hozam %, Piac hozam %), és a kalkulátor kiszámolja a Bétát: mennyire érzékeny az eszköz a piac mozgására. Béta &gt; 1 = a piacnál nagyobb mozgás; Béta &lt; 1 = kisebb mozgás; negatív Béta = ellentétes irányú mozgás.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Eszköz hozam %, Piac hozam % (soronként)</label>
+            <textarea id="betacalc-returns" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-indigo-400/50" placeholder="2,1&#10;-1,-0.5&#10;...">2,1
+-1,-0.5
+1.5,0.8
+3,2
+-2,-1.5
+1,0.5
+2.5,1.5</textarea>
+
+            <button onclick="calcBetaCalculator()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-indigo-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="betacalc-result" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- ================= MÉRT MOZGÁS (MEASURED MOVE) CÉLÁR KALKULÁTOR (OKTATÁSI) =================
+         Target = Kitörési ár + irány × alakzat-magasság. Használható Head and Shoulders, Dupla
+         Csúcs/Alj, Bull/Bear Flag, Háromszög és Ék alakzatoknál egyaránt. -->
+    <div id="measuredmove-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-ruler-combined text-yellow-400"></i> Mért Mozgás (Measured Move) Célár Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('measuredmove-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Használható Head and Shoulders, Dupla Csúcs/Alj, Bull/Bear Flag, Háromszög és Ék alakzatoknál egyaránt: add meg a kitörési/nyakvonal árat, az alakzat magasságát (pl. fej-nyakvonal távolság, vagy zászlórúd hossza), és az irányt — a kalkulátor az 1:1 mért mozgás alapú célárat adja.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kitörési / nyakvonal ár</label>
+            <input type="number" id="measuredmove-breakout" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-yellow-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Alakzat magassága (mindig pozitív érték)</label>
+            <input type="number" id="measuredmove-height" value="10" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-yellow-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Irány</label>
+            <select id="measuredmove-direction" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 text-xs text-white focus:outline-none focus:border-yellow-400/50">
+                <option value="up">Felfelé (bullish kitörés / inverz H&S / dupla alj / bull flag)</option>
+                <option value="down">Lefelé (bearish kitörés / H&S / dupla csúcs / bear flag)</option>
+            </select>
+
+            <button onclick="calcMeasuredMove()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-yellow-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="measuredmove-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7946,6 +8022,20 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Volume Weighted MACD</div>
                     <div class="text-[10px] text-slate-400">MACD volumen-súlyozott mozgóátlagokkal</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('betacalc-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-indigo-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-indigo-400/10 text-indigo-400 border border-indigo-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-high"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Béta Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Piaci érzékenység: Cov/Var hozamokból</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('measuredmove-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-yellow-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-ruler-combined"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Mért Mozgás Célár Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">H&S, Dupla Csúcs/Alj, Flag, Háromszög, Ék</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -16013,6 +16103,101 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">VWMACD vonal:</span><span class="text-white">${lastVwmacd.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (SMA9):</span><span class="text-white">${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Histogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${histogram.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcBetaCalculator() {
+            const returnsEl = document.getElementById('betacalc-returns');
+            const out = document.getElementById('betacalc-result');
+            if (!returnsEl || !out) return;
+
+            const lines = returnsEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const assetReturns = [], marketReturns = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    assetReturns.push(parts[0]);
+                    marketReturns.push(parts[1]);
+                }
+            }
+
+            const n = assetReturns.length;
+            if (n < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 (eszköz, piac) hozampár szükséges!</div>`;
+                return;
+            }
+
+            const meanA = assetReturns.reduce((a, b) => a + b, 0) / n;
+            const meanM = marketReturns.reduce((a, b) => a + b, 0) / n;
+
+            let cov = 0, varM = 0;
+            for (let i = 0; i < n; i++) {
+                cov += (assetReturns[i] - meanA) * (marketReturns[i] - meanM);
+                varM += (marketReturns[i] - meanM) * (marketReturns[i] - meanM);
+            }
+            cov /= n;
+            varM /= n;
+
+            if (varM === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A piaci hozamok varianciája nulla — nem lehet Bétát számolni!</div>`;
+                return;
+            }
+
+            const beta = cov / varM;
+            let verdict, colorClass;
+            if (beta > 1) {
+                verdict = `Béta > 1 — az eszköz a piacnál NAGYOBB mértékben mozog (${beta.toFixed(2)}x érzékenység).`;
+                colorClass = 'text-neon-red';
+            } else if (beta >= 0) {
+                verdict = `0 ≤ Béta ≤ 1 — az eszköz a piacnál KISEBB mértékben mozog, azonos irányban.`;
+                colorClass = 'text-neon-green';
+            } else {
+                verdict = `Negatív Béta — az eszköz a piaccal ELLENTÉTES irányban mozog (ritka, pl. egyes biztonsági menedék eszközök).`;
+                colorClass = 'text-neon-yellow';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Béta:</span><span class="${colorClass} font-extrabold text-sm">${beta.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcMeasuredMove() {
+            const breakoutEl = document.getElementById('measuredmove-breakout');
+            const heightEl = document.getElementById('measuredmove-height');
+            const directionEl = document.getElementById('measuredmove-direction');
+            const out = document.getElementById('measuredmove-result');
+            if (!breakoutEl || !heightEl || !directionEl || !out) return;
+
+            const breakout = parseFloat(breakoutEl.value);
+            const height = parseFloat(heightEl.value);
+            const direction = directionEl.value;
+
+            if (isNaN(breakout) || isNaN(height)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat mindkét mezőben!</div>`;
+                return;
+            }
+            if (height < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az alakzat magassága nem lehet negatív!</div>`;
+                return;
+            }
+
+            const sign = direction === 'up' ? 1 : -1;
+            const target = breakout + sign * height;
+            const colorClass = sign > 0 ? 'text-neon-green' : 'text-neon-red';
+            const verdict = sign > 0
+                ? 'Felfelé irányuló mért mozgás — a célár a kitörési/nyakvonal ár felett, az alakzat magasságával megegyező távolságra van.'
+                : 'Lefelé irányuló mért mozgás — a célár a kitörési/nyakvonal ár alatt, az alakzat magasságával megegyező távolságra van.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Kitörési ár:</span><span class="text-white">${breakout.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Alakzat magassága:</span><span class="text-white">${height.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Mért mozgás célár:</span><span class="${colorClass} font-extrabold text-sm">${target.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -27207,6 +27392,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             36: { tool: 'corrmatrix-modal', cta: 'Ellenőrizd élesben a pozícióid korrelációját' },
             419: { tool: 'rsc-modal', cta: 'Számold ki élesben a Relative Strength Comparative-ot' },
             458: { tool: 'vwmacd-modal', cta: 'Számold ki élesben a Volume Weighted MACD-t' },
+            112: { tool: 'betacalc-modal', cta: 'Számold ki élesben az eszköz Bétáját' },
+            42: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Head and Shoulders célárát' },
+            43: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Dupla Csúcs/Alj célárát' },
+            44: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Bull/Bear Flag célárát' },
+            59: { tool: 'measuredmove-modal', cta: 'Számold ki élesben az Ék alakzat célárát' },
+            74: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Háromszög alakzat célárát' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -27216,7 +27407,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
