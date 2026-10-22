@@ -1484,6 +1484,13 @@
                                 <div class="text-[10px] text-slate-400">H&S, Dupla Csúcs/Alj, Flag, Háromszög, Ék</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('rejectionwick-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-icicles"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Elutasító Kanóc Elemző</div>
+                                <div class="text-[10px] text-slate-400">Felső/alsó kanóc és test aránya %-ban</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6490,6 +6497,46 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= ELUTASÍTÓ KANÓC (REJECTION WICK) ELEMZŐ (OKTATÁSI) =================
+         Felső kanóc = High - max(Open,Close). Alsó kanóc = min(Open,Close) - Low.
+         Test = |Close-Open|. Mindegyik a teljes Range (High-Low) %-ában kifejezve. -->
+    <div id="rejectionwick-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-icicles text-sky-400"></i> Elutasító Kanóc (Rejection Wick) Elemző
+                </h3>
+                <button onclick="closeToolModal('rejectionwick-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg egy gyertya OHLC-adatait, és a kalkulátor kiszámolja a felső kanóc, az alsó kanóc és a test méretét a teljes tartomány (High-Low) %-ában, majd besorolja, melyik oldali elutasítás dominál — ez gyakran fontosabb jelzés, mint a gyertya puszta színe.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Open</label>
+                    <input type="number" id="rejectionwick-open" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">High</label>
+                    <input type="number" id="rejectionwick-high" value="102" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Low</label>
+                    <input type="number" id="rejectionwick-low" value="95" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Close</label>
+                    <input type="number" id="rejectionwick-close" value="101" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+                </div>
+            </div>
+
+            <button onclick="calcRejectionWick()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-sky-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Elemzés
+            </button>
+
+            <div id="rejectionwick-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -8036,6 +8083,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Mért Mozgás Célár Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">H&S, Dupla Csúcs/Alj, Flag, Háromszög, Ék</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('rejectionwick-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-sky-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-icicles"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Elutasító Kanóc Elemző</div>
+                    <div class="text-[10px] text-slate-400">Felső/alsó kanóc és test aránya %-ban</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -16198,6 +16252,58 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Kitörési ár:</span><span class="text-white">${breakout.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Alakzat magassága:</span><span class="text-white">${height.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Mért mozgás célár:</span><span class="${colorClass} font-extrabold text-sm">${target.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcRejectionWick() {
+            const openEl = document.getElementById('rejectionwick-open');
+            const highEl = document.getElementById('rejectionwick-high');
+            const lowEl = document.getElementById('rejectionwick-low');
+            const closeEl = document.getElementById('rejectionwick-close');
+            const out = document.getElementById('rejectionwick-result');
+            if (!openEl || !highEl || !lowEl || !closeEl || !out) return;
+
+            const o = parseFloat(openEl.value);
+            const h = parseFloat(highEl.value);
+            const l = parseFloat(lowEl.value);
+            const c = parseFloat(closeEl.value);
+
+            if ([o, h, l, c].some(v => isNaN(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+                return;
+            }
+            const range = h - l;
+            if (range <= 0 || h < Math.max(o, c) || l > Math.min(o, c)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen OHLC adat — a High-nak a legnagyobb, a Low-nak a legkisebb értéknek kell lennie!</div>`;
+                return;
+            }
+
+            const body = Math.abs(c - o);
+            const upperWick = h - Math.max(o, c);
+            const lowerWick = Math.min(o, c) - l;
+            const upperPct = (upperWick / range) * 100;
+            const lowerPct = (lowerWick / range) * 100;
+            const bodyPct = (body / range) * 100;
+
+            let verdict, colorClass;
+            if (lowerPct > upperPct && lowerPct > 50) {
+                verdict = 'Hosszú alsó kanóc dominál — erős vételi elutasítás az alacsonyabb áraktól, bullish jelzés lehet a gyertya színétől függetlenül.';
+                colorClass = 'text-neon-green';
+            } else if (upperPct > lowerPct && upperPct > 50) {
+                verdict = 'Hosszú felső kanóc dominál — erős eladási elutasítás a magasabb áraktól, bearish jelzés lehet a gyertya színétől függetlenül.';
+                colorClass = 'text-neon-red';
+            } else {
+                verdict = 'Nincs kiemelkedő elutasító kanóc — a test és a kanócok kiegyenlített arányban vannak, nincs erős egyoldalú elutasítási jelzés.';
+                colorClass = 'text-slate-400';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Felső kanóc:</span><span class="text-white">${upperWick.toLocaleString(undefined, { maximumFractionDigits: 4 })} (${upperPct.toFixed(2)}%)</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Test:</span><span class="text-white">${body.toLocaleString(undefined, { maximumFractionDigits: 4 })} (${bodyPct.toFixed(2)}%)</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Alsó kanóc:</span><span class="text-white">${lowerWick.toLocaleString(undefined, { maximumFractionDigits: 4 })} (${lowerPct.toFixed(2)}%)</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -27399,6 +27505,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             59: { tool: 'measuredmove-modal', cta: 'Számold ki élesben az Ék alakzat célárát' },
             74: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Háromszög alakzat célárát' },
             526: { tool: 'option-strategy-modal', optionStrategy: 'covered_call', cta: 'Rajzold fel élesben a Fedezett Call (Covered Call) kifizetési görbéjét' },
+            107: { tool: 'rejectionwick-modal', cta: 'Elemezd élesben az elutasító kanócot' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -27408,7 +27515,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
