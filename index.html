@@ -1267,6 +1267,13 @@
                                 <div class="text-[10px] text-slate-400">Szűkebb, mean-reversion sávok az előző H/L/C alapján</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('gmma-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">GMMA Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Rövid- és hosszú-távú EMA-csoportok szétnyílása</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -3896,6 +3903,97 @@
         </div>
     </div>
 
+    <!-- ================= GUPPY MULTIPLE MOVING AVERAGE (GMMA) KALKULÁTOR (OKTATÁSI) =================
+         6 rövid-távú EMA (3,5,8,10,12,15 — "kereskedők" csoportja) és 6 hosszú-távú
+         EMA (30,35,40,45,50,60 — "investorok" csoportja) a záróárból, mindegyik
+         SMA-seedelt EMA-rekurzióval. A két csoport szétnyílása/összezáródása jelzi
+         a trend erejét/gyengülését; a csoportok teljes keresztezése trendváltást jelez. -->
+    <div id="gmma-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-amber-400"></i> GMMA Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('gmma-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Guppy Multiple Moving Average két csoportból áll: 6 rövid-távú EMA (3,5,8,10,12,15 periódusú, a rövid-távú kereskedők viselkedését tükrözi) és 6 hosszú-távú EMA (30,35,40,45,50,60 periódusú, a hosszú-távú investorokat tükrözi). Ha a két csoport szétnyílik (szélesedik a sáv köztük) és azonos irányba halad, az erős trendet jelez. Ha a csoportok összezárulnak vagy átfedik egymást, az gyengülő trendet vagy konszolidációt jelez. Legalább 60 záróár szükséges a leghosszabb EMA kiszámításához. Add meg a záróárakat soronként egyet, időrendben (legrégebbi elől).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy, legalább 60 db)</label>
+            <textarea id="gmma-closes" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100.87
+99.46
+98.98
+98.3
+99.53
+100.53
+102.33
+101.15
+101.21
+99.82
+99.13
+99.5
+98.1
+97.34
+98.24
+98.76
+98.07
+98.75
+100.25
+98.77
+100.25
+101.34
+101.1
+100.17
+102.21
+101.96
+100.8
+99.66
+101.3
+102.03
+103.52
+104.72
+105.2
+107.3
+107.2
+107.74
+109.31
+110.1
+111.79
+112.43
+113.53
+112.2
+111.55
+111.12
+109.91
+109.27
+108.15
+107.67
+108.53
+108.38
+108.25
+107.52
+107.01
+108.97
+109.87
+110.63
+109.76
+110.96
+110.06
+109.97
+112.13
+113.0
+113.56
+114.59
+116.21</textarea>
+
+            <button onclick="calcGMMA()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="gmma-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A kalkulátor az utolsó napra adja meg mindkét csoport EMA-értékeit, és megnézi, hogy a legrövidebb rövid-EMA a leghosszabb hosszú-EMA fölött vagy alatt helyezkedik-e el (durva bullish/bearish közelítés), illetve a két csoport közötti rést (szétnyílás mértékét).</p>
+        </div>
+    </div>
+
     <!-- ================= ELDER RAY INDEX KALKULÁTOR (OKTATÁSI) =================
          Bull Power = legutóbbi Magas - EMA; Bear Power = legutóbbi
          Alacsony - EMA. Az EMA-t a záróárak sorozatából számoljuk,
@@ -6096,6 +6194,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Camarilla Pivot Pontok Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Szűkebb, mean-reversion sávok</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('gmma-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">GMMA Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Rövid/hosszú EMA-csoportok szétnyílása</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -13535,6 +13640,60 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-slate-400">Jelenlegi záróár:</span>
                         <span class="font-extrabold ${colorClass} text-sm">${lastClose.toFixed(2)}</span>
                     </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcGMMA() {
+            const closesEl = document.getElementById('gmma-closes');
+            const out = document.getElementById('gmma-result');
+            if (!closesEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+
+            const shortPeriods = [3, 5, 8, 10, 12, 15];
+            const longPeriods = [30, 35, 40, 45, 50, 60];
+            const maxPeriod = Math.max(...longPeriods);
+
+            if (closes.length < maxPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${maxPeriod} záróár szükséges a leghosszabb EMA kiszámításához — jelenleg ${closes.length} van megadva!</div>`;
+                return;
+            }
+
+            const shortEmas = shortPeriods.map(p => {
+                const series = emaSmaSeededAligned(closes, p);
+                return series[series.length - 1];
+            });
+            const longEmas = longPeriods.map(p => {
+                const series = emaSmaSeededAligned(closes, p);
+                return series[series.length - 1];
+            });
+
+            const shortestShort = shortEmas[0];
+            const longestLong = longEmas[longEmas.length - 1];
+            const bullish = shortestShort > longestLong;
+            const colorClass = bullish ? 'text-neon-green' : 'text-neon-red';
+            const verdict = bullish
+                ? 'A legrövidebb rövid-EMA a leghosszabb hosszú-EMA FÖLÖTT van — durva bullish közelítés, a rövid-távú csoport a hosszú-távú csoport fölött kereskedik.'
+                : 'A legrövidebb rövid-EMA a leghosszabb hosszú-EMA ALATT van — durva bearish közelítés, a rövid-távú csoport a hosszú-távú csoport alatt kereskedik.';
+
+            const rowsHtml = (periods, emas) => periods.map((p, i) => `
+                <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
+                    <span class="text-slate-400">EMA(${p}):</span>
+                    <span class="font-extrabold text-white">${emas[i].toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="text-[11px] font-semibold text-neon-cyan mb-1">Rövid-távú csoport (kereskedők)</div>
+                    ${rowsHtml(shortPeriods, shortEmas)}
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="text-[11px] font-semibold text-amber-400 mb-1">Hosszú-távú csoport (investorok)</div>
+                    ${rowsHtml(longPeriods, longEmas)}
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -23688,6 +23847,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             384: { tool: 'chandelier-modal', cta: 'Számold ki élesben a Chandelier Exit szintet' },
             282: { tool: 'supertrend-modal', cta: 'Számold ki élesben a Supertrend vonalat' },
             346: { tool: 'camarilla-modal', cta: 'Számold ki élesben a Camarilla pivot szinteket' },
+            448: { tool: 'gmma-modal', cta: 'Számold ki élesben a GMMA EMA-csoportokat' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -23697,7 +23857,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
