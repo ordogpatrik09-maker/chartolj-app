@@ -1162,6 +1162,13 @@
                                 <div class="text-[10px] text-slate-400">Mozgóátlag feletti árak statisztikai aránya</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('massindex-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrows-left-right-to-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Mass Index Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Árszélesség szélesedése, reversal bulge jelzéssel</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3140,6 +3147,85 @@
         </div>
     </div>
 
+    <!-- ================= MASS INDEX KALKULÁTOR (OKTATÁSI) =================
+         Donald Dorsey klasszikus Mass Index: range_i = Magas_i - Alacsony_i;
+         EMA9(range); EMA9(EMA9(range)) (dupla simítás); ratio_i =
+         EMA9(range)_i / EMA9(EMA9(range))_i; Mass Index = ratio sorozat
+         utolsó (legfeljebb) 25 elemének összege. Hagyományosan 27
+         fölötti csúcs, majd 26,5 alá eső visszaesés ("reversal bulge")
+         jelez potenciális trendfordulót — de az IRÁNYT nem mutatja. -->
+    <div id="massindex-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-left-right-to-line text-amber-400"></i> Mass Index Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('massindex-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Donald Dorsey Mass Index indikátora a napi legmagasabb és legalacsonyabb ár közti tartomány SZÉLESEDÉSÉT méri, nem az irányt. A tartomány dupla EMA-simításának arányát összegezzük a periódus utolsó (legfeljebb 25) elemére. Hagyományosan 27 fölötti érték, majd 26,5 alá eső visszaesés ("reversal bulge") potenciális trendfordulót jelezhet — de az index önmagában NEM ad iránymutatást. Add meg a gyertyákat (Magas, Alacsony) sorrendben.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony (soronként egy)</label>
+            <textarea id="massindex-candles" rows="6" placeholder="10.3,10.0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">10.3,10.0
+10.45,10.05
+10.6,10.1
+10.75,10.15
+10.9,10.2
+10.55,10.25
+10.7,10.3
+10.85,10.35
+11.0,10.4
+11.15,10.45
+10.8,10.5
+10.95,10.55
+11.1,10.6
+11.25,10.65
+11.4,10.7
+11.05,10.75
+11.2,10.8
+11.35,10.85
+11.5,10.9
+11.65,10.95
+11.3,11.0
+11.45,11.05
+11.6,11.1
+11.75,11.15
+11.9,11.2
+11.55,11.25
+11.7,11.3
+11.85,11.35
+12.0,11.4
+12.15,11.45
+11.8,11.5
+11.95,11.55
+12.1,11.6
+12.25,11.65
+12.4,11.7
+12.05,11.75
+12.2,11.8
+12.35,11.85
+12.5,11.9
+12.65,11.95
+12.3,12.0
+12.45,12.05
+12.6,12.1
+12.75,12.15
+12.9,12.2</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">EMA periódus (klasszikus Mass Index: 9)</label>
+            <input type="number" id="massindex-ema-period" value="9" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Összegzési periódus (klasszikus Mass Index: 25)</label>
+            <input type="number" id="massindex-sum-period" value="25" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcMassIndex()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="massindex-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha kevesebb arány-érték áll elő, mint a megadott összegzési periódus, a kalkulátor az összes rendelkezésre álló arányt összegzi (nem hibát dob) — ezt a result mezőben jelezzük. A Mass Index soha nem helyettesíti az iránymeghatározó eszközöket (pl. mozgóátlag, trendvonal).</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4371,6 +4457,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Trend Intensity Index (TII) Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Mozgóátlag feletti árak statisztikai aránya</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('massindex-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrows-left-right-to-line"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Mass Index Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Árszélesség szélesedése, reversal bulge jelzéssel</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -10630,6 +10723,91 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">SMA (periódus átlag):</span><span class="text-white">${sma.toFixed(4)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">SMA fölötti árak a periódusban:</span><span class="text-white">${aboveCount} / ${period}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Trend Intensity Index (TII):</span><span class="font-extrabold ${colorClass} text-sm">${tii.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= MASS INDEX KALKULÁTOR (OKTATÁSI) =================
+        // range_i = Magas_i - Alacsony_i. EMA1 = EMA(range, emaPeriod).
+        // EMA2 = EMA(EMA1, emaPeriod) (dupla simítás). ratio_i =
+        // EMA1_i / EMA2_i, az EMA2 érvényes tartományán. Mass Index =
+        // a ratio sorozat utolsó (legfeljebb sumPeriod) elemének
+        // összege — ha kevesebb áll elő, az összeset összegzi.
+        function calcMassIndex() {
+            const candlesEl = document.getElementById('massindex-candles');
+            const emaPeriodEl = document.getElementById('massindex-ema-period');
+            const sumPeriodEl = document.getElementById('massindex-sum-period');
+            const out = document.getElementById('massindex-result');
+            if (!candlesEl || !emaPeriodEl || !sumPeriodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1] });
+                }
+            }
+            const emaPeriod = parseInt(emaPeriodEl.value);
+            const sumPeriod = parseInt(sumPeriodEl.value);
+
+            // EMA-rekurzió segédfüggvény: SMA-seedelt, teljes kimeneti
+            // sorozatot ad vissza az (emaPeriod-1)-edik indextől kezdve.
+            function emaFull(values, period) {
+                if (values.length < period) return [];
+                const k = 2 / (period + 1);
+                const result = [];
+                let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                result.push(ema);
+                for (let i = period; i < values.length; i++) {
+                    ema = values[i] * k + ema * (1 - k);
+                    result.push(ema);
+                }
+                return result;
+            }
+
+            if (!emaPeriod || emaPeriod < 1 || !sumPeriod || sumPeriod < 1 || candles.length < emaPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (EMA periódus) érvényes gyertyát "Magas,Alacsony" formátumban, soronként egyet, egy érvényes EMA periódust, és egy érvényes összegzési periódust!</div>`;
+                return;
+            }
+
+            const ranges = candles.map(c => c.high - c.low);
+            const ema1 = emaFull(ranges, emaPeriod);
+            const ema2 = emaFull(ema1, emaPeriod);
+
+            if (ema2.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég gyertya a dupla EMA-simításhoz — legalább (2 × EMA periódus - 1) gyertya szükséges!</div>`;
+                return;
+            }
+
+            // ema1 hossza = n-emaPeriod+1, ema2 hossza = ema1.length-emaPeriod+1.
+            // A ratio-khoz az ema1-nek az ema2-vel ÁTFEDŐ, legfrissebb részét
+            // vesszük: ema1 utolsó ema2.length eleme.
+            const ema1Aligned = ema1.slice(ema1.length - ema2.length);
+            const ratios = ema2.map((e2, i) => ema1Aligned[i] / e2);
+
+            const usedCount = Math.min(sumPeriod, ratios.length);
+            const usedRatios = ratios.slice(ratios.length - usedCount);
+            const massIndex = usedRatios.reduce((a, b) => a + b, 0);
+
+            let colorClass, verdict;
+            if (massIndex >= 27) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 A Mass Index elérte a hagyományos 27-es küszöböt — ez a "reversal bulge" kezdete lehet. Ha az érték a KÖVETKEZŐ gyertyákon 26,5 alá esik, az potenciális trendfordulót jelezhet (de az irányt más eszközzel kell meghatározni).';
+            } else if (massIndex >= 24) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ A Mass Index a normál tartomány felső részén van — érdemes figyelni, nem éri-e el hamarosan a 27-es küszöböt.';
+            } else {
+                colorClass = 'text-neon-cyan';
+                verdict = 'A Mass Index a normál tartományban van — nincs jele az árszélesség szokatlan kitágulásának, azaz nincs aktív "reversal bulge" szignál.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Gyertyák száma:</span><span class="text-white">${candles.length}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Felhasznált arány-értékek száma:</span><span class="text-white">${usedCount}${usedCount < sumPeriod ? ' (kevesebb, mint a kért ' + sumPeriod + ')' : ''}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Mass Index:</span><span class="font-extrabold ${colorClass} text-sm">${massIndex.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
