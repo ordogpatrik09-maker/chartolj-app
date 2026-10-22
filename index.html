@@ -1400,6 +1400,13 @@
                                 <div class="text-[10px] text-slate-400">Rövid/hosszú távú volumen-alapú pénzáramlás</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('fibretr-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler-vertical"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fibonacci Retracement Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">23.6% / 38.2% / 50% / 61.8% / 78.6% korrekciós szintek</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5945,6 +5952,36 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          Force (VF) = Volumen × |2×(dm/cm − 1)| × Trend × 100; KVO =
          EMA34(VF) - EMA55(VF). A nulla vonal keresztezése a rövid/hosszú
          távú pénzáramlás viszonyának változását jelzi. -->
+    <!-- ================= FIBONACCI RETRACEMENT KALKULÁTOR (OKTATÁSI) =================
+         Felfelé mozgás (Low → High) korrekciós szintjei: Szint = High -
+         ratio×(High-Low). Lefelé mozgás (High → Low) korrekciós szintjei:
+         Szint = Low + ratio×(High-Low). Standard arányok: 23.6%, 38.2%,
+         50%, 61.8%, 78.6% (a 78.6% a 61.8% négyzetgyöke, egy mélyebb, de
+         még trend-belüli korrekciós szint). -->
+    <div id="fibretr-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-ruler-vertical text-amber-400"></i> Fibonacci Retracement Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('fibretr-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg egy jelentős árfolyam-mozgás (swing) kezdő- és végpontját, és a kalkulátor kiszámolja a standard Fibonacci-korrekciós szinteket (23.6%, 38.2%, 50%, 61.8%, 78.6%) — ezeket gyakran figyelik potenciális támasz/ellenállás zónaként egy korrekció során. A 61.8% a leggyakrabban idézett szint ("golden ratio"), de a 78.6% (a 61.8% négyzetgyöke) egy mélyebb, mégis trend-belüli visszahúzódást jelezhet — ha az ár ezen is túl esik, a teljes eredeti mozgás megkérdőjeleződhet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Swing kezdőpont ára (pl. mélypont felfelé trendnél)</label>
+            <input type="number" id="fibretr-start" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">Swing végpont ára (pl. csúcs felfelé trendnél)</label>
+            <input type="number" id="fibretr-end" value="120" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcFibRetracement()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="fibretr-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha a végpont NAGYOBB, mint a kezdőpont (felfelé mozgás), a szintek a végponttól lefelé korrigálnak; ha a végpont KISEBB (lefelé mozgás), a szintek a végponttól felfelé korrigálnak.</p>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7407,6 +7444,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Klinger Volume Oscillator (KVO)</div>
                     <div class="text-[10px] text-slate-400">Rövid/hosszú távú volumen-alapú pénzáramlás</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('fibretr-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-ruler-vertical"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Fibonacci Retracement Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">23.6% / 38.2% / 50% / 61.8% / 78.6% korrekciós szintek</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14923,6 +14967,57 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Klinger Oscillator (KVO):</span><span class="${colorClass} font-extrabold text-sm">${kvo >= 0 ? '+' : ''}${kvo.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcFibRetracement() {
+            const startEl = document.getElementById('fibretr-start');
+            const endEl = document.getElementById('fibretr-end');
+            const out = document.getElementById('fibretr-result');
+            if (!startEl || !endEl || !out) return;
+
+            const start = parseFloat(startEl.value);
+            const end = parseFloat(endEl.value);
+
+            if (isNaN(start) || isNaN(end)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat mindkét mezőben!</div>`;
+                return;
+            }
+            if (start === end) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kezdő- és végpont nem lehet egyenlő — nincs mozgás, amit korrigálhatnánk!</div>`;
+                return;
+            }
+
+            const high = Math.max(start, end);
+            const low = Math.min(start, end);
+            const range = high - low;
+            const isUpSwing = end > start;
+            const ratios = [0.236, 0.382, 0.5, 0.618, 0.786];
+
+            // Felfelé mozgásnál (low→high) a korrekció a csúcstól lefelé halad: level = high - ratio*range.
+            // Lefelé mozgásnál (high→low) a korrekció a mélyponttól felfelé halad: level = low + ratio*range.
+            const levels = ratios.map(r => isUpSwing ? (high - r * range) : (low + r * range));
+
+            const rowsHtml = ratios.map((r, i) => {
+                const highlight = r === 0.786;
+                return `<div class="flex justify-between ${highlight ? 'border-y border-amber-400/30 py-1.5 my-0.5' : ''}">
+                    <span class="${highlight ? 'text-amber-400 font-bold' : 'text-slate-400'}">${(r * 100).toFixed(1)}%${highlight ? ' ⭐' : ''}:</span>
+                    <span class="${highlight ? 'text-amber-400 font-bold' : 'text-white'} font-mono">${levels[i].toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                </div>`;
+            }).join('');
+
+            const direction = isUpSwing ? 'felfelé mozgás (Low → High) korrekciója' : 'lefelé mozgás (High → Low) korrekciója';
+            const verdict786 = isUpSwing
+                ? 'Ha az ár a 78.6%-os szint ALÁ esik, az eredeti felfelé trend érvényessége megkérdőjeleződik — ez gyakran a trendforduló figyelmeztető jele.'
+                : 'Ha az ár a 78.6%-os szint FÖLÉ emelkedik, az eredeti lefelé trend érvényessége megkérdőjeleződik — ez gyakran a trendforduló figyelmeztető jele.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between pb-2 border-b border-dark-750"><span class="text-slate-400">Irány:</span><span class="text-white font-sans text-[10.5px] text-right">${direction}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Swing mérete:</span><span class="text-white">${range.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    ${rowsHtml}
+                </div>
+                <p class="text-[10px] font-semibold text-amber-400">${verdict786}</p>
             `;
         }
 
@@ -26096,6 +26191,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             481: { tool: 'cog-modal', cta: 'Számold ki élesben a Center of Gravity Oscillatort' },
             453: { tool: 'mcclellan-modal', cta: 'Számold ki élesben a McClellan Oscillatort' },
             319: { tool: 'klinger-modal', cta: 'Számold ki élesben a Klinger Volume Oscillatort' },
+            344: { tool: 'fibretr-modal', cta: 'Számold ki élesben a Fibonacci Retracement szinteket' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -26105,7 +26201,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
