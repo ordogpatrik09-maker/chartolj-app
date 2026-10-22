@@ -1064,6 +1064,13 @@
                                 <div class="text-[10px] text-slate-400">A hozameloszlás alakja: ferdeség és csúcsosság</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('certeq-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-unbalanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Bizonyossági Egyenérték (CE) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mennyi biztos hozam ér annyit, mint a szóródó?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('calmar-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-mountain"></i></span>
                             <div>
@@ -3129,6 +3136,41 @@
 
             <div id="skewkurt-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Normális eloszlásnál a Skewness ≈ 0 és az excess Kurtosis ≈ 0. Egy stratégia, amely gyakran kis nyereséget, de ritkán nagy veszteséget produkál, jellemzően negatív ferdeséget mutat — ez könnyen "jobbnak tűnhet" a Sharpe-ráta alapján, mint amilyen a valóságban, mert a ritka nagy veszteség nem mindig jelenik meg elég súllyal egy kis mintában.</p>
+        </div>
+    </div>
+
+    <!-- ================= BIZONYOSSÁGI EGYENÉRTÉK (CERTAINTY EQUIVALENT) KALKULÁTOR (OKTATÁSI) =================
+         A Certainty Equivalent (CE) azt a BIZTOS hozamot jelenti, amelyet egy kockázatkerülő
+         döntéshozó ÉPPEN OLYAN jónak ítél, mint a bizonytalan (szóródó) hozamsorozatot.
+         Mean-variance közelítés (Pratt-Arrow): CE = E[r] - 0.5 × A × Var(r), ahol E[r] a várható
+         hozam (decimális alakban), Var(r) a hozamok POPULÁCIÓS varianciája (decimális alakban),
+         A pedig a kockázatkerülési együttható (minél nagyobb, annál kockázatkerülőbb a
+         döntéshozó; A = 0 esetén kockázat-semleges, CE = E[r]). A bemeneti hozamok %-ban
+         érkeznek, ezért a számításhoz belsőleg /100-zal decimálisra konvertáljuk, a kimenetet
+         pedig vissza, %-ra. Kockázati prémium = E[r] - CE: ennyi várható hozamot "ér meg"
+         feladni a bizonytalanság elkerüléséért. Ez ÖNÁLLÓ kalkulátor, nem épül más eszközre. -->
+    <div id="certeq-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-unbalanced text-sky-400"></i> Bizonyossági Egyenérték (CE) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('certeq-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Certainty Equivalent (bizonyossági egyenérték) megmutatja: egy kockázatkerülő döntéshozó számára mekkora BIZTOS hozam ér annyit, mint a szóródó, bizonytalan hozamsorozat. Add meg az időszaki hozamaidat %-ban, és a kockázatkerülési együtthatódat (A).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Időszaki hozamok (%, vesszővel elválasztva)</label>
+            <textarea id="certeq-returns" rows="4" placeholder="pl. 1.2, -0.8, 2.1, -0.5, 0.9, -15.0, 1.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">1.2, -0.8, 2.1, -0.5, 0.9, 1.1, -0.6, 1.8, -0.4, 0.7, -8.5, 1.3, -0.9, 2.0, -0.7</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kockázatkerülési együttható (A)</label>
+            <input type="number" id="certeq-riskaversion" step="0.1" value="2" placeholder="pl. 2 (mérsékelt), 4 (erősen kockázatkerülő), 0 (kockázat-semleges)" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+
+            <button onclick="calcCertaintyEquivalent()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-sky-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="certeq-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél nagyobb A, annál inkább "levon" a kalkulátor a várható hozamból a szóródás (variancia) büntetéseként. Ha a CE a várható hozam alá, akár NEGATÍVBA fordul, miközben a várható hozam pozitív, az azt jelzi: egy kockázatkerülő döntéshozó inkább egy biztos, akár alacsonyabb hozamot választana, mint ezt a szóródó sorozatot. Az A kockázatkerülési együttható szubjektív — minden kereskedő máshogy ítéli meg a saját kockázatvállalási hajlandóságát.</p>
         </div>
     </div>
 
@@ -8170,6 +8212,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Skewness & Kurtosis Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">A hozameloszlás alakja: ferdeség és csúcsosság</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('certeq-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-sky-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-unbalanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Bizonyossági Egyenérték (CE) Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mennyi biztos hozam ér annyit, mint a szóródó?</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('calmar-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
@@ -14502,6 +14551,78 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${skewColorClass}">${skewVerdict}</p>
                 <p class="text-[10px] font-semibold mt-1 ${kurtColorClass}">${kurtVerdict}</p>
+            `;
+        }
+
+        // ================= BIZONYOSSÁGI EGYENÉRTÉK (CERTAINTY EQUIVALENT) KALKULÁTOR (OKTATÁSI) =================
+        // Mean-variance (Pratt-Arrow) közelítés: CE = E[r] - 0.5 × A × Var(r), decimális
+        // hozamokon számolva (a %-os bemenetet belsőleg /100-zal konvertáljuk). Var(r) a
+        // POPULÁCIÓS variancia (ugyanaz a konvenció, mint a Skewness/Kurtosis kalkulátornál).
+        // Kockázati prémium = E[r] - CE. Ez ÖNÁLLÓ kalkulátor, nem épül más eszközre.
+        function calcCertaintyEquivalent() {
+            const returnsEl = document.getElementById('certeq-returns');
+            const riskAversionEl = document.getElementById('certeq-riskaversion');
+            const out = document.getElementById('certeq-result');
+            if (!returnsEl || !riskAversionEl || !out) return;
+
+            const returns = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const A = parseFloat(riskAversionEl.value);
+
+            if (returns.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott időszaki hozamot — a szóródás (variancia) becsléséhez ajánlott minél több adatpont (ideálisan 10+)!</div>`;
+                return;
+            }
+            if (isNaN(A)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes kockázatkerülési együtthatót (A)!</div>`;
+                return;
+            }
+
+            const n = returns.length;
+            // Belső számítás decimális hozamokon (%, tehát /100).
+            const decReturns = returns.map(r => r / 100);
+            const meanDec = decReturns.reduce((a, b) => a + b, 0) / n;
+            let varianceDec = 0;
+            for (const r of decReturns) {
+                const d = r - meanDec;
+                varianceDec += d * d;
+            }
+            varianceDec /= n; // populációs variancia
+
+            const ceDec = meanDec - 0.5 * A * varianceDec;
+
+            const meanPct = meanDec * 100;
+            const stdDevPct = Math.sqrt(varianceDec) * 100;
+            const cePct = ceDec * 100;
+            const riskPremiumPct = meanPct - cePct;
+
+            let verdictColor, verdict;
+            if (cePct < 0 && meanPct > 0) {
+                verdictColor = 'text-neon-red';
+                verdict = '🚨 A bizonyossági egyenérték NEGATÍVBA fordul, miközben a várható hozam pozitív — a szóródás (kockázat) ezzel az A együtthatóval olyan súlyos levonást jelent, hogy egy kockázatkerülő döntéshozó inkább egy biztos, akár alacsonyabb (de nem negatív) hozamot választana ennél a bizonytalan sorozatnál.';
+            } else if (riskPremiumPct > 2) {
+                verdictColor = 'text-neon-red';
+                verdict = '🚨 Nagyon magas kockázati prémium: a szóródás ennyivel "ér kevesebbet" a várható hozamból a megadott kockázatkerülési szint mellett — érdemes megfontolni a pozícióméret csökkentését vagy a stratégia szórásának mérséklését.';
+            } else if (riskPremiumPct > 0.5) {
+                verdictColor = 'text-amber-400';
+                verdict = '⚠️ Közepes kockázati prémium: a szóródás érdemben csökkenti az értékelt hozamot a megadott A mellett.';
+            } else if (A === 0) {
+                verdictColor = 'text-neon-cyan';
+                verdict = 'A = 0 (kockázat-semleges): a bizonyossági egyenérték megegyezik a várható hozammal, a szóródás nem számít a döntéshozó számára.';
+            } else {
+                verdictColor = 'text-neon-green';
+                verdict = '✅ Alacsony kockázati prémium: a megadott kockázatkerülési szint mellett a szóródás csak kis mértékben csökkenti az értékelt hozamot.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Várható hozam E[r]:</span><span class="text-white">${meanPct.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Szórás:</span><span class="text-white">${stdDevPct.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Kockázatkerülési együttható (A):</span><span class="text-white">${A}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Bizonyossági Egyenérték (CE):</span><span class="font-extrabold ${cePct >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${cePct >= 0 ? '+' : ''}${cePct.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázati prémium (E[r] - CE):</span><span class="font-extrabold ${verdictColor} text-sm">${riskPremiumPct >= 0 ? '+' : ''}${riskPremiumPct.toFixed(3)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${verdictColor}">${verdict}</p>
             `;
         }
 
@@ -28955,6 +29076,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             546: { tool: 'levdecay-modal', cta: 'Szimuláld élesben a volatility decay hatását' },
             525: { tool: 'rebalance-modal', cta: 'Számold ki élesben a cél-súlyokra visszaállító tradeket' },
             532: { tool: 'dividend-modal', cta: 'Számold ki élesben az osztalékhozamot és a DRIP hatását' },
+            455: { tool: 'certeq-modal', cta: 'Számold ki élesben a bizonyossági egyenértéket (CE)' },
+            460: { tool: 'treynor-modal', cta: 'Nézd meg élesben a Jensen\'s Alfát a Treynor Kalkulátorban' },
+            446: { tool: 'atr-modal', cta: 'Nézd meg élesben a Wilder-simítást az ATR Kalkulátorban' },
+            473: { tool: 'atr-modal', cta: 'Számold ki élesben az ATR-t, és hasonlítsd a historikus volatilitáshoz' },
+            412: { tool: 'multikelly-modal', cta: 'Számold ki élesben a korrelált portfólió Kelly-allokációját' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -28964,7 +29090,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
