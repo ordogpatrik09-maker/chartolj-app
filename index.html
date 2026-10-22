@@ -1218,6 +1218,13 @@
                                 <div class="text-[10px] text-slate-400">Ugyanazok a trade-ek, eltérő sorrend, eltérő végkimenet</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('multikelly-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Több Pozíciós Kelly Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Korrelációval korrigált, összesített Kelly-méretezés</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3545,6 +3552,46 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= TÖBB POZÍCIÓS KELLY KALKULÁTOR (OKTATÁSI) =================
+         A lecke szerint a teljes, matematikailag pontos megoldás egy
+         kovariancia mátrixot igényelne (lásd: "Kelly Criterion
+         Korrelált Portfóliónál — Teljes Mátrix"), de ezt a gyakorlatban
+         kevesen tudják fenntartani. Ehelyett a lecke "egyszerűsített,
+         konzervatívabb becslést" javasol — ezt implementáljuk: minden
+         pozícióra kiszámoljuk az önálló Kelly-frakciót (f_i = W_i -
+         L_i/RR_i, nullára vágva negatív esetben), összeadjuk őket
+         (naiv összeg), majd egy, az ÁTLAGOS páronkénti korrelációból
+         származó "effektív független tétek száma" heurisztikával
+         korrigáljuk: N_eff = N / (1 + (N-1)×átlagKorreláció), skála =
+         N_eff / N, korrigált összeg = naiv összeg × skála. Minél
+         magasabb az átlagos korreláció, annál nagyobb a korrekció. -->
+    <div id="multikelly-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-amber-400"></i> Több Pozíciós Kelly Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('multikelly-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Ha egyszerre több pozíciód van, a köztük lévő KORRELÁCIÓ jelentősen bonyolítja az optimális tétméretezést — ha minden pozícióra külön-külön alkalmazod a Kelly-képletet és azok korrelálnak, a végső, összesített kockázatod magasabb lehet, mint amit a Kelly-elmélet egyetlen pozícióra optimálisnak tartana. Ez egy EGYSZERŰSÍTETT, gyakorlati korrekciót ad (nem a teljes kovariancia-mátrixos megoldást) — add meg minden pozíció találati arányát és Risk/Reward arányát, plusz a pozíciók közötti ÁTLAGOS korrelációt.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Pozíciók: TalálatiArány%,RiskRewardArány (soronként egy, 2-8 pozíció)</label>
+            <textarea id="multikelly-positions" rows="4" placeholder="60,1.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">60,1.5
+55,2.0
+58,1.8</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Pozíciók közötti átlagos korreláció (-1 és +1 között)</label>
+            <input type="number" id="multikelly-avg-corr" value="0.6" step="0.05" min="-1" max="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcMultiPositionKelly()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="multikelly-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy GYAKORLATI HEURISZTIKA, nem a Kelly Criterion Korrelált Portfóliónál leckében tárgyalt teljes, kovariancia-mátrixos matematikai optimum. A kalkulátor mindig a FÉL-összeget is megjeleníti, mert sok gyakorló kereskedő a korrekció mellett is konzervatívabb, fél-Kelly tétméretet alkalmaz.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4832,6 +4879,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Path Dependency Szimulátor</div>
                     <div class="text-[10px] text-slate-400">Ugyanazok a trade-ek, eltérő sorrend, eltérő végkimenet</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('multikelly-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Több Pozíciós Kelly Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Korrelációval korrigált, összesített Kelly-méretezés</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -11760,6 +11814,73 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Állapot:</span><span class="${reversedResult.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">${reversedResult.stoppedOut ? 'STOP-OUT a ' + reversedResult.stopAtTrade + '. trade-nél' : 'Végigfutott, nem állt le'}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-amber-400">${verdict}</p>
+            `;
+        }
+
+        // ================= TÖBB POZÍCIÓS KELLY KALKULÁTOR (OKTATÁSI) =================
+        // f_i = W_i - L_i/RR_i (nullára vágva, ha negatív). naiveSum =
+        // Σf_i. N_eff = N / (1 + (N-1)×átlagKorreláció), [1,N] közé
+        // szorítva. scale = N_eff/N. adjustedSum = naiveSum × scale.
+        function calcMultiPositionKelly() {
+            const positionsEl = document.getElementById('multikelly-positions');
+            const avgCorrEl = document.getElementById('multikelly-avg-corr');
+            const out = document.getElementById('multikelly-result');
+            if (!positionsEl || !avgCorrEl || !out) return;
+
+            const lines = positionsEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const positions = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] > 0 && parts[0] < 100 && parts[1] > 0) {
+                    positions.push({ winRatePct: parts[0], rr: parts[1] });
+                }
+            }
+            const avgCorr = parseFloat(avgCorrEl.value);
+
+            if (positions.length < 2 || positions.length > 8 || isNaN(avgCorr) || avgCorr < -1 || avgCorr > 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg 2 és 8 közötti pozíciót, "TalálatiArány%,RiskRewardArány" formátumban (0-100 közötti találati arány, nullánál nagyobb RR), soronként egyet, és egy -1 és +1 közötti átlagos korrelációt!</div>`;
+                return;
+            }
+
+            const kellyFractions = positions.map(pos => {
+                const w = pos.winRatePct / 100;
+                const l = 1 - w;
+                const f = w - (l / pos.rr);
+                return Math.max(f, 0);
+            });
+
+            const naiveSum = kellyFractions.reduce((a, b) => a + b, 0);
+            const n = positions.length;
+            let nEff = n / (1 + (n - 1) * avgCorr);
+            nEff = Math.max(1, Math.min(n, nEff));
+            const scale = nEff / n;
+            const adjustedSum = naiveSum * scale;
+            const halfAdjustedSum = adjustedSum / 2;
+
+            let colorClass, verdict;
+            if (avgCorr >= 0.6) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Nagyon magas átlagos korreláció — a pozíciók erősen együtt mozognak, az "effektív független tétek száma" jóval alacsonyabb, mint a valódi pozíciószám. A naiv (korrekció nélküli) összeg jelentősen alábecsülné a valós, összesített kockázatot.';
+            } else if (avgCorr >= 0.3) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Közepes átlagos korreláció — érdemes a korrigált értéket használni a naiv összeg helyett, a valós kockázat alábecslésének elkerülésére.';
+            } else if (avgCorr >= -0.1) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Alacsony átlagos korreláció — a korrekció mérsékelt, a pozíciók viszonylag jól diverzifikálnak egymáshoz képest.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Negatív átlagos korreláció — a pozíciók részben kiegyenlítik egymás kockázatát, ami akár a naiv összeg fölé is engedi az effektív tétméretet (bár ezt a kalkulátor 1×N-re korlátozza, biztonsági okból).';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Pozíciók száma:</span><span class="text-white">${n}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Naiv Kelly-összeg (korreláció nélkül):</span><span class="text-white">${(naiveSum * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Effektív független tétek száma:</span><span class="text-white">${nEff.toFixed(2)} / ${n}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Korrigált teljes Kelly-összeg:</span><span class="font-extrabold ${colorClass} text-sm">${(adjustedSum * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Fél-Kelly (konzervatív, gyakorlatban javasolt):</span><span class="font-extrabold text-neon-green text-sm">${(halfAdjustedSum * 100).toFixed(2)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
         }
 
