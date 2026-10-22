@@ -1281,6 +1281,20 @@
                                 <div class="text-[10px] text-slate-400">Kumulatív volumen-indikátor és divergencia-jelzés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('williamsr-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler-combined"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Williams %R Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Momentum-oszcillátor fordított 0/-100 skálán</div>
+                            </div>
+                        </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('stochastic-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Stochastic Oscillator Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">%K és %D vonalak kiszámítása</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3444,6 +3458,98 @@
         </div>
     </div>
 
+    <!-- ================= WILLIAMS %R KALKULÁTOR (OKTATÁSI) =================
+         %R = (HighestHigh_N - Close) / (HighestHigh_N - LowestLow_N) × -100.
+         0 és -100 közötti, FORDÍTOTT skála: -20 fölött túlvett,
+         -80 alatt túladott hagyományosan. -->
+    <div id="williamsr-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-ruler-combined text-neon-purple"></i> Williams %R Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('williamsr-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Williams %R azt méri, hol helyezkedik el a záróár a közelmúlt ártartományán belül — 0 és -100 közötti, FORDÍTOTT skálán (0 = a tartomány tetején, -100 = az alján). -20 fölött hagyományosan túlvett, -80 alatt túladott állapotot jelez. Add meg a gyertyákat (Magas,Alacsony,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró (soronként egy)</label>
+            <textarea id="williamsr-candles" rows="6" placeholder="10,9,9.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">10,9,9.8
+10.2,9.6,10.1
+10.5,9.8,10.4
+10.3,9.9,10
+10.6,10,10.5
+10.8,10.2,10.7
+10.9,10.3,10.4
+11.1,10.5,11
+11.3,10.7,11.2
+11.2,10.6,10.8
+11.5,10.9,11.4
+11.4,10.8,11
+11.7,11,11.6
+11.9,11.2,11.8
+11.8,11.1,11.3</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (hány utolsó gyertya legyen figyelembe véve)</label>
+            <input type="number" id="williamsr-period" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcWilliamsR()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="williamsr-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A skála fordítottja a Stochastic Oscillátornak: amíg a Stochastic 0-100 közötti, és magas érték jelent túlvettséget, a Williams %R 0 és -100 közötti, és a 0-hoz közeli (nem a -100-hoz közeli) érték jelent túlvettséget.</p>
+        </div>
+    </div>
+
+    <!-- ================= STOCHASTIC OSCILLATOR KALKULÁTOR (OKTATÁSI) =================
+         %K_i = (Close_i - LowestLow_N,i) / (HighestHigh_N,i - LowestLow_N,i) × 100,
+         minden i-re a periódus utolsó N gyertyájából számolva.
+         %D = a %K sorozat utolsó D elemének SMA-ja (a szokásos "lassú"
+         simítás). -->
+    <div id="stochastic-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-neon-green"></i> Stochastic Oscillator Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('stochastic-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Stochastic 0-100 közötti momentum-indikátor, ami azt méri, a záróár hol helyezkedik el az adott időszak legmagasabb és legalacsonyabb ára között. Két vonalból áll: a %K (gyorsabb) és %D (a %K simított átlaga, lassabb) vonalból. 80 fölött hagyományosan túlvett, 20 alatt túladott állapotot jelez. Add meg a gyertyákat (Magas,Alacsony,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró (soronként egy)</label>
+            <textarea id="stochastic-candles" rows="6" placeholder="10,9,9.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">10,9,9.8
+10.2,9.6,10.1
+10.5,9.8,10.4
+10.3,9.9,10
+10.6,10,10.5
+10.8,10.2,10.7
+10.9,10.3,10.4
+11.1,10.5,11
+11.3,10.7,11.2
+11.2,10.6,10.8
+11.5,10.9,11.4
+11.4,10.8,11
+11.7,11,11.6
+11.9,11.2,11.8
+11.8,11.1,11.3
+12.1,11.4,11.9
+12.3,11.6,12.2</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">%K periódus</label>
+            <input type="number" id="stochastic-kperiod" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">%D simítási periódus</label>
+            <input type="number" id="stochastic-dperiod" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcStochastic()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="stochastic-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A %D kiszámításához a %K periódusnál (%K periódus + %D periódus - 1) gyertya szükséges, mert a %D a %K sorozat egy mozgóátlaga, nem csak egyetlen pont.</p>
+        </div>
+    </div>
+
     <!-- ================= MASS INDEX KALKULÁTOR (OKTATÁSI) =================
          Donald Dorsey klasszikus Mass Index: range_i = Magas_i - Alacsony_i;
          EMA9(range); EMA9(EMA9(range)) (dupla simítás); ratio_i =
@@ -5303,6 +5409,20 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">On-Balance Volume (OBV) Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Kumulatív volumen-indikátor, divergencia-jelzéssel</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('williamsr-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-ruler-combined"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Williams %R Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Momentum-oszcillátor fordított 0/-100 skálán</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('stochastic-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Stochastic Oscillator Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">%K és %D vonalak kiszámítása</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -11683,6 +11803,129 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">OBV-változás (teljes sorozat):</span>
                         <span class="font-extrabold ${obvChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${obvChange >= 0 ? '+' : ''}${obvChange.toFixed(0)}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= WILLIAMS %R KALKULÁTOR (OKTATÁSI) =================
+        // %R = (HighestHigh_N - Close) / (HighestHigh_N - LowestLow_N) × -100.
+        function calcWilliamsR() {
+            const candlesEl = document.getElementById('williamsr-candles');
+            const periodEl = document.getElementById('williamsr-period');
+            const out = document.getElementById('williamsr-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2] });
+                }
+            }
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1 || candles.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább annyi gyertyát (Magas,Alacsony,Záró formátumban), amennyi a periódus!</div>`;
+                return;
+            }
+
+            const lastN = candles.slice(-period);
+            const highestHigh = Math.max(...lastN.map(c => c.high));
+            const lowestLow = Math.min(...lastN.map(c => c.low));
+            const lastClose = candles[candles.length - 1].close;
+
+            if (highestHigh === lowestLow) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A periódus utolsó ${period} gyertyájának ártartománya nulla (Magas = Alacsony mindegyikben) — a Williams %R nem számolható!</div>`;
+                return;
+            }
+
+            const williamsR = ((highestHigh - lastClose) / (highestHigh - lowestLow)) * -100;
+
+            let colorClass, verdict;
+            if (williamsR > -20) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (-20 fölött) — a záróár a közelmúlt tartományának tetején van, lehetséges korrekció vagy fordulat jöhet.'; }
+            else if (williamsR < -80) { colorClass = 'text-neon-green'; verdict = 'Túladott zóna (-80 alatt) — a záróár a közelmúlt tartományának alján van, lehetséges fordulat felfelé jöhet.'; }
+            else { colorClass = 'text-slate-300'; verdict = 'Neutrális zóna — a záróár a közelmúlt tartományának középső részén van, nincs extrém túlvett/túladott jelzés.'; }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-neon-purple/30 bg-neon-purple/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Williams %R (${period} periódus)</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${williamsR.toFixed(2)}</div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= STOCHASTIC OSCILLATOR KALKULÁTOR (OKTATÁSI) =================
+        // %K_i = (Close_i-LowestLow_N,i)/(HighestHigh_N,i-LowestLow_N,i)×100.
+        // %D = a %K sorozat utolsó D elemének egyszerű mozgóátlaga.
+        function calcStochastic() {
+            const candlesEl = document.getElementById('stochastic-candles');
+            const kPeriodEl = document.getElementById('stochastic-kperiod');
+            const dPeriodEl = document.getElementById('stochastic-dperiod');
+            const out = document.getElementById('stochastic-result');
+            if (!candlesEl || !kPeriodEl || !dPeriodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2] });
+                }
+            }
+            const kPeriod = parseInt(kPeriodEl.value);
+            const dPeriod = parseInt(dPeriodEl.value);
+
+            if (!kPeriod || kPeriod < 1 || !dPeriod || dPeriod < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív egész %K és %D periódusokat!</div>`;
+                return;
+            }
+
+            const neededCandles = kPeriod + dPeriod - 1;
+            if (candles.length < neededCandles) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${neededCandles} gyertya szükséges (%K periódus + %D periódus - 1), jelenleg ${candles.length} van megadva!</div>`;
+                return;
+            }
+
+            const kValues = [];
+            for (let i = kPeriod - 1; i < candles.length; i++) {
+                const window = candles.slice(i - kPeriod + 1, i + 1);
+                const hh = Math.max(...window.map(c => c.high));
+                const ll = Math.min(...window.map(c => c.low));
+                const close = candles[i].close;
+                kValues.push(hh === ll ? 50 : ((close - ll) / (hh - ll)) * 100);
+            }
+
+            if (kValues.length < dPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég %K érték a %D kiszámításához!</div>`;
+                return;
+            }
+
+            const lastKValues = kValues.slice(-dPeriod);
+            const dValue = lastKValues.reduce((a, b) => a + b, 0) / dPeriod;
+            const kValue = kValues[kValues.length - 1];
+
+            let colorClass, verdict;
+            if (kValue > 80) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (%K 80 fölött) — a záróár a periódus tartományának tetején van.'; }
+            else if (kValue < 20) { colorClass = 'text-neon-green'; verdict = 'Túladott zóna (%K 20 alatt) — a záróár a periódus tartományának alján van.'; }
+            else { colorClass = 'text-slate-300'; verdict = 'Neutrális zóna — nincs extrém túlvett/túladott jelzés.'; }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-neon-green/30 bg-neon-green/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">%K (gyors vonal)</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${kValue.toFixed(2)}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">%D (lassú, simított vonal):</span>
+                        <span class="font-extrabold text-white text-sm">${dValue.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">%K vs %D:</span>
+                        <span class="font-extrabold ${kValue >= dValue ? 'text-neon-green' : 'text-neon-red'} text-sm">${kValue >= dValue ? '%K a %D fölött' : '%K a %D alatt'}</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -21608,6 +21851,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             315: { tool: 'cmf-modal', cta: 'Számold ki élesben a Chaikin Money Flow-t' },
             127: { tool: 'adx-modal', cta: 'Számold ki élesben az ADX-et és a +DI/-DI vonalakat' },
             78: { tool: 'obv-modal', cta: 'Számold ki élesben az On-Balance Volume-t' },
+            252: { tool: 'williamsr-modal', cta: 'Számold ki élesben a Williams %R-t' },
+            45: { tool: 'stochastic-modal', cta: 'Számold ki élesben a Stochastic %K/%D vonalakat' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -21617,7 +21862,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
