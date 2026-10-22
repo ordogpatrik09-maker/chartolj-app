@@ -1386,6 +1386,13 @@
                                 <div class="text-[10px] text-slate-400">Ehlers alacsony-késleltetésű súlypont-oszcillátora</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('mcclellan-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-area"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">McClellan Oscillator Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Piaci szélesség: EMA19-EMA39 Net Advance</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5917,6 +5924,79 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          súly=1), és minél régebbi egy ár, annál nagyobb súlyt kap a
          számlálóban. A negatív előjel a konvenció miatt szerepel, hogy a
          görbe iránya intuitívan követhető legyen az árfolyammal. -->
+    <!-- ================= MCCLELLAN OSCILLATOR KALKULÁTOR (OKTATÁSI) =================
+         Napi Net Advance = Emelkedő részvények száma - Eső részvények száma;
+         McClellan Oscillator = EMA19(Net Advance) - EMA39(Net Advance). A
+         piaci SZÉLESSÉGET méri (hány eszköz vesz részt a mozgásban), nem
+         egyetlen index árváltozását — ha egy index csak néhány nagy
+         részvény miatt emelkedik, miközben a többség esik, az gyenge,
+         kockázatos trendet jelezhet. -->
+    <div id="mcclellan-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-area text-amber-400"></i> McClellan Oscillator Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('mcclellan-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A McClellan Oscillator a piaci SZÉLESSÉGET méri (hány részvény vesz részt egy trendben), nem egyetlen index árát. Napi Net Advance = Emelkedő részvények száma − Eső részvények száma. McClellan Oscillator = EMA19(Net Advance) − EMA39(Net Advance). Ha az index emelkedik, de a Net Advance sorozatból számolt oszcillátor negatívba fordul, az gyenge, csak néhány nagy részvény által hajtott, kockázatos trendet jelezhet. Legalább 39 napi adat szükséges. Add meg a napi Net Advance értékeket (Emelkedő - Eső) soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Napi Net Advance (Emelkedő - Eső részvények, soronként egy, legalább 39 nap)</label>
+            <textarea id="mcclellan-net" rows="7" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">1773
+-465
+-166
+-692
+-515
+-709
+-1029
+-303
+450
+785
+1004
+-526
+-905
+776
+1083
+1207
+550
+-1491
+-354
+-1384
+536
+-793
+1745
+-717
+577
+91
+-751
+-143
+-184
+-1020
+-1143
+756
+1689
+-434
+687
+423
+-661
+-576
+-715
+-1206
+-1169
+-681
+1355
+794
+292</textarea>
+
+            <button onclick="calcMcClellan()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="mcclellan-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A nulla vonal keresztezése gyakran jelez rövid-távú lendületváltást a piaci szélességben — pozitív érték szélesebb körű vételi, negatív szélesebb körű eladási nyomást jelez.</p>
+        </div>
+    </div>
+
     <div id="cog-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7218,6 +7298,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Center of Gravity (CoG) Oscillator</div>
                     <div class="text-[10px] text-slate-400">Ehlers alacsony-késleltetésű súlypont-oszcillátora</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('mcclellan-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-area"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">McClellan Oscillator Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Piaci szélesség: EMA19-EMA39 Net Advance</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14657,6 +14744,47 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-slate-400">Jelenlegi záróár:</span>
                         <span class="font-extrabold ${colorClass} text-sm">${lastClose.toFixed(2)}</span>
                     </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcMcClellan() {
+            const netEl = document.getElementById('mcclellan-net');
+            const out = document.getElementById('mcclellan-result');
+            if (!netEl || !out) return;
+
+            const lines = netEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const net = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+
+            const emaShort = 19, emaLong = 39;
+
+            if (net.length < emaLong) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${emaLong} napi Net Advance adat szükséges az EMA39 kiszámításához — jelenleg ${net.length} van megadva!</div>`;
+                return;
+            }
+
+            const ema19Series = emaSmaSeededAligned(net, emaShort);
+            const ema39Series = emaSmaSeededAligned(net, emaLong);
+            const ema19Last = ema19Series[ema19Series.length - 1];
+            const ema39Last = ema39Series[ema39Series.length - 1];
+
+            if (ema19Last === null || ema39Last === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni az EMA sorozatokat — adj meg több adatot!</div>`;
+                return;
+            }
+
+            const mcclellan = ema19Last - ema39Last;
+            const colorClass = mcclellan >= 0 ? 'text-neon-green' : 'text-neon-red';
+            const verdict = mcclellan >= 0
+                ? 'Pozitív McClellan Oscillator — szélesebb körű vételi nyomás a piaci szélesség szerint.'
+                : 'Negatív McClellan Oscillator — szélesebb körű eladási nyomás a piaci szélesség szerint.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">EMA19 (Net Advance):</span><span class="text-white">${ema19Last.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA39 (Net Advance):</span><span class="text-white">${ema39Last.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">McClellan Oscillator:</span><span class="${colorClass} font-extrabold text-sm">${mcclellan >= 0 ? '+' : ''}${mcclellan.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -25789,6 +25917,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             388: { tool: 'bop-modal', cta: 'Számold ki élesben a Balance of Power indikátort' },
             391: { tool: 'uo-modal', cta: 'Számold ki élesben az Ultimate Oscillatort' },
             481: { tool: 'cog-modal', cta: 'Számold ki élesben a Center of Gravity Oscillatort' },
+            453: { tool: 'mcclellan-modal', cta: 'Számold ki élesben a McClellan Oscillatort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -25798,7 +25927,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
