@@ -1428,6 +1428,13 @@
                                 <div class="text-[10px] text-slate-400">4 időtávú súlyozott momentum-kombináció</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('divergence-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-rose-400/10 text-rose-400 border border-rose-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-compare"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Divergencia Ellenőrző</div>
+                                <div class="text-[10px] text-slate-400">Rendes vagy rejtett divergencia besorolása</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6179,6 +6186,56 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= DIVERGENCIA ELLENŐRZŐ (REGULAR / HIDDEN) KALKULÁTOR (OKTATÁSI) =================
+         Mélypont-elemzésnél: ár magasabb mélypont + indikátor alacsonyabb mélypont = Hidden Bullish (folytatódás);
+         ár alacsonyabb mélypont + indikátor magasabb mélypont = Regular Bullish (fordulat).
+         Csúcs-elemzésnél: ár magasabb csúcs + indikátor alacsonyabb csúcs = Regular Bearish (fordulat);
+         ár alacsonyabb csúcs + indikátor magasabb csúcs = Hidden Bearish (folytatódás). -->
+    <div id="divergence-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-code-compare text-rose-400"></i> Divergencia Ellenőrző
+                </h3>
+                <button onclick="closeToolModal('divergence-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg két egymást követő swing-pont (mélypont vagy csúcs) árát és a hozzájuk tartozó indikátor-értéket (pl. RSI, MACD), és a kalkulátor besorolja a divergencia típusát: <strong class="text-white">rendes (reversal)</strong> vagy <strong class="text-white">rejtett (continuation)</strong>.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Swing típusa</label>
+            <select id="divergence-swingtype" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 text-xs text-white focus:outline-none focus:border-rose-400/50">
+                <option value="low">Mélypontok (Low-Low) — bullish divergencia vizsgálata</option>
+                <option value="high">Csúcsok (High-High) — bearish divergencia vizsgálata</option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">1. ár (korábbi)</label>
+                    <input type="number" id="divergence-price1" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">2. ár (újabb)</label>
+                    <input type="number" id="divergence-price2" value="95" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">1. indikátor-érték</label>
+                    <input type="number" id="divergence-ind1" value="25" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">2. indikátor-érték</label>
+                    <input type="number" id="divergence-ind2" value="30" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">
+                </div>
+            </div>
+
+            <button onclick="calcDivergenceCheck()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-rose-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Ellenőrzés
+            </button>
+
+            <div id="divergence-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7669,6 +7726,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Know Sure Thing (KST) Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">4 időtávú súlyozott momentum-kombináció</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('divergence-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-rose-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-rose-400/10 text-rose-400 border border-rose-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-code-compare"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Divergencia Ellenőrző</div>
+                    <div class="text-[10px] text-slate-400">Rendes vagy rejtett divergencia besorolása</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15419,6 +15483,56 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold ${crossUp ? 'text-neon-green' : 'text-neon-red'}">${verdict}</p>
                 <p class="text-[10px] text-slate-400 mt-1">${zeroLineNote}</p>
+            `;
+        }
+
+        function calcDivergenceCheck() {
+            const swingTypeEl = document.getElementById('divergence-swingtype');
+            const price1El = document.getElementById('divergence-price1');
+            const price2El = document.getElementById('divergence-price2');
+            const ind1El = document.getElementById('divergence-ind1');
+            const ind2El = document.getElementById('divergence-ind2');
+            const out = document.getElementById('divergence-result');
+            if (!swingTypeEl || !price1El || !price2El || !ind1El || !ind2El || !out) return;
+
+            const swingType = swingTypeEl.value;
+            const price1 = parseFloat(price1El.value);
+            const price2 = parseFloat(price2El.value);
+            const ind1 = parseFloat(ind1El.value);
+            const ind2 = parseFloat(ind2El.value);
+
+            if ([price1, price2, ind1, ind2].some(v => isNaN(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+                return;
+            }
+
+            let category = 'NONE';
+            if (price1 !== price2 && ind1 !== ind2) {
+                const priceHigher = price2 > price1;
+                const indHigher = ind2 > ind1;
+                if (swingType === 'low') {
+                    if (priceHigher && !indHigher) category = 'HIDDEN_BULLISH';
+                    else if (!priceHigher && indHigher) category = 'REGULAR_BULLISH';
+                } else {
+                    if (priceHigher && !indHigher) category = 'REGULAR_BEARISH';
+                    else if (!priceHigher && indHigher) category = 'HIDDEN_BEARISH';
+                }
+            }
+
+            const info = {
+                HIDDEN_BULLISH: { label: 'Rejtett Bullish Divergencia', color: 'text-neon-green', desc: 'Az ár magasabb mélypontot alkot, de az indikátor alacsonyabb mélypontot — ez a FELFELÉ trend FOLYTATÓDÁSÁT jelzi, nem fordulatot.' },
+                REGULAR_BULLISH: { label: 'Rendes Bullish Divergencia', color: 'text-neon-green', desc: 'Az ár alacsonyabb mélypontot alkot, de az indikátor magasabb mélypontot — ez a lefelé trend lehetséges FORDULATÁT (felfelé) jelzi.' },
+                REGULAR_BEARISH: { label: 'Rendes Bearish Divergencia', color: 'text-neon-red', desc: 'Az ár magasabb csúcsot alkot, de az indikátor alacsonyabb csúcsot — ez a felfelé trend lehetséges FORDULATÁT (lefelé) jelzi.' },
+                HIDDEN_BEARISH: { label: 'Rejtett Bearish Divergencia', color: 'text-neon-red', desc: 'Az ár alacsonyabb csúcsot alkot, de az indikátor magasabb csúcsot — ez a LEFELÉ trend FOLYTATÓDÁSÁT jelzi, nem fordulatot.' },
+                NONE: { label: 'Nincs divergencia', color: 'text-slate-400', desc: 'Az ár és az indikátor egyező irányba mozog (vagy egyenlő értékek) — nincs klasszikus divergencia-jel a megadott két pont alapján.' },
+            };
+            const result = info[category];
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="text-center text-sm font-extrabold ${result.color}">${result.label}</div>
+                </div>
+                <p class="text-[10px] font-semibold text-slate-300 leading-relaxed">${result.desc}</p>
             `;
         }
 
@@ -26600,6 +26714,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             428: { tool: 'sortino-modal', cta: 'Számold ki élesben a MAR-alapú Sortino Rátát' },
             280: { tool: 'sortino-modal', cta: 'Hasonlítsd össze élesben a két stratégia Sortino Rátáját' },
             235: { tool: 'poscalc-modal', cta: 'Számold ki élesben a teljes kockázatkezelési lépéssort' },
+            80: { tool: 'divergence-modal', cta: 'Ellenőrizd élesben a rejtett divergenciát' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -26609,7 +26724,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
