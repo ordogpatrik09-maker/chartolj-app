@@ -1456,6 +1456,20 @@
                                 <div class="text-[10px] text-slate-400">Nyitási tartomány kitörés és célár</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('rsc-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-teal-400/10 text-teal-400 border border-teal-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrows-left-right-to-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Relative Strength Comparative</div>
+                                <div class="text-[10px] text-slate-400">Eszköz/benchmark arány — relatív teljesítmény</div>
+                            </div>
+                        </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('vwmacd-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Volume Weighted MACD</div>
+                                <div class="text-[10px] text-slate-400">MACD volumen-súlyozott mozgóátlagokkal</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6346,6 +6360,60 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= RELATIVE STRENGTH COMPARATIVE (RSC) KALKULÁTOR (OKTATÁSI) =================
+         RSC = (Eszköz ára / Benchmark ára) × 100, soronkénti pár alapján. Az RSC-vonal emelkedése
+         relatív felülteljesítést jelez a nyers árváltozástól függetlenül. -->
+    <div id="rsc-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-left-right-to-line text-teal-400"></i> Relative Strength Comparative Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('rsc-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Figyelem: ez NEM az RSI! Add meg az eszköz és egy benchmark (pl. index) árfolyamát soronként (Eszköz ár, Benchmark ár), és a kalkulátor az RSC-vonalat (arányt) számolja ki. Ha az RSC-vonal emelkedik, az eszköz jobban teljesít a benchmarknál, függetlenül a nyers árváltozástól.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Eszköz ár, Benchmark ár (soronként)</label>
+            <textarea id="rsc-prices" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-teal-400/50" placeholder="50,100&#10;52,101&#10;...">50,100
+52,101
+51,102
+54,101
+56,103
+58,102
+57,101</textarea>
+
+            <button onclick="calcRSC()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-teal-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="rsc-result" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- ================= VOLUME WEIGHTED MACD (VWMACD) KALKULÁTOR (OKTATÁSI) =================
+         VWMACD = VWMA(12) - VWMA(26), mindkettő volumen-súlyozott mozgóátlagként számolva (nem EMA).
+         Jelvonal = SMA9(VWMACD). Histogram = VWMACD - Jelvonal. -->
+    <div id="vwmacd-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-fuchsia-400"></i> Volume Weighted MACD Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('vwmacd-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A hagyományos MACD-t volumen-súlyozott mozgóátlagokkal (VWMA) számolja, nem sima EMA-val — extra súlyt adva a magas volumenű napoknak, mivel egy magas volumenű nap nagyobb valós piaci konszenzust tükröz. Add meg a záróár/volumen pártokat soronként (legalább 35 adat szükséges).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróár, Volumen (soronként, min. 35 adat)</label>
+            <textarea id="vwmacd-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50" placeholder="100,1200&#10;101,1400&#10;..."></textarea>
+
+            <button onclick="calcVWMACD()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-fuchsia-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="vwmacd-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7864,6 +7932,20 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Opening Range Breakout (ORB)</div>
                     <div class="text-[10px] text-slate-400">Nyitási tartomány kitörés és célár</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('rsc-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-teal-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-teal-400/10 text-teal-400 border border-teal-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrows-left-right-to-line"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Relative Strength Comparative</div>
+                    <div class="text-[10px] text-slate-400">Eszköz/benchmark arány — relatív teljesítmény</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('vwmacd-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-fuchsia-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-line"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Volume Weighted MACD</div>
+                    <div class="text-[10px] text-slate-400">MACD volumen-súlyozott mozgóátlagokkal</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15808,6 +15890,129 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Opening Range mérete:</span><span class="text-white">${range.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     ${target !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Célár (1:1 mért mozgás):</span><span class="${colorClass} font-extrabold">${target.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Javasolt stop:</span><span class="text-white">${stop.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>` : ''}
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcRSC() {
+            const pricesEl = document.getElementById('rsc-prices');
+            const out = document.getElementById('rsc-result');
+            if (!pricesEl || !out) return;
+
+            const lines = pricesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const rows = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p)) && parts[1] !== 0) {
+                    rows.push({ asset: parts[0], benchmark: parts[1] });
+                }
+            }
+
+            if (rows.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 érvényes (eszköz, benchmark) pár szükséges!</div>`;
+                return;
+            }
+
+            const rsc = rows.map(r => (r.asset / r.benchmark) * 100);
+            const first = rsc[0];
+            const last = rsc[rsc.length - 1];
+            const pctChange = ((last - first) / first) * 100;
+            const outperforming = last > first;
+
+            const colorClass = outperforming ? 'text-neon-green' : 'text-neon-red';
+            const verdict = outperforming
+                ? 'Az RSC-vonal emelkedik — az eszköz a vizsgált időszakban jobban teljesített a benchmarknál, függetlenül a nyers árváltozástól.'
+                : 'Az RSC-vonal csökken — az eszköz a vizsgált időszakban rosszabbul teljesített a benchmarknál, függetlenül a nyers árváltozástól.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">RSC (kezdő):</span><span class="text-white">${first.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">RSC (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${last.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Változás:</span><span class="${colorClass} font-extrabold">${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(3)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcVWMACD() {
+            const candlesEl = document.getElementById('vwmacd-candles');
+            const out = document.getElementById('vwmacd-result');
+            if (!candlesEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = [], volumes = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    closes.push(parts[0]);
+                    volumes.push(parts[1]);
+                }
+            }
+
+            const n = closes.length;
+            const fastP = 12, slowP = 26, signalP = 9;
+            const minNeeded = slowP + signalP;
+            if (n < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} adatpont szükséges a VWMACD-hez — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            function vwmaSeries(period) {
+                const r = new Array(n).fill(null);
+                for (let i = 0; i < n; i++) {
+                    if (i < period - 1) continue;
+                    let num = 0, den = 0;
+                    for (let j = i - period + 1; j <= i; j++) {
+                        num += closes[j] * volumes[j];
+                        den += volumes[j];
+                    }
+                    r[i] = den !== 0 ? num / den : null;
+                }
+                return r;
+            }
+
+            const vwma12 = vwmaSeries(fastP);
+            const vwma26 = vwmaSeries(slowP);
+            const vwmacd = new Array(n).fill(null);
+            for (let i = 0; i < n; i++) {
+                if (vwma12[i] === null || vwma26[i] === null) continue;
+                vwmacd[i] = vwma12[i] - vwma26[i];
+            }
+
+            function sma(series, period) {
+                const r = new Array(series.length).fill(null);
+                for (let i = 0; i < series.length; i++) {
+                    if (series[i] === null) continue;
+                    if (i - period + 1 < 0) continue;
+                    const w = series.slice(i - period + 1, i + 1);
+                    if (w.some(v => v === null)) continue;
+                    r[i] = w.reduce((a, b) => a + b, 0) / period;
+                }
+                return r;
+            }
+
+            const signal = sma(vwmacd, signalP);
+            const lastVwmacd = vwmacd[n - 1];
+            const lastSignal = signal[n - 1];
+
+            if (lastVwmacd === null || lastSignal === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni a VWMACD-t és a jelvonalat — adj meg több adatot!</div>`;
+                return;
+            }
+
+            const histogram = lastVwmacd - lastSignal;
+            const crossUp = histogram > 0;
+            const colorClass = crossUp ? 'text-neon-green' : 'text-neon-red';
+            const verdict = crossUp
+                ? 'A VWMACD a jelvonal fölé emelkedett — bullish momentumjelzés, magas volumenű napok konszenzusával megerősítve.'
+                : 'A VWMACD a jelvonal alá esett — bearish momentumjelzés, magas volumenű napok konszenzusával megerősítve.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">VWMACD vonal:</span><span class="text-white">${lastVwmacd.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (SMA9):</span><span class="text-white">${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Histogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${histogram.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -26997,6 +27202,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             203: { tool: 'maribbon-modal', cta: 'Számold ki élesben a Mozgóátlag Szalagot' },
             425: { tool: 'maribbon-modal', cta: 'Számold ki élesben a Rainbow Mozgóátlagot' },
             116: { tool: 'orb-modal', cta: 'Számold ki élesben az Opening Range Breakoutot' },
+            246: { tool: 'betasize-modal', cta: 'Számold ki élesben a Béta-kiegyensúlyozott pozícióméretet' },
+            482: { tool: 'sortino-modal', cta: 'Hasonlítsd össze élesben a két stratégia Downside Deviationjét' },
+            36: { tool: 'corrmatrix-modal', cta: 'Ellenőrizd élesben a pozícióid korrelációját' },
+            419: { tool: 'rsc-modal', cta: 'Számold ki élesben a Relative Strength Comparative-ot' },
+            458: { tool: 'vwmacd-modal', cta: 'Számold ki élesben a Volume Weighted MACD-t' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -27006,7 +27216,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
