@@ -1393,6 +1393,13 @@
                                 <div class="text-[10px] text-slate-400">Piaci szélesség: EMA19-EMA39 Net Advance</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('klinger-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-droplet"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Klinger Volume Oscillator (KVO)</div>
+                                <div class="text-[10px] text-slate-400">Rövid/hosszú távú volumen-alapú pénzáramlás</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5931,6 +5938,94 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          egyetlen index árváltozását — ha egy index csak néhány nagy
          részvény miatt emelkedik, miközben a többség esik, az gyenge,
          kockázatos trendet jelezhet. -->
+    <!-- ================= KLINGER VOLUME OSCILLATOR (KVO) KALKULÁTOR (OKTATÁSI) =================
+         Napi Typical Price (TP) = (H+L+C)/3; Trend = +1, ha TP[i] > TP[i-1],
+         egyébként -1; dm = High - Low; cm (kumulatív mérték) = ha a trend
+         nem változott: cm[i-1]+dm[i], ha változott: dm[i-1]+dm[i]; Volume
+         Force (VF) = Volumen × |2×(dm/cm − 1)| × Trend × 100; KVO =
+         EMA34(VF) - EMA55(VF). A nulla vonal keresztezése a rövid/hosszú
+         távú pénzáramlás viszonyának változását jelzi. -->
+    <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-droplet text-neon-cyan"></i> Klinger Volume Oscillator (KVO)
+                </h3>
+                <button onclick="closeToolModal('klinger-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Stephen Klinger indikátora két eltérő periódusú, volumen-alapú mozgóátlagot hasonlít össze (EMA34 és EMA55 a Volume Force-ból), hogy azonosítsa a hosszú és rövid távú pénzáramlás közti eltérést. Az OBV-vel ellentétben a Klinger NEM egyetlen kumulatív vonal, hanem két időtáv összehasonlítására épül, árnyaltabb jelzést adva. A nulla vonal fölé/alá kerülés a rövid/hosszú távú trend viszonyának változását jelezheti. Legalább 56 gyertya szükséges. Add meg az adatokat (Magas,Alacsony,Záró,Volumen) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró,Volumen (soronként egy, legalább 56 db)</label>
+            <textarea id="klinger-candles" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[9px] text-white focus:outline-none focus:border-neon-cyan/50">100.48,98.51,100.65,9045
+101.41,99.92,101.57,15788
+102.64,100.48,102.95,11452
+104.58,102.45,102.19,19769
+103.03,100.52,101.88,15366
+103.26,101.33,102.2,15878
+102.97,101.88,100.93,14745
+101.8,100.49,100.11,11256
+101.09,98.12,100.05,14953
+100.51,98.66,101.48,14482
+102.78,100.1,100.58,6551
+102.15,99.45,101.29,9437
+102.36,100.62,102.43,13199
+103.16,101.92,104.23,9565
+105.0,103.88,105.17,6865
+106.64,103.87,105.07,16229
+105.66,104.11,104.59,12533
+105.64,103.28,103.41,12774
+104.38,102.34,103.94,13012
+104.35,103.39,104.76,14362
+105.81,103.06,104.6,11932
+104.93,103.09,104.31,12717
+105.06,103.5,103.43,15295
+104.69,101.78,102.25,6602
+102.61,101.42,103.99,14601
+105.15,102.81,105.15,9121
+105.64,103.22,106.21,5029
+106.9,104.42,105.58,9073
+106.23,104.12,105.17,16819
+106.77,104.25,105.53,14762
+107.09,103.89,104.55,15560
+106.28,103.63,104.32,11357
+105.54,102.7,103.85,19996
+105.77,103.5,104.48,12035
+105.57,103.6,103.84,6691
+104.36,103.45,105.41,8466
+106.15,104.35,105.7,11234
+106.09,105.22,106.53,13868
+107.55,106.01,105.76,7400
+107.44,105.17,104.32,19880
+105.0,102.92,104.98,10791
+106.98,103.67,106.2,16521
+106.58,105.21,105.58,12698
+106.43,105.15,105.29,16143
+106.68,103.88,106.5,19201
+106.92,104.77,105.38,5843
+107.09,103.5,104.11,18005
+105.56,103.73,105.85,19520
+107.16,105.55,105.84,17849
+107.61,104.32,104.4,6331
+106.35,103.68,105.15,15581
+106.32,103.92,106.28,16876
+108.26,104.4,107.75,19012
+108.26,106.8,107.22,16870
+109.11,106.87,106.17,14282
+107.84,104.67,107.87,13579
+109.16,106.04,106.45,15585
+106.87,105.41,106.85,18014
+108.18,106.13,107.87,11862
+109.83,106.24,107.62,16722</textarea>
+
+            <button onclick="calcKlingerOscillator()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="klinger-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A KVO abszolút értéke önmagában nehezen interpretálható (a volumen nagyságrendjétől függ) — a legtöbb kereskedő a nulla vonal keresztezését vagy egy Signal vonallal (KVO EMA-ja) való kereszteződést figyeli.</p>
+        </div>
+    </div>
+
     <div id="mcclellan-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7305,6 +7400,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">McClellan Oscillator Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Piaci szélesség: EMA19-EMA39 Net Advance</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('klinger-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-droplet"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Klinger Volume Oscillator (KVO)</div>
+                    <div class="text-[10px] text-slate-400">Rövid/hosszú távú volumen-alapú pénzáramlás</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14744,6 +14846,81 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-slate-400">Jelenlegi záróár:</span>
                         <span class="font-extrabold ${colorClass} text-sm">${lastClose.toFixed(2)}</span>
                     </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcKlingerOscillator() {
+            const candlesEl = document.getElementById('klinger-candles');
+            const out = document.getElementById('klinger-result');
+            if (!candlesEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2], volume: parts[3] });
+                }
+            }
+
+            const n = candles.length;
+            const emaShort = 34, emaLong = 55;
+
+            if (n < emaLong + 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${emaLong + 1} gyertya szükséges az EMA55 kiszámításához — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            const tp = candles.map(c => (c.high + c.low + c.close) / 3);
+            const trend = new Array(n).fill(null);
+            const dm = new Array(n).fill(null);
+            const cm = new Array(n).fill(null);
+            const vf = new Array(n).fill(null);
+
+            trend[0] = 1;
+            dm[0] = candles[0].high - candles[0].low;
+            cm[0] = dm[0];
+
+            for (let i = 1; i < n; i++) {
+                dm[i] = candles[i].high - candles[i].low;
+                trend[i] = tp[i] > tp[i - 1] ? 1 : -1;
+                if (trend[i] === trend[i - 1]) {
+                    cm[i] = cm[i - 1] + dm[i];
+                } else {
+                    cm[i] = dm[i - 1] + dm[i];
+                }
+            }
+
+            const vfValid = [];
+            for (let i = 1; i < n; i++) {
+                const ratio = cm[i] !== 0 ? dm[i] / cm[i] : 0;
+                vf[i] = candles[i].volume * Math.abs(2 * (ratio - 1)) * trend[i] * 100;
+                vfValid.push(vf[i]);
+            }
+
+            const ema34Series = emaSmaSeededAligned(vfValid, emaShort);
+            const ema55Series = emaSmaSeededAligned(vfValid, emaLong);
+            const ema34Last = ema34Series[ema34Series.length - 1];
+            const ema55Last = ema55Series[ema55Series.length - 1];
+
+            if (ema34Last === null || ema55Last === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni az EMA sorozatokat — adj meg több adatot!</div>`;
+                return;
+            }
+
+            const kvo = ema34Last - ema55Last;
+            const colorClass = kvo >= 0 ? 'text-neon-green' : 'text-neon-red';
+            const verdict = kvo >= 0
+                ? 'Pozitív KVO — a rövid-távú pénzáramlás erősebb a hosszú-távúnál, bullish momentumra utal.'
+                : 'Negatív KVO — a rövid-távú pénzáramlás gyengébb a hosszú-távúnál, bearish momentumra utal.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">EMA34 (Volume Force):</span><span class="text-white">${ema34Last.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA55 (Volume Force):</span><span class="text-white">${ema55Last.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Klinger Oscillator (KVO):</span><span class="${colorClass} font-extrabold text-sm">${kvo >= 0 ? '+' : ''}${kvo.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -25918,6 +26095,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             391: { tool: 'uo-modal', cta: 'Számold ki élesben az Ultimate Oscillatort' },
             481: { tool: 'cog-modal', cta: 'Számold ki élesben a Center of Gravity Oscillatort' },
             453: { tool: 'mcclellan-modal', cta: 'Számold ki élesben a McClellan Oscillatort' },
+            319: { tool: 'klinger-modal', cta: 'Számold ki élesben a Klinger Volume Oscillatort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -25927,7 +26105,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
