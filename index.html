@@ -1498,6 +1498,13 @@
                                 <div class="text-[10px] text-slate-400">Tőkeáttétel és fenntartási margin alapján</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('trailingstop-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-violet-400/10 text-violet-400 border border-violet-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-person-walking-arrow-right"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Trailing Stop Szimulátor</div>
+                                <div class="text-[10px] text-slate-400">Fix vagy ATR-alapú trailing stop lépésenként</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6580,6 +6587,54 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= TRAILING STOP SZIMULÁTOR (OKTATÁSI) =================
+         Long: stop = max(előző stop, ár - távolság), minden lépésben csak nő, soha nem csökken.
+         Triggerelés, ha ár <= aktuális stop. A távolság fix érték vagy ATR × szorzó lehet. -->
+    <div id="trailingstop-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-person-walking-arrow-right text-violet-400"></i> Trailing Stop Szimulátor
+                </h3>
+                <button onclick="closeToolModal('trailingstop-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az árak sorozatát (soronként egy záróár) egy long pozícióra, és egy stop-távolságot (fix összeg, vagy ATR × szorzó — ehhez add meg az ATR értéket is). A kalkulátor lépésről lépésre szimulálja, hogyan "követi" a trailing stop az árat, és megmutatja, mikor és milyen áron triggerelt volna.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy érték)</label>
+            <textarea id="trailingstop-prices" rows="5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-violet-400/50" placeholder="100&#10;102&#10;105&#10;...">100
+102
+105
+103
+108
+106
+101
+99</textarea>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Mód</label>
+                    <select id="trailingstop-mode" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 text-xs text-white focus:outline-none focus:border-violet-400/50" onchange="document.getElementById('trailingstop-atr-wrap').classList.toggle('hidden', this.value!=='atr')">
+                        <option value="fixed">Fix távolság</option>
+                        <option value="atr">ATR × szorzó</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Fix távolság / szorzó</label>
+                    <input type="number" id="trailingstop-distance" value="5" step="0.01" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-violet-400/50">
+                </div>
+            </div>
+            <div id="trailingstop-atr-wrap" class="hidden mb-4">
+                <label class="text-[11px] font-semibold text-slate-400">ATR érték</label>
+                <input type="number" id="trailingstop-atr" value="2" step="0.01" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-violet-400/50">
+            </div>
+
+            <button onclick="calcTrailingStop()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-violet-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Szimulálás
+            </button>
+
+            <div id="trailingstop-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -8140,6 +8195,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Margin Likvidációs Ár Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Tőkeáttétel és fenntartási margin alapján</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('trailingstop-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-violet-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-violet-400/10 text-violet-400 border border-violet-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-person-walking-arrow-right"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Trailing Stop Szimulátor</div>
+                    <div class="text-[10px] text-slate-400">Fix vagy ATR-alapú trailing stop lépésenként</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -16408,6 +16470,78 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${riskNote}</p>
                 <p class="text-[10px] text-slate-400 mt-1">Javasolt: állíts be stop-loss-t a likvidációs ár ELŐTT, hogy te zárj, ne a bróker kényszer-likvidáljon.</p>
+            `;
+        }
+
+        function calcTrailingStop() {
+            const pricesEl = document.getElementById('trailingstop-prices');
+            const modeEl = document.getElementById('trailingstop-mode');
+            const distanceEl = document.getElementById('trailingstop-distance');
+            const atrEl = document.getElementById('trailingstop-atr');
+            const out = document.getElementById('trailingstop-result');
+            if (!pricesEl || !modeEl || !distanceEl || !atrEl || !out) return;
+
+            const lines = pricesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const prices = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const n = prices.length;
+
+            if (n < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 záróár szükséges a szimulációhoz!</div>`;
+                return;
+            }
+
+            const mode = modeEl.value;
+            const distanceInput = parseFloat(distanceEl.value);
+            const atrValue = parseFloat(atrEl.value);
+
+            if (isNaN(distanceInput) || distanceInput <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, pozitív távolságot/szorzót!</div>`;
+                return;
+            }
+            let distance;
+            if (mode === 'atr') {
+                if (isNaN(atrValue) || atrValue <= 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, pozitív ATR-értéket!</div>`;
+                    return;
+                }
+                distance = distanceInput * atrValue;
+            } else {
+                distance = distanceInput;
+            }
+
+            const stops = [prices[0] - distance];
+            let triggeredAt = null;
+            for (let i = 1; i < n; i++) {
+                const candidate = prices[i] - distance;
+                const stop = Math.max(stops[i - 1], candidate);
+                stops.push(stop);
+                if (prices[i] <= stop) {
+                    triggeredAt = i;
+                    break;
+                }
+            }
+
+            const finalStop = stops[stops.length - 1];
+            let verdict, colorClass;
+            if (triggeredAt !== null) {
+                verdict = `A trailing stop a(z) ${triggeredAt + 1}. gyertyánál (ár: ${prices[triggeredAt].toLocaleString(undefined, { maximumFractionDigits: 4 })}) triggerelt volna, ${finalStop.toLocaleString(undefined, { maximumFractionDigits: 4 })}-es stop szinten.`;
+                colorClass = 'text-neon-red';
+            } else {
+                verdict = `A trailing stop a teljes idősoron NEM triggerelt — a pozíció a végén is nyitva maradt volna, utolsó stop szint: ${finalStop.toLocaleString(undefined, { maximumFractionDigits: 4 })}.`;
+                colorClass = 'text-neon-green';
+            }
+
+            const distanceLabel = mode === 'atr'
+                ? `${distanceInput}× ATR (${atrValue.toLocaleString(undefined, { maximumFractionDigits: 4 })}) = ${distance.toLocaleString(undefined, { maximumFractionDigits: 4 })}`
+                : distance.toLocaleString(undefined, { maximumFractionDigits: 4 });
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Stop-távolság:</span><span class="text-white">${distanceLabel}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kezdő stop:</span><span class="text-white">${stops[0].toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó/trigger stop:</span><span class="${colorClass} font-extrabold text-sm">${finalStop.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
         }
 
@@ -27611,6 +27745,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             534: { tool: 'liquidation-modal', cta: 'Számold ki élesben a likvidációs árat' },
             2: { tool: 'liquidation-modal', cta: 'Számold ki élesben a likvidációs árat' },
             386: { tool: 'liquidation-modal', cta: 'Számold ki élesben a likvidációs árat' },
+            51: { tool: 'trailingstop-modal', cta: 'Szimuláld élesben a Trailing Stop-ot' },
+            192: { tool: 'trailingstop-modal', cta: 'Szimuláld élesben az ATR Trailing Stop-ot' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -27620,7 +27756,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
