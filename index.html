@@ -1645,6 +1645,13 @@
                                 <div class="text-[10px] text-slate-400">Napi compoundolás: miért nem L×-szeres a hosszú távú hozam</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('rebalance-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-violet-400/10 text-violet-400 border border-violet-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Portfólió Rebalancing Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Cél-súlyok visszaállítása: pontos vétel/eladás eszközönként</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
                             <div>
@@ -3961,6 +3968,35 @@
 
             <div id="levdecay-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A számítás nem közelítés: a napi hozamsor minden elemét ténylegesen szorzatként (compoundolva) vezeti végig, pontosan úgy, ahogy egy valódi, napi újraindexelésű ETF működik.</p>
+        </div>
+    </div>
+
+    <!-- ================= PORTFÓLIÓ REBALANCING KALKULÁTOR (OKTATÁSI) =================
+         Minden eszközhöz: Jelenlegi Érték, Cél-Súly%. Összérték = Σ Jelenlegi Érték.
+         Cél Érték_i = Cél-Súly%_i × Összérték. Trade_i = Cél Érték_i − Jelenlegi Érték_i
+         (pozitív = vegyél, negatív = adj el). Turnover = Σ|Trade_i| / 2, mert minden
+         eladás mögött egy vásárlás áll egy zárt rendszerben. Drift_i = Jelenlegi Súly%_i − Cél-Súly%_i. -->
+    <div id="rebalance-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-violet-400"></i> Portfólió Rebalancing Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('rebalance-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a portfóliód eszközeit <strong class="text-white">"Név: Jelenlegi Érték, Cél-Súly%"</strong> formában, soronként egyet — a kalkulátor kiszámolja, mennyire csúszott el a súlyozás a kitűzött céltól, és pontosan mennyit kell adnod/venned eszközönként, hogy visszaálljon a cél-súlyokra.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Eszközök (Név: Jelenlegi Érték, Cél-Súly%)</label>
+            <textarea id="rebalance-assets" rows="6" placeholder="Részvények: 65000, 50&#10;Kötvények: 20000, 30&#10;Kripto: 15000, 20" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-violet-400/50">Részvények: 65000, 50
+Kötvények: 20000, 30
+Kripto: 15000, 20</textarea>
+
+            <button onclick="calcRebalance()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-violet-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="rebalance-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A Turnover azt mutatja, a portfólió teljes értékének hány százalékát kell megmozgatni (eladás + vásárlás fele-fele) a cél-súlyok visszaállításához — minél nagyobb ez az érték, annál nagyobb lehet a tranzakciós költség és az esetleges adóhatás.</p>
         </div>
     </div>
 
@@ -8647,6 +8683,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Tőkeáttételes ETF Decay Szimulátor</div>
                     <div class="text-[10px] text-slate-400">Napi compoundolás: miért nem L×-szeres a hosszú távú hozam</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('rebalance-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-violet-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-violet-400/10 text-violet-400 border border-violet-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-balanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Portfólió Rebalancing Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Cél-súlyok visszaállítása: pontos vétel/eladás eszközönként</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -16245,6 +16288,113 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-[11px] font-semibold ${colorClass} leading-relaxed">${verdict}</div>
                 </div>
                 <p class="text-[9.5px] text-slate-600 mt-3 leading-relaxed">Minél nagyobb |L| (pl. 3x vagy -3x) és minél volatilisebb/oldalazóbb a sorozat, annál nagyobb a decay — ezért tervezték ezeket az eszközöket napon belüli, nem hosszú távú "buy and hold" használatra.</p>
+            `;
+        }
+
+        // ================= PORTFÓLIÓ REBALANCING KALKULÁTOR =================
+        // Minden eszközhöz: Jelenlegi Érték, Cél-Súly%. Összérték = Σ Jelenlegi Érték.
+        // Cél Érték_i = Cél-Súly%_i/100 × Összérték. Trade_i = Cél Érték_i − Jelenlegi Érték_i
+        // (pozitív = vegyél, negatív = adj el). Turnover = Σ|Trade_i| / 2 (zárt rendszerben
+        // minden eladás mögött egy vásárlás áll, ezért /2, hogy ne duplázzuk). Drift_i =
+        // Jelenlegi Súly%_i − Cél-Súly%_i.
+        function calcRebalance() {
+            const assetsEl = document.getElementById('rebalance-assets');
+            const out = document.getElementById('rebalance-result');
+            if (!assetsEl || !out) return;
+
+            const lines = assetsEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const assets = [];
+            let parseError = null;
+            for (const line of lines) {
+                const m = line.match(/^(.+?):\s*([\-0-9.,]+)\s*,\s*([\-0-9.]+)\s*$/);
+                if (!m) { parseError = `Nem sikerült feldolgozni ezt a sort: "${line}" — a formátum "Név: Jelenlegi Érték, Cél-Súly%" legyen.`; break; }
+                const name = m[1].trim();
+                const value = parseFloat(m[2].replace(/,/g, ''));
+                const targetPct = parseFloat(m[3]);
+                if (!isFinite(value) || value < 0) { parseError = `"${name}": a Jelenlegi Érték nem lehet negatív vagy érvénytelen szám.`; break; }
+                if (!isFinite(targetPct) || targetPct < 0) { parseError = `"${name}": a Cél-Súly% nem lehet negatív vagy érvénytelen szám.`; break; }
+                assets.push({ name, value, targetPct });
+            }
+
+            if (parseError) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${parseError}</div>`;
+                return;
+            }
+            if (assets.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 eszközt, soronként egyet, "Név: Jelenlegi Érték, Cél-Súly%" formában!</div>`;
+                return;
+            }
+
+            const total = assets.reduce((s, a) => s + a.value, 0);
+            if (total <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A portfólió teljes jelenlegi értéke nulla vagy negatív — adj meg legalább egy pozitív értékű eszközt!</div>`;
+                return;
+            }
+
+            const targetPctSum = assets.reduce((s, a) => s + a.targetPct, 0);
+            const targetSumOff = Math.abs(targetPctSum - 100);
+
+            let turnover = 0;
+            const rows = assets.map(a => {
+                const currentPct = (a.value / total) * 100;
+                const targetValue = (a.targetPct / 100) * total;
+                const trade = targetValue - a.value;
+                const drift = currentPct - a.targetPct;
+                turnover += Math.abs(trade);
+                return { ...a, currentPct, targetValue, trade, drift };
+            });
+            turnover = turnover / 2;
+            const turnoverPct = (turnover / total) * 100;
+
+            const maxDriftRow = rows.reduce((max, r) => Math.abs(r.drift) > Math.abs(max.drift) ? r : max, rows[0]);
+
+            let warnHtml = '';
+            if (targetSumOff > 0.5) {
+                warnHtml = `<div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-amber-400 leading-relaxed">⚠️ A megadott Cél-Súlyok összege ${targetPctSum.toFixed(2)}%, nem 100% — a kalkulátor így is kiszámolja az eredményt a megadott célokkal, de ellenőrizd az adatokat, mert a súlyok normál esetben 100%-ra kell összeadódjanak.</div></div>`;
+            }
+
+            const rowsHtml = rows.map(r => {
+                const tradeColor = r.trade > 0.005 ? 'text-neon-green' : (r.trade < -0.005 ? 'text-neon-red' : 'text-slate-400');
+                const tradeLabel = r.trade > 0.005 ? `VEGYÉL +${r.trade.toFixed(2)}` : (r.trade < -0.005 ? `ADJ EL ${r.trade.toFixed(2)}` : 'nincs teendő');
+                const driftColor = Math.abs(r.drift) > 5 ? 'text-neon-red' : (Math.abs(r.drift) > 1 ? 'text-amber-400' : 'text-slate-400');
+                return `
+                    <div class="border-t border-dark-750 pt-2 first:border-t-0 first:pt-0">
+                        <div class="flex items-center justify-between font-mono text-xs mb-1">
+                            <span class="text-white font-bold">${r.name}</span>
+                            <span class="${tradeColor} font-extrabold">${tradeLabel}</span>
+                        </div>
+                        <div class="flex items-center justify-between font-mono text-[10px] text-slate-400">
+                            <span>Jelenlegi: ${r.currentPct.toFixed(2)}% (${r.value.toFixed(2)})</span>
+                            <span>Cél: ${r.targetPct.toFixed(2)}% (${r.targetValue.toFixed(2)})</span>
+                        </div>
+                        <div class="flex items-center justify-between font-mono text-[10px] ${driftColor} mt-0.5">
+                            <span>Eltolódás (drift): ${r.drift > 0 ? '+' : ''}${r.drift.toFixed(2)} pp</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            let verdict;
+            if (Math.abs(maxDriftRow.drift) < 1) {
+                verdict = 'A portfólió jelenlegi súlyozása nagyon közel van a cél-súlyokhoz — jelen pillanatban nincs érdemi rebalancing-szükséglet.';
+            } else if (Math.abs(maxDriftRow.drift) < 5) {
+                verdict = `Mérsékelt eltolódás: a "${maxDriftRow.name}" súlya ${maxDriftRow.drift > 0 ? 'túlsúlyba került' : 'alulsúlyba csúszott'} (${maxDriftRow.drift > 0 ? '+' : ''}${maxDriftRow.drift.toFixed(2)} pp) — érdemes megfontolni a rebalancingot, de nem kritikus.`;
+            } else {
+                verdict = `🔸 Jelentős eltolódás: a "${maxDriftRow.name}" súlya ${maxDriftRow.drift > 0 ? 'jelentősen túlsúlyba került' : 'jelentősen alulsúlyba csúszott'} (${maxDriftRow.drift > 0 ? '+' : ''}${maxDriftRow.drift.toFixed(2)} pp) — a kockázati profilod érdemben eltért a kitűzött céltól, a rebalancing most indokolt lehet.`;
+            }
+
+            out.innerHTML = `
+                ${warnHtml}
+                <div class="glass-card rounded-xl border border-violet-400/30 bg-violet-400/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Turnover (megmozgatandó érték / portfólió teljes értéke)</div>
+                    <div class="text-xl font-extrabold text-violet-400">${turnover.toFixed(2)} (${turnoverPct.toFixed(2)}%)</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    ${rowsHtml}
+                </div>
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[11px] font-semibold ${Math.abs(maxDriftRow.drift) >= 5 ? 'text-neon-red' : (Math.abs(maxDriftRow.drift) >= 1 ? 'text-amber-400' : 'text-neon-green')} leading-relaxed">${verdict}</div>
+                </div>
             `;
         }
 
@@ -28581,6 +28731,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             328: { tool: 'coppock-modal', cta: 'Számold ki élesben a Coppock Curve-t (klasszikus paraméterekkel)' },
             486: { tool: 'coppock-modal', cta: 'Próbáld ki élesben a rövidített Day Trading variánst' },
             546: { tool: 'levdecay-modal', cta: 'Szimuláld élesben a volatility decay hatását' },
+            525: { tool: 'rebalance-modal', cta: 'Számold ki élesben a cél-súlyokra visszaállító tradeket' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -28590,7 +28741,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
