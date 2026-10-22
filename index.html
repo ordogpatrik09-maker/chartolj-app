@@ -1295,6 +1295,13 @@
                                 <div class="text-[10px] text-slate-400">%K és %D vonalak kiszámítása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('bbwidth-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrows-left-right-to-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Bollinger Band Width Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Volatilitás-squeeze objektív számszerűsítése</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3769,6 +3776,40 @@
         </div>
     </div>
 
+    <!-- ================= BOLLINGER BAND WIDTH KALKULÁTOR (OKTATÁSI) =================
+         Felső szalag = SMA + k×σ; Alsó szalag = SMA - k×σ (σ a periódus
+         populációs szórása); Band Width % = (Felső-Alsó)/SMA × 100.
+         A kalkulátor a teljes megadott sorozaton végigcsúsztatja az
+         ablakot, és megmutatja, hogy a jelenlegi érték a sorozatban
+         látott legszűkebb (squeeze) tartományban van-e. -->
+    <div id="bbwidth-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-left-right-to-line text-neon-purple"></i> Bollinger Band Width Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('bbwidth-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Band Width a Bollinger Szalagok felső és alsó sávja közti távolságot méri, objektív számértékként — így nyomon követhető a volatilitás változása, és azonosítható, mikor van a szalag történelmi minimumán ("squeeze"), ami gyakran egy közelgő, nagyobb volatilitású kitörés előjele. Add meg az árfolyam-sorozatot.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Árfolyam sorozat (vesszővel elválasztva, legrégebbitől a legfrissebbig)</label>
+            <textarea id="bbwidth-series" rows="4" placeholder="pl. 20, 20.5, 21, 20.8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">20, 20.2, 20.1, 20.3, 20.2, 20.4, 20.3, 20.5, 20.4, 20.6, 20.5, 20.7, 20.6, 20.8, 20.7, 20.9, 20.8, 21, 20.9, 21.1, 21.5, 22, 22.8, 23.5, 24.5</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (SMA/szórás ablaka)</label>
+            <input type="number" id="bbwidth-period" value="20" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Szórás-szorzó (k, klasszikusan 2)</label>
+            <input type="number" id="bbwidth-mult" value="2" step="0.1" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcBollingerBandWidth()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="bbwidth-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A "squeeze" jelzés ebben a kalkulátorban azt jelenti, hogy a jelenlegi Band Width a MEGADOTT sorozaton belül a legalacsonyabb (vagy közel a legalacsonyabb) érték — minél hosszabb és relevánsabb historikus sorozatot adsz meg, annál megbízhatóbb ez a viszonyítás.</p>
+        </div>
+    </div>
+
     <!-- ================= KORRELÁCIÓS MÁTRIX KALKULÁTOR (OKTATÁSI) =================
          Páronkénti Pearson-korreláció: corr(X,Y) = Cov(X,Y) /
          (σX × σY), population (n-osztós) konvencióval, konzisztensen
@@ -5423,6 +5464,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Stochastic Oscillator Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">%K és %D vonalak kiszámítása</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('bbwidth-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrows-left-right-to-line"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Bollinger Band Width Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Volatilitás-squeeze számszerűsítése</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -11926,6 +11974,93 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">%K vs %D:</span>
                         <span class="font-extrabold ${kValue >= dValue ? 'text-neon-green' : 'text-neon-red'} text-sm">${kValue >= dValue ? '%K a %D fölött' : '%K a %D alatt'}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= BOLLINGER BAND WIDTH KALKULÁTOR (OKTATÁSI) =================
+        // Felső = SMA + k×σ; Alsó = SMA - k×σ (σ populációs szórás);
+        // Band Width % = (Felső-Alsó)/SMA × 100. A teljes sorozaton
+        // végigcsúsztatott ablakkal megnézzük, hol van a jelenlegi érték
+        // a megadott sorozatban látott Band Width tartományon belül.
+        function calcBollingerBandWidth() {
+            const seriesEl = document.getElementById('bbwidth-series');
+            const periodEl = document.getElementById('bbwidth-period');
+            const multEl = document.getElementById('bbwidth-mult');
+            const out = document.getElementById('bbwidth-result');
+            if (!seriesEl || !periodEl || !multEl || !out) return;
+
+            const prices = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const period = parseInt(periodEl.value);
+            const mult = parseFloat(multEl.value);
+
+            if (!period || period < 2 || !mult || mult <= 0 || prices.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább annyi árat, amennyi a periódus, és érvényes, pozitív periódust/szorzót!</div>`;
+                return;
+            }
+
+            function bandWidthAt(endIdx) {
+                const window = prices.slice(endIdx - period + 1, endIdx + 1);
+                const sma = window.reduce((a, b) => a + b, 0) / period;
+                if (sma === 0) return null;
+                const variance = window.reduce((sum, p) => sum + Math.pow(p - sma, 2), 0) / period;
+                const stddev = Math.sqrt(variance);
+                const upper = sma + mult * stddev;
+                const lower = sma - mult * stddev;
+                return { width: ((upper - lower) / sma) * 100, sma, upper, lower };
+            }
+
+            const widths = [];
+            for (let i = period - 1; i < prices.length; i++) {
+                const r = bandWidthAt(i);
+                if (r !== null) widths.push(r.width);
+            }
+            if (widths.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Band Width nem számolható (az SMA nulla valahol a sorozatban)!</div>`;
+                return;
+            }
+
+            const current = bandWidthAt(prices.length - 1);
+            const currentWidth = current.width;
+            const minWidth = Math.min(...widths);
+            const maxWidth = Math.max(...widths);
+            const isSqueeze = currentWidth <= minWidth + (maxWidth - minWidth) * 0.05;
+
+            let colorClass, verdict;
+            if (isSqueeze) {
+                colorClass = 'text-amber-400';
+                verdict = '🔸 Squeeze: a jelenlegi Band Width a megadott sorozat legszűkebb tartományában van — ez gyakran egy közelgő, nagyobb volatilitású kitörés előjele lehet, bár az irányt nem jelzi előre.';
+            } else if (currentWidth >= maxWidth - (maxWidth - minWidth) * 0.05) {
+                colorClass = 'text-neon-red';
+                verdict = 'A jelenlegi Band Width a sorozat legtágabb tartományában van — a volatilitás jelenleg magas, egy esetleges összehúzódás (squeeze) felé közelíthet idővel.';
+            } else {
+                colorClass = 'text-slate-300';
+                verdict = 'A jelenlegi Band Width a sorozat közepes tartományában van — nincs extrém szűkülés vagy tágulás.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-neon-purple/30 bg-neon-purple/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Jelenlegi Band Width</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${currentWidth.toFixed(3)}%</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Felső szalag:</span>
+                        <span class="font-extrabold text-white text-sm">${current.upper.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Középső szalag (SMA):</span>
+                        <span class="font-extrabold text-white text-sm">${current.sma.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Alsó szalag:</span>
+                        <span class="font-extrabold text-white text-sm">${current.lower.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Sorozatbeli Band Width tartomány:</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${minWidth.toFixed(3)}% – ${maxWidth.toFixed(3)}%</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -21853,6 +21988,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             78: { tool: 'obv-modal', cta: 'Számold ki élesben az On-Balance Volume-t' },
             252: { tool: 'williamsr-modal', cta: 'Számold ki élesben a Williams %R-t' },
             45: { tool: 'stochastic-modal', cta: 'Számold ki élesben a Stochastic %K/%D vonalakat' },
+            171: { tool: 'bbwidth-modal', cta: 'Számold ki élesben a Bollinger Band Width-öt' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -21862,7 +21998,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
