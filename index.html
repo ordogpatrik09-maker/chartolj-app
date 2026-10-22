@@ -1414,6 +1414,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyi volumen kellett az árelmozduláshoz</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('fisher-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-pink-400/10 text-pink-400 border border-pink-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fisher Transform Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Élesebb csúcsok/mélypontok normalizált árral</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6027,6 +6034,41 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= FISHER TRANSFORM KALKULÁTOR (OKTATÁSI) =================
+         Normalizált érték: value = 0.33*2*((close-LL)/(HH-LL)-0.5) + 0.67*prevValue,
+         [-0.999, 0.999] közé szorítva. Fisher = 0.5*ln((1+value)/(1-value)) + 0.5*prevFisher. -->
+    <div id="fisher-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-pink-400"></i> Fisher Transform Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('fisher-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróárak sorozatát (soronként egy érték), és a kalkulátor a Fisher Transformmal élesebb, egyértelműbb csúcsokat/mélypontokat ad, mivel az árat a normális eloszláshoz közelebb alakítja át. A jelvonal (1 periódussal eltolt Fisher) keresztezése belépési/kilépési jelzésként szolgálhat.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy érték)</label>
+            <textarea id="fisher-closes" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-pink-400/50" placeholder="10&#10;10.5&#10;11&#10;10.8&#10;11.5">10
+10.5
+11
+10.8
+11.5
+11.2
+11.8
+12.0
+11.6
+12.3</textarea>
+            <label class="text-[11px] font-semibold text-slate-400">Lookback periódus (HH/LL ablak)</label>
+            <input type="number" id="fisher-period" value="5" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-pink-400/50">
+
+            <button onclick="calcFisherTransform()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-pink-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="fisher-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7503,6 +7545,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Ease of Movement (EMV) Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Mennyi volumen kellett az árelmozduláshoz</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('fisher-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-pink-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-pink-400/10 text-pink-400 border border-pink-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Fisher Transform Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Élesebb csúcsok/mélypontok normalizált árral</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15126,6 +15175,60 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított EMV (SMA${period}):</span><span class="${colorClass} font-extrabold text-sm">${smoothed >= 0 ? '+' : ''}${smoothed.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcFisherTransform() {
+            const closesEl = document.getElementById('fisher-closes');
+            const periodEl = document.getElementById('fisher-period');
+            const out = document.getElementById('fisher-result');
+            if (!closesEl || !periodEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const period = parseInt(periodEl.value, 10) || 2;
+            const n = closes.length;
+
+            if (n < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${period} záróár szükséges a ${period}-periódusú Fisher Transformhoz — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            const value = new Array(n).fill(0);
+            const fisher = new Array(n).fill(0);
+
+            for (let i = 0; i < n; i++) {
+                if (i < period - 1) continue;
+                const window = closes.slice(i - period + 1, i + 1);
+                const hh = Math.max(...window);
+                const ll = Math.min(...window);
+                const range = hh !== ll ? (hh - ll) : 0.001;
+                let raw = 0.33 * 2 * ((closes[i] - ll) / range - 0.5) + 0.67 * value[i - 1];
+                raw = Math.max(-0.999, Math.min(0.999, raw));
+                value[i] = raw;
+                fisher[i] = 0.5 * Math.log((1 + raw) / (1 - raw)) + 0.5 * fisher[i - 1];
+            }
+
+            const lastFisher = fisher[n - 1];
+            const signalFisher = n >= 2 ? fisher[n - 2] : lastFisher;
+            const crossUp = lastFisher > signalFisher;
+
+            const colorClass = lastFisher >= 0 ? 'text-neon-green' : 'text-neon-red';
+            let extremeNote = '';
+            if (Math.abs(lastFisher) > 2.0) {
+                extremeNote = '<p class="text-[10px] font-semibold text-neon-yellow mt-2">⚠️ Extrém Fisher-érték (|érték| &gt; 2.0) — a gyors reagálás miatt ilyenkor gyakoribbak a hamis jelzések, legyél körültekintő!</p>';
+            }
+            const verdict = crossUp
+                ? 'A Fisher vonal a jelvonal (előző érték) fölé emelkedett — potenciális felfelé irányuló fordulójelzés.'
+                : 'A Fisher vonal a jelvonal (előző érték) alá esett — potenciális lefelé irányuló fordulójelzés.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Fisher (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastFisher >= 0 ? '+' : ''}${lastFisher.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (előző érték):</span><span class="text-white">${signalFisher >= 0 ? '+' : ''}${signalFisher.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${crossUp ? 'text-neon-green' : 'text-neon-red'}">${verdict}</p>
+                ${extremeNote}
             `;
         }
 
@@ -26301,6 +26404,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             319: { tool: 'klinger-modal', cta: 'Számold ki élesben a Klinger Volume Oscillatort' },
             344: { tool: 'fibretr-modal', cta: 'Számold ki élesben a Fibonacci Retracement szinteket' },
             325: { tool: 'emv-modal', cta: 'Számold ki élesben az Ease of Movement indikátort' },
+            378: { tool: 'fisher-modal', cta: 'Számold ki élesben a Fisher Transformot' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -26310,7 +26414,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
