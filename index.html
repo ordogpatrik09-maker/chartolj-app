@@ -1225,6 +1225,13 @@
                                 <div class="text-[10px] text-slate-400">Korrelációval korrigált, összesített Kelly-méretezés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('milestone-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-flag-checkered"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Tőke-mérföldkő Méretezési Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Fokozatos tétméret-skálázás, lépcsőzetes mérföldkövekkel</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3592,6 +3599,44 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= TŐKE-MÉRFÖLDKŐ MÉRETEZÉSI KALKULÁTOR (OKTATÁSI) =================
+         factor = 1 + lépésköz%/100. k = trunc(log(jelenlegiTőke/
+         kezdőTőke) / log(factor)) — ez csak a TELJES, lezárt
+         mérföldkő-lépéseket számolja (felfelé ÉS lefelé is), elkerülve
+         a minden apró ingadozásra való túlreagálást. effektívTőke =
+         kezdőTőke × factor^k. Ajánlott tétméret = effektívTőke ×
+         kockázat%/100 — fenntartva az eredeti, konzisztens kockázati %-ot. -->
+    <div id="milestone-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-flag-checkered text-neon-green"></i> Tőke-mérföldkő Méretezési Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('milestone-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Ha a számlád növekszik, de a dollár-alapú tétméreted fix marad, a kockázatod SZÁZALÉKOSAN egyre kisebb lesz. A gyakorlati megoldás: határozz meg tőke-mérföldköveket (pl. minden 20%-os növekedésnél), és csak ezeknél a TELJES, lezárt lépéseknél igazítsd a tétméretedet — elkerülve, hogy minden apró napi ingadozásra újraszámolj. Ugyanez fordítva (drawdown esetén) is működik. Add meg a kezdő tőkét, a jelenlegi tőkét, a mérföldkő-lépésközt, és a kockázati %-ot.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke ($, az eredeti referenciapont)</label>
+            <input type="number" id="milestone-start-capital" value="10000" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Jelenlegi tőke ($)</label>
+            <input type="number" id="milestone-current-capital" value="14500" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Mérföldkő-lépésköz (%, pl. 20 = minden 20%-os változásnál lépünk)</label>
+            <input type="number" id="milestone-step-pct" value="20" step="1" min="1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Kockázati % (a tétméret a tőke hány %-a legyen)</label>
+            <input type="number" id="milestone-risk-pct" value="1" step="0.1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcMilestoneSizing()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="milestone-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A kalkulátor csak a TELJES, lezárt mérföldkő-lépéseket veszi figyelembe — ha a tőke egy mérföldkő felé közelít, de még nem érte el teljesen, a tétméret a régi (alacsonyabb mérföldkő szerinti) szinten marad, amíg a lépés teljesen nem teljesül.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4886,6 +4931,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Több Pozíciós Kelly Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Korrelációval korrigált, összesített Kelly-méretezés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('milestone-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-flag-checkered"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Tőke-mérföldkő Méretezési Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Fokozatos tétméret-skálázás, lépcsőzetes mérföldkövekkel</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -11879,6 +11931,62 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Effektív független tétek száma:</span><span class="text-white">${nEff.toFixed(2)} / ${n}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Korrigált teljes Kelly-összeg:</span><span class="font-extrabold ${colorClass} text-sm">${(adjustedSum * 100).toFixed(2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Fél-Kelly (konzervatív, gyakorlatban javasolt):</span><span class="font-extrabold text-neon-green text-sm">${(halfAdjustedSum * 100).toFixed(2)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= TŐKE-MÉRFÖLDKŐ MÉRETEZÉSI KALKULÁTOR (OKTATÁSI) =================
+        // factor = 1 + lépésköz%/100. k = trunc(log(jelenlegiTőke/
+        // kezdőTőke) / log(factor)) — csak a TELJES, lezárt
+        // mérföldkő-lépéseket számolja. effektívTőke = kezdőTőke ×
+        // factor^k. Ajánlott tétméret = effektívTőke × kockázat%/100.
+        function calcMilestoneSizing() {
+            const startCapitalEl = document.getElementById('milestone-start-capital');
+            const currentCapitalEl = document.getElementById('milestone-current-capital');
+            const stepPctEl = document.getElementById('milestone-step-pct');
+            const riskPctEl = document.getElementById('milestone-risk-pct');
+            const out = document.getElementById('milestone-result');
+            if (!startCapitalEl || !currentCapitalEl || !stepPctEl || !riskPctEl || !out) return;
+
+            const startCapital = parseFloat(startCapitalEl.value);
+            const currentCapital = parseFloat(currentCapitalEl.value);
+            const stepPct = parseFloat(stepPctEl.value);
+            const riskPct = parseFloat(riskPctEl.value);
+
+            if (!startCapital || startCapital <= 0 || !currentCapital || currentCapital <= 0 || !stepPct || stepPct <= 0 || !riskPct || riskPct <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb kezdő tőkét, egy nullánál nagyobb jelenlegi tőkét, egy nullánál nagyobb mérföldkő-lépésközt, és egy nullánál nagyobb kockázati %-ot!</div>`;
+                return;
+            }
+
+            const factor = 1 + stepPct / 100;
+            const ratio = currentCapital / startCapital;
+            const k = Math.trunc(Math.log(ratio) / Math.log(factor));
+            const effectiveCapital = startCapital * Math.pow(factor, k);
+            const recommendedPositionSize = effectiveCapital * (riskPct / 100);
+
+            // A következő mérföldkő szintje és a hozzá szükséges további tőke.
+            const nextMilestoneCapital = startCapital * Math.pow(factor, k + 1);
+            const capitalNeededForNext = Math.max(0, nextMilestoneCapital - currentCapital);
+
+            let colorClass, verdict;
+            if (k > 0) {
+                colorClass = 'text-neon-green';
+                verdict = `✅ A jelenlegi tőke ${k} teljes, lezárt mérföldkövet ért el a kezdő tőkéhez képest — a tétméretet erre az effektív, megnövelt tőkeszintre skáláztuk, fenntartva az eredeti ${riskPct}%-os kockázatot.`;
+            } else if (k < 0) {
+                colorClass = 'text-neon-red';
+                verdict = `🚨 A jelenlegi tőke ${Math.abs(k)} teljes, lezárt mérföldkövet esett VISSZA a kezdő tőkéhez képest — a tétméretet erre az alacsonyabb, effektív tőkeszintre csökkentettük, a drawdown utáni felépülési terv elvét követve.`;
+            } else {
+                colorClass = 'text-neon-cyan';
+                verdict = '✅ A jelenlegi tőke még nem ért el egy teljes mérföldkövet sem (sem felfelé, sem lefelé) a kezdő tőkéhez képest — a tétméret a kezdeti szinten marad.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Elért mérföldkövek száma:</span><span class="${colorClass}">${k >= 0 ? '+' : ''}${k}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Effektív tőkeszint (a méretezéshez):</span><span class="text-white">$${effectiveCapital.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ajánlott tétméret:</span><span class="font-extrabold ${colorClass} text-sm">$${recommendedPositionSize.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Következő mérföldkő eléréséhez szükséges:</span><span class="text-amber-400">+$${capitalNeededForNext.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
