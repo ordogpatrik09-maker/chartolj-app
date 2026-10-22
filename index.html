@@ -1302,6 +1302,13 @@
                                 <div class="text-[10px] text-slate-400">Gartley/Bat/Butterfly D-pont ellenőrzés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('renko-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-city"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Renko Chart Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Záróárak konvertálása Renko téglákká</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5772,6 +5779,54 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          1.27-1.618 (D az X ponton TÚLNYÚLIK). Kisegítő arányok: AB/XA, BC/AB,
          CD/BC — ezek is jellemzőek az egyes mintákra, de a fő besorolás a
          D-visszahúzódás alapján történik, a lecke szövegének megfelelően. -->
+    <!-- ================= RENKO CHART KALKULÁTOR (OKTATÁSI) =================
+         Klasszikus Renko-tégla konverzió: amíg az ár ≥ téglaméret-nyi
+         mértékben a legutóbbi tégla záróárától FELFELÉ mozog, új felfelé
+         téglát rajzolunk (last += téglaméret); amíg LEFELÉ mozog legalább
+         téglaméret-nyit, új lefelé téglát rajzolunk (last -= téglaméret).
+         Az apró, téglaméret alatti mozgások egyáltalán nem jelennek meg —
+         ez szűri ki a "zajt". Ez a leegyszerűsített, fordulás-puffer nélküli
+         klasszikus verzió (némely platform 2×téglaméretet követel a
+         fordulathoz, itt ez nem szerepel az oktatási egyszerűség kedvéért). -->
+    <div id="renko-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-city text-amber-400"></i> Renko Chart Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('renko-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Renko chart téglákból épül fel — egy új tégla csak akkor jelenik meg, ha az ár a megadott téglaméretet elérő mértékben elmozdul, FÜGGETLENÜL az időtől. Ez kiszűri az apró, zajos ingadozásokat, és tisztán mutatja a fő trend-elmozdulásokat. Add meg a záróárakat (soronként egyet, időrendben) és a téglaméretet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy, időrendben)</label>
+            <textarea id="renko-closes" rows="7" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100
+101.2
+102.5
+103.8
+105.1
+104.0
+102.3
+100.5
+98.7
+97.0
+98.2
+99.5
+101.0
+102.8
+104.5</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Téglaméret</label>
+            <input type="number" id="renko-bricksize" value="1.5" step="0.1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcRenkoChart()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="renko-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél kisebb a téglaméret, annál több tégla jelenik meg (érzékenyebb, de zajosabb); minél nagyobb, annál kevesebb (simább, de lassabb jelzés).</p>
+        </div>
+    </div>
+
     <div id="harmonic-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -6472,6 +6527,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Harmonikus Alakzat Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Gartley/Bat/Butterfly D-pont ellenőrzés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('renko-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-city"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Renko Chart Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Záróárak konvertálása Renko téglákká</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -13913,6 +13975,68 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcRenkoChart() {
+            const closesEl = document.getElementById('renko-closes');
+            const brickSizeEl = document.getElementById('renko-bricksize');
+            const out = document.getElementById('renko-result');
+            if (!closesEl || !brickSizeEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const brickSize = parseFloat(brickSizeEl.value);
+
+            if (!brickSize || brickSize <= 0 || closes.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív téglaméretet, és legalább 2 záróárat!</div>`;
+                return;
+            }
+
+            const bricks = [];
+            let lastBrickClose = closes[0];
+
+            for (let i = 1; i < closes.length; i++) {
+                const price = closes[i];
+                while (price - lastBrickClose >= brickSize) {
+                    const o = lastBrickClose;
+                    lastBrickClose += brickSize;
+                    bricks.push({ dir: 'up', open: o, close: lastBrickClose });
+                }
+                while (lastBrickClose - price >= brickSize) {
+                    const o = lastBrickClose;
+                    lastBrickClose -= brickSize;
+                    bricks.push({ dir: 'down', open: o, close: lastBrickClose });
+                }
+            }
+
+            if (bricks.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-amber font-semibold">A megadott téglamérettel egyetlen tégla sem jött létre — próbálj kisebb téglaméretet!</div>`;
+                return;
+            }
+
+            const upCount = bricks.filter(b => b.dir === 'up').length;
+            const downCount = bricks.length - upCount;
+
+            const rows = bricks.map((b, i) => {
+                const colorClass = b.dir === 'up' ? 'text-neon-green' : 'text-neon-red';
+                const arrow = b.dir === 'up' ? '▲' : '▼';
+                return `
+                    <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
+                        <span class="text-slate-400">#${i + 1} ${arrow}:</span>
+                        <span class="font-extrabold ${colorClass}">${b.open.toFixed(2)} → ${b.close.toFixed(2)}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const lastDir = bricks[bricks.length - 1].dir;
+            const lastColorClass = lastDir === 'up' ? 'text-neon-green' : 'text-neon-red';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3 max-h-56 overflow-y-auto">
+                    ${rows}
+                </div>
+                <p class="text-[10px] text-slate-500">Összesen ${bricks.length} tégla (${upCount} felfelé, ${downCount} lefelé) ${brickSize}-es téglamérettel. Utolsó tégla iránya: <span class="font-semibold ${lastColorClass}">${lastDir === 'up' ? 'FELFELÉ' : 'LEFELÉ'}</span>.</p>
             `;
         }
 
@@ -24419,6 +24543,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             228: { tool: 'harmonic-modal', cta: 'Ellenőrizd élesben a Gartley minta arányait' },
             242: { tool: 'harmonic-modal', cta: 'Ellenőrizd élesben a Butterfly minta arányait' },
             250: { tool: 'harmonic-modal', cta: 'Ellenőrizd élesben a Bat minta arányait' },
+            129: { tool: 'renko-modal', cta: 'Alakítsd át élesben a záróárakat Renko téglákká' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -24428,7 +24553,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
