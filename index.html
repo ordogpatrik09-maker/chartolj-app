@@ -1176,6 +1176,13 @@
                                 <div class="text-[10px] text-slate-400">Záróár ereje a nyitóárhoz képest, simítva</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('volratio-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler-combined"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Volatility Ratio Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Aktuális tartomány / referencia-tartomány arány</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3294,6 +3301,53 @@
         </div>
     </div>
 
+    <!-- ================= VOLATILITY RATIO KALKULÁTOR (OKTATÁSI) =================
+         range_i = Magas_i - Alacsony_i. Aktuális átlag = az utolsó
+         "aktuális periódus" gyertya range-jének átlaga. Referencia
+         átlag = az azt megelőző "referencia periódus" gyertya
+         range-jének átlaga. Volatility Ratio = aktuális/referencia. -->
+    <div id="volratio-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-ruler-combined text-neon-cyan"></i> Volatility Ratio Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('volratio-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Volatility Ratio az aktuális periódus tartományát (Magas−Alacsony átlaga) egy korábbi, referencia-időszak tartományához viszonyítja, egyszerű arányként. 1 fölötti érték azt jelzi, hogy az aktuális volatilitás magasabb, mint a referencia-időszaké. Egyszerűbb és intuitívabb, mint az ATR — gyors, vizuális ellenőrzésre hasznos. Add meg a gyertyákat (Magas, Alacsony) a legrégebbitől a legfrissebbig.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony (soronként egy)</label>
+            <textarea id="volratio-candles" rows="6" placeholder="10.5,10.2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">10.5,10.2
+10.6,10.3
+10.4,10.1
+10.7,10.3
+10.8,10.4
+10.6,10.3
+10.9,10.5
+11.0,10.6
+10.8,10.5
+11.2,10.6
+11.5,10.7
+11.3,10.8
+11.8,10.9
+12.0,10.8
+11.9,11.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Aktuális periódus (hány utolsó gyertya)</label>
+            <input type="number" id="volratio-current-period" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Referencia periódus (hány gyertya közvetlenül az aktuális periódus előtt)</label>
+            <input type="number" id="volratio-reference-period" value="10" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcVolatilityRatio()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="volratio-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A számításhoz legalább (aktuális periódus + referencia periódus) gyertyára van szükség — a referencia-ablak közvetlenül az aktuális ablak előtt helyezkedik el, nem fedi át vele.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4539,6 +4593,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Relative Vigor Index (RVI) Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Záróár ereje a nyitóárhoz képest, simítva</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('volratio-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-ruler-combined"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Volatility Ratio Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Aktuális tartomány / referencia-tartomány arány</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -10960,6 +11021,74 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Gyertyák száma:</span><span class="text-white">${candles.length}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">RVI (nyers):</span><span class="font-extrabold text-white text-sm">${latestRvi.toFixed(4)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Jelvonal:</span><span class="font-extrabold text-white text-sm">${signalLine.toFixed(4)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= VOLATILITY RATIO KALKULÁTOR (OKTATÁSI) =================
+        // range_i = Magas_i - Alacsony_i. Aktuális átlag = az utolsó N
+        // gyertya range-jének átlaga. Referencia átlag = a közvetlenül
+        // ELŐTTE lévő M gyertya range-jének átlaga (nem fedi át).
+        // Volatility Ratio = aktuális átlag / referencia átlag.
+        function calcVolatilityRatio() {
+            const candlesEl = document.getElementById('volratio-candles');
+            const currentPeriodEl = document.getElementById('volratio-current-period');
+            const referencePeriodEl = document.getElementById('volratio-reference-period');
+            const out = document.getElementById('volratio-result');
+            if (!candlesEl || !currentPeriodEl || !referencePeriodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1] });
+                }
+            }
+            const currentPeriod = parseInt(currentPeriodEl.value);
+            const referencePeriod = parseInt(referencePeriodEl.value);
+
+            if (!currentPeriod || currentPeriod < 1 || !referencePeriod || referencePeriod < 1 || candles.length < currentPeriod + referencePeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (aktuális periódus + referencia periódus) érvényes gyertyát "Magas,Alacsony" formátumban, soronként egyet, és két érvényes (legalább 1) periódust!</div>`;
+                return;
+            }
+
+            const n = candles.length;
+            const ranges = candles.map(c => c.high - c.low);
+            const currentWindow = ranges.slice(n - currentPeriod, n);
+            const referenceWindow = ranges.slice(n - currentPeriod - referencePeriod, n - currentPeriod);
+
+            const currentAvg = currentWindow.reduce((a, b) => a + b, 0) / currentPeriod;
+            const referenceAvg = referenceWindow.reduce((a, b) => a + b, 0) / referencePeriod;
+
+            if (referenceAvg === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A referencia-időszak átlagos tartománya 0 (minden Magas=Alacsony volt ott) — a Volatility Ratio nem fejezhető ki véges számmal.</div>`;
+                return;
+            }
+
+            const volatilityRatio = currentAvg / referenceAvg;
+
+            let colorClass, verdict;
+            if (volatilityRatio >= 2) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Nagyon magas Volatility Ratio (≥2) — az aktuális mozgás jelentősen szélesebb tartományban mozog, mint a referencia-időszak, szokatlanul magas volatilitásra utal.';
+            } else if (volatilityRatio >= 1.3) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Magas Volatility Ratio — az aktuális volatilitás kifejezetten magasabb, mint a referencia-időszaké.';
+            } else if (volatilityRatio >= 0.7) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Normál tartomány — az aktuális volatilitás közel van a referencia-időszak szintjéhez.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Alacsony Volatility Ratio — az aktuális mozgás szűkebb tartományban zajlik, mint a referencia-időszak, ami gyakran egy kitörés előtti összehúzódásra (konszolidáció) utalhat.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Aktuális átlagos tartomány:</span><span class="text-white">${currentAvg.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Referencia átlagos tartomány:</span><span class="text-white">${referenceAvg.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Volatility Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${volatilityRatio.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
