@@ -1512,6 +1512,13 @@
                                 <div class="text-[10px] text-slate-400">Rejtett kereskedési költség halmozott hatása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('yieldcurve-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-rose-300/10 text-rose-300 border border-rose-300/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-simple"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Hozamgörbe Spread (Inverzió)</div>
+                                <div class="text-[10px] text-slate-400">Rövid vs hosszú lejáratú hozam-különbség</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6684,6 +6691,33 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= HOZAMGÖRBE SPREAD (INVERZIÓ) KALKULÁTOR (OKTATÁSI) =================
+         Spread = Hosszú lejáratú hozam - Rövid lejáratú hozam. Ha Spread < 0, a görbe invertált
+         (rövid hozam magasabb, mint a hosszú) — történelmileg recessziós figyelmeztető jel. -->
+    <div id="yieldcurve-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-simple text-rose-300"></i> Hozamgörbe Spread (Inverzió) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('yieldcurve-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg egy rövid lejáratú (pl. 2 éves) és egy hosszú lejáratú (pl. 10 éves) államkötvény hozamát %-ban, és a kalkulátor kiszámolja a spreadet. Ha a spread negatív, a hozamgörbe invertált — ez történelmileg a recesszió egyik korai, de nem azonnali figyelmeztető jele (6-24 hónapos késleltetéssel).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Rövid lejáratú hozam (%, pl. 2 éves)</label>
+            <input type="number" id="yieldcurve-short" value="4.5" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-rose-300/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Hosszú lejáratú hozam (%, pl. 10 éves)</label>
+            <input type="number" id="yieldcurve-long" value="4.0" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-rose-300/50">
+
+            <button onclick="calcYieldCurveSpread()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-rose-300 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="yieldcurve-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -8258,6 +8292,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Bid-Ask Spread Költség Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Rejtett kereskedési költség halmozott hatása</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('yieldcurve-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-rose-300/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-rose-300/10 text-rose-300 border border-rose-300/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-simple"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Hozamgörbe Spread (Inverzió)</div>
+                    <div class="text-[10px] text-slate-400">Rövid vs hosszú lejáratú hozam-különbség</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -16650,6 +16691,44 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Spread:</span><span class="text-white">${spread.toLocaleString(undefined, { maximumFractionDigits: 4 })} (${spreadPct.toFixed(4)}%)</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Költség / trade:</span><span class="text-white">${costPerTrade.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Teljes költség (${count} trade):</span><span class="${colorClass} font-extrabold text-sm">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcYieldCurveSpread() {
+            const shortEl = document.getElementById('yieldcurve-short');
+            const longEl = document.getElementById('yieldcurve-long');
+            const out = document.getElementById('yieldcurve-result');
+            if (!shortEl || !longEl || !out) return;
+
+            const shortYield = parseFloat(shortEl.value);
+            const longYield = parseFloat(longEl.value);
+
+            if (isNaN(shortYield) || isNaN(longYield)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat mindkét mezőben!</div>`;
+                return;
+            }
+
+            const spread = longYield - shortYield;
+            const inverted = spread < 0;
+            const flat = spread === 0;
+
+            let colorClass, verdict;
+            if (inverted) {
+                colorClass = 'text-neon-red';
+                verdict = 'INVERTÁLT hozamgörbe — a rövid lejáratú hozam meghaladja a hosszú lejáratút. Történelmileg recessziós figyelmeztető jel, de NEM azonnali kereskedési szignál (6-24 hónapos időbeli eltéréssel jár).';
+            } else if (flat) {
+                colorClass = 'text-neon-yellow';
+                verdict = 'LAPOS hozamgörbe — a rövid és hosszú lejáratú hozamok megegyeznek, átmeneti állapot normál és invertált görbe között.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = 'NORMÁL (felfelé meredő) hozamgörbe — a hosszú lejáratú hozam magasabb, kompenzálva a hosszabb időre vállalt kockázatot és bizonytalanságot.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Spread (Hosszú - Rövid):</span><span class="${colorClass} font-extrabold text-sm">${spread >= 0 ? '+' : ''}${spread.toLocaleString(undefined, { maximumFractionDigits: 4 })}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -27859,6 +27938,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             192: { tool: 'trailingstop-modal', cta: 'Szimuláld élesben az ATR Trailing Stop-ot' },
             400: { tool: 'expectancy-modal', cta: 'Számold ki élesben a konvex kifizetési profil expectancyjét' },
             39: { tool: 'spreadcost-modal', cta: 'Számold ki élesben a spread rejtett költségét' },
+            537: { tool: 'yieldcurve-modal', cta: 'Ellenőrizd élesben a hozamgörbe inverzióját' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -27868,7 +27948,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
