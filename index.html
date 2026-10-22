@@ -1421,6 +1421,13 @@
                                 <div class="text-[10px] text-slate-400">Élesebb csúcsok/mélypontok normalizált árral</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('kst-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Know Sure Thing (KST) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">4 időtávú súlyozott momentum-kombináció</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6069,6 +6076,109 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= KNOW SURE THING (KST) KALKULÁTOR (OKTATÁSI) =================
+         4 ROC-periódus (10,15,20,30) súlyozottan kombinálva: KST = SMA10(ROC10)*1 +
+         SMA10(ROC15)*2 + SMA10(ROC20)*3 + SMA15(ROC30)*4. Jelvonal = SMA9(KST). -->
+    <div id="kst-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-emerald-400"></i> Know Sure Thing (KST) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('kst-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróárak sorozatát (soronként egy érték, legalább 55 adatpont szükséges). A KST négy eltérő időtávú momentum-mérést (ROC10, ROC15, ROC20, ROC30) kombinál súlyozottan, tisztább trendjelzést adva. A jelvonal keresztezését és a nulla vonal átlépését figyelik, hasonlóan más momentum-oszcillátorokhoz.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy érték, min. 55 adat)</label>
+            <textarea id="kst-closes" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50" placeholder="100&#10;101.2&#10;99.8&#10;...">100
+100.557707
+98.65775
+97.757867
+96.65071
+97.596595
+98.303393
+99.872112
+98.219867
+97.907554
+96.026743
+94.901295
+94.922716
+93.02886
+91.824211
+92.423748
+92.603514
+91.485277
+91.842339
+93.080061
+91.106056
+92.329333
+93.121891
+92.482893
+91.104811
+92.933663
+92.280041
+90.651025
+89.03789
+90.427868
+90.842772
+92.071285
+92.990212
+93.135124
+95.027588
+94.541725
+94.749888
+96.067506
+96.541585
+97.988413
+98.297821
+99.116109
+97.299406
+96.210999
+95.368551
+93.687719
+92.618883
+91.022888
+90.134783
+90.677521
+90.136849
+89.617573
+88.455601
+87.523513
+89.270131
+89.862273
+90.298797
+88.983351
+89.899858
+88.553468
+88.07129
+90.029383
+90.589383
+90.817181
+91.555638
+92.927046
+94.031046
+92.947238
+91.075639
+90.337451
+89.408415
+88.252346
+90.023985
+91.529456
+90.788167
+91.409922
+90.992449
+92.65064
+92.486047
+91.545568</textarea>
+
+            <button onclick="calcKST()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-emerald-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="kst-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7552,6 +7662,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Fisher Transform Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Élesebb csúcsok/mélypontok normalizált árral</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('kst-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-emerald-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Know Sure Thing (KST) Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">4 időtávú súlyozott momentum-kombináció</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15229,6 +15346,79 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold ${crossUp ? 'text-neon-green' : 'text-neon-red'}">${verdict}</p>
                 ${extremeNote}
+            `;
+        }
+
+        function calcKST() {
+            const closesEl = document.getElementById('kst-closes');
+            const out = document.getElementById('kst-result');
+            if (!closesEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const n = closes.length;
+
+            const minNeeded = 30 + 15; // leghosszabb ROC(30) + leghosszabb SMA(15)
+            if (n < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} záróár szükséges a KST kiszámításához — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            function roc(series, period) {
+                const r = new Array(series.length).fill(null);
+                for (let i = period; i < series.length; i++) {
+                    r[i] = (series[i] - series[i - period]) / series[i - period] * 100;
+                }
+                return r;
+            }
+            function sma(series, period) {
+                const r = new Array(series.length).fill(null);
+                for (let i = 0; i < series.length; i++) {
+                    if (series[i] === null) continue;
+                    if (i - period + 1 < 0) continue;
+                    const window = series.slice(i - period + 1, i + 1);
+                    if (window.some(v => v === null)) continue;
+                    r[i] = window.reduce((a, b) => a + b, 0) / period;
+                }
+                return r;
+            }
+
+            const roc1 = roc(closes, 10), sma1 = sma(roc1, 10);
+            const roc2 = roc(closes, 15), sma2 = sma(roc2, 10);
+            const roc3 = roc(closes, 20), sma3 = sma(roc3, 10);
+            const roc4 = roc(closes, 30), sma4 = sma(roc4, 15);
+
+            const kst = new Array(n).fill(null);
+            for (let i = 0; i < n; i++) {
+                if (sma1[i] === null || sma2[i] === null || sma3[i] === null || sma4[i] === null) continue;
+                kst[i] = sma1[i] * 1 + sma2[i] * 2 + sma3[i] * 3 + sma4[i] * 4;
+            }
+            const signal = sma(kst, 9);
+
+            const lastKst = kst[n - 1];
+            const lastSignal = signal[n - 1];
+
+            if (lastKst === null || lastSignal === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni a KST-t és a jelvonalat — adj meg több adatot!</div>`;
+                return;
+            }
+
+            const crossUp = lastKst > lastSignal;
+            const colorClass = lastKst >= 0 ? 'text-neon-green' : 'text-neon-red';
+            const verdict = crossUp
+                ? 'A KST a jelvonal fölé emelkedett — potenciális bullish momentumjelzés.'
+                : 'A KST a jelvonal alá esett — potenciális bearish momentumjelzés.';
+            const zeroLineNote = lastKst >= 0
+                ? 'A KST a nulla vonal felett van — hosszabb távú momentum pozitív.'
+                : 'A KST a nulla vonal alatt van — hosszabb távú momentum negatív.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">KST (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastKst >= 0 ? '+' : ''}${lastKst.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (SMA9):</span><span class="text-white">${lastSignal >= 0 ? '+' : ''}${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${crossUp ? 'text-neon-green' : 'text-neon-red'}">${verdict}</p>
+                <p class="text-[10px] text-slate-400 mt-1">${zeroLineNote}</p>
             `;
         }
 
@@ -26405,6 +26595,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             344: { tool: 'fibretr-modal', cta: 'Számold ki élesben a Fibonacci Retracement szinteket' },
             325: { tool: 'emv-modal', cta: 'Számold ki élesben az Ease of Movement indikátort' },
             378: { tool: 'fisher-modal', cta: 'Számold ki élesben a Fisher Transformot' },
+            397: { tool: 'kst-modal', cta: 'Számold ki élesben a Know Sure Thinget' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -26414,7 +26605,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
