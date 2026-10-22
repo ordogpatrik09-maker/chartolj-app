@@ -1519,6 +1519,13 @@
                                 <div class="text-[10px] text-slate-400">Rövid vs hosszú lejáratú hozam-különbség</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('goldencross-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center text-sm"><i class="fa-solid fa-angles-up"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Golden Cross / Death Cross Detektor</div>
+                                <div class="text-[10px] text-slate-400">Rövid/hosszú SMA keresztezés felismerése</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6718,6 +6725,50 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= GOLDEN CROSS / DEATH CROSS DETEKTOR (OKTATÁSI) =================
+         Golden Cross: rövid SMA FELFELÉ keresztezi a hosszú SMA-t (előző bar: short<=long, jelen bar: short>long).
+         Death Cross: rövid SMA LEFELÉ keresztezi a hosszú SMA-t (előző bar: short>=long, jelen bar: short<long). -->
+    <div id="goldencross-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-angles-up text-amber-500"></i> Golden Cross / Death Cross Detektor
+                </h3>
+                <button onclick="closeToolModal('goldencross-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróárak sorozatát (soronként egy érték) és két SMA-periódust (rövid és hosszú). A kalkulátor megmondja, hogy az utolsó bar-on történt-e Golden Cross (bullish) vagy Death Cross (bearish) keresztezés — vagy éppen melyik mozgóátlag van jelenleg felül.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy érték)</label>
+            <textarea id="goldencross-closes" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50" placeholder="120&#10;115&#10;...">120
+115
+110
+105
+100
+96
+93
+91
+90
+92
+98</textarea>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Rövid SMA periódus</label>
+                    <input type="number" id="goldencross-short" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Hosszú SMA periódus</label>
+                    <input type="number" id="goldencross-long" value="5" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+            </div>
+
+            <button onclick="calcGoldenCross()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-500 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="goldencross-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -8299,6 +8350,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Hozamgörbe Spread (Inverzió)</div>
                     <div class="text-[10px] text-slate-400">Rövid vs hosszú lejáratú hozam-különbség</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('goldencross-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-500/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-angles-up"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Golden Cross / Death Cross Detektor</div>
+                    <div class="text-[10px] text-slate-400">Rövid/hosszú SMA keresztezés felismerése</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -16729,6 +16787,66 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Spread (Hosszú - Rövid):</span><span class="${colorClass} font-extrabold text-sm">${spread >= 0 ? '+' : ''}${spread.toLocaleString(undefined, { maximumFractionDigits: 4 })}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcGoldenCross() {
+            const closesEl = document.getElementById('goldencross-closes');
+            const shortEl = document.getElementById('goldencross-short');
+            const longEl = document.getElementById('goldencross-long');
+            const out = document.getElementById('goldencross-result');
+            if (!closesEl || !shortEl || !longEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const shortP = parseInt(shortEl.value, 10) || 1;
+            const longP = parseInt(longEl.value, 10) || 2;
+            const n = closes.length;
+
+            if (shortP >= longP) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A rövid periódusnak kisebbnek kell lennie a hosszú periódusnál!</div>`;
+                return;
+            }
+            const minNeeded = longP + 1;
+            if (n < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} záróár szükséges a keresztezés ellenőrzéséhez — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            function sma(series, period, idx) {
+                const w = series.slice(idx - period + 1, idx + 1);
+                return w.reduce((a, b) => a + b, 0) / period;
+            }
+
+            const prevShort = sma(closes, shortP, n - 2);
+            const prevLong = sma(closes, longP, n - 2);
+            const currShort = sma(closes, shortP, n - 1);
+            const currLong = sma(closes, longP, n - 1);
+
+            const goldenCross = prevShort <= prevLong && currShort > currLong;
+            const deathCross = prevShort >= prevLong && currShort < currLong;
+
+            let verdict, colorClass;
+            if (goldenCross) {
+                verdict = `GOLDEN CROSS történt az utolsó bar-on! A rövid SMA (${shortP}) felfelé keresztezte a hosszú SMA-t (${longP}) — széles körben figyelt bullish jelzés, de lagging indikátor, a mozgás jelentős része már lezajlott.`;
+                colorClass = 'text-neon-green';
+            } else if (deathCross) {
+                verdict = `DEATH CROSS történt az utolsó bar-on! A rövid SMA (${shortP}) lefelé keresztezte a hosszú SMA-t (${longP}) — széles körben figyelt bearish jelzés, de lagging indikátor, a mozgás jelentős része már lezajlott.`;
+                colorClass = 'text-neon-red';
+            } else if (currShort > currLong) {
+                verdict = `Nincs friss keresztezés — a rövid SMA (${shortP}) jelenleg a hosszú SMA (${longP}) FELETT van (bullish állapot, de nem új kereszteződés).`;
+                colorClass = 'text-neon-green';
+            } else {
+                verdict = `Nincs friss keresztezés — a rövid SMA (${shortP}) jelenleg a hosszú SMA (${longP}) ALATT van (bearish állapot, de nem új kereszteződés).`;
+                colorClass = 'text-neon-red';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Előző SMA${shortP} / SMA${longP}:</span><span class="text-white">${prevShort.toLocaleString(undefined, { maximumFractionDigits: 4 })} / ${prevLong.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Jelen SMA${shortP} / SMA${longP}:</span><span class="text-white">${currShort.toLocaleString(undefined, { maximumFractionDigits: 4 })} / ${currLong.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -27939,6 +28057,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             400: { tool: 'expectancy-modal', cta: 'Számold ki élesben a konvex kifizetési profil expectancyjét' },
             39: { tool: 'spreadcost-modal', cta: 'Számold ki élesben a spread rejtett költségét' },
             537: { tool: 'yieldcurve-modal', cta: 'Ellenőrizd élesben a hozamgörbe inverzióját' },
+            104: { tool: 'goldencross-modal', cta: 'Ellenőrizd élesben a Golden/Death Cross keresztezést' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -27948,7 +28067,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
