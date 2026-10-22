@@ -1211,6 +1211,13 @@
                                 <div class="text-[10px] text-slate-400">Csőd-valószínűség a tétméret függvényében</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('pathdep-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-route"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Path Dependency Szimulátor</div>
+                                <div class="text-[10px] text-slate-400">Ugyanazok a trade-ek, eltérő sorrend, eltérő végkimenet</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3502,6 +3509,42 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= PATH DEPENDENCY SZIMULÁTOR (OKTATÁSI) =================
+         Ugyanazt a %-os hozamsorozatot EREDETI és FORDÍTOTT sorrendben
+         is lefuttatjuk, compoundolva (tőke *= 1+r/100 minden trade-nél),
+         és figyeljük, ha a tőke egy megadott "stop-out" küszöb ALÁ esik
+         ÚTKÖZBEN — ha igen, a szimuláció ott megáll (a számla "kiég"),
+         még ha a maradék trade-ek egyébként nyereségesek lennének is.
+         Ez mutatja meg, hogy AZONOS trade-halmaz, eltérő sorrendben,
+         alapvetően eltérő végkimenetet adhat. -->
+    <div id="pathdep-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-route text-neon-purple"></i> Path Dependency Szimulátor
+                </h3>
+                <button onclick="closeToolModal('pathdep-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A path dependency (útvonalfüggőség) azt jelenti, hogy a végeredmény nem csak a nyerő/vesztő trade-ek arányától, hanem a SORRENDJÜKTŐL is függ, ha van egy "stop-out" küszöb (pl. a számla leáll, ha a tőke egy kritikus szint alá esik). A kalkulátor ugyanazt a %-os hozamsorozatot EREDETI és FORDÍTOTT sorrendben is lefuttatja — AZONOS trade-halmaz, de eltérő sorrend, teljesen eltérő végkimenetet adhat. Add meg a %-os hozamsorozatot, és a stop-out küszöböt.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Trade hozamsorozat (%, vesszővel elválasztva, a trade-ek EREDETI sorrendjében)</label>
+            <textarea id="pathdep-returns" rows="3" placeholder="pl. -40, -30, 50, 60, 70, -10, 20, 15" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">-40, -30, 50, 60, 70, -10, 20, 15</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke ($)</label>
+            <input type="number" id="pathdep-capital" value="10000" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Stop-out küszöb (a kezdő tőke %-ában — ha a tőke ez alá esik, a kereskedés leáll)</label>
+            <input type="number" id="pathdep-stop-pct" value="45" step="1" min="0" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcPathDependency()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="pathdep-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha nincs stop-out küszöb (0%-ra állítva), a végeredmény MATEMATIKAILAG AZONOS lesz mindkét sorrendben — a szorzás felcserélhető (kommutatív). A path dependency pontosan a stop-out (vagy más, útközbeni korlát) miatt jelenik meg, nem a puszta compoundolás miatt.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4782,6 +4825,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Ruin Probability Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Csőd-valószínűség a tétméret függvényében</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('pathdep-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-route"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Path Dependency Szimulátor</div>
+                    <div class="text-[10px] text-slate-400">Ugyanazok a trade-ek, eltérő sorrend, eltérő végkimenet</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -11643,6 +11693,73 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ruin Probability (csőd-valószínűség):</span><span class="font-extrabold ${colorClass} text-sm">${(ruinProbability * 100).toPrecision(3)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= PATH DEPENDENCY SZIMULÁTOR (OKTATÁSI) =================
+        // tőke *= (1 + r/100) minden trade-nél, compoundolva. Ha a
+        // tőke a stopFloor (kezdő tőke × stopPct/100) ALÁ vagy ARRA
+        // esik, a szimuláció megáll ott (a maradék trade-ek nem futnak
+        // le). Lefuttatjuk az EREDETI és a FORDÍTOTT sorrenddel is.
+        function calcPathDependency() {
+            const returnsEl = document.getElementById('pathdep-returns');
+            const capitalEl = document.getElementById('pathdep-capital');
+            const stopPctEl = document.getElementById('pathdep-stop-pct');
+            const out = document.getElementById('pathdep-result');
+            if (!returnsEl || !capitalEl || !stopPctEl || !out) return;
+
+            const returns = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const startCapital = parseFloat(capitalEl.value);
+            const stopPct = parseFloat(stopPctEl.value);
+
+            if (returns.length < 2 || !startCapital || startCapital <= 0 || isNaN(stopPct) || stopPct < 0 || stopPct >= 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott %-os hozamot, egy nullánál nagyobb kezdő tőkét, és egy 0 és 99 közötti stop-out küszöböt!</div>`;
+                return;
+            }
+
+            function simulate(sequence) {
+                const stopFloor = startCapital * (stopPct / 100);
+                let capital = startCapital;
+                let stoppedOut = false;
+                let stopAtTrade = null;
+                for (let i = 0; i < sequence.length; i++) {
+                    capital *= (1 + sequence[i] / 100);
+                    if (capital <= stopFloor) {
+                        stoppedOut = true;
+                        stopAtTrade = i + 1;
+                        break;
+                    }
+                }
+                return { finalCapital: capital, stoppedOut, stopAtTrade };
+            }
+
+            const original = simulate(returns);
+            const reversedSeq = [...returns].reverse();
+            const reversedResult = simulate(reversedSeq);
+
+            const finalDiff = original.finalCapital - reversedResult.finalCapital;
+            const sameOutcome = Math.abs(finalDiff) < 0.01 && original.stoppedOut === reversedResult.stoppedOut;
+
+            let verdict;
+            if (original.stoppedOut !== reversedResult.stoppedOut) {
+                const stoppedLabel = original.stoppedOut ? 'EREDETI' : 'FORDÍTOTT';
+                verdict = `🚨 Ez a tankönyvi path dependency: az AZONOS trade-halmaz egyik sorrendje (${stoppedLabel}) kiégeti a számlát a stop-out küszöbnél, a másik sorrend viszont továbbfut és sokkal jobb végeredményt hoz — pusztán a sorrend miatt, nem a trade-ek minősége miatt.`;
+            } else if (sameOutcome) {
+                verdict = 'Ebben a konkrét esetben mindkét sorrend ugyanazt a végeredményt adta (feltehetően mert nem volt stop-out esemény) — ez emlékeztet arra, hogy path dependency ott jelenik meg, ahol egy útközbeni korlát (pl. stop-out) van, nem a puszta compoundolásban.';
+            } else {
+                verdict = '⚠️ A két sorrend eltérő végtőkét adott, bár mindkettő "életben maradt" (nem ért stop-outot) — ez a kerekítési/kamatos hatások finomabb path-függőségét mutatja.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="text-slate-300 font-bold">Eredeti sorrend</div>
+                    <div class="flex justify-between"><span class="text-slate-400">Végtőke:</span><span class="${original.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">$${original.finalCapital.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Állapot:</span><span class="${original.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">${original.stoppedOut ? 'STOP-OUT a ' + original.stopAtTrade + '. trade-nél' : 'Végigfutott, nem állt le'}</span></div>
+                    <div class="text-slate-300 font-bold border-t border-dark-750 pt-2">Fordított sorrend</div>
+                    <div class="flex justify-between"><span class="text-slate-400">Végtőke:</span><span class="${reversedResult.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">$${reversedResult.finalCapital.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Állapot:</span><span class="${reversedResult.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">${reversedResult.stoppedOut ? 'STOP-OUT a ' + reversedResult.stopAtTrade + '. trade-nél' : 'Végigfutott, nem állt le'}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-amber-400">${verdict}</p>
             `;
         }
 
