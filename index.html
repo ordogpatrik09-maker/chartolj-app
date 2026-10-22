@@ -1197,6 +1197,13 @@
                                 <div class="text-[10px] text-slate-400">Páronkénti Pearson-korreláció több eszköz közt</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('ddduration-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-hourglass-half"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Drawdown Duration Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mélység ÉS időtartam, episódonkénti bontásban</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3424,6 +3431,35 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= DRAWDOWN DURATION KALKULÁTOR (OKTATÁSI) =================
+         Minden önálló visszaesés-episódot külön azonosítunk (csúcstól
+         a mélypontig, majd az ÚJ csúcsig). Minden episódhoz: mélység%,
+         csúcstól-mélypontig tartó időtartam, és a TELJES (csúcstól az
+         új csúcsig tartó) időtartam — ez utóbbi a "drawdown duration",
+         ami a lecke szerint pszichológiailag fontosabb, mint a puszta
+         mélység. -->
+    <div id="ddduration-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-hourglass-half text-neon-red"></i> Drawdown Duration Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('ddduration-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A drawdown duration azt méri, mennyi ideig tart, amíg a tőke a csúcsától a mélypontig, majd vissza egy ÚJ csúcsig ér — nem csak a mélység számít, hanem az IDŐTARTAM is. Két, azonos mélységű drawdown pszichológiailag nagyon eltérő lehet, ha az egyik 2 periódus, a másik 20 periódus alatt zajlik le. Add meg az árfolyam/egyenleg sorozatot — a kalkulátor minden önálló visszaesés-episódot külön azonosít és bont le.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Árfolyam / egyenleg sorozat (vesszővel elválasztva)</label>
+            <textarea id="ddduration-series" rows="4" placeholder="pl. 10000, 10500, 11000, 10700, 10200" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">10000, 10500, 11000, 10700, 10200, 9800, 10100, 10600, 11200, 11100, 10800, 10500, 10900, 11300, 11600, 11400, 11000, 10700, 11000, 11500, 12000</textarea>
+
+            <button onclick="calcDrawdownDuration()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="ddduration-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Egy még NEM felépült, folyamatban lévő visszaesést (ami a sorozat végéig tart, és nem ért még új csúcsra) a kalkulátor külön, "még folyamatban" jelzéssel mutat, nem kever a lezárt episódok közé.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4690,6 +4726,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Korrelációs Mátrix Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Páronkénti Pearson-korreláció több eszköz közt</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('ddduration-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-hourglass-half"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Drawdown Duration Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mélység ÉS időtartam, episódonkénti bontásban</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -11374,6 +11417,127 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 overflow-x-auto">${tableHtml}</div>
                 ${hasInvalid ? '<p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ Legalább egy eszköz hozamsorozata konstans (nulla szórású) — annak a pároknak a korrelációja nem értelmezhető ("N/A").</p>' : ''}
                 <p class="text-[10px] font-semibold mt-2">${verdict}</p>
+            `;
+        }
+
+        // ================= DRAWDOWN DURATION KALKULÁTOR (OKTATÁSI) =================
+        // Minden episódot külön azonosítunk: egy új all-time csúcs
+        // lezárja az előző episódot (ha volt). Minden lezárt episódra:
+        // mélység% = (csúcs-mélypont)/csúcs×100, durationToTrough =
+        // mélypont indexe - csúcs indexe, durationToRecovery =
+        // visszanyerés indexe - csúcs indexe. Egy a sorozat végéig
+        // nyitva maradó episódot külön, "folyamatban" jelzéssel mutatunk.
+        function calcDrawdownDuration() {
+            const seriesEl = document.getElementById('ddduration-series');
+            const out = document.getElementById('ddduration-result');
+            if (!seriesEl || !out) return;
+
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+
+            if (values.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, nullánál nagyobb, vesszővel elválasztott értéket!</div>`;
+                return;
+            }
+
+            const n = values.length;
+            let peak = values[0];
+            let peakIdx = 0;
+            let trough = values[0];
+            let troughIdx = 0;
+            let inDrawdown = false;
+            const episodes = [];
+
+            for (let i = 1; i < n; i++) {
+                if (values[i] >= peak) {
+                    if (inDrawdown) {
+                        const depthPct = (peak - trough) / peak * 100;
+                        episodes.push({
+                            depthPct,
+                            durationToTrough: troughIdx - peakIdx,
+                            durationToRecovery: i - peakIdx,
+                            ongoing: false
+                        });
+                        inDrawdown = false;
+                    }
+                    peak = values[i];
+                    peakIdx = i;
+                    trough = values[i];
+                    troughIdx = i;
+                } else {
+                    inDrawdown = true;
+                    if (values[i] < trough) {
+                        trough = values[i];
+                        troughIdx = i;
+                    }
+                }
+            }
+
+            let ongoingEpisode = null;
+            if (inDrawdown) {
+                const depthPct = (peak - trough) / peak * 100;
+                ongoingEpisode = {
+                    depthPct,
+                    durationToTrough: troughIdx - peakIdx,
+                    durationSoFar: (n - 1) - peakIdx,
+                    ongoing: true
+                };
+            }
+
+            if (episodes.length === 0 && !ongoingEpisode) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Lezárt visszaesés-episódok:</span><span class="text-white">0</span></div>
+                    </div>
+                    <p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A sorozatban nem volt visszaesés-episód (minden érték egyenlő vagy magasabb volt az előzőnél).</p>
+                `;
+                return;
+            }
+
+            let episodesHtml = '';
+            episodes.forEach((ep, idx) => {
+                episodesHtml += `
+                    <div class="border-t border-dark-750 pt-2 mt-2">
+                        <div class="text-slate-300 font-bold mb-1">#${idx + 1}. episód</div>
+                        <div class="flex justify-between"><span class="text-slate-400">Mélység:</span><span class="text-neon-red">-${ep.depthPct.toFixed(2)}%</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Csúcstól mélypontig:</span><span class="text-white">${ep.durationToTrough} periódus</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Teljes drawdown duration (új csúcsig):</span><span class="font-extrabold text-amber-400">${ep.durationToRecovery} periódus</span></div>
+                    </div>
+                `;
+            });
+
+            let ongoingHtml = '';
+            if (ongoingEpisode) {
+                ongoingHtml = `
+                    <div class="border-t border-dark-750 pt-2 mt-2">
+                        <div class="text-slate-300 font-bold mb-1">⏳ Folyamatban lévő episód (a sorozat végéig nem épült fel)</div>
+                        <div class="flex justify-between"><span class="text-slate-400">Mélység:</span><span class="text-neon-red">-${ongoingEpisode.depthPct.toFixed(2)}%</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Csúcstól mélypontig:</span><span class="text-white">${ongoingEpisode.durationToTrough} periódus</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Eltelt idő a csúcs óta (eddig):</span><span class="font-extrabold text-neon-red">${ongoingEpisode.durationSoFar} periódus</span></div>
+                    </div>
+                `;
+            }
+
+            const avgDuration = episodes.length > 0
+                ? episodes.reduce((a, e) => a + e.durationToRecovery, 0) / episodes.length
+                : null;
+
+            let verdict;
+            if (ongoingEpisode) {
+                verdict = '⏳ Jelenleg aktív, le nem zárt visszaesés van a sorozat végén — a felépülési idő még nem ismert, csak az eddig eltelt idő.';
+            } else if (avgDuration !== null && avgDuration > 10) {
+                verdict = '⚠️ Az átlagos drawdown duration viszonylag hosszú — egy elhúzódó visszaesés pszichológiailag nehezebb, folyamatos kétséget táplálhat a stratégia működésében.';
+            } else {
+                verdict = '✅ Az átlagos drawdown duration viszonylag rövid — a visszaesések relatíve gyorsan felépültek a megadott sorozatban.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Lezárt visszaesés-episódok:</span><span class="text-white">${episodes.length}</span></div>
+                    ${avgDuration !== null ? `<div class="flex justify-between"><span class="text-slate-400">Átlagos drawdown duration:</span><span class="text-white">${avgDuration.toFixed(1)} periódus</span></div>` : ''}
+                    ${episodesHtml}
+                    ${ongoingHtml}
+                </div>
+                <p class="text-[10px] font-semibold mt-2 text-amber-400">${verdict}</p>
             `;
         }
 
