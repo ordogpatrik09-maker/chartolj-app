@@ -1239,6 +1239,13 @@
                                 <div class="text-[10px] text-slate-400">Matematikai optimum vs. elviselhető visszaesés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('rmultiple-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-list-ol"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">R-Multiple Napló Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Trade-ek eredménye a kezdeti kockázat (R) többszöröseként</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3676,6 +3683,28 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="rmultiple-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-ol text-neon-purple"></i> R-Multiple Napló Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('rmultiple-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Van Tharp R-multiple rendszere: minden trade eredményét nem dollárban, hanem a kezdeti kockázat (R) többszöröseként mérjük (<strong>R-multiple = tényleges P/L ÷ kezdeti kockáztatott összeg</strong>). Így eltérő méretű trade-ek is összehasonlíthatóvá válnak. Add meg trade-enként a tényleges eredményt és a kezdetben vállalt kockázatot (ugyanabban a pénznemben), soronként egy trade-et, vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Trade-ek: eredmény,kockázat (pl. 500,250 → +2R)</label>
+            <textarea id="rmultiple-trades" rows="5" placeholder="500,250&#10;-150,250&#10;800,250&#10;-200,250" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50"></textarea>
+
+            <button onclick="calcRMultiple()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="rmultiple-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha minden trade-edet R-multiple-ban naplózod, az átlagos R (az "R-expectancy") megmutatja, mennyit nyersz átlagosan a kockáztatott összeg arányában — ez a valódi, méret-független stratégiai teljesítményed.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4984,6 +5013,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Kelly Fraction / Drawdown Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Matematikai optimum vs. elviselhető visszaesés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('rmultiple-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-list-ol"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">R-Multiple Napló Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Trade-ek eredménye a kezdeti kockázat többszöröseként</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -12077,6 +12113,84 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
                 <p class="text-[10px] text-slate-500 mt-2">Fordítva: ha legfeljebb ~20%-os drawdownt tudsz elviselni, az ennek a közelítésnek megfelelő Kelly-frakció körülbelül ${(20/50).toFixed(2)}× lenne (azaz egy általános ökölszabály: elviselhetőDrawdown% / 50).</p>
+            `;
+        }
+
+        // ================= R-MULTIPLE NAPLÓ KALKULÁTOR (OKTATÁSI) =================
+        // Van Tharp rendszere: R_i = tényleges P/L_i ÷ kezdeti kockáztatott összeg_i.
+        // Az "R-expectancy" az átlagos R; a szórás a populációs (n-osztós)
+        // konvenciót követi, konzisztensen a Skewness/Kurtosis és
+        // Treynor/Jensen kalkulátorokkal.
+        function calcRMultiple() {
+            const tradesEl = document.getElementById('rmultiple-trades');
+            const out = document.getElementById('rmultiple-result');
+            if (!tradesEl || !out) return;
+
+            const lines = tradesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább egy trade-et "eredmény,kockázat" formátumban!</div>`;
+                return;
+            }
+
+            const rValues = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(p => parseFloat(p.trim()));
+                if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1]) || parts[1] <= 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hibás sor: "${line}" — a formátum "eredmény,kockázat" legyen, a kockázat pozitív szám!</div>`;
+                    return;
+                }
+                rValues.push(parts[0] / parts[1]);
+            }
+
+            const n = rValues.length;
+            const totalR = rValues.reduce((a, b) => a + b, 0);
+            const avgR = totalR / n;
+            const wins = rValues.filter(r => r > 0).length;
+            const winRatePct = (wins / n) * 100;
+            const variance = rValues.reduce((sum, r) => sum + Math.pow(r - avgR, 2), 0) / n;
+            const stdDevR = Math.sqrt(variance);
+            const bestR = Math.max(...rValues);
+            const worstR = Math.min(...rValues);
+            const isPositive = avgR > 0;
+
+            const rowsHtml = rValues.map((r, i) => `
+                <div class="flex justify-between font-mono text-[10px] ${i < rValues.length - 1 ? 'border-b border-dark-800 pb-1 mb-1' : ''}">
+                    <span class="text-slate-500">Trade #${i + 1}:</span>
+                    <span class="${r >= 0 ? 'text-neon-green' : 'text-neon-red'} font-semibold">${r >= 0 ? '+' : ''}${r.toFixed(2)}R</span>
+                </div>
+            `).join('');
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Átlagos R (R-expectancy / trade)</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Trade-ek száma:</span>
+                        <span class="font-extrabold text-white text-sm">${n}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Találati arány:</span>
+                        <span class="font-extrabold text-white text-sm">${winRatePct.toFixed(1)}%</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Összes R (kumulált):</span>
+                        <span class="font-extrabold ${totalR >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${totalR >= 0 ? '+' : ''}${totalR.toFixed(2)}R</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">R szórása (volatilitás):</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${stdDevR.toFixed(2)}R</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Legjobb / legrosszabb trade:</span>
+                        <span class="font-extrabold text-white text-sm">${bestR >= 0 ? '+' : ''}${bestR.toFixed(2)}R / ${worstR >= 0 ? '+' : ''}${worstR.toFixed(2)}R</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3 max-h-32 overflow-y-auto">${rowsHtml}</div>
+                <p class="text-[10px] font-semibold mt-2 ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${isPositive
+                    ? `Pozitív R-expectancy: átlagosan +${avgR.toFixed(2)}R-t keresel minden egységnyi kockáztatott összegen, méret-függetlenül. Minél nagyobb a minta, annál megbízhatóbb ez a becslés.`
+                    : `Negatív R-expectancy: átlagosan ${avgR.toFixed(2)}R-t veszítesz minden egységnyi kockáztatott összegen — érdemes felülvizsgálni a stratégia belépési/kilépési szabályait vagy a Risk/Reward arányt.`}</p>
             `;
         }
 
@@ -20853,6 +20967,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             67: { tool: 'expectancy-modal', cta: 'Számold ki élesben a stratégiád Expectancy-ját' },
             84: { tool: 'ruin-modal', cta: 'Számold ki élesben a csőd-kockázatodat' },
             37: { tool: 'ddduration-modal', cta: 'Vizsgáld meg élesben egy drawdown mélységét és időtartamát' },
+            269: { tool: 'rmultiple-modal', cta: 'Számold ki élesben a trade-jeid R-multiple statisztikáit' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -20862,7 +20977,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
