@@ -1183,6 +1183,13 @@
                                 <div class="text-[10px] text-slate-400">Aktuális tartomány / referencia-tartomány arány</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('trendexhaustion-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-battery-quarter"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Trend Exhaustion Index Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Trend hossza × sebessége, kifáradás-jelzéshez</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3348,6 +3355,38 @@
         </div>
     </div>
 
+    <!-- ================= TREND EXHAUSTION INDEX KALKULÁTOR (OKTATÁSI) =================
+         A lecke "egyszerű koncepcióként" írja le ezt az indexet, konkrét
+         egyetlen szabványosított képlet nélkül — ezért egy jól
+         definiált, a leckében leírt elvet (hossz × sebesség) pontosan
+         követő, saját összetett mutatót implementálunk: a legutóbbi
+         gyertyától visszafelé megkeressük az egyirányú (emelkedő vagy
+         csökkenő) mozgás hosszát (hány egymást követő gyertya mozgott
+         ugyanabba az irányba), majd a trend sebességét (a trend alatti
+         teljes %-os árváltozás / trend hossza). TEI = trend hossza ×
+         |átlagos sebesség %|. -->
+    <div id="trendexhaustion-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-battery-quarter text-neon-red"></i> Trend Exhaustion Index Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('trendexhaustion-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Trend Exhaustion Index a trend HOSSZÁT (hány egymást követő gyertya mozgott ugyanabba az irányba a legutóbbiig) és SEBESSÉGÉT (az átlagos %-os árváltozás a trend alatt) kombinálja egyetlen mutatóban — egy szokatlanul hosszú, gyors trend statisztikailag nagyobb eséllyel közelít a kifáradásához. Csak KIEGÉSZÍTŐ eszköz, önmagában nem jelzés. Add meg a záróár-sorozatot, legrégebbitől a legfrissebbig.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróár sorozat (vesszővel elválasztva)</label>
+            <textarea id="trendexhaustion-series" rows="3" placeholder="pl. 10.0, 10.1, 10.3, 10.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">10.0, 10.1, 10.3, 10.5, 10.4, 10.6, 10.9, 11.2, 11.5, 11.9, 12.3, 12.8</textarea>
+
+            <button onclick="calcTrendExhaustionIndex()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="trendexhaustion-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha az utolsó két záróár egyenlő (nincs irány), a trend hossza 0, és az index nem értelmezhető. A kifáradás jelzése SOHA nem garantálja a fordulatot — más eszközökkel (pl. gyertyaminták, volumen) együtt érdemes értelmezni, a lecke explicit figyelmeztetése szerint.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4600,6 +4639,13 @@
                 <div>
                     <div class="text-xs font-bold text-white">Volatility Ratio Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Aktuális tartomány / referencia-tartomány arány</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('trendexhaustion-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-battery-quarter"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Trend Exhaustion Index Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Trend hossza × sebessége, kifáradás-jelzéshez</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -11089,6 +11135,81 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Aktuális átlagos tartomány:</span><span class="text-white">${currentAvg.toFixed(4)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Referencia átlagos tartomány:</span><span class="text-white">${referenceAvg.toFixed(4)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Volatility Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${volatilityRatio.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= TREND EXHAUSTION INDEX KALKULÁTOR (OKTATÁSI) =================
+        // diffs_i = close_i - close_{i-1}. Irány = az utolsó diff
+        // előjele. Trend hossza = hány egymást követő diff (a
+        // legutóbbitól visszafelé) ugyanaz az előjel. %-os
+        // árváltozás a trend alatt = (utolsó záró - trend-kezdő záró)
+        // / trend-kezdő záró × 100. Átlagos sebesség% = ez / hossz.
+        // TEI = hossz × |átlagos sebesség%|.
+        function calcTrendExhaustionIndex() {
+            const seriesEl = document.getElementById('trendexhaustion-series');
+            const out = document.getElementById('trendexhaustion-result');
+            if (!seriesEl || !out) return;
+
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+
+            if (values.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott záróárat!</div>`;
+                return;
+            }
+
+            const n = values.length;
+            const diffs = [];
+            for (let i = 1; i < n; i++) diffs.push(values[i] - values[i - 1]);
+
+            const lastDiff = diffs[diffs.length - 1];
+            const direction = lastDiff > 0 ? 1 : (lastDiff < 0 ? -1 : 0);
+
+            if (direction === 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Trend hossza:</span><span class="text-white">0</span></div>
+                    </div>
+                    <p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ Az utolsó két záróár egyenlő — nincs aktív irány, a Trend Exhaustion Index ebben a pillanatban nem értelmezhető.</p>
+                `;
+                return;
+            }
+
+            let length = 0;
+            for (let i = diffs.length - 1; i >= 0; i--) {
+                const sign = diffs[i] > 0 ? 1 : (diffs[i] < 0 ? -1 : 0);
+                if (sign === direction) {
+                    length++;
+                } else {
+                    break;
+                }
+            }
+
+            const trendStartPrice = values[n - 1 - length];
+            const trendEndPrice = values[n - 1];
+            const totalPctChange = (trendEndPrice - trendStartPrice) / trendStartPrice * 100;
+            const avgSpeedPct = totalPctChange / length;
+            const tei = length * Math.abs(avgSpeedPct);
+
+            let colorClass, verdict;
+            if (tei >= 20) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Magas Trend Exhaustion Index — hosszú ÉS gyors trend, statisztikailag nagyobb eséllyel közelít a kifáradásához. Ez NEM egy önálló fordulós jelzés, csak kiegészítő kontextus más eszközök mellé.';
+            } else if (tei >= 8) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Közepes Trend Exhaustion Index — a trend se nem túl hosszú, se nem túl gyors, de érdemes figyelni a folytatódását.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Alacsony Trend Exhaustion Index — friss vagy lassú trend, statisztikailag kevésbé valószínű a közeli kifáradás.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Trend iránya:</span><span class="${direction > 0 ? 'text-neon-green' : 'text-neon-red'}">${direction > 0 ? 'Emelkedő' : 'Csökkenő'}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Trend hossza (gyertyák száma):</span><span class="text-white">${length}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos sebesség (%/gyertya):</span><span class="text-white">${avgSpeedPct >= 0 ? '+' : ''}${avgSpeedPct.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Trend Exhaustion Index:</span><span class="font-extrabold ${colorClass} text-sm">${tei.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
