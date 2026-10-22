@@ -1365,6 +1365,13 @@
                                 <div class="text-[10px] text-slate-400">Gyertyatestek irányának mozgóátlaga</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('bop-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Balance of Power (BOP)</div>
+                                <div class="text-[10px] text-slate-400">Vevői/eladói erő a Záró-Nyitó/Max-Min alapján</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6145,6 +6152,50 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="bop-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-amber-400"></i> Balance of Power (BOP)
+                </h3>
+                <button onclick="closeToolModal('bop-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A BOP minden gyertyánál kiszámolja a Záróár − Nyitóár különbséget, és elosztja a napi tartománnyal (Napi Max − Napi Min): BOP = (Záró − Nyitó) / (Max − Min). Az eredmény −1 és +1 közé esik — pozitív érték a vevők, negatív az eladók aznapi dominanciáját jelzi. A gyakorlatban a nyers értéket mozgóátlaggal simítják, és a nulla vonal keresztezését figyelik. Add meg a gyertyákat (Nyitó,Max,Min,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Napi Max,Napi Min,Záró (soronként egy, időrendben)</label>
+            <textarea id="bop-candles" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100.0,100.67,99.8,100.61
+100.61,101.07,99.42,99.85
+99.85,101.39,99.56,101.29
+101.29,101.46,99.56,99.89
+99.89,100.05,98.07,98.48
+98.48,98.95,98.1,98.78
+98.78,100.0,98.28,99.95
+99.95,100.99,99.81,100.75
+100.75,102.64,100.65,102.41
+102.41,102.93,100.85,101.23
+101.23,102.84,100.88,102.39
+102.39,104.36,102.04,104.1
+104.1,105.73,103.58,105.34
+105.34,106.18,105.26,105.75
+105.75,105.95,104.9,105.0
+105.0,105.1,104.06,104.27
+104.27,105.11,104.01,104.86
+104.86,105.06,103.49,104.05
+104.05,105.08,103.91,104.69
+104.69,105.74,104.43,105.6</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Simítási periódus (tipikusan 14)</label>
+            <input type="number" id="bop-period" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcBOP()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="bop-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A BOP NEM használ volument, csak az árszinteket — egyszerűbb, de kevésbé teljes képet ad, mint a volumen-alapú mutatók (pl. CMF). Ha egy gyertyánál Max = Min (nincs tartomány), a kalkulátor az adott gyertyára 0-t vesz, hogy elkerülje a nullával osztást.</p>
+        </div>
+    </div>
+
     <div id="m2-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7031,6 +7082,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Qstick Indikátor</div>
                     <div class="text-[10px] text-slate-400">Gyertyatestek irányának mozgóátlaga</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('bop-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-balanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Balance of Power (BOP)</div>
+                    <div class="text-[10px] text-slate-400">Vevői/eladói erő a Záró-Nyitó/Max-Min alapján</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14721,6 +14779,68 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Feldolgozott gyertyák:</span><span class="text-white">${candles.length}</span></div>
                     ${prevQstick !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző Qstick:</span><span class="text-slate-300">${prevQstick >= 0 ? '+' : ''}${prevQstick.toFixed(4)}</span></div>` : ''}
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Qstick:</span><span class="${colorClass} font-extrabold text-sm">${lastQstick >= 0 ? '+' : ''}${lastQstick.toFixed(4)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+                ${crossNote}
+            `;
+        }
+
+        function calcBOP() {
+            const candlesEl = document.getElementById('bop-candles');
+            const periodEl = document.getElementById('bop-period');
+            const out = document.getElementById('bop-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = lines.map(l => {
+                const parts = l.split(',').map(v => parseFloat(v.trim()));
+                return { open: parts[0], high: parts[1], low: parts[2], close: parts[3] };
+            }).filter(c => !isNaN(c.open) && !isNaN(c.high) && !isNaN(c.low) && !isNaN(c.close) && c.high >= c.low);
+
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes simítási periódust (legalább 1)!</div>`;
+                return;
+            }
+
+            if (candles.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég gyertya a számításhoz — a ${period} periódushoz legalább ${period} érvényes gyertya (Nyitó,Max,Min,Záró, Max ≥ Min) szükséges (jelenleg ${candles.length} érvényes van megadva)!</div>`;
+                return;
+            }
+
+            const rawBop = candles.map(c => (c.high - c.low) > 0 ? (c.close - c.open) / (c.high - c.low) : 0);
+
+            const bopSeries = [];
+            for (let i = period - 1; i < rawBop.length; i++) {
+                bopSeries.push(calcSMA(rawBop, period, i));
+            }
+
+            const lastRaw = rawBop[rawBop.length - 1];
+            const lastBop = bopSeries[bopSeries.length - 1];
+            const prevBop = bopSeries.length > 1 ? bopSeries[bopSeries.length - 2] : null;
+
+            const colorClass = lastBop >= 0 ? 'text-neon-green' : 'text-neon-red';
+            let verdict = lastBop >= 0
+                ? 'BOP a nulla vonal FÖLÖTT — a közelmúltban a vevők domináltak az adott gyertyákon.'
+                : 'BOP a nulla vonal ALATT — a közelmúltban az eladók domináltak az adott gyertyákon.';
+            let crossNote = '';
+            if (prevBop !== null) {
+                const rising = lastBop > prevBop;
+                verdict += rising ? ' Az érték emelkedik az előző periódushoz képest.' : ' Az érték csökken az előző periódushoz képest.';
+                if ((prevBop < 0 && lastBop >= 0) || (prevBop >= 0 && lastBop < 0)) {
+                    crossNote = prevBop < 0
+                        ? '<p class="text-[10px] font-bold text-neon-green mt-2">⚡ Nulla vonal felfelé keresztezés — friss bullish jelzés.</p>'
+                        : '<p class="text-[10px] font-bold text-neon-red mt-2">⚡ Nulla vonal lefelé keresztezés — friss bearish jelzés.</p>';
+                }
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Feldolgozott gyertyák:</span><span class="text-white">${candles.length}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Nyers BOP (utolsó gyertya):</span><span class="text-slate-300">${lastRaw >= 0 ? '+' : ''}${lastRaw.toFixed(4)}</span></div>
+                    ${prevBop !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző simított BOP:</span><span class="text-slate-300">${prevBop >= 0 ? '+' : ''}${prevBop.toFixed(4)}</span></div>` : ''}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított BOP (${period} periódus):</span><span class="${colorClass} font-extrabold text-sm">${lastBop >= 0 ? '+' : ''}${lastBop.toFixed(4)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
                 ${crossNote}
@@ -25439,6 +25559,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             352: { tool: 'dpo-modal', cta: 'Számold ki élesben a Detrended Price Oscillatort' },
             284: { tool: 'trix-modal', cta: 'Számold ki élesben a TRIX indikátort' },
             358: { tool: 'qstick-modal', cta: 'Számold ki élesben a Qstick indikátort' },
+            388: { tool: 'bop-modal', cta: 'Számold ki élesben a Balance of Power indikátort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -25448,7 +25569,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
