@@ -1351,6 +1351,20 @@
                                 <div class="text-[10px] text-slate-400">Trend + momentum konfluencia (zöld/piros/kék)</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('donchian-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-table-columns"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Donchian Csatorna Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Periódus legmagasabb/legalacsonyabb ára</div>
+                            </div>
+                        </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Keltner Csatorna Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">EMA középvonal + ATR-alapú sávok</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3448,6 +3462,111 @@
 
             <div id="elderimpulse-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Kék gyertyánál sok kereskedő tartózkodik az adott irányú belépéstől, amíg a trend és a momentum nem egyezik meg — ez önmagában nem vételi/eladási jelzés, inkább egy figyelmeztetés a konfluencia hiányára.</p>
+        </div>
+    </div>
+
+    <!-- ================= DONCHIAN CSATORNA KALKULÁTOR (OKTATÁSI) =================
+         Felső = max(High, utolsó N gyertya); Alsó = min(Low, utolsó N
+         gyertya); Középső = (Felső+Alsó)/2. A legegyszerűbb, legrégebbi
+         trendkövető csatorna-eszközök egyike (pl. Turtle Traders). -->
+    <div id="donchian-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-table-columns text-amber-400"></i> Donchian Csatorna Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('donchian-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Donchian Csatorna egy adott periódus legmagasabb és legalacsonyabb árát jelöli meg felső és alsó sávként — nincs mögötte bonyolult képlet, pusztán a nyers, legszélsőségesebb árakat jelöli. Híres kereskedők (pl. a Turtle Traders) építettek rá teljes stratégiát. Add meg a gyertyákat (Magas,Alacsony) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony (soronként egy)</label>
+            <textarea id="donchian-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100.9,99.5
+101.5,100.1
+103.5,101.0
+103.0,102.0
+104.5,103.0
+104.2,102.5
+103.8,101.5
+102.5,100.0
+101.0,98.5
+100.5,97.0
+102.0,99.5
+104.0,101.5
+106.0,103.5
+107.5,105.0
+108.5,106.5
+107.0,105.5
+106.5,104.0
+105.0,103.0
+106.5,104.5
+108.0,106.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (klasszikusan 20)</label>
+            <input type="number" id="donchian-period" value="20" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcDonchianChannel()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="donchian-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A csatorna szélessége (Felső-Alsó) a volatilitás durva mérőszáma is lehet — minél szélesebb a csatorna, annál nagyobb volt az árfolyam mozgástartománya a periódusban.</p>
+        </div>
+    </div>
+
+    <!-- ================= KELTNER CSATORNA KALKULÁTOR (OKTATÁSI) =================
+         Középső = EMA(Záró, periódus); Felső = Középső + szorzó×ATR;
+         Alsó = Középső - szorzó×ATR. Az ATR a session szokásos,
+         Wilder-simított calcATRSeries()-ével számolódik (seed = első N
+         True Range egyszerű átlaga, majd Wilder-rekurzió). -->
+    <div id="keltner-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-left-right text-neon-cyan"></i> Keltner Csatorna Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('keltner-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Keltner Csatorna egy középső mozgóátlagból (EMA) és két, az ATR (volatilitás) alapján számított sávból áll — hasonló koncepció, mint a Bollinger Szalag, de más matematikai alapon. Mivel ATR-t használ, a sávok jellemzően simábbak, kevésbé "ugrálósak", mint a Bollinger szórás-alapú sávjai. Add meg a gyertyákat (Magas,Alacsony,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró (soronként egy)</label>
+            <textarea id="keltner-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-cyan/50">100.9,99.5,100.5
+101.5,100.1,101.2
+103.5,101.0,103.0
+103.0,102.0,102.5
+104.5,103.0,104.2
+104.2,102.5,103.0
+103.8,101.5,102.0
+102.5,100.0,100.8
+101.0,98.5,99.2
+100.5,97.0,98.0
+102.0,99.5,101.5
+104.0,101.5,103.5
+106.0,103.5,105.5
+107.5,105.0,107.0
+108.5,106.5,108.0
+107.0,105.5,106.0
+106.5,104.0,105.0
+105.0,103.0,104.0
+106.5,104.5,106.0
+108.0,106.0,107.5
+109.5,107.5,109.0
+110.0,108.0,109.5</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">EMA periódus (klasszikusan 20)</label>
+            <input type="number" id="keltner-emaperiod" value="20" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">ATR periódus (klasszikusan 10) / szorzó (klasszikusan 2)</label>
+            <div class="flex gap-2 mt-1 mb-4">
+                <input type="number" id="keltner-atrperiod" value="10" step="1" min="2" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                <input type="number" id="keltner-mult" value="2" step="0.1" min="0.1" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+            </div>
+
+            <button onclick="calcKeltnerChannel()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="keltner-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az ATR-számításhoz az EMA periódusnál függetlenül, saját periódusa szükséges — legalább ennyi gyertyára van szükség ahhoz, hogy az ATR egyáltalán kiszámolható legyen.</p>
         </div>
     </div>
 
@@ -5903,6 +6022,20 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Elder Impulse System Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Trend + momentum konfluencia (zöld/piros/kék)</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('donchian-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-table-columns"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Donchian Csatorna Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Periódus legmagasabb/legalacsonyabb ára</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-left-right"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Keltner Csatorna Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">EMA középvonal + ATR-alapú sávok</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -13098,6 +13231,131 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-slate-400">Aroon Oscillator (Up − Down):</span>
                         <span class="font-extrabold ${currOsc >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${currOsc >= 0 ? '+' : ''}${currOsc.toFixed(1)}</span>
                     </div>${crossHtml}
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= DONCHIAN CSATORNA KALKULÁTOR (OKTATÁSI) =================
+        // Felső = max(High, utolsó N gyertya); Alsó = min(Low, utolsó N gyertya);
+        // Középső = (Felső+Alsó)/2.
+        function calcDonchianChannel() {
+            const candlesEl = document.getElementById('donchian-candles');
+            const periodEl = document.getElementById('donchian-period');
+            const out = document.getElementById('donchian-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1] });
+                }
+            }
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1 || candles.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább annyi gyertyát (Magas,Alacsony formátumban), amennyi a periódus!</div>`;
+                return;
+            }
+
+            const lastN = candles.slice(-period);
+            const upper = Math.max(...lastN.map(c => c.high));
+            const lower = Math.min(...lastN.map(c => c.low));
+            const middle = (upper + lower) / 2;
+            const width = upper - lower;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Felső sáv (${period} periódus max.):</span>
+                        <span class="font-extrabold text-neon-green text-sm">${upper.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Középső sáv:</span>
+                        <span class="font-extrabold text-white text-sm">${middle.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Alsó sáv (${period} periódus min.):</span>
+                        <span class="font-extrabold text-neon-red text-sm">${lower.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Csatorna szélessége:</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${width.toFixed(2)}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">A csatorna szélessége a volatilitás durva mérőszáma is lehet — minél szélesebb, annál nagyobb volt az árfolyam mozgástartománya a periódusban.</p>
+            `;
+        }
+
+        // ================= KELTNER CSATORNA KALKULÁTOR (OKTATÁSI) =================
+        // Középső = EMA(Záró, periódus) [SMA-seedelt]; Felső = Középső + szorzó×ATR;
+        // Alsó = Középső - szorzó×ATR. Az ATR a már meglévő calcATRSeries()-szel.
+        function calcKeltnerChannel() {
+            const candlesEl = document.getElementById('keltner-candles');
+            const emaPeriodEl = document.getElementById('keltner-emaperiod');
+            const atrPeriodEl = document.getElementById('keltner-atrperiod');
+            const multEl = document.getElementById('keltner-mult');
+            const out = document.getElementById('keltner-result');
+            if (!candlesEl || !emaPeriodEl || !atrPeriodEl || !multEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2] });
+                }
+            }
+            const emaPeriod = parseInt(emaPeriodEl.value);
+            const atrPeriod = parseInt(atrPeriodEl.value);
+            const mult = parseFloat(multEl.value);
+
+            if (!emaPeriod || emaPeriod < 2 || !atrPeriod || atrPeriod < 2 || !mult || mult <= 0 || candles.length < emaPeriod || candles.length < atrPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív periódusokat/szorzót, és legalább annyi gyertyát, amennyi a nagyobb periódus!</div>`;
+                return;
+            }
+
+            const closes = candles.map(c => c.close);
+            const k = 2 / (emaPeriod + 1);
+            let ema = closes.slice(0, emaPeriod).reduce((a, b) => a + b, 0) / emaPeriod;
+            for (let i = emaPeriod; i < closes.length; i++) ema = ema * (1 - k) + closes[i] * k;
+
+            const atrSeries = calcATRSeries(candles, atrPeriod);
+            const lastAtr = atrSeries[atrSeries.length - 1];
+            if (lastAtr === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni az ATR-t — adj meg több gyertyát!</div>`;
+                return;
+            }
+
+            const upper = ema + mult * lastAtr;
+            const lower = ema - mult * lastAtr;
+            const lastClose = closes[closes.length - 1];
+
+            let colorClass, verdict;
+            if (lastClose > upper) { colorClass = 'text-neon-green'; verdict = 'A záróár a felső sáv FÖLÖTT van — erős bullish momentum, esetleg túlvett állapot.'; }
+            else if (lastClose < lower) { colorClass = 'text-neon-red'; verdict = 'A záróár az alsó sáv ALATT van — erős bearish momentum, esetleg túladott állapot.'; }
+            else { colorClass = 'text-slate-300'; verdict = 'A záróár a sávok KÖZÖTT van — nincs extrém kitörés, az ár a normál volatilitási tartományon belül mozog.'; }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Felső sáv:</span>
+                        <span class="font-extrabold text-neon-green text-sm">${upper.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Középső sáv (EMA):</span>
+                        <span class="font-extrabold text-white text-sm">${ema.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Alsó sáv:</span>
+                        <span class="font-extrabold text-neon-red text-sm">${lower.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Jelenlegi záróár:</span>
+                        <span class="font-extrabold ${colorClass} text-sm">${lastClose.toFixed(2)}</span>
+                    </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -23034,6 +23292,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             254: { tool: 'aroon-modal', cta: 'Számold ki élesben az Aroon Up/Down vonalakat' },
             406: { tool: 'aroon-modal', cta: 'Számold ki élesben az Aroon Oscillatort' },
             435: { tool: 'elderimpulse-modal', cta: 'Számold ki élesben az Elder Impulse jelzést' },
+            270: { tool: 'donchian-modal', cta: 'Számold ki élesben a Donchian Csatornát' },
+            90: { tool: 'keltner-modal', cta: 'Számold ki élesben a Keltner Csatornát' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -23043,7 +23303,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
