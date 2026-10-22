@@ -1435,6 +1435,27 @@
                                 <div class="text-[10px] text-slate-400">Rendes vagy rejtett divergencia besorolása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('vwma-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-cyan-400/10 text-cyan-400 border border-cyan-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Volume-Weighted MA (VWMA)</div>
+                                <div class="text-[10px] text-slate-400">Volumen-súlyozott gördülő mozgóátlag</div>
+                            </div>
+                        </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('maribbon-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-orange-400/10 text-orange-400 border border-orange-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bars"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Mozgóátlag Szalag (MA Ribbon)</div>
+                                <div class="text-[10px] text-slate-400">6 SMA egyszerre — szalagszélesség elemzés</div>
+                            </div>
+                        </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('orb-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-lime-400/10 text-lime-400 border border-lime-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-door-open"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Opening Range Breakout (ORB)</div>
+                                <div class="text-[10px] text-slate-400">Nyitási tartomány kitörés és célár</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6236,6 +6257,95 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= VOLUME-WEIGHTED MOVING AVERAGE (VWMA) KALKULÁTOR (OKTATÁSI) =================
+         VWMA = Σ(Close×Volume) / ΣVolume, az N-periódusos gördülő ablakon belül. -->
+    <div id="vwma-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-cyan-400"></i> Volume-Weighted MA (VWMA) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('vwma-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróár és volumen pártokat soronként (Záróár, Volumen), és a kalkulátor a VWMA-t számolja ki: a nagyobb volumenű periódusok nagyobb súlyt kapnak, szemben az egyszerű SMA-val, ahol minden periódus egyenlő súlyú. A VWAP-tól eltérően a VWMA egy folytonos, gördülő mozgóátlag, nem napon belül nullázódó mutató.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróár, Volumen (soronként)</label>
+            <textarea id="vwma-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-cyan-400/50" placeholder="10.0,1000&#10;10.5,1200&#10;...">10.0,1000
+10.5,1200
+11.0,1500
+10.8,900
+11.5,2000
+11.2,1100
+11.8,1700</textarea>
+            <label class="text-[11px] font-semibold text-slate-400">Periódus</label>
+            <input type="number" id="vwma-period" value="5" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-cyan-400/50">
+
+            <button onclick="calcVWMA()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-cyan-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="vwma-result" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- ================= MOZGÓÁTLAG SZALAG / RAINBOW MA KALKULÁTOR (OKTATÁSI) =================
+         Egyszerre 6, eltérő periódusú SMA (5,10,20,30,50,100) kiszámítása, a "szalag szélessége"
+         (legnagyobb-legkisebb SMA különbsége) alapján konszolidáció/erős trend besorolás. -->
+    <div id="maribbon-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bars text-orange-400"></i> Mozgóátlag Szalag (MA Ribbon) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('maribbon-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróárak sorozatát (soronként egy érték, legalább 100 adat), és a kalkulátor 6 eltérő periódusú SMA-t (5, 10, 20, 30, 50, 100) számol ki. Ha a szalagot alkotó mozgóátlagok szorosan együtt haladnak (szűk szalag), az konszolidációt jelezhet; ha szétválnak (széles szalag), az erős trendet. Ez a koncepció mind a hagyományos MA Ribbonra, mind a Rainbow Moving Average-re érvényes.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy érték, min. 100 adat)</label>
+            <textarea id="maribbon-closes" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50" placeholder="100&#10;101.2&#10;..."></textarea>
+
+            <button onclick="calcMARibbon()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-orange-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="maribbon-result" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- ================= OPENING RANGE BREAKOUT (ORB) KALKULÁTOR (OKTATÁSI) =================
+         Opening Range = [nyitás utáni első időszak legalacsonyabb, legmagasabb ára].
+         Kitörés felfelé/lefelé az aktuális ár alapján; cél = kitörési szint ± Range (1:1 mért mozgás). -->
+    <div id="orb-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-door-open text-lime-400"></i> Opening Range Breakout (ORB) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('orb-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az Opening Range (a nyitás utáni első időszak) legalacsonyabb és legmagasabb árát, valamint az aktuális árat — a kalkulátor megmondja, történt-e kitörés, és kiszámolja az 1:1 mért mozgás alapú célárat és a javasolt stopot.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Opening Range alja</label>
+                    <input type="number" id="orb-low" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-lime-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Opening Range teteje</label>
+                    <input type="number" id="orb-high" value="105" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-lime-400/50">
+                </div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Aktuális ár</label>
+            <input type="number" id="orb-current" value="106.5" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-lime-400/50">
+
+            <button onclick="calcORB()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-lime-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="orb-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7733,6 +7843,27 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Divergencia Ellenőrző</div>
                     <div class="text-[10px] text-slate-400">Rendes vagy rejtett divergencia besorolása</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('vwma-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-cyan-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-cyan-400/10 text-cyan-400 border border-cyan-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-balanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Volume-Weighted MA (VWMA)</div>
+                    <div class="text-[10px] text-slate-400">Volumen-súlyozott gördülő mozgóátlag</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('maribbon-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-orange-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-orange-400/10 text-orange-400 border border-orange-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-bars"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Mozgóátlag Szalag (MA Ribbon)</div>
+                    <div class="text-[10px] text-slate-400">6 SMA egyszerre — szalagszélesség elemzés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('orb-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-lime-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-lime-400/10 text-lime-400 border border-lime-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-door-open"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Opening Range Breakout (ORB)</div>
+                    <div class="text-[10px] text-slate-400">Nyitási tartomány kitörés és célár</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15533,6 +15664,152 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-center text-sm font-extrabold ${result.color}">${result.label}</div>
                 </div>
                 <p class="text-[10px] font-semibold text-slate-300 leading-relaxed">${result.desc}</p>
+            `;
+        }
+
+        function calcVWMA() {
+            const candlesEl = document.getElementById('vwma-candles');
+            const periodEl = document.getElementById('vwma-period');
+            const out = document.getElementById('vwma-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const rows = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    rows.push({ close: parts[0], volume: parts[1] });
+                }
+            }
+            const period = parseInt(periodEl.value, 10) || 1;
+            const n = rows.length;
+
+            if (n < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${period} adatpont szükséges a ${period}-periódusú VWMA-hoz — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            const window = rows.slice(n - period);
+            const num = window.reduce((sum, r) => sum + r.close * r.volume, 0);
+            const den = window.reduce((sum, r) => sum + r.volume, 0);
+
+            if (den === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A volumen összege nulla — nem lehet VWMA-t számolni!</div>`;
+                return;
+            }
+
+            const vwma = num / den;
+            const smaSimple = window.reduce((sum, r) => sum + r.close, 0) / period;
+            const diffPct = ((vwma - smaSimple) / smaSimple) * 100;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">VWMA (${period}):</span><span class="text-neon-cyan font-extrabold text-sm">${vwma.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Egyszerű SMA (${period}):</span><span class="text-white">${smaSimple.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Eltérés:</span><span class="text-white">${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(3)}%</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400">A VWMA és az SMA közti eltérés azt jelzi, mennyire torzítja a nagyobb volumenű periódusok hatása az átlagot az egyenlő súlyozású SMA-hoz képest.</p>
+            `;
+        }
+
+        function calcMARibbon() {
+            const closesEl = document.getElementById('maribbon-closes');
+            const out = document.getElementById('maribbon-result');
+            if (!closesEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const n = closes.length;
+            const periods = [5, 10, 20, 30, 50, 100];
+            const maxPeriod = Math.max(...periods);
+
+            if (n < maxPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${maxPeriod} záróár szükséges a teljes szalaghoz — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            function sma(series, period) {
+                const window = series.slice(series.length - period);
+                return window.reduce((a, b) => a + b, 0) / period;
+            }
+
+            const smaValues = periods.map(p => ({ period: p, value: sma(closes, p) }));
+            const highest = Math.max(...smaValues.map(s => s.value));
+            const lowest = Math.min(...smaValues.map(s => s.value));
+            const spreadPct = ((highest - lowest) / lowest) * 100;
+            const isAscending = smaValues.every((s, i) => i === 0 || smaValues[i - 1].value >= s.value);
+            const isDescending = smaValues.every((s, i) => i === 0 || smaValues[i - 1].value <= s.value);
+
+            const rowsHtml = smaValues.map(s => `
+                <div class="flex justify-between"><span class="text-slate-400">SMA${s.period}:</span><span class="text-white">${s.value.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+            `).join('');
+
+            let trendNote;
+            if (isAscending) trendNote = 'A szalag teljesen rendezett, felfelé (bullish) sorrendben — erős emelkedő trendre utal.';
+            else if (isDescending) trendNote = 'A szalag teljesen rendezett, lefelé (bearish) sorrendben — erős csökkenő trendre utal.';
+            else trendNote = 'A szalag összefonódik/keresztezi egymást — konszolidációra vagy bizonytalan trendre utalhat.';
+
+            const widthNote = spreadPct > 5
+                ? `Széles szalag (${spreadPct.toFixed(2)}% szórás) — erős, kibontakozó trendre utal.`
+                : `Szűk szalag (${spreadPct.toFixed(2)}% szórás) — konszolidációra, gyenge trendre utal.`;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    ${rowsHtml}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Szalag szórása:</span><span class="text-white">${spreadPct.toFixed(3)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold text-orange-400">${trendNote}</p>
+                <p class="text-[10px] text-slate-400 mt-1">${widthNote}</p>
+            `;
+        }
+
+        function calcORB() {
+            const lowEl = document.getElementById('orb-low');
+            const highEl = document.getElementById('orb-high');
+            const currentEl = document.getElementById('orb-current');
+            const out = document.getElementById('orb-result');
+            if (!lowEl || !highEl || !currentEl || !out) return;
+
+            const low = parseFloat(lowEl.value);
+            const high = parseFloat(highEl.value);
+            const current = parseFloat(currentEl.value);
+
+            if ([low, high, current].some(v => isNaN(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+                return;
+            }
+            if (high <= low) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az Opening Range teteje nagyobb kell legyen, mint az alja!</div>`;
+                return;
+            }
+
+            const range = high - low;
+            const breakoutUp = current > high;
+            const breakoutDown = current < low;
+
+            let verdict, colorClass, target = null, stop = null;
+            if (breakoutUp) {
+                target = high + range;
+                stop = low;
+                verdict = 'Felfelé kitörés történt! Az Opening Range teteje felett az ár — long belépési jelzés.';
+                colorClass = 'text-neon-green';
+            } else if (breakoutDown) {
+                target = low - range;
+                stop = high;
+                verdict = 'Lefelé kitörés történt! Az Opening Range alja alatt az ár — short belépési jelzés.';
+                colorClass = 'text-neon-red';
+            } else {
+                verdict = 'Az ár még az Opening Range-en belül van — nincs megerősített kitörés, várj a tartomány határának áttörésére.';
+                colorClass = 'text-slate-400';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Opening Range mérete:</span><span class="text-white">${range.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    ${target !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Célár (1:1 mért mozgás):</span><span class="${colorClass} font-extrabold">${target.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Javasolt stop:</span><span class="text-white">${stop.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>` : ''}
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
         }
 
@@ -26715,6 +26992,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             280: { tool: 'sortino-modal', cta: 'Hasonlítsd össze élesben a két stratégia Sortino Rátáját' },
             235: { tool: 'poscalc-modal', cta: 'Számold ki élesben a teljes kockázatkezelési lépéssort' },
             80: { tool: 'divergence-modal', cta: 'Ellenőrizd élesben a rejtett divergenciát' },
+            516: { tool: 'atr-modal', cta: 'Számold ki élesben az ATR-alapú pozícióméretet' },
+            279: { tool: 'vwma-modal', cta: 'Számold ki élesben a Volume-Weighted Moving Averaget' },
+            203: { tool: 'maribbon-modal', cta: 'Számold ki élesben a Mozgóátlag Szalagot' },
+            425: { tool: 'maribbon-modal', cta: 'Számold ki élesben a Rainbow Mozgóátlagot' },
+            116: { tool: 'orb-modal', cta: 'Számold ki élesben az Opening Range Breakoutot' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -26724,7 +27006,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
