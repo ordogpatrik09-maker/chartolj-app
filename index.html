@@ -1309,6 +1309,13 @@
                                 <div class="text-[10px] text-slate-400">Trend irány és trailing stop szint</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('fibext-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-diagram-successor"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fibonacci Kiterjesztés Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Potenciális take-profit célárak egy mozgáson túl</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3399,6 +3406,35 @@
 
             <div id="forceindex-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A nyers Force Index sorozat egy elemmel rövidebb, mint a bevitt gyertyák száma (az első gyertyának nincs előző záróára). A simításhoz ezért legalább (periódus + 1) gyertyára van szükség.</p>
+        </div>
+    </div>
+
+    <!-- ================= FIBONACCI KITERJESZTÉS (EXTENSION) KALKULÁTOR (OKTATÁSI) =================
+         Kétpontos módszer: Szint = A + (B-A)×arány, ahol A a mozgás
+         kezdőpontja, B a végpontja, és az arány (127.2%, 161.8%, 261.8%)
+         1-nél nagyobb, így a szintek a B ponton TÚL projektálódnak. -->
+    <div id="fibext-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-diagram-successor text-amber-400"></i> Fibonacci Kiterjesztés (Extension) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('fibext-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Fibonacci kiterjesztés a mozgáson TÚLI, potenciális célárakat becsüli meg — jellemzően take-profit szintek meghatározására használják egy trend folytatódásánál. Add meg a mozgás KEZDŐ (A) és VÉG (B) pontját — ha B&gt;A, emelkedő mozgás kiterjesztését kapod, ha B&lt;A, csökkenőét.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Mozgás kezdőpontja (A)</label>
+            <input type="number" id="fibext-a" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Mozgás végpontja (B)</label>
+            <input type="number" id="fibext-b" value="150" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcFibonacciExtension()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="fibext-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Mint minden Fibonacci-alapú eszköz, a kiterjesztés is csak valószínűségi vezérfonal — hasznos referenciapont a take-profit meghatározásához, de sosem szabad kizárólag erre alapozva, más megerősítés nélkül dönteni.</p>
         </div>
     </div>
 
@@ -5529,6 +5565,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Parabolic SAR Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Trend irány és trailing stop szint</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('fibext-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-diagram-successor"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Fibonacci Kiterjesztés Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Take-profit célárak egy mozgáson túl</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -12226,6 +12269,45 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= FIBONACCI KITERJESZTÉS (EXTENSION) KALKULÁTOR (OKTATÁSI) =================
+        // Kétpontos módszer: Szint = A + (B-A)×arány, arány ∈ {1.272, 1.618, 2.618}.
+        function calcFibonacciExtension() {
+            const aEl = document.getElementById('fibext-a');
+            const bEl = document.getElementById('fibext-b');
+            const out = document.getElementById('fibext-result');
+            if (!aEl || !bEl || !out) return;
+
+            const A = parseFloat(aEl.value);
+            const B = parseFloat(bEl.value);
+
+            if (isNaN(A) || isNaN(B) || A === B) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, egymástól ELTÉRŐ kezdő- (A) és végpontot (B)!</div>`;
+                return;
+            }
+
+            const isUptrend = B > A;
+            const ratios = [1.272, 1.618, 2.618];
+            const levels = ratios.map(r => ({ ratio: r, level: A + (B - A) * r }));
+
+            const rows = levels.map(l => `
+                <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
+                    <span class="text-slate-400">${(l.ratio * 100).toFixed(1)}%:</span>
+                    <span class="font-extrabold ${isUptrend ? 'text-neon-green' : 'text-neon-red'} text-sm">${l.level.toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border ${isUptrend ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Mozgás iránya</div>
+                    <div class="text-lg font-extrabold ${isUptrend ? 'text-neon-green' : 'text-neon-red'}">${isUptrend ? 'Emelkedő (kiterjesztés felfelé)' : 'Csökkenő (kiterjesztés lefelé)'}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3">
+                    ${rows}
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">Ezek a szintek a B ponton TÚL projektálják a mozgást — jellemzően take-profit célárként használják egy trend folytatódásánál, nem önálló belépési jelzésként.</p>
             `;
         }
 
@@ -22152,6 +22234,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             45: { tool: 'stochastic-modal', cta: 'Számold ki élesben a Stochastic %K/%D vonalakat' },
             171: { tool: 'bbwidth-modal', cta: 'Számold ki élesben a Bollinger Band Width-öt' },
             62: { tool: 'psar-modal', cta: 'Számold ki élesben a Parabolic SAR-t' },
+            443: { tool: 'forceindex-modal', cta: 'Számold ki élesben a Force Indexet, és figyeld a divergenciát' },
+            106: { tool: 'fibext-modal', cta: 'Számold ki élesben a Fibonacci kiterjesztés szintjeit' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -22161,7 +22245,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
