@@ -1323,6 +1323,13 @@
                                 <div class="text-[10px] text-slate-400">Jövőbeli "figyelendő" gyertya-sorszámok</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('m2-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Modigliani M2 Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Sharpe-ráta %-os hozam-egyenértékben</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5816,6 +5823,42 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          nagyobb eséllyel következhet be fordulópont. Ez egy erősen
          spekulatív, kevésbé objektíven alátámasztott eszköz, mint a
          legtöbb Fibonacci-ár-alapú módszer. -->
+    <!-- ================= MODIGLIANI RISK-ADJUSTED PERFORMANCE (M2) KALKULÁTOR (OKTATÁSI) =================
+         Sharpe = (Portfólió hozam - Kockázatmentes ráta) / Portfólió szórás;
+         M2 = Kockázatmentes ráta + Sharpe × Benchmark szórás. Az M2 a Sharpe
+         Rátát egy konkrét, %-os hozam-egyenértékké alakítja, a portfólió
+         kockázatát a benchmark szintjére skálázva — könnyebben érthető,
+         mint egy elvont Sharpe-szám. -->
+    <div id="m2-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-amber-400"></i> Modigliani M2 Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('m2-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Az M2 (Modigliani Risk-Adjusted Performance) a Sharpe Ráta elvont számát egy konkrét, %-os hozam-egyenértékké alakítja: a portfólió kockázatát (szórását) a benchmark (piaci index) szintjére skálázza, így egy "mennyivel jobb/rosszabb lenne a hozam, ha a portfólió ugyanolyan kockázatú lenne, mint a benchmark" értéket kapunk. Add meg az adatokat %-ban.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Portfólió hozam (%)</label>
+            <input type="number" id="m2-return" value="15" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">Portfólió szórás (%)</label>
+            <input type="number" id="m2-portstd" value="20" step="0.1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">Benchmark szórás (%)</label>
+            <input type="number" id="m2-benchstd" value="12" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">Kockázatmentes ráta (%)</label>
+            <input type="number" id="m2-riskfree" value="2" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">Benchmark hozam (%) — opcionális összehasonlításhoz</label>
+            <input type="number" id="m2-benchreturn" value="10" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcModiglianiM2()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="m2-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha az M2 nagyobb, mint a benchmark hozama, a portfólió kockázattal korrigálva felülteljesítette a piacot — fordított esetben alulteljesítette, még akkor is, ha a nyers hozama esetleg magasabb volt.</p>
+        </div>
+    </div>
+
     <div id="fibtime-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -6630,6 +6673,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Fibonacci Időzónák Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Jövőbeli "figyelendő" gyertya-sorszámok</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('m2-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-balanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Modigliani M2 Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Sharpe-ráta %-os hozam-egyenértékben</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14071,6 +14121,48 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcModiglianiM2() {
+            const returnEl = document.getElementById('m2-return');
+            const portStdEl = document.getElementById('m2-portstd');
+            const benchStdEl = document.getElementById('m2-benchstd');
+            const riskfreeEl = document.getElementById('m2-riskfree');
+            const benchReturnEl = document.getElementById('m2-benchreturn');
+            const out = document.getElementById('m2-result');
+            if (!returnEl || !portStdEl || !benchStdEl || !riskfreeEl || !benchReturnEl || !out) return;
+
+            const Rp = parseFloat(returnEl.value);
+            const sigmaP = parseFloat(portStdEl.value);
+            const sigmaM = parseFloat(benchStdEl.value);
+            const Rf = parseFloat(riskfreeEl.value);
+            const Rm = parseFloat(benchReturnEl.value);
+
+            if (isNaN(Rp) || isNaN(sigmaM) || isNaN(Rf) || !sigmaP || sigmaP <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes hozam/szórás/kockázatmentes ráta értékeket — a portfólió szórásának pozitívnak kell lennie!</div>`;
+                return;
+            }
+
+            const sharpe = (Rp - Rf) / sigmaP;
+            const m2 = Rf + sharpe * sigmaM;
+
+            let comparisonHtml = '';
+            if (!isNaN(Rm)) {
+                const diff = m2 - Rm;
+                const colorClass = diff >= 0 ? 'text-neon-green' : 'text-neon-red';
+                const verdict = diff >= 0
+                    ? `A kockázattal korrigált teljesítmény (M2) ${diff.toFixed(2)} százalékponttal FELÜLTELJESÍTETTE a benchmarkot.`
+                    : `A kockázattal korrigált teljesítmény (M2) ${Math.abs(diff).toFixed(2)} százalékponttal ALULTELJESÍTETTE a benchmarkot.`;
+                comparisonHtml = `<p class="text-[10px] font-semibold ${colorClass} mt-2">${verdict}</p>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Sharpe Ráta:</span><span class="text-white font-extrabold">${sharpe.toFixed(3)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">M2 (kockázattal korrigált hozam):</span><span class="text-amber-400 font-extrabold text-sm">${m2.toFixed(2)}%</span></div>
+                </div>
+                ${comparisonHtml}
             `;
         }
 
@@ -24738,6 +24830,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             220: { tool: 'volumedelta-modal', cta: 'Számold ki élesben a Volume Deltát' },
             181: { tool: 'fibtime-modal', cta: 'Rajzold fel élesben a Fibonacci Időzónákat' },
             476: { tool: 'sortino-modal', cta: 'Számold ki élesben a Downside Deviationt (Sortino alapja)' },
+            491: { tool: 'm2-modal', cta: 'Számold ki élesben a Modigliani M2 mutatót' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -24747,7 +24840,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
