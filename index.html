@@ -1330,6 +1330,13 @@
                                 <div class="text-[10px] text-slate-400">VI+ / VI- vonalak és keresztezés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('denomeffect-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-money-bill-wave"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Denomination Effect Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Ugyanaz a kockázat — más "érzés" más címletben</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3280,6 +3287,51 @@
 
             <div id="vortex-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A True Range itt is a Magas/Alacsony mellett az előző záróárat is figyelembe veszi (mint az ATR-nél) — ezért a számításhoz a megadott periódusnál kettővel több gyertyára van szükség a listában (az első gyertya csak referenciaként szolgál az előző csúcs/mélypont meghatározásához).</p>
+        </div>
+    </div>
+
+    <!-- ================= DENOMINATION EFFECT REFRAMING KALKULÁTOR (OKTATÁSI) =================
+         A "denomination effect" azt jelenti, hogy UGYANAZT a pénzösszeget
+         másként érezzük, ha más "formában" (címletben) van elénk tárva —
+         pl. 10 db $100-as nagy bankjegy "nagynak" tűnik, miközben ugyanaz
+         az összeg sok kis $1-es bankjegyben "elkölthetőbbnek" érződik.
+         A kalkulátor ugyanazt a trade-kockázatot három, egzakt matematikai
+         formában jeleníti meg egyszerre, hogy a döntés ne egyetlen keretezés
+         "érzetén" alapuljon:
+           1) % a tőkéből: riskPct = risk / equity × 100
+           2) Nagy-címletű bankjegy-bontás: greedy algoritmus a standard
+              USD címletekre [100,50,20,10,5,1] (centekben számolva, hogy
+              elkerüljük a lebegőpontos kerekítési hibákat), + a fennmaradó
+              centek külön kiírva.
+           3) Hány egymást követő, TELJES veszteségű trade kellene ennél a
+              $ kockázatnál ahhoz, hogy elérjük a megadott elviselhető
+              maximum össz-veszteség %-ot:
+              n = ceil( (maxLossPct/100 × equity) / risk ) -->
+    <div id="denomeffect-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-money-bill-wave text-amber-400"></i> Denomination Effect Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('denomeffect-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A <strong class="text-amber-400">denomination effect</strong> miatt ugyanaz a pénzösszeg másként "érződik", ha más címletben gondolunk rá — kevés nagy bankjegyben kisebbnek, sok kis bankjegyben nagyobbnak tűnik, holott matematikailag azonos. A kalkulátor a trade-kockázatodat EGYSZERRE mutatja % formában, bankjegy-bontásban és "hány egymást követő vesztes trade vinne el X%-ot" formában — hogy a tétméret-döntésed ne csak az egyik keretezés érzetén alapuljon.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Számla tőke ($)</label>
+            <input type="number" id="denomeffect-equity" value="10000" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Egy trade-en kockáztatott összeg ($)</label>
+            <input type="number" id="denomeffect-risk" value="250" step="0.01" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Elviselhető maximum össz-veszteség (%, egymást követő vesztes trade-ekből)</label>
+            <input type="number" id="denomeffect-maxloss" value="20" step="1" min="0.01" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcDenominationEffect()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="denomeffect-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A bankjegy-bontás a standard USD címleteket ($100/$50/$20/$10/$5/$1) használja, legnagyobbtól a legkisebbig ("greedy" bontás) — ez csak a keretezési gyakorlat illusztrálására szolgál, nem tényleges fizetési javaslat.</p>
         </div>
     </div>
 
@@ -5714,6 +5766,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Vortex Indikátor Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">VI+ / VI- vonalak és keresztezés</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('denomeffect-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-money-bill-wave"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Denomination Effect Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Ugyanaz a kockázat — más "érzés" más címletben</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -12616,6 +12675,90 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= DENOMINATION EFFECT REFRAMING KALKULÁTOR (OKTATÁSI) =================
+        // riskPct = risk / equity × 100.
+        // Bankjegy-bontás: centekben számolva (kerekítési hibák elkerülése
+        // végett), greedy algoritmus a [10000,5000,2000,1000,500,100] cent
+        // (=[$100,$50,$20,$10,$5,$1]) címletekre, + a 100 cent alatti
+        // maradék (ha van) külön centben kiírva.
+        // Konzisztens-trade-szám a maxLossPct eléréséhez:
+        // n = ceil( (maxLossPct/100 × equity) / risk ).
+        function calcDenominationEffect() {
+            const equityEl = document.getElementById('denomeffect-equity');
+            const riskEl = document.getElementById('denomeffect-risk');
+            const maxLossEl = document.getElementById('denomeffect-maxloss');
+            const out = document.getElementById('denomeffect-result');
+            if (!equityEl || !riskEl || !maxLossEl || !out) return;
+
+            const equity = parseFloat(equityEl.value);
+            const risk = parseFloat(riskEl.value);
+            const maxLossPct = parseFloat(maxLossEl.value);
+
+            if (isNaN(equity) || equity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb számla tőkét!</div>`;
+                return;
+            }
+            if (isNaN(risk) || risk <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, pozitív kockáztatott összeget!</div>`;
+                return;
+            }
+            if (isNaN(maxLossPct) || maxLossPct <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb elviselhető maximum össz-veszteség %-ot!</div>`;
+                return;
+            }
+
+            const riskPct = (risk / equity) * 100;
+
+            // Bankjegy-bontás centekben (lebegőpontos kerekítési hibák elkerülésére).
+            let remainingCents = Math.round(risk * 100);
+            const billDenomsCents = [10000, 5000, 2000, 1000, 500, 100];
+            const billLabels = ['$100', '$50', '$20', '$10', '$5', '$1'];
+            const billCounts = [];
+            for (const d of billDenomsCents) {
+                const count = Math.floor(remainingCents / d);
+                billCounts.push(count);
+                remainingCents -= count * d;
+            }
+            const leftoverCents = remainingCents; // 100 cent alatti maradék (nem bontható bankjegyre)
+            const totalBillCount = billCounts.reduce((a, b) => a + b, 0);
+            const breakdownParts = billCounts
+                .map((count, i) => ({ count, label: billLabels[i] }))
+                .filter(p => p.count > 0)
+                .map(p => `${p.count}×${p.label}`);
+            const breakdownStr = breakdownParts.length > 0 ? breakdownParts.join(' + ') : '—';
+
+            // "Egyetlen nagy címlet" keretezés: hány $100-as kellene (felfelé kerekítve), ha csak egyben néznénk.
+            const singleBigBillCount = Math.ceil(risk / 100);
+
+            // Hány egymást követő, teljes veszteségű trade vinné el a megadott max. %-ot ennél a $ kockázatnál.
+            const lossBudget = (maxLossPct / 100) * equity;
+            const tradesToMaxLoss = Math.ceil(lossBudget / risk);
+
+            let colorClass, verdict;
+            if (riskPct > 5) {
+                colorClass = 'text-neon-red';
+                verdict = `🚨 A kockázat a tőke ${riskPct.toFixed(2)}%-a — ez %-ban kifejezve is magasnak számít, függetlenül attól, hogy dollárban "soknak" vagy "kevésnek" érződik. Csupán ${tradesToMaxLoss} egymást követő, teljes veszteségű trade elérné a megadott ${maxLossPct}%-os elviselhető határt.`;
+            } else if (tradesToMaxLoss <= 5) {
+                colorClass = 'text-amber-400';
+                verdict = `⚠️ Bár a kockázat csak a tőke ${riskPct.toFixed(2)}%-a, mindössze ${tradesToMaxLoss} egymást követő, teljes veszteségű trade elérné a megadott ${maxLossPct}%-os elviselhető határt — ez az a szám, amire a %-os keretezés önmagában nem figyelmeztet.`;
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = `✅ A kockázat a tőke ${riskPct.toFixed(2)}%-a, és ${tradesToMaxLoss} egymást követő, teljes veszteségű trade kellene a megadott ${maxLossPct}%-os elviselhető határ eléréséhez — mindkét keretezés mérsékelt kockázatot mutat.`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Kockázat $-ban:</span><span class="text-white">$${risk.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázat a tőke %-ában:</span><span class="font-extrabold text-amber-400 text-sm">${riskPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">"Kis címletek" keretezés (bontás):</span><span class="text-white text-right ml-2">${breakdownStr}${leftoverCents > 0 ? ` + ${leftoverCents}¢` : ''}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Összesen ennyi bankjegy:</span><span class="text-white">${totalBillCount} db</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">"Nagy címlet" keretezés:</span><span class="text-white">${singleBigBillCount}×$100${singleBigBillCount > 1 ? ' (felfelé kerekítve)' : ''}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Vesztes trade-ek a ${maxLossPct}%-os határig:</span><span class="font-extrabold ${colorClass} text-sm">${tradesToMaxLoss} db</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
         }
 
@@ -22546,6 +22689,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             106: { tool: 'fibext-modal', cta: 'Számold ki élesben a Fibonacci kiterjesztés szintjeit' },
             440: { tool: 'tmf-modal', cta: 'Számold ki élesben a Twiggs Money Flow-t' },
             362: { tool: 'vortex-modal', cta: 'Számold ki élesben a Vortex Indikátor VI+/VI- vonalait' },
+            353: { tool: 'denomeffect-modal', cta: 'Nézd meg élesben a kockázatod más címletben / keretezésben' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -22555,7 +22699,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
