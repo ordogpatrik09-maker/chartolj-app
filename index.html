@@ -1372,6 +1372,13 @@
                                 <div class="text-[10px] text-slate-400">Vevői/eladói erő a Záró-Nyitó/Max-Min alapján</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('uo-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Ultimate Oscillator</div>
+                                <div class="text-[10px] text-slate-400">3 időtáv súlyozott BP/TR aránya</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5889,6 +5896,67 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          hanem kiszűri azt, hogy a rövid-távú ciklusokat/túlvett-túladott
          állapotokat tisztábban lehessen látni, a hosszú-távú trendtől
          "megtisztítva". -->
+    <!-- ================= ULTIMATE OSCILLATOR KALKULÁTOR (OKTATÁSI) =================
+         BP (Buying Pressure) = Close - min(Low, előző Close); TR (True
+         Range) = max(High, előző Close) - min(Low, előző Close); Average7/
+         14/28 = Σ BP / Σ TR az adott periódusra; UO = 100 × (4×Avg7 +
+         2×Avg14 + Avg28) / 7. A Larry Williams-féle UO 3 KÜLÖNBÖZŐ
+         időtávot súlyoz együtt (a rövidebb a legnagyobb súllyal), hogy
+         csökkentse a hamis jelzéseket, amiket egyetlen periódusú
+         oszcillátor önmagában adna. -->
+    <div id="uo-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-amber-400"></i> Ultimate Oscillator
+                </h3>
+                <button onclick="closeToolModal('uo-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Larry Williams Ultimate Oscillatora HÁROM különböző időtáv (7, 14, 28 periódus) Buying Pressure/True Range arányát súlyozza össze egyetlen, 0-100 közötti oszcillátorba — a rövidebb időtáv kapja a legnagyobb súlyt. A cél a hamis jelzések csökkentése, amiket egy egyetlen periódusú oszcillátor (pl. sima RSI) önmagában adna. 70 fölött túlvett, 30 alatt túladott zónának tekinthető. Legalább 29 gyertya szükséges. Add meg a gyertyákat (Magas,Alacsony,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró (soronként egy, legalább 29 db)</label>
+            <textarea id="uo-candles" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[9.5px] text-white focus:outline-none focus:border-amber-400/50">101.16,98.75,101.01
+101.72,99.73,102.21
+103.87,101.63,102.77
+104.0,101.72,104.18
+105.27,103.21,105.53
+106.78,104.78,105.16
+106.21,104.78,105.6
+107.01,104.66,106.69
+108.38,105.55,107.33
+107.8,106.94,108.77
+109.5,108.15,110.0
+111.42,109.51,109.66
+110.33,108.95,108.48
+109.57,107.72,108.35
+108.92,107.88,107.23
+108.84,105.81,107.55
+108.03,107.02,106.67
+107.44,106.28,106.21
+106.82,105.62,106.78
+107.76,105.77,106.54
+107.65,105.07,106.18
+106.58,105.15,106.0
+107.47,105.53,107.16
+107.48,106.04,107.15
+107.93,105.52,107.85
+108.39,106.81,108.3
+108.65,107.87,108.73
+110.12,107.73,108.67
+109.73,107.98,109.83
+111.58,108.81,108.69
+109.58,107.18,108.37
+108.82,107.79,109.09</textarea>
+
+            <button onclick="calcUltimateOscillator()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="uo-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A legerősebb jelzés általában a divergencia: ha az ár új mélypontot ér el, de az UO nem, az bullish divergencia lehet (és fordítva a csúcsoknál).</p>
+        </div>
+    </div>
+
     <div id="dpo-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -7089,6 +7157,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Balance of Power (BOP)</div>
                     <div class="text-[10px] text-slate-400">Vevői/eladói erő a Záró-Nyitó/Max-Min alapján</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('uo-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-line"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Ultimate Oscillator</div>
+                    <div class="text-[10px] text-slate-400">3 időtáv súlyozott BP/TR aránya</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14528,6 +14603,63 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-slate-400">Jelenlegi záróár:</span>
                         <span class="font-extrabold ${colorClass} text-sm">${lastClose.toFixed(2)}</span>
                     </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcUltimateOscillator() {
+            const candlesEl = document.getElementById('uo-candles');
+            const out = document.getElementById('uo-result');
+            if (!candlesEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2] });
+                }
+            }
+
+            const n = candles.length;
+            if (n < 29) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 29 gyertya szükséges (28 periódus + 1 az előző záróárhoz) — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            const bp = new Array(n).fill(null);
+            const tr = new Array(n).fill(null);
+            for (let i = 1; i < n; i++) {
+                const prevClose = candles[i - 1].close;
+                bp[i] = candles[i].close - Math.min(candles[i].low, prevClose);
+                tr[i] = Math.max(candles[i].high, prevClose) - Math.min(candles[i].low, prevClose);
+            }
+
+            function avgRatio(period) {
+                const bps = bp.slice(n - period);
+                const trs = tr.slice(n - period);
+                const sumBp = bps.reduce((a, b) => a + b, 0);
+                const sumTr = trs.reduce((a, b) => a + b, 0);
+                return sumTr !== 0 ? sumBp / sumTr : 0;
+            }
+
+            const avg7 = avgRatio(7);
+            const avg14 = avgRatio(14);
+            const avg28 = avgRatio(28);
+            const uo = 100 * (4 * avg7 + 2 * avg14 + avg28) / 7;
+
+            let colorClass, verdict;
+            if (uo > 70) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (UO > 70) — esetleg korrekció következhet.'; }
+            else if (uo < 30) { colorClass = 'text-neon-green'; verdict = 'Túladott zóna (UO < 30) — esetleg visszapattanás következhet.'; }
+            else { colorClass = 'text-slate-300'; verdict = 'Normál tartomány — nincs extrém momentum jelenleg.'; }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Average7 (BP/TR):</span><span class="text-white">${avg7.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Average14 (BP/TR):</span><span class="text-white">${avg14.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Average28 (BP/TR):</span><span class="text-white">${avg28.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ultimate Oscillator:</span><span class="${colorClass} font-extrabold text-sm">${uo.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -25560,6 +25692,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             284: { tool: 'trix-modal', cta: 'Számold ki élesben a TRIX indikátort' },
             358: { tool: 'qstick-modal', cta: 'Számold ki élesben a Qstick indikátort' },
             388: { tool: 'bop-modal', cta: 'Számold ki élesben a Balance of Power indikátort' },
+            391: { tool: 'uo-modal', cta: 'Számold ki élesben az Ultimate Oscillatort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -25569,7 +25702,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
