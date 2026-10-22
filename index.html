@@ -1204,6 +1204,13 @@
                                 <div class="text-[10px] text-slate-400">Mélység ÉS időtartam, episódonkénti bontásban</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('ruinprob-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-skull"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Ruin Probability Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Csőd-valószínűség a tétméret függvényében</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3460,6 +3467,41 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= RUIN PROBABILITY KALKULÁTOR (OKTATÁSI) =================
+         Klasszikus "gambler's ruin" modell: minden tét egységnyi
+         (±1 egység) nyereséget/veszteséget hoz, p nyerési eséllyel,
+         q=1-p veszítéssel, FELSŐ korlát (gazdagsági cél) nélkül.
+         Ha p<=0.5: a csőd valószínűsége 1 (biztos csőd hosszú távon).
+         Ha p>0.5: P(csőd) = (q/p)^(tőke/tétméret), ahol
+         tőke/tétméret = hány "egységnyi" tétet bír el a tőke. -->
+    <div id="ruinprob-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-skull text-neon-red"></i> Ruin Probability Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('ruinprob-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A ruin probability (csőd-valószínűség) azt méri, mekkora esély van arra, hogy a tőkéd nullára essen egy adott stratégia mellett. Minél nagyobb tétet kockáztatsz kereskedésenként, matematikailag annál magasabb a csőd-valószínűség, MÉG pozitív várható érték (nyerési esély >50%) mellett is — ez sokaknak meglepő. A klasszikus "gambler's ruin" modellt használjuk: minden tét egységnyi nyereséget/veszteséget hoz, felső korlát (gazdagsági cél) nélkül.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Nyerési esély (%, egyetlen tétre)</label>
+            <input type="number" id="ruinprob-win-pct" value="55" step="0.1" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Tőke ($)</label>
+            <input type="number" id="ruinprob-capital" value="10000" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Tétméret ($, kockáztatott összeg kereskedésenként)</label>
+            <input type="number" id="ruinprob-bet-size" value="500" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcRuinProbability()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="ruinprob-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy EGYSZERŰSÍTETT modell (egységnyi nyereség/veszteség tételenként, nem valós kockázat/hozam arány) — a lecke oktatási célja, hogy megértsd a tétméret és a csőd-valószínűség kapcsolatát, nem egy pontos, valós stratégia csőd-kockázatának előrejelzése. A Kelly Criterion pontosan ezt a csőd-valószínűséget minimalizálja a növekedési ütemmel szemben.</p>
+        </div>
+    </div>
+
     <!-- ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
          A DCA (Dollar-Cost Averaging / rendszeres, azonos összegű befektetés)
          lényege, hogy a befektető nem próbálja megidőzíteni a piacot — mindig
@@ -4733,6 +4775,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Drawdown Duration Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Mélység ÉS időtartam, episódonkénti bontásban</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('ruinprob-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-skull"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Ruin Probability Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Csőd-valószínűség a tétméret függvényében</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -11538,6 +11587,62 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${ongoingHtml}
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-amber-400">${verdict}</p>
+            `;
+        }
+
+        // ================= RUIN PROBABILITY KALKULÁTOR (OKTATÁSI) =================
+        // Klasszikus gambler's ruin, felső korlát nélkül: units =
+        // tőke/tétméret. Ha p<=0.5: P(csőd)=1. Ha p>0.5:
+        // P(csőd) = (q/p)^units.
+        function calcRuinProbability() {
+            const winPctEl = document.getElementById('ruinprob-win-pct');
+            const capitalEl = document.getElementById('ruinprob-capital');
+            const betSizeEl = document.getElementById('ruinprob-bet-size');
+            const out = document.getElementById('ruinprob-result');
+            if (!winPctEl || !capitalEl || !betSizeEl || !out) return;
+
+            const winPct = parseFloat(winPctEl.value);
+            const capital = parseFloat(capitalEl.value);
+            const betSize = parseFloat(betSizeEl.value);
+
+            if (isNaN(winPct) || winPct < 0 || winPct > 100 || !capital || capital <= 0 || !betSize || betSize <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy 0 és 100 közötti nyerési esélyt, egy nullánál nagyobb tőkét, és egy nullánál nagyobb tétméretet!</div>`;
+                return;
+            }
+
+            const p = winPct / 100;
+            const q = 1 - p;
+            const units = capital / betSize;
+
+            let ruinProbability;
+            if (p <= 0.5) {
+                ruinProbability = 1;
+            } else {
+                ruinProbability = Math.pow(q / p, units);
+            }
+
+            let colorClass, verdict;
+            if (p <= 0.5) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 50% vagy annál kisebb nyerési esély mellett, felső korlát (gazdagsági cél) nélkül, a csőd elméletileg BIZTOS, elég hosszú idő alatt — ez a klasszikus gambler\'s ruin tétel. Pozitív várható érték (nyerő stratégia) nélkül a tétméret önmagában nem menthet meg.';
+            } else if (ruinProbability >= 0.1) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Magas csőd-valószínűség (≥10%) — a tétméret túl nagy a tőkéhez képest, MÉG pozitív nyerési esély mellett is. Kisebb tétméret drasztikusan csökkentheti ezt az esélyt.';
+            } else if (ruinProbability >= 0.01) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Közepes csőd-valószínűség (1-10% között) — érdemes megfontolni egy kisebb tétméretet, hogy ez tovább csökkenjen.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Alacsony csőd-valószínűség (<1%) — a tétméret ésszerű arányban van a tőkéhez és a nyerési esélyhez képest.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Tétméret / tőke:</span><span class="text-white">${(betSize / capital * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">"Egységnyi" tétek száma a tőkében:</span><span class="text-white">${units.toFixed(1)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ruin Probability (csőd-valószínűség):</span><span class="font-extrabold ${colorClass} text-sm">${(ruinProbability * 100).toPrecision(3)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
         }
 
