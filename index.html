@@ -1358,6 +1358,13 @@
                                 <div class="text-[10px] text-slate-400">Háromszorosan simított momentum-oszcillátor</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('qstick-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-bar"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Qstick Indikátor</div>
+                                <div class="text-[10px] text-slate-400">Gyertyatestek irányának mozgóátlaga</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6098,6 +6105,46 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="qstick-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-bar text-amber-400"></i> Qstick Indikátor
+                </h3>
+                <button onclick="closeToolModal('qstick-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Qstick a gyertyatestek irányát összegzi: minden gyertyánál kiszámolja a Záróár − Nyitóár különbséget, majd ennek a sorozatnak veszi a mozgóátlagát (SMA). Pozitív Qstick = a közelmúltban több/nagyobb zöld (bullish) gyertyatest volt; negatív = több/nagyobb piros (bearish) gyertyatest. A nulla vonal keresztezése — hasonlóan más momentum-eszközökhöz — gyakori jelzésforrás. Add meg a gyertyákat (Nyitó,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Záró (soronként egy, időrendben)</label>
+            <textarea id="qstick-candles" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100.20,100.55
+100.55,100.35
+100.35,100.80
+100.80,100.65
+100.65,101.10
+101.10,100.90
+100.90,101.40
+101.40,101.25
+101.25,101.70
+101.70,101.55
+101.55,102.00
+102.00,101.85
+101.85,102.30
+102.30,102.15
+102.15,102.60
+102.60,102.45</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (tipikusan 8–10)</label>
+            <input type="number" id="qstick-period" value="10" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcQstick()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="qstick-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A Qstick nem az árat, hanem a gyertyatestek irányát simítja — a nulla vonal keresztezését és a saját korábbi értékéhez viszonyított irányát (emelkedő/csökkenő) érdemes figyelni, nem abszolút szinteket.</p>
+        </div>
+    </div>
+
     <div id="m2-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -6977,6 +7024,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">TRIX Indikátor</div>
                     <div class="text-[10px] text-slate-400">Háromszorosan simított momentum-oszcillátor</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('qstick-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-bar"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Qstick Indikátor</div>
+                    <div class="text-[10px] text-slate-400">Gyertyatestek irányának mozgóátlaga</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14610,6 +14664,66 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">TRIX:</span><span class="${colorClass} font-extrabold text-sm">${lastTrix >= 0 ? '+' : ''}${lastTrix.toFixed(3)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcQstick() {
+            const candlesEl = document.getElementById('qstick-candles');
+            const periodEl = document.getElementById('qstick-period');
+            const out = document.getElementById('qstick-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = lines.map(l => {
+                const parts = l.split(',').map(v => parseFloat(v.trim()));
+                return { open: parts[0], close: parts[1] };
+            }).filter(c => !isNaN(c.open) && !isNaN(c.close));
+
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódust (legalább 2)!</div>`;
+                return;
+            }
+
+            if (candles.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég gyertya a számításhoz — a ${period} periódushoz legalább ${period} gyertya (Nyitó,Záró pár) szükséges (jelenleg ${candles.length} érvényes van megadva)!</div>`;
+                return;
+            }
+
+            const diffs = candles.map(c => c.close - c.open);
+
+            const qstickSeries = [];
+            for (let i = period - 1; i < diffs.length; i++) {
+                qstickSeries.push(calcSMA(diffs, period, i));
+            }
+
+            const lastQstick = qstickSeries[qstickSeries.length - 1];
+            const prevQstick = qstickSeries.length > 1 ? qstickSeries[qstickSeries.length - 2] : null;
+
+            const colorClass = lastQstick >= 0 ? 'text-neon-green' : 'text-neon-red';
+            let verdict = lastQstick >= 0
+                ? 'Qstick a nulla vonal FÖLÖTT — a közelmúlt gyertyatestei túlnyomórészt bullish irányúak.'
+                : 'Qstick a nulla vonal ALATT — a közelmúlt gyertyatestei túlnyomórészt bearish irányúak.';
+            let crossNote = '';
+            if (prevQstick !== null) {
+                const rising = lastQstick > prevQstick;
+                verdict += rising ? ' Az érték emelkedik az előző periódushoz képest.' : ' Az érték csökken az előző periódushoz képest.';
+                if ((prevQstick < 0 && lastQstick >= 0) || (prevQstick >= 0 && lastQstick < 0)) {
+                    crossNote = prevQstick < 0
+                        ? '<p class="text-[10px] font-bold text-neon-green mt-2">⚡ Nulla vonal felfelé keresztezés — friss bullish jelzés.</p>'
+                        : '<p class="text-[10px] font-bold text-neon-red mt-2">⚡ Nulla vonal lefelé keresztezés — friss bearish jelzés.</p>';
+                }
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Feldolgozott gyertyák:</span><span class="text-white">${candles.length}</span></div>
+                    ${prevQstick !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző Qstick:</span><span class="text-slate-300">${prevQstick >= 0 ? '+' : ''}${prevQstick.toFixed(4)}</span></div>` : ''}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Qstick:</span><span class="${colorClass} font-extrabold text-sm">${lastQstick >= 0 ? '+' : ''}${lastQstick.toFixed(4)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+                ${crossNote}
             `;
         }
 
@@ -25324,6 +25438,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             368: { tool: 'ppo-modal', cta: 'Számold ki élesben a Percentage Price Oscillatort' },
             352: { tool: 'dpo-modal', cta: 'Számold ki élesben a Detrended Price Oscillatort' },
             284: { tool: 'trix-modal', cta: 'Számold ki élesben a TRIX indikátort' },
+            358: { tool: 'qstick-modal', cta: 'Számold ki élesben a Qstick indikátort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -25333,7 +25448,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
