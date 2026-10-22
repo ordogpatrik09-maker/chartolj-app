@@ -1505,6 +1505,13 @@
                                 <div class="text-[10px] text-slate-400">Fix vagy ATR-alapú trailing stop lépésenként</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('spreadcost-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-300/10 text-amber-300 border border-amber-300/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Bid-Ask Spread Költség Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Rejtett kereskedési költség halmozott hatása</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6635,6 +6642,48 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= BID-ASK SPREAD KÖLTSÉG KALKULÁTOR (OKTATÁSI) =================
+         Spread = Ask - Bid. Spread% = Spread / Mid × 100, ahol Mid = (Bid+Ask)/2.
+         Költség/trade = Spread × Pozícióméret. Teljes költség = Költség/trade × Trade-ek száma. -->
+    <div id="spreadcost-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-left-right text-amber-300"></i> Bid-Ask Spread Költség Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('spreadcost-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A spread (bid és ask ár közti különbség) egy rejtett kereskedési költség, amit minden ügyletnél megfizetsz, még kommisszió nélkül is. Add meg a bid/ask árakat, a pozícióméretet és a tervezett trade-ek számát, és a kalkulátor kiszámolja a spread %-os mértékét és a halmozott költséget.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Bid ár</label>
+                    <input type="number" id="spreadcost-bid" value="99.95" step="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-300/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Ask ár</label>
+                    <input type="number" id="spreadcost-ask" value="100.05" step="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-300/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Pozícióméret (egység)</label>
+                    <input type="number" id="spreadcost-size" value="1000" step="1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-300/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Trade-ek száma</label>
+                    <input type="number" id="spreadcost-count" value="50" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-300/50">
+                </div>
+            </div>
+
+            <button onclick="calcSpreadCost()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-300 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="spreadcost-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="klinger-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -8202,6 +8251,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Trailing Stop Szimulátor</div>
                     <div class="text-[10px] text-slate-400">Fix vagy ATR-alapú trailing stop lépésenként</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('spreadcost-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-300/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-300/10 text-amber-300 border border-amber-300/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-left-right"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Bid-Ask Spread Költség Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Rejtett kereskedési költség halmozott hatása</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -16540,6 +16596,60 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Stop-távolság:</span><span class="text-white">${distanceLabel}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kezdő stop:</span><span class="text-white">${stops[0].toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó/trigger stop:</span><span class="${colorClass} font-extrabold text-sm">${finalStop.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcSpreadCost() {
+            const bidEl = document.getElementById('spreadcost-bid');
+            const askEl = document.getElementById('spreadcost-ask');
+            const sizeEl = document.getElementById('spreadcost-size');
+            const countEl = document.getElementById('spreadcost-count');
+            const out = document.getElementById('spreadcost-result');
+            if (!bidEl || !askEl || !sizeEl || !countEl || !out) return;
+
+            const bid = parseFloat(bidEl.value);
+            const ask = parseFloat(askEl.value);
+            const size = parseFloat(sizeEl.value);
+            const count = parseFloat(countEl.value);
+
+            if ([bid, ask, size, count].some(v => isNaN(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+                return;
+            }
+            if (ask <= bid) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az Ask árnak nagyobbnak kell lennie a Bid árnál!</div>`;
+                return;
+            }
+            if (size < 0 || count < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret nem lehet negatív, a trade-ek száma legalább 1 legyen!</div>`;
+                return;
+            }
+
+            const spread = ask - bid;
+            const mid = (bid + ask) / 2;
+            const spreadPct = (spread / mid) * 100;
+            const costPerTrade = spread * size;
+            const totalCost = costPerTrade * count;
+
+            let colorClass, verdict;
+            if (spreadPct > 0.5) {
+                colorClass = 'text-neon-red';
+                verdict = 'Tág spread (illikvid eszköz jellemzője) — a rejtett költség jelentős, érdemes likvidebb eszközt vagy alternatív brókert mérlegelni.';
+            } else if (spreadPct > 0.1) {
+                colorClass = 'text-neon-yellow';
+                verdict = 'Közepes spread — figyelj a halmozott hatásra sok, gyakori trade esetén.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = 'Szűk spread (likvid eszköz jellemzője) — a rejtett költség hatása alacsony.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Spread:</span><span class="text-white">${spread.toLocaleString(undefined, { maximumFractionDigits: 4 })} (${spreadPct.toFixed(4)}%)</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Költség / trade:</span><span class="text-white">${costPerTrade.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Teljes költség (${count} trade):</span><span class="${colorClass} font-extrabold text-sm">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -27747,6 +27857,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             386: { tool: 'liquidation-modal', cta: 'Számold ki élesben a likvidációs árat' },
             51: { tool: 'trailingstop-modal', cta: 'Szimuláld élesben a Trailing Stop-ot' },
             192: { tool: 'trailingstop-modal', cta: 'Szimuláld élesben az ATR Trailing Stop-ot' },
+            400: { tool: 'expectancy-modal', cta: 'Számold ki élesben a konvex kifizetési profil expectancyjét' },
+            39: { tool: 'spreadcost-modal', cta: 'Számold ki élesben a spread rejtett költségét' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -27756,7 +27868,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
