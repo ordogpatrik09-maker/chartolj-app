@@ -1281,6 +1281,13 @@
                                 <div class="text-[10px] text-slate-400">Jelentős fordulópontok %-os küszöb alapján</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('ichimoku-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-cloud"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Ichimoku Cloud Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Tenkan/Kijun/Senkou A-B/Chikou vonalak</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5731,6 +5738,89 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= ICHIMOKU CLOUD (KUMO) KALKULÁTOR (OKTATÁSI) =================
+         Tenkan-sen (9) = (HighestHigh(9)+LowestLow(9))/2; Kijun-sen (26) =
+         (HighestHigh(26)+LowestLow(26))/2; Senkou Span A = (Tenkan+Kijun)/2
+         (a jövőbe 26 periódussal előre rajzolva); Senkou Span B (52) =
+         (HighestHigh(52)+LowestLow(52))/2 (ugyanúgy előre rajzolva); Chikou
+         Span = jelenlegi záróár (a múltba 26 periódussal visszarajzolva).
+         A Kumo (felhő) bullish, ha Senkou A > Senkou B. -->
+    <div id="ichimoku-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-cloud text-amber-400"></i> Ichimoku Cloud Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('ichimoku-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Az Ichimoku Cloud (Kumo) 5 vonalból álló japán trend-követő rendszer. A Tenkan-sen (gyors, 9 periódus) és a Kijun-sen (lassabb, 26 periódus) a klasszikus támasz/ellenállás középpontok. A Senkou Span A és B alkotja a "felhőt" (Kumo), amit 26 perióddal a jövőbe rajzolnak előre — ha a Senkou A a Senkou B fölött van, a felhő bullish (zöld), ellenkező esetben bearish (piros). A Chikou Span a jelenlegi záróár 26 perióddal a múltba rajzolva, ami megerősítheti a trendet. Legalább 52 gyertya szükséges. Add meg a gyertyákat (Magas,Alacsony,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró (soronként egy, legalább 52 db)</label>
+            <textarea id="ichimoku-candles" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[9.5px] text-white focus:outline-none focus:border-amber-400/50">100.85,99.48,99.45
+100.04,98.03,99.07
+99.89,97.78,99.42
+101.12,98.44,99.48
+100.66,98.93,100.73
+101.53,99.91,101.44
+101.88,100.18,102.56
+103.3,100.85,102.88
+104.32,101.93,102.89
+103.52,102.68,102.4
+104.18,101.34,102.55
+104.19,101.39,104.0
+104.77,103.45,105.3
+105.76,103.83,105.79
+107.56,104.08,106.44
+106.7,106.2,106.62
+108.13,106.29,106.69
+107.02,105.99,105.7
+106.43,104.66,105.2
+106.66,104.91,104.73
+105.34,103.88,105.64
+106.41,104.33,106.94
+107.35,105.36,107.44
+108.84,106.27,107.46
+107.82,107.04,106.9
+107.38,106.47,106.42
+107.52,104.99,107.41
+108.97,107.03,108.47
+108.97,108.15,108.19
+109.33,107.91,107.73
+108.57,106.21,107.73
+108.59,106.93,106.96
+108.57,105.28,107.76
+108.6,106.85,107.54
+108.79,106.3,107.32
+108.92,105.97,106.87
+108.36,105.59,106.49
+107.16,105.09,105.69
+106.59,103.95,105.33
+106.34,103.68,106.52
+107.98,105.46,107.84
+108.45,106.23,107.87
+109.12,106.69,107.57
+108.86,106.4,109.04
+110.31,108.14,108.99
+110.61,108.24,109.66
+110.97,107.91,109.14
+110.4,108.67,109.74
+110.99,108.35,110.91
+111.48,109.33,110.77
+111.61,110.39,111.1
+111.3,110.4,111.78
+113.18,111.31,112.74
+113.65,112.21,113.61
+115.0,112.66,113.94</textarea>
+
+            <button onclick="calcIchimoku()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="ichimoku-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez a kalkulátor a vonalak JELENLEGI (nem a jövőbe rajzolt) értékét adja meg — a valós charton a Senkou Span A/B 26 perióddal előre, a Chikou Span pedig 26 perióddal hátra van csúsztatva vizuálisan.</p>
+        </div>
+    </div>
+
     <div id="heat-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -6275,6 +6365,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Zig Zag Indikátor Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Jelentős fordulópontok %-os küszöb alapján</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('ichimoku-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-cloud"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Ichimoku Cloud Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Tenkan/Kijun/Senkou A-B/Chikou vonalak</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -13716,6 +13813,76 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcIchimoku() {
+            const candlesEl = document.getElementById('ichimoku-candles');
+            const out = document.getElementById('ichimoku-result');
+            if (!candlesEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2] });
+                }
+            }
+
+            const tenkanPeriod = 9, kijunPeriod = 26, senkouBPeriod = 52;
+
+            if (candles.length < senkouBPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${senkouBPeriod} gyertya szükséges a Senkou Span B kiszámításához — jelenleg ${candles.length} van megadva!</div>`;
+                return;
+            }
+
+            function hhLl(period) {
+                const last = candles.slice(candles.length - period);
+                const hh = Math.max(...last.map(c => c.high));
+                const ll = Math.min(...last.map(c => c.low));
+                return { hh, ll };
+            }
+
+            const t9 = hhLl(tenkanPeriod);
+            const tenkan = (t9.hh + t9.ll) / 2;
+            const k26 = hhLl(kijunPeriod);
+            const kijun = (k26.hh + k26.ll) / 2;
+            const senkouA = (tenkan + kijun) / 2;
+            const b52 = hhLl(senkouBPeriod);
+            const senkouB = (b52.hh + b52.ll) / 2;
+            const chikou = candles[candles.length - 1].close;
+            const lastClose = candles[candles.length - 1].close;
+
+            const cloudBullish = senkouA > senkouB;
+            const cloudColorClass = cloudBullish ? 'text-neon-green' : 'text-neon-red';
+            const cloudTop = Math.max(senkouA, senkouB);
+            const cloudBottom = Math.min(senkouA, senkouB);
+
+            let priceVerdict;
+            if (lastClose > cloudTop) priceVerdict = 'Az ár a Kumo (felhő) FÖLÖTT van — bullish zóna.';
+            else if (lastClose < cloudBottom) priceVerdict = 'Az ár a Kumo (felhő) ALATT van — bearish zóna.';
+            else priceVerdict = 'Az ár a Kumo (felhő) BELSEJÉBEN van — bizonytalan, konszolidációs zóna.';
+
+            const row = (label, val, colorClass) => `
+                <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
+                    <span class="text-slate-400">${label}:</span>
+                    <span class="font-extrabold ${colorClass} text-sm">${val.toFixed(2)}</span>
+                </div>
+            `;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    ${row('Tenkan-sen (9)', tenkan, 'text-neon-cyan')}
+                    ${row('Kijun-sen (26)', kijun, 'text-amber-400')}
+                    ${row('Senkou Span A', senkouA, cloudColorClass)}
+                    ${row('Senkou Span B', senkouB, cloudColorClass)}
+                    ${row('Chikou Span (záróár)', chikou, 'text-white')}
+                </div>
+                <div class="glass-card rounded-xl border border-${cloudBullish ? 'neon-green' : 'neon-red'}/30 bg-${cloudBullish ? 'neon-green' : 'neon-red'}/[0.05] p-3 mb-3">
+                    <p class="text-[10px] font-semibold ${cloudColorClass}">A Kumo (felhő) ${cloudBullish ? 'BULLISH (zöld)' : 'BEARISH (piros)'} — a Senkou Span A ${cloudBullish ? 'fölött' : 'alatt'} van a Senkou Span B-nek.</p>
+                </div>
+                <p class="text-[10px] text-slate-500">${priceVerdict}</p>
             `;
         }
 
@@ -24025,6 +24192,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             521: { tool: 'feeimpact-modal', cta: 'Számold ki élesben a round-trip díjak hatását' },
             511: { tool: 'greeks-modal', cta: 'Számold ki élesben az opció Greeks mutatóit' },
             519: { tool: 'recovery-modal', cta: 'Számold ki élesben a szükséges visszanyerési nyereséget' },
+            61: { tool: 'ichimoku-modal', cta: 'Számold ki élesben az Ichimoku Cloud vonalait' },
+            182: { tool: 'ichimoku-modal', cta: 'Nézd meg élesben a Kumo Twist állapotát' },
+            204: { tool: 'ichimoku-modal', cta: 'Nézd meg élesben a Chikou Span viszonyát' },
+            288: { tool: 'ichimoku-modal', cta: 'Nézd meg élesben a Chikou Span kereszteződést' },
+            414: { tool: 'ichimoku-modal', cta: 'Nézd meg élesben a Kumo Twist (felhő-fordulat) állapotát' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -24034,7 +24206,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
