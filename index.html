@@ -1351,6 +1351,13 @@
                                 <div class="text-[10px] text-slate-400">Trend-mentes, ciklus-kereső oszcillátor</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('trix-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">TRIX Indikátor</div>
+                                <div class="text-[10px] text-slate-400">Háromszorosan simított momentum-oszcillátor</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -6017,6 +6024,80 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="trix-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-amber-400"></i> TRIX Indikátor
+                </h3>
+                <button onclick="closeToolModal('trix-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A TRIX egy háromszorosan simított exponenciális mozgóátlag (EMA) napi %-os változását méri: EMA1 = EMA(Záróár, N); EMA2 = EMA(EMA1, N); EMA3 = EMA(EMA2, N); TRIX = (EMA3 mai − EMA3 előző) / EMA3 előző × 100. A háromszoros simítás kiszűri a rövid-távú zajt, de jelentősen késleltetett jelzést ad. A nulla vonal keresztezése gyakori jelzés: fölötte bullish, alatta bearish momentum. Add meg a záróárakat soronként egyet (legalább ~3×periódus db szükséges).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy, időrendben)</label>
+            <textarea id="trix-closes" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100.32
+99.9
+99.78
+99.6
+100.03
+100.39
+101.01
+100.67
+100.72
+100.31
+100.12
+100.28
+99.86
+99.65
+99.98
+100.18
+100.0
+100.25
+100.77
+100.33
+100.85
+101.24
+101.19
+100.93
+101.63
+101.58
+101.25
+100.91
+101.48
+101.75
+102.27
+102.7
+102.89
+103.61
+103.61
+103.82
+104.37
+104.66
+105.25
+105.49
+105.88
+105.49
+105.31
+105.21
+104.86
+104.69
+104.36
+104.24
+104.55
+104.54</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (tipikusan 15)</label>
+            <input type="number" id="trix-period" value="15" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcTRIX()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="trix-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A TRIX elsősorban a nulla vonal keresztezésére és a saját maga korábbi értékéhez viszonyított irányára (emelkedő/csökkenő) adott jelzésekre épül — nem abszolút szintekre.</p>
+        </div>
+    </div>
+
     <div id="m2-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -6889,6 +6970,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Detrended Price Oscillator (DPO)</div>
                     <div class="text-[10px] text-slate-400">Trend-mentes, ciklus-kereső oszcillátor</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('trix-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-line"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">TRIX Indikátor</div>
+                    <div class="text-[10px] text-slate-400">Háromszorosan simított momentum-oszcillátor</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14463,6 +14551,63 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">SumUp:</span><span class="text-neon-green">${sumUp.toFixed(3)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">SumDown:</span><span class="text-neon-red">${sumDown.toFixed(3)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">CMO:</span><span class="${colorClass} font-extrabold text-sm">${cmo.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcTRIX() {
+            const closesEl = document.getElementById('trix-closes');
+            const periodEl = document.getElementById('trix-period');
+            const out = document.getElementById('trix-result');
+            if (!closesEl || !periodEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódust (legalább 2)!</div>`;
+                return;
+            }
+
+            const ema1Aligned = emaSmaSeededAligned(closes, period);
+            const ema1 = ema1Aligned.filter(v => v !== null);
+
+            const ema2Aligned = emaSmaSeededAligned(ema1, period);
+            const ema2 = ema2Aligned.filter(v => v !== null);
+
+            const ema3Aligned = emaSmaSeededAligned(ema2, period);
+            const ema3 = ema3Aligned.filter(v => v !== null);
+
+            if (ema3.length < 2) {
+                const minNeeded = period * 3 - 1;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég záróár a háromszoros EMA-simításhoz — a ${period} periódushoz legalább ${minNeeded} záróár szükséges (jelenleg ${closes.length} van megadva)!</div>`;
+                return;
+            }
+
+            const trixSeries = [];
+            for (let i = 1; i < ema3.length; i++) {
+                trixSeries.push((ema3[i] - ema3[i - 1]) / ema3[i - 1] * 100);
+            }
+
+            const lastTrix = trixSeries[trixSeries.length - 1];
+            const prevTrix = trixSeries.length > 1 ? trixSeries[trixSeries.length - 2] : null;
+
+            const colorClass = lastTrix >= 0 ? 'text-neon-green' : 'text-neon-red';
+            let verdict = lastTrix >= 0
+                ? 'TRIX a nulla vonal FÖLÖTT — bullish momentum.'
+                : 'TRIX a nulla vonal ALATT — bearish momentum.';
+            if (prevTrix !== null) {
+                const rising = lastTrix > prevTrix;
+                verdict += rising ? ' A TRIX emelkedik az előző értékéhez képest.' : ' A TRIX csökken az előző értékéhez képest.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">EMA3 (háromszoros simítás) utolsó értéke:</span><span class="text-white">${ema3[ema3.length - 1].toFixed(4)}</span></div>
+                    ${prevTrix !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző TRIX:</span><span class="text-slate-300">${prevTrix >= 0 ? '+' : ''}${prevTrix.toFixed(3)}%</span></div>` : ''}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">TRIX:</span><span class="${colorClass} font-extrabold text-sm">${lastTrix >= 0 ? '+' : ''}${lastTrix.toFixed(3)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -25178,6 +25323,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             300: { tool: 'cmo-modal', cta: 'Számold ki élesben a Chande Momentum Oscillatort' },
             368: { tool: 'ppo-modal', cta: 'Számold ki élesben a Percentage Price Oscillatort' },
             352: { tool: 'dpo-modal', cta: 'Számold ki élesben a Detrended Price Oscillatort' },
+            284: { tool: 'trix-modal', cta: 'Számold ki élesben a TRIX indikátort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -25187,7 +25333,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
