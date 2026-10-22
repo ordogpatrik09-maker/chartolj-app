@@ -1246,6 +1246,13 @@
                                 <div class="text-[10px] text-slate-400">Trade-ek eredménye a kezdeti kockázat (R) többszöröseként</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('martingale-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-dice"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Martingale vs Anti-Martingale Szimulátor</div>
+                                <div class="text-[10px] text-slate-400">Tétméret-sorozat demonstrálása vesztes/nyertes sorozaton</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3573,6 +3580,34 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="martingale-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-dice text-neon-red"></i> Martingale vs Anti-Martingale Szimulátor
+                </h3>
+                <button onclick="closeToolModal('martingale-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A <strong class="text-neon-red">Martingale</strong> minden veszteség után megduplázza a tétet (reményben, hogy egy végső nyerés mindent visszahoz) — ez exponenciálisan növeli a kockázatot pont a legrosszabb pillanatban. Az <strong class="text-neon-green">Anti-Martingale</strong> ennek a fordítottja: nyerés után növeli, vesztés után visszaállítja a tétet. Add meg ugyanazt a nyertes/vesztes sorozatot (W/L, vesszővel elválasztva), és a kalkulátor LEFUTTATJA mindkét stratégiát rajta.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Trade-sorozat (W = nyertes, L = vesztes, vesszővel elválasztva)</label>
+            <textarea id="martingale-sequence" rows="2" placeholder="pl. L, L, L, W, L, L, W, W" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">L, L, L, W, L, L, W, W</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke ($)</label>
+            <input type="number" id="martingale-capital" value="1000" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Alap tétnagyság ($)</label>
+            <input type="number" id="martingale-basebet" value="10" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcMartingaleSim()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Szimuláció futtatása
+            </button>
+
+            <div id="martingale-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy oktatási demonstráció: a Martingale tétje veszteség után MINDIG duplázódik (max. a rendelkezésre álló tőkéig), nyerés után visszaáll az alap tétre. Az Anti-Martingale tétje nyerés után 1.5×-re nő, vesztés után visszaáll az alap tétre. Figyeld meg, mi történik a tőkével egy hosszú vesztes sorozat alatt mindkét esetben.</p>
+        </div>
+    </div>
+
     <!-- ================= TÖBB POZÍCIÓS KELLY KALKULÁTOR (OKTATÁSI) =================
          A lecke szerint a teljes, matematikailag pontos megoldás egy
          kovariancia mátrixot igényelne (lásd: "Kelly Criterion
@@ -5020,6 +5055,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">R-Multiple Napló Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Trade-ek eredménye a kezdeti kockázat többszöröseként</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('martingale-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-dice"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Martingale vs Anti-Martingale Szimulátor</div>
+                    <div class="text-[10px] text-slate-400">Tétméret-sorozat vesztes/nyertes sorozaton</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -12191,6 +12233,74 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <p class="text-[10px] font-semibold mt-2 ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${isPositive
                     ? `Pozitív R-expectancy: átlagosan +${avgR.toFixed(2)}R-t keresel minden egységnyi kockáztatott összegen, méret-függetlenül. Minél nagyobb a minta, annál megbízhatóbb ez a becslés.`
                     : `Negatív R-expectancy: átlagosan ${avgR.toFixed(2)}R-t veszítesz minden egységnyi kockáztatott összegen — érdemes felülvizsgálni a stratégia belépési/kilépési szabályait vagy a Risk/Reward arányt.`}</p>
+            `;
+        }
+
+        // ================= MARTINGALE VS ANTI-MARTINGALE SZIMULÁTOR (OKTATÁSI) =================
+        // Martingale: tét = alapTét kezdetben; vesztés után tét *= 2 (a
+        // rendelkezésre álló tőkéig korlátozva); nyerés után tét = alapTét.
+        // Anti-Martingale: tét = alapTét kezdetben; nyerés után tét *= 1.5;
+        // vesztés után tét = alapTét. Mindkettő ugyanazon a W/L sorozaton fut.
+        function simulateBetStrategy(outcomes, startCapital, baseBet, mode) {
+            let capital = startCapital;
+            let bet = baseBet;
+            let ruined = false;
+            let maxBet = baseBet;
+            const path = [capital];
+            for (const outcome of outcomes) {
+                bet = Math.min(bet, capital);
+                if (bet <= 0) { ruined = true; path.push(capital); continue; }
+                maxBet = Math.max(maxBet, bet);
+                if (outcome === 'W') {
+                    capital += bet;
+                    bet = (mode === 'antimartingale') ? bet * 1.5 : baseBet;
+                } else {
+                    capital -= bet;
+                    bet = (mode === 'martingale') ? bet * 2 : baseBet;
+                }
+                if (capital <= 0) { capital = 0; ruined = true; }
+                path.push(capital);
+            }
+            return { finalCapital: capital, maxBet, ruined, path };
+        }
+
+        function calcMartingaleSim() {
+            const seqEl = document.getElementById('martingale-sequence');
+            const capitalEl = document.getElementById('martingale-capital');
+            const betEl = document.getElementById('martingale-basebet');
+            const out = document.getElementById('martingale-result');
+            if (!seqEl || !capitalEl || !betEl || !out) return;
+
+            const outcomes = seqEl.value.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+            const startCapital = parseFloat(capitalEl.value);
+            const baseBet = parseFloat(betEl.value);
+
+            if (outcomes.length < 1 || outcomes.some(o => o !== 'W' && o !== 'L')) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A sorozat csak "W" (nyertes) és "L" (vesztes) jeleket tartalmazhat, vesszővel elválasztva!</div>`;
+                return;
+            }
+            if (!startCapital || startCapital <= 0 || !baseBet || baseBet <= 0 || baseBet > startCapital) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív kezdő tőkét és egy ennél kisebb vagy egyenlő alap tétnagyságot!</div>`;
+                return;
+            }
+
+            const mart = simulateBetStrategy(outcomes, startCapital, baseBet, 'martingale');
+            const anti = simulateBetStrategy(outcomes, startCapital, baseBet, 'antimartingale');
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border ${mart.ruined ? 'border-neon-red/30 bg-neon-red/[0.05]' : (mart.finalCapital >= startCapital ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]')} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-dice text-neon-red"></i> Martingale végeredmény</div>
+                    <div class="text-lg font-extrabold ${mart.ruined ? 'text-neon-red' : (mart.finalCapital >= startCapital ? 'text-neon-green' : 'text-amber-400')}">$${mart.finalCapital.toFixed(2)} ${mart.ruined ? '— CSŐD' : ''}</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Legnagyobb elért tét: $${mart.maxBet.toFixed(2)}</div>
+                </div>
+                <div class="glass-card rounded-xl border ${anti.ruined ? 'border-neon-red/30 bg-neon-red/[0.05]' : (anti.finalCapital >= startCapital ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]')} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-arrow-trend-up text-neon-green"></i> Anti-Martingale végeredmény</div>
+                    <div class="text-lg font-extrabold ${anti.ruined ? 'text-neon-red' : (anti.finalCapital >= startCapital ? 'text-neon-green' : 'text-amber-400')}">$${anti.finalCapital.toFixed(2)} ${anti.ruined ? '— CSŐD' : ''}</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Legnagyobb elért tét: $${anti.maxBet.toFixed(2)}</div>
+                </div>
+                <p class="text-[10px] font-semibold ${mart.ruined ? 'text-neon-red' : 'text-slate-400'}">${mart.ruined
+                    ? 'A Martingale a vesztes sorozat alatt exponenciálisan növelte a tétet, és elfogyott a tőke — ez pontosan a stratégia alapvető, elkerülhetetlen kockázata egy elég hosszú vesztes sorozatnál.'
+                    : 'Ebben a konkrét sorozatban a Martingale nem futott csődbe, de minél hosszabb egy vesztes sorozat, annál közelebb kerül hozzá — a tét exponenciálisan nő, miközben a tőke véges.'}</p>
             `;
         }
 
@@ -20971,6 +21081,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             350: { tool: 'expectancy-modal', cta: 'Számold ki élesben a stratégiád Expectancy-ját' },
             285: { tool: 'corrmatrix-modal', cta: 'Építsd fel élesben a korrelációs mátrixot a figyeléshez' },
             396: { tool: 'corrmatrix-modal', cta: 'Nézd meg élesben, mennyire közelednek most a korrelációk' },
+            267: { tool: 'martingale-modal', cta: 'Futtasd le élesben a Martingale vs Anti-Martingale szimulátort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -20980,7 +21091,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
