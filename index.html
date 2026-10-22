@@ -1652,6 +1652,13 @@
                                 <div class="text-[10px] text-slate-400">Cél-súlyok visszaállítása: pontos vétel/eladás eszközönként</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('dividend-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-coins"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Osztalékhozam &amp; DRIP Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Osztalékhozam, és a visszaforgatás (DRIP) hosszú-távú hatása</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
                             <div>
@@ -3997,6 +4004,67 @@ Kripto: 15000, 20</textarea>
 
             <div id="rebalance-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A Turnover azt mutatja, a portfólió teljes értékének hány százalékát kell megmozgatni (eladás + vásárlás fele-fele) a cél-súlyok visszaállításához — minél nagyobb ez az érték, annál nagyobb lehet a tranzakciós költség és az esetleges adóhatás.</p>
+        </div>
+    </div>
+
+    <!-- ================= OSZTALÉKHOZAM & DRIP KALKULÁTOR (OKTATÁSI) =================
+         Osztalékhozam = Osztalék/részvény ÷ Részvényár × 100. Év-alapú szimuláció:
+         minden évben DividendPerShare_t = D0×(1+g)^(t-1), DividendGross_t = Darabszám_t×DividendPerShare_t,
+         DividendNet_t = DividendGross_t×(1−adó). DRIP esetén az adózott osztalékot az adott
+         év végi árfolyamon (P0×(1+r)^t) új (törtrészes) részvényekbe forgatjuk, így a
+         Darabszám nő évről évre — ez a "compounding" hatás. Nem-DRIP esetén a Darabszám
+         fix marad, a nettó osztalék külön készpénzként gyűlik. Mindkét ág végső portfólió-
+         értékét összevetjük egy tisztán árfolyam-alapú (osztalék nélküli) referenciával,
+         hogy elkülönítsük az osztalék és a visszaforgatás hozzájárulását a teljes hozamhoz. -->
+    <div id="dividend-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-coins text-emerald-400"></i> Osztalékhozam &amp; DRIP Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('dividend-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg egy osztalékfizető részvény adatait — a kalkulátor kiszámolja a jelenlegi osztalékhozamot, majd N éven át szimulálja, mekkora különbséget csinál, ha az osztalékot <strong class="text-white">kézhez veszed</strong>, vagy <strong class="text-white">visszaforgatod (DRIP)</strong> új részvényekbe.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Kezdő részvényár</label>
+                    <input id="div-price0" type="number" value="12000" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Darabszám</label>
+                    <input id="div-shares0" type="number" value="100" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Éves osztalék/részvény</label>
+                    <input id="div-d0" type="number" value="480" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Osztalék növekedés/év (%)</label>
+                    <input id="div-g" type="number" value="5" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Árfolyam növekedés/év (%, becslés)</label>
+                    <input id="div-r" type="number" value="4" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Időtáv (év)</label>
+                    <input id="div-years" type="number" value="10" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Osztalékadó (%, pl. 15% SZJA)</label>
+            <input id="div-tax" type="number" value="15" step="any" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+
+            <button onclick="calcDividendDRIP()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-emerald-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="dividend-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az árfolyam-növekedési ráta itt egy BECSLÉS az illusztrációhoz, nem előrejelzés — a jövőbeli árfolyam valójában ismeretlen és ingadozó. Egy gyanúsan magas (pl. 2 számjegyű) osztalékhozam gyakran azt jelzi, hogy az árfolyam esett és a piac osztalékcsökkentésre számít, nem "ingyen pénzt".</p>
         </div>
     </div>
 
@@ -8690,6 +8758,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Portfólió Rebalancing Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Cél-súlyok visszaállítása: pontos vétel/eladás eszközönként</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('dividend-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-emerald-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-coins"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Osztalékhozam &amp; DRIP Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Osztalékhozam, és a visszaforgatás (DRIP) hosszú-távú hatása</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -16394,6 +16469,153 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <div class="glass-card rounded-xl p-3">
                     <div class="text-[11px] font-semibold ${Math.abs(maxDriftRow.drift) >= 5 ? 'text-neon-red' : (Math.abs(maxDriftRow.drift) >= 1 ? 'text-amber-400' : 'text-neon-green')} leading-relaxed">${verdict}</div>
+                </div>
+            `;
+        }
+
+        // ================= OSZTALÉKHOZAM & DRIP KALKULÁTOR =================
+        // Osztalékhozam = D0 / P0 × 100. Évenkénti szimuláció t=1..N:
+        //   DividendPerShare_t = D0 × (1+g)^(t-1)   [az ÉV ELEJÉN birtokolt darabszámra fizetve]
+        //   DividendGross_t    = Darabszám_(t-1) × DividendPerShare_t
+        //   DividendNet_t      = DividendGross_t × (1 − adó)
+        //   Price_t            = P0 × (1+r)^t       [év végi árfolyam]
+        // "Kézhez vétel" ág: Darabszám fix (N0) marad, a nettó osztalék külön készpénzként
+        // gyűlik (CashAccum), nem fektetjük vissza.
+        // "DRIP" ág: minden év végén az adott évi nettó osztalékot az év végi árfolyamon
+        // új (törtrészes) részvényekbe forgatjuk: NewShares_t = DividendNet_t / Price_t,
+        // így a következő év osztalékát már a megnövelt Darabszám kapja — ez a compounding.
+        // Mindkét ág végső portfólióértékét összevetjük egy tisztán árfolyam-alapú
+        // referenciával (N0 × Price_N, mintha sosem lett volna osztalék), hogy
+        // elkülönítsük, mennyit ér maga az osztalék, és mennyi extra értéket teremt
+        // kifejezetten a visszaforgatás (DRIP-bónusz = DRIP_végérték − KézhezVett_végérték).
+        function calcDividendDRIP() {
+            const out = document.getElementById('dividend-result');
+            if (!out) return;
+
+            const price0 = parseFloat(document.getElementById('div-price0').value);
+            const shares0 = parseFloat(document.getElementById('div-shares0').value);
+            const d0 = parseFloat(document.getElementById('div-d0').value);
+            const gPct = parseFloat(document.getElementById('div-g').value);
+            const rPct = parseFloat(document.getElementById('div-r').value);
+            const years = parseInt(document.getElementById('div-years').value, 10);
+            const taxPct = parseFloat(document.getElementById('div-tax').value);
+
+            if (!isFinite(price0) || price0 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kezdő részvényár pozitív szám legyen!</div>`;
+                return;
+            }
+            if (!isFinite(shares0) || shares0 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A darabszám pozitív szám legyen!</div>`;
+                return;
+            }
+            if (!isFinite(d0) || d0 < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az éves osztalék/részvény nem lehet negatív! (0 = nem fizet osztalékot)</div>`;
+                return;
+            }
+            if (!isFinite(gPct) || gPct <= -100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az osztalék-növekedési ráta érvénytelen (nagyobbnak kell lennie, mint -100%)!</div>`;
+                return;
+            }
+            if (!isFinite(rPct) || rPct <= -100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az árfolyam-növekedési ráta érvénytelen (nagyobbnak kell lennie, mint -100%)!</div>`;
+                return;
+            }
+            if (!isFinite(years) || years < 1 || years > 60) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az időtáv 1 és 60 év között legyen!</div>`;
+                return;
+            }
+            if (!isFinite(taxPct) || taxPct < 0 || taxPct > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az osztalékadó 0% és 100% között legyen!</div>`;
+                return;
+            }
+
+            const g = gPct / 100, r = rPct / 100, tax = taxPct / 100;
+            const currentYield = (d0 / price0) * 100;
+
+            let cashShares = shares0, cashAccum = 0, cashDivGross = 0, cashDivNet = 0;
+            let dripShares = shares0, dripDivGross = 0, dripDivNet = 0;
+
+            for (let t = 1; t <= years; t++) {
+                const divPerShare = d0 * Math.pow(1 + g, t - 1);
+                const priceEnd = price0 * Math.pow(1 + r, t);
+
+                // Kézhez vétel ág (fix darabszám)
+                const cGross = cashShares * divPerShare;
+                const cNet = cGross * (1 - tax);
+                cashDivGross += cGross;
+                cashDivNet += cNet;
+                cashAccum += cNet;
+
+                // DRIP ág (növekvő darabszám)
+                const dGross = dripShares * divPerShare;
+                const dNet = dGross * (1 - tax);
+                dripDivGross += dGross;
+                dripDivNet += dNet;
+                dripShares += dNet / priceEnd;
+            }
+
+            const finalPrice = price0 * Math.pow(1 + r, years);
+            const initialInvestment = shares0 * price0;
+            const priceOnlyValue = shares0 * finalPrice;
+
+            const cashFinalValue = cashShares * finalPrice + cashAccum;
+            const dripFinalValue = dripShares * finalPrice;
+
+            const cashTotalReturnPct = ((cashFinalValue - initialInvestment) / initialInvestment) * 100;
+            const dripTotalReturnPct = ((dripFinalValue - initialInvestment) / initialInvestment) * 100;
+            const cashCagr = (Math.pow(cashFinalValue / initialInvestment, 1 / years) - 1) * 100;
+            const dripCagr = (Math.pow(dripFinalValue / initialInvestment, 1 / years) - 1) * 100;
+
+            const dripBonus = dripFinalValue - cashFinalValue;
+            const divContribution = cashFinalValue - priceOnlyValue; // = cashDivNet pontosan
+
+            let yieldWarn = '';
+            if (currentYield > 8) {
+                yieldWarn = `<div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-amber-400 leading-relaxed">⚠️ ${currentYield.toFixed(2)}% osztalékhozam gyanúsan magas — gyakran azt jelzi, hogy az árfolyam esett, és a piac osztalékcsökkentésre/megszüntetésre számít. Ne kezeld automatikusan "ingyen pénznek"!</div></div>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-emerald-400/30 bg-emerald-400/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Jelenlegi osztalékhozam</div>
+                    <div class="text-xl font-extrabold text-emerald-400">${currentYield.toFixed(2)}%</div>
+                </div>
+                ${yieldWarn}
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="glass-card rounded-xl p-3">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Kézhez vett osztalék</div>
+                        <div class="text-sm font-extrabold text-white font-mono">${cashFinalValue.toFixed(0)}</div>
+                        <div class="text-[10px] text-slate-500 font-mono mt-0.5">Hozam: ${cashTotalReturnPct >= 0 ? '+' : ''}${cashTotalReturnPct.toFixed(1)}% · CAGR: ${cashCagr.toFixed(2)}%</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-3 border border-emerald-400/20">
+                        <div class="text-[10px] text-emerald-400 uppercase font-bold mb-1">Visszaforgatva (DRIP)</div>
+                        <div class="text-sm font-extrabold text-white font-mono">${dripFinalValue.toFixed(0)}</div>
+                        <div class="text-[10px] text-slate-500 font-mono mt-0.5">Hozam: ${dripTotalReturnPct >= 0 ? '+' : ''}${dripTotalReturnPct.toFixed(1)}% · CAGR: ${dripCagr.toFixed(2)}%</div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3">
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Kezdő befektetés</span>
+                        <span class="text-white font-bold">${initialInvestment.toFixed(0)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Végső árfolyam (${years} év után)</span>
+                        <span class="text-white font-bold">${finalPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Összes nettó osztalék (${years} év)</span>
+                        <span class="text-emerald-400 font-bold">${cashDivNet.toFixed(0)} (bruttó: ${cashDivGross.toFixed(0)})</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Osztalék hozzájárulása (árfolyam-referenciához)</span>
+                        <span class="text-emerald-400 font-bold">${divContribution.toFixed(0)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">DRIP-bónusz (a visszaforgatás extra hatása)</span>
+                        <span class="${dripBonus >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${dripBonus >= 0 ? '+' : ''}${dripBonus.toFixed(0)}</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[11px] font-semibold text-slate-300 leading-relaxed">${dripBonus > 0.005 ? `A visszaforgatás (DRIP) ${dripBonus.toFixed(0)} extra értéket teremtett ${years} év alatt azáltal, hogy a megkapott osztalékokból vásárolt új részvények is tovább hoztak osztalékot és árfolyamnyereséget — ez a "compounding" ereje.` : (dripBonus < -0.005 ? `Ebben a szcenárióban a DRIP-bónusz negatív (${dripBonus.toFixed(0)}) — ez akkor fordulhat elő, ha az árfolyam csökkenő trendben van, így az újonnan vásárolt részvények már a csökkenő áron, majd további eséssel veszítenek értékükből.` : 'A DRIP-bónusz jelen szcenárióban elhanyagolható.')}</div>
                 </div>
             `;
         }
@@ -28732,6 +28954,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             486: { tool: 'coppock-modal', cta: 'Próbáld ki élesben a rövidített Day Trading variánst' },
             546: { tool: 'levdecay-modal', cta: 'Szimuláld élesben a volatility decay hatását' },
             525: { tool: 'rebalance-modal', cta: 'Számold ki élesben a cél-súlyokra visszaállító tradeket' },
+            532: { tool: 'dividend-modal', cta: 'Számold ki élesben az osztalékhozamot és a DRIP hatását' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -28741,7 +28964,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
