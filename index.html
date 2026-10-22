@@ -1344,6 +1344,13 @@
                                 <div class="text-[10px] text-slate-400">A MACD %-os, normalizált változata</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('dpo-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Detrended Price Oscillator (DPO)</div>
+                                <div class="text-[10px] text-slate-400">Trend-mentes, ciklus-kereső oszcillátor</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5854,6 +5861,57 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          signal periódus); Histogram = PPO - Signal. A MACD %-os verziója —
          mivel %-ban van kifejezve, különböző árszintű eszközök PPO-ja
          közvetlenül összehasonlítható, ellentétben a nyers MACD-vel. -->
+    <!-- ================= DETRENDED PRICE OSCILLATOR (DPO) KALKULÁTOR (OKTATÁSI) =================
+         Eltolás = floor(periódus/2) + 1; DPO = Close[eltolás periódussal
+         KORÁBBAN] - SMA(periódus) (az aktuális pontig számolt egyszerű
+         mozgóátlag). A DPO SZÁNDÉKOSAN nem a jelenlegi trendet mutatja,
+         hanem kiszűri azt, hogy a rövid-távú ciklusokat/túlvett-túladott
+         állapotokat tisztábban lehessen látni, a hosszú-távú trendtől
+         "megtisztítva". -->
+    <div id="dpo-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-amber-400"></i> Detrended Price Oscillator (DPO)
+                </h3>
+                <button onclick="closeToolModal('dpo-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A DPO szándékosan "eltávolítja" a hosszú-távú trendet az árfolyamból, hogy a rövid-távú ciklusokat és túlvett/túladott állapotokat tisztábban lehessen látni. DPO = egy ELTOLT (eltolás = periódus/2 + 1) régebbi záróár − a jelenlegi SMA(periódus). Mivel a múltbeli árat hasonlítja a jelenlegi átlaghoz, a DPO NEM a jelenlegi momentumot mutatja, hanem egy ciklikus, trend-mentes oszcillátort. Add meg a záróárakat soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy, időrendben)</label>
+            <textarea id="dpo-closes" rows="7" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100
+101.5
+100.8
+102.3
+103.1
+102.5
+104.0
+103.2
+105.5
+104.8
+106.2
+105.0
+107.3
+106.5
+108.0
+107.5
+106.9
+108.2
+109.1
+108.6</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (tipikusan 10 vagy 20)</label>
+            <input type="number" id="dpo-period" value="10" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcDPO()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="dpo-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A DPO leggyakoribb haszna a ciklus-hosszúság becslése (pl. két csúcs közti távolság megmérése) — nem önálló vétel/eladás jelzésre használják a legtöbb kereskedő szerint.</p>
+        </div>
+    </div>
+
     <div id="ppo-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -6824,6 +6882,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Percentage Price Oscillator (PPO)</div>
                     <div class="text-[10px] text-slate-400">A MACD %-os, normalizált változata</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('dpo-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Detrended Price Oscillator (DPO)</div>
+                    <div class="text-[10px] text-slate-400">Trend-mentes, ciklus-kereső oszcillátor</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -14263,6 +14328,47 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-slate-400">Jelenlegi záróár:</span>
                         <span class="font-extrabold ${colorClass} text-sm">${lastClose.toFixed(2)}</span>
                     </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcDPO() {
+            const closesEl = document.getElementById('dpo-closes');
+            const periodEl = document.getElementById('dpo-period');
+            const out = document.getElementById('dpo-result');
+            if (!closesEl || !periodEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const period = parseInt(periodEl.value);
+
+            const shift = Math.floor(period / 2) + 1;
+
+            if (!period || period < 2 || closes.length < period || closes.length < shift + 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódust, és legalább ${Math.max(2, 1)} + eltolás gyertyát (a periódusnál és az eltolásnál is többet)!</div>`;
+                return;
+            }
+            if (closes.length - 1 - shift < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég régi záróár az eltoláshoz (eltolás = ${shift}) — adj meg több adatot!</div>`;
+                return;
+            }
+
+            const lastN = closes.slice(closes.length - period);
+            const sma = lastN.reduce((a, b) => a + b, 0) / period;
+            const shiftedClose = closes[closes.length - 1 - shift];
+            const dpo = shiftedClose - sma;
+
+            const colorClass = dpo >= 0 ? 'text-neon-green' : 'text-neon-red';
+            const verdict = dpo >= 0
+                ? 'Pozitív DPO — a régebbi (eltolt) ár a jelenlegi átlag FÖLÖTT volt, ciklikus csúcs közelében lehetünk.'
+                : 'Negatív DPO — a régebbi (eltolt) ár a jelenlegi átlag ALATT volt, ciklikus mélypont közelében lehetünk.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">SMA(${period}):</span><span class="text-white">${sma.toFixed(3)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Eltolt záróár (−${shift} periódus):</span><span class="text-white">${shiftedClose.toFixed(3)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">DPO:</span><span class="${colorClass} font-extrabold text-sm">${dpo >= 0 ? '+' : ''}${dpo.toFixed(3)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -25071,6 +25177,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             491: { tool: 'm2-modal', cta: 'Számold ki élesben a Modigliani M2 mutatót' },
             300: { tool: 'cmo-modal', cta: 'Számold ki élesben a Chande Momentum Oscillatort' },
             368: { tool: 'ppo-modal', cta: 'Számold ki élesben a Percentage Price Oscillatort' },
+            352: { tool: 'dpo-modal', cta: 'Számold ki élesben a Detrended Price Oscillatort' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -25080,7 +25187,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
