@@ -1295,6 +1295,13 @@
                                 <div class="text-[10px] text-slate-400">Simított gyertyák lépésről lépésre</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('harmonic-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-draw-polygon"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Harmonikus Alakzat Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Gartley/Bat/Butterfly D-pont ellenőrzés</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -5758,6 +5765,43 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
          HA_Low = min(L, HA_Open, HA_Close). A Heikin-Ashi "simított" gyertyák
          minden gyertyájába beépíti az előző gyertya átlagát, ezért kevésbé
          zajos trendet mutatnak, mint a sima OHLC gyertyák. -->
+    <!-- ================= HARMONIKUS ALAKZAT (GARTLEY/BAT/BUTTERFLY) KALKULÁTOR (OKTATÁSI) =================
+         Egy X-A-B-C-D 5 pontos mintázat D pontjának visszahúzódását méri az
+         X-A lábhoz viszonyítva: |D-A|/|X-A|. Gartley ≈ 0.786 (D az X-A lábon
+         BELÜL), Bat ≈ 0.886 (D az X-A lábon BELÜL, sekélyebb), Butterfly ≈
+         1.27-1.618 (D az X ponton TÚLNYÚLIK). Kisegítő arányok: AB/XA, BC/AB,
+         CD/BC — ezek is jellemzőek az egyes mintákra, de a fő besorolás a
+         D-visszahúzódás alapján történik, a lecke szövegének megfelelően. -->
+    <div id="harmonic-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-draw-polygon text-neon-purple"></i> Harmonikus Alakzat Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('harmonic-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az X, A, B, C, D pontok árfolyamát (az árfolyam-mozgás 5 fordulópontját), és a kalkulátor megméri, hogy a D pont visszahúzódása az X-A lábhoz viszonyítva melyik harmonikus mintázat (Gartley ~78.6%, Bat ~88.6%, Butterfly ~127-161.8%) Fibonacci-arányához áll közelebb — ±5%-os tolerenciával. A Gartley és Bat esetén a D pont az X-A lábon BELÜL marad, a Butterfly esetén az X ponton TÚLNYÚLIK.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">X pont ára</label>
+            <input type="number" id="harmonic-x" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+            <label class="text-[11px] font-semibold text-slate-400">A pont ára</label>
+            <input type="number" id="harmonic-a" value="120" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+            <label class="text-[11px] font-semibold text-slate-400">B pont ára</label>
+            <input type="number" id="harmonic-b" value="107.64" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+            <label class="text-[11px] font-semibold text-slate-400">C pont ára</label>
+            <input type="number" id="harmonic-c" value="113.82" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+            <label class="text-[11px] font-semibold text-slate-400">D pont ára</label>
+            <input type="number" id="harmonic-d" value="104.28" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcHarmonicPattern()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="harmonic-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A valóságban a precíz felismeréshez minden lábnak (AB/XA, BC/AB, CD/BC) is meg kell felelnie a minta saját arány-tartományának — ez a kalkulátor az oktatásban hangsúlyozott fő (D-visszahúzódási) arányt ellenőrzi.</p>
+        </div>
+    </div>
+
     <div id="heikinashi-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -6421,6 +6465,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Heikin-Ashi Gyertyák Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Simított gyertyák lépésről lépésre</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('harmonic-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-draw-polygon"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Harmonikus Alakzat Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Gartley/Bat/Butterfly D-pont ellenőrzés</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -13862,6 +13913,68 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcHarmonicPattern() {
+            const xEl = document.getElementById('harmonic-x');
+            const aEl = document.getElementById('harmonic-a');
+            const bEl = document.getElementById('harmonic-b');
+            const cEl = document.getElementById('harmonic-c');
+            const dEl = document.getElementById('harmonic-d');
+            const out = document.getElementById('harmonic-result');
+            if (!xEl || !aEl || !bEl || !cEl || !dEl || !out) return;
+
+            const X = parseFloat(xEl.value);
+            const A = parseFloat(aEl.value);
+            const B = parseFloat(bEl.value);
+            const C = parseFloat(cEl.value);
+            const D = parseFloat(dEl.value);
+
+            if ([X, A, B, C, D].some(v => isNaN(v)) || A === X) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes X/A/B/C/D árakat — az X és A pontnak különbözőnek kell lennie!</div>`;
+                return;
+            }
+
+            const XA = A - X;
+            const AB = B - A;
+            const BC = C - B;
+            const CD = D - C;
+            const AD = D - A;
+
+            const abXa = (AB !== 0 || XA !== 0) ? Math.abs(AB) / Math.abs(XA) : null;
+            const bcAb = AB !== 0 ? Math.abs(BC) / Math.abs(AB) : null;
+            const cdBc = BC !== 0 ? Math.abs(CD) / Math.abs(BC) : null;
+            const dRetrace = Math.abs(AD) / Math.abs(XA);
+
+            const tol = 0.05;
+            const matches = [];
+            if (Math.abs(dRetrace - 0.786) <= tol) matches.push('Gartley');
+            if (Math.abs(dRetrace - 0.886) <= tol) matches.push('Bat');
+            if (dRetrace >= 1.27 - tol && dRetrace <= 1.618 + tol) matches.push('Butterfly');
+
+            const row = (label, val) => `
+                <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
+                    <span class="text-slate-400">${label}:</span>
+                    <span class="font-extrabold text-white text-sm">${val === null ? '—' : (val * 100).toFixed(1) + '%'}</span>
+                </div>
+            `;
+
+            let verdictHtml;
+            if (matches.length > 0) {
+                verdictHtml = `<p class="text-[10px] font-semibold text-neon-green">Egyezés: <span class="text-sm">${matches.join(' / ')}</span> minta (D-visszahúzódás ${(dRetrace * 100).toFixed(1)}%, ±5%-os tolerencián belül).</p>`;
+            } else {
+                verdictHtml = `<p class="text-[10px] font-semibold text-neon-red">Nincs egyezés a 3 klasszikus mintával (D-visszahúzódás ${(dRetrace * 100).toFixed(1)}%) — valószínűleg nem valódi harmonikus alakzat, csak véletlen árfolyam-mozgás.</p>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    ${row('D-visszahúzódás (|AD|/|XA|)', dRetrace)}
+                    ${row('AB/XA arány', abXa)}
+                    ${row('BC/AB arány', bcAb)}
+                    ${row('CD/BC arány', cdBc)}
+                </div>
+                ${verdictHtml}
             `;
         }
 
@@ -24303,6 +24416,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             414: { tool: 'ichimoku-modal', cta: 'Nézd meg élesben a Kumo Twist (felhő-fordulat) állapotát' },
             128: { tool: 'heikinashi-modal', cta: 'Számold ki élesben a Heikin-Ashi gyertyákat' },
             475: { tool: 'heikinashi-modal', cta: 'Számold ki élesben a Heikin-Ashi gyertyákat' },
+            228: { tool: 'harmonic-modal', cta: 'Ellenőrizd élesben a Gartley minta arányait' },
+            242: { tool: 'harmonic-modal', cta: 'Ellenőrizd élesben a Butterfly minta arányait' },
+            250: { tool: 'harmonic-modal', cta: 'Ellenőrizd élesben a Bat minta arányait' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -24312,7 +24428,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
