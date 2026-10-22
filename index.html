@@ -20819,6 +20819,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             145: { tool: 'funding-modal', cta: 'Számold ki, mennyi funding díjat fizetnél/kapnál' },
             434: { tool: 'var-modal', cta: 'Számold ki élesben a VaR, CVaR és LVaR értékeket' },
             208: { tool: 'liquiditysize-modal', cta: 'Számold ki a likviditás-alapú max. pozícióméretet' },
+            338: { tool: 'massindex-modal', cta: 'Számold ki élesben a Mass Indexet' },
+            371: { tool: 'rvi-modal', cta: 'Számold ki élesben a Relative Vigor Indexet' },
+            495: { tool: 'volratio-modal', cta: 'Számold ki élesben a Volatility Ratiót' },
+            498: { tool: 'trendexhaustion-modal', cta: 'Számold ki élesben a Trend Exhaustion Indexet' },
+            156: { tool: 'corrmatrix-modal', cta: 'Építsd fel élesben a korrelációs mátrixot' },
+            345: { tool: 'ddduration-modal', cta: 'Vizsgáld meg élesben egy drawdown időtartamát' },
+            372: { tool: 'ruinprob-modal', cta: 'Számold ki élesben a csőd-valószínűséget' },
+            392: { tool: 'pathdep-modal', cta: 'Próbáld ki élesben a path dependency szimulátort' },
+            168: { tool: 'multikelly-modal', cta: 'Számold ki élesben a több pozíciós, korrigált Kelly-összeget' },
+            197: { tool: 'milestone-modal', cta: 'Számold ki élesben a tőke-mérföldkő szerinti tétméretet' },
+            312: { tool: 'kellydd-modal', cta: 'Nézd meg élesben a Kelly-frakció és a drawdown kapcsolatát' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -20828,7 +20839,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            if (mapping.tool === 'backtest-modal' || mapping.tool === 'montecarlo-modal' || mapping.tool === 'funding-modal' || mapping.tool === 'var-modal' || mapping.tool === 'liquiditysize-modal') {
+            if (mapping.tool === 'backtest-modal' || mapping.tool === 'montecarlo-modal' || mapping.tool === 'funding-modal' || mapping.tool === 'var-modal' || mapping.tool === 'liquiditysize-modal' || mapping.tool === 'massindex-modal' || mapping.tool === 'rvi-modal' || mapping.tool === 'volratio-modal' || mapping.tool === 'trendexhaustion-modal' || mapping.tool === 'corrmatrix-modal' || mapping.tool === 'ddduration-modal' || mapping.tool === 'ruinprob-modal' || mapping.tool === 'pathdep-modal' || mapping.tool === 'multikelly-modal' || mapping.tool === 'milestone-modal' || mapping.tool === 'kellydd-modal') {
                 closeAcademy();
                 openToolModal(mapping.tool);
                 if (mapping.tool === 'backtest-modal' && typeof renderBacktestAssetLabel === 'function') renderBacktestAssetLabel();
