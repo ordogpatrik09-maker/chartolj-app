@@ -1316,6 +1316,13 @@
                                 <div class="text-[10px] text-slate-400">Potenciális take-profit célárak egy mozgáson túl</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('tmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Twiggs Money Flow Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Simább, EMA-alapú változata a CMF-nek</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3152,6 +3159,51 @@
 
             <div id="cmf-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha egy gyertyánál Magas = Alacsony (nulla napi tartomány), a Money Flow Multiplier nem értelmezhető — ilyenkor a kalkulátor 0-nak veszi az adott gyertya hozzájárulását, hogy a számítás ne omoljon össze egy ritka, extrém adatponton.</p>
+        </div>
+    </div>
+
+    <!-- ================= TWIGGS MONEY FLOW KALKULÁTOR (OKTATÁSI) =================
+         Colin Twiggs indikátora: TrueHigh_i = max(High_i, Close_{i-1}),
+         TrueLow_i = min(Low_i, Close_{i-1}), TrueRange_i = TrueHigh_i-TrueLow_i;
+         ADV_i = ((Close_i-TrueLow_i)-(TrueHigh_i-Close_i))/TrueRange_i × Volume_i;
+         TMF = EMA(ADV, periódus) / EMA(Volume, periódus), mindkét EMA
+         SMA-seedelt, a session szokásos konvenciója szerint. -->
+    <div id="tmf-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-water text-neon-green"></i> Twiggs Money Flow Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('tmf-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Colin Twiggs indikátora a Chaikin Money Flow logikáját ötvözi exponenciális simítással, simábbabb, kevésbé zajos jelzést adva. -1 és +1 közötti skálán — pozitív érték vételi, negatív érték eladási nyomást jelez. Add meg a gyertyákat (Magas,Alacsony,Záró,Volumen) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró,Volumen (soronként egy)</label>
+            <textarea id="tmf-candles" rows="6" placeholder="10,9,9.8,1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">10,9,9.8,1000
+10.2,9.6,10.1,1200
+10.5,9.8,10.4,1500
+10.3,9.9,10,900
+10.6,10,10.5,1100
+10.8,10.2,10.7,1300
+10.9,10.3,10.4,800
+11.1,10.5,11,1400
+11.3,10.7,11.2,1600
+11.2,10.6,10.8,700
+11.5,10.9,11.4,1700
+11.4,10.8,11,900
+11.7,11,11.6,1800
+11.9,11.2,11.8,2000
+11.8,11.1,11.3,1000</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (klasszikusan 21)</label>
+            <input type="number" id="tmf-period" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcTwiggsMoneyFlow()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="tmf-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A True Range itt a Magas/Alacsony MELLETT az előző záróárat is figyelembe veszi (mint az ATR-nél) — ezért a számításhoz a megadott periódusnál eggyel több gyertyára van szükség a listában.</p>
         </div>
     </div>
 
@@ -5572,6 +5624,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Fibonacci Kiterjesztés Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Take-profit célárak egy mozgáson túl</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('tmf-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-water"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Twiggs Money Flow Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Simább, EMA-alapú változata a CMF-nek</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -12308,6 +12367,80 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${rows}
                 </div>
                 <p class="text-[10px] text-slate-500 mt-2">Ezek a szintek a B ponton TÚL projektálják a mozgást — jellemzően take-profit célárként használják egy trend folytatódásánál, nem önálló belépési jelzésként.</p>
+            `;
+        }
+
+        // ================= TWIGGS MONEY FLOW KALKULÁTOR (OKTATÁSI) =================
+        // TrueHigh_i = max(High_i, Close_{i-1}); TrueLow_i = min(Low_i, Close_{i-1});
+        // TrueRange_i = TrueHigh_i - TrueLow_i;
+        // ADV_i = ((Close_i-TrueLow_i)-(TrueHigh_i-Close_i))/TrueRange_i × Volume_i
+        // (0, ha TrueRange_i = 0); TMF = EMA(ADV, N) / EMA(Volume, N),
+        // mindkét EMA SMA-seedelt, a session szokásos konvenciója szerint.
+        function calcTwiggsMoneyFlow() {
+            const candlesEl = document.getElementById('tmf-candles');
+            const periodEl = document.getElementById('tmf-period');
+            const out = document.getElementById('tmf-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2], volume: parts[3] });
+                }
+            }
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy pozitív egész periódust!</div>`;
+                return;
+            }
+
+            const adv = [], vols = [];
+            for (let i = 1; i < candles.length; i++) {
+                const { high: h, low: l, close: c } = candles[i];
+                const pc = candles[i - 1].close;
+                const trueHigh = Math.max(h, pc);
+                const trueLow = Math.min(l, pc);
+                const tr = trueHigh - trueLow;
+                adv.push(tr > 0 ? (((c - trueLow) - (trueHigh - c)) / tr) * candles[i].volume : 0);
+                vols.push(candles[i].volume);
+            }
+
+            if (adv.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${period + 1} gyertya szükséges a ${period}-es periódushoz (jelenleg ${candles.length} van megadva)!</div>`;
+                return;
+            }
+
+            function emaSmaSeeded(values) {
+                const k = 2 / (period + 1);
+                let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                for (let i = period; i < values.length; i++) {
+                    ema = ema * (1 - k) + values[i] * k;
+                }
+                return ema;
+            }
+
+            const emaAdv = emaSmaSeeded(adv);
+            const emaVol = emaSmaSeeded(vols);
+            if (emaVol === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A simított volumen nulla — a Twiggs Money Flow nem számolható!</div>`;
+                return;
+            }
+            const tmf = emaAdv / emaVol;
+
+            let colorClass, verdict;
+            if (tmf > 0.1) { colorClass = 'text-neon-green'; verdict = 'Pozitív, viszonylag erős TMF — a periódusban a vételi nyomás dominált, a simított jelzés szerint is.'; }
+            else if (tmf < -0.1) { colorClass = 'text-neon-red'; verdict = 'Negatív, viszonylag erős TMF — a periódusban az eladási nyomás dominált, a simított jelzés szerint is.'; }
+            else { colorClass = 'text-amber-400'; verdict = 'A TMF a nulla vonal közelében van — nincs kifejezett vételi vagy eladási dominancia, érdemes a nulla vonal keresztezését vagy divergenciát figyelni.'; }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border ${tmf >= 0 ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Twiggs Money Flow (${period} periódus)</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${tmf >= 0 ? '+' : ''}${tmf.toFixed(3)}</div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
         }
 
@@ -22236,6 +22369,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             62: { tool: 'psar-modal', cta: 'Számold ki élesben a Parabolic SAR-t' },
             443: { tool: 'forceindex-modal', cta: 'Számold ki élesben a Force Indexet, és figyeld a divergenciát' },
             106: { tool: 'fibext-modal', cta: 'Számold ki élesben a Fibonacci kiterjesztés szintjeit' },
+            440: { tool: 'tmf-modal', cta: 'Számold ki élesben a Twiggs Money Flow-t' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -22245,7 +22379,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
