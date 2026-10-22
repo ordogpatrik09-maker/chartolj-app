@@ -1365,6 +1365,13 @@
                                 <div class="text-[10px] text-slate-400">EMA középvonal + ATR-alapú sávok</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('chandelier-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-lightbulb"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Chandelier Exit Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">ATR-alapú trailing stop a csúcsponttól</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('newscal-modal'); renderNewsCalendar();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bullhorn"></i></span>
                             <div>
@@ -3567,6 +3574,62 @@
 
             <div id="keltner-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az ATR-számításhoz az EMA periódusnál függetlenül, saját periódusa szükséges — legalább ennyi gyertyára van szükség ahhoz, hogy az ATR egyáltalán kiszámolható legyen.</p>
+        </div>
+    </div>
+
+    <!-- ================= CHANDELIER EXIT KALKULÁTOR (OKTATÁSI) =================
+         Long Exit = HighestHigh(periódus) - szorzó×ATR(periódus);
+         Short Exit = LowestLow(periódus) + szorzó×ATR(periódus). A
+         "mennyezetről lógó csillár" koncepció: a stop a legmagasabb
+         (long esetén) vagy legalacsonyabb (short esetén) ponttól mérve
+         véd a felhalmozott nyereséget. Az ATR a már meglévő, Wilder-
+         simított calcATRSeries()-szel számolódik. -->
+    <div id="chandelier-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i> Chandelier Exit Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('chandelier-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Chandelier Exit egy trailing stop technika, ami a pozíció megnyitása óta elért legmagasabb (long) vagy legalacsonyabb (short) ponttól számolja az ATR-alapú stop-távolságot — nem az aktuális ártól, mint egy sima ATR trailing stop. A koncepció a mennyezetről lógó csillárhoz hasonlít: a stop mindig a csúcsponttól "lóg le" egy fix távolságra, védve a felhalmozott nyereséget. Add meg a gyertyákat (Magas,Alacsony,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró (soronként egy)</label>
+            <textarea id="chandelier-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100.9,99.5,100.5
+101.5,100.1,101.2
+103.5,101.0,103.0
+103.0,102.0,102.5
+104.5,103.0,104.2
+104.2,102.5,103.0
+103.8,101.5,102.0
+102.5,100.0,100.8
+101.0,98.5,99.2
+100.5,97.0,98.0
+102.0,99.5,101.5
+104.0,101.5,103.5
+106.0,103.5,105.5
+107.5,105.0,107.0
+108.5,106.5,108.0
+107.0,105.5,106.0
+106.5,104.0,105.0
+105.0,103.0,104.0
+106.5,104.5,106.0
+108.0,106.0,107.5
+109.5,107.5,109.0
+110.0,108.0,109.5</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (klasszikusan 22) / ATR szorzó (klasszikusan 3)</label>
+            <div class="flex gap-2 mt-1 mb-4">
+                <input type="number" id="chandelier-period" value="20" step="1" min="2" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                <input type="number" id="chandelier-mult" value="3" step="0.1" min="0.1" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+            </div>
+
+            <button onclick="calcChandelierExit()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="chandelier-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A kalkulátor egyszerre adja meg a Long Exit (hosszú pozícióhoz) és a Short Exit (short pozícióhoz) szintet — a használt pozíció irányának megfelelő értéket érdemes figyelembe venni.</p>
         </div>
     </div>
 
@@ -6036,6 +6099,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Keltner Csatorna Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">EMA középvonal + ATR-alapú sávok</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('chandelier-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-lightbulb"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Chandelier Exit Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">ATR-alapú trailing stop a csúcsponttól</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('heat-modal'); renderPortfolioHeat();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -13351,6 +13421,74 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Alsó sáv:</span>
                         <span class="font-extrabold text-neon-red text-sm">${lower.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Jelenlegi záróár:</span>
+                        <span class="font-extrabold ${colorClass} text-sm">${lastClose.toFixed(2)}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcChandelierExit() {
+            const candlesEl = document.getElementById('chandelier-candles');
+            const periodEl = document.getElementById('chandelier-period');
+            const multEl = document.getElementById('chandelier-mult');
+            const out = document.getElementById('chandelier-result');
+            if (!candlesEl || !periodEl || !multEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2] });
+                }
+            }
+            const period = parseInt(periodEl.value);
+            const mult = parseFloat(multEl.value);
+
+            if (!period || period < 2 || !mult || mult <= 0 || candles.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódust/szorzót, és legalább annyi gyertyát, amennyi a periódus!</div>`;
+                return;
+            }
+
+            const atrSeries = calcATRSeries(candles, period);
+            const lastAtr = atrSeries[atrSeries.length - 1];
+            if (lastAtr === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni az ATR-t — adj meg több gyertyát!</div>`;
+                return;
+            }
+
+            const lastN = candles.slice(candles.length - period);
+            const highestHigh = Math.max(...lastN.map(c => c.high));
+            const lowestLow = Math.min(...lastN.map(c => c.low));
+            const longExit = highestHigh - mult * lastAtr;
+            const shortExit = lowestLow + mult * lastAtr;
+            const lastClose = candles[candles.length - 1].close;
+
+            let colorClass, verdict;
+            if (lastClose < longExit) { colorClass = 'text-neon-red'; verdict = 'A záróár a Long Exit szint ALATT van — egy long pozíciót már ki kellett volna zárni ezen a szinten.'; }
+            else { colorClass = 'text-neon-green'; verdict = 'A záróár a Long Exit szint FÖLÖTT van — a long trend trailing stopja még nem sérült.'; }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Legmagasabb (${period} gyertya):</span>
+                        <span class="font-extrabold text-white text-sm">${highestHigh.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Long Exit:</span>
+                        <span class="font-extrabold text-neon-green text-sm">${longExit.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Legalacsonyabb (${period} gyertya):</span>
+                        <span class="font-extrabold text-white text-sm">${lowestLow.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Short Exit:</span>
+                        <span class="font-extrabold text-neon-red text-sm">${shortExit.toFixed(2)}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Jelenlegi záróár:</span>
@@ -23294,6 +23432,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             435: { tool: 'elderimpulse-modal', cta: 'Számold ki élesben az Elder Impulse jelzést' },
             270: { tool: 'donchian-modal', cta: 'Számold ki élesben a Donchian Csatornát' },
             90: { tool: 'keltner-modal', cta: 'Számold ki élesben a Keltner Csatornát' },
+            384: { tool: 'chandelier-modal', cta: 'Számold ki élesben a Chandelier Exit szintet' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -23303,7 +23442,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
