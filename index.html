@@ -1624,6 +1624,20 @@
                                 <div class="text-[10px] text-slate-400">Periódus legmagasabb/legalacsonyabb ára</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('donchianwidth-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrows-left-right"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Donchian Width Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Csatorna-szélesség, mint önálló volatilitás-mutató</div>
+                            </div>
+                        </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('coppock-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-lime-400/10 text-lime-400 border border-lime-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Coppock Curve Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Momentum-mutató hosszú és rövidített variánssal</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
                             <div>
@@ -3790,6 +3804,106 @@
 
             <div id="donchian-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A csatorna szélessége (Felső-Alsó) a volatilitás durva mérőszáma is lehet — minél szélesebb a csatorna, annál nagyobb volt az árfolyam mozgástartománya a periódusban.</p>
+        </div>
+    </div>
+
+    <!-- ================= DONCHIAN WIDTH KALKULÁTOR (OKTATÁSI) =================
+         A Donchian Csatorna (felső=N periódus maximuma, alsó=N periódus minimuma)
+         szélességét (Felső-Alsó) önálló volatilitás-mutatóként kezeli, a felső és
+         alsó sáv középértékéhez (mint referenciaár) viszonyított %-os formában is.
+         A squeeze/expanzió detektálás pontosan a meglévő Bollinger Band Width
+         kalkulátor logikáját követi: a teljes megadott sorozatra kiszámolt
+         width%-sorozat min/max tartományának alsó/felső 5%-ában van-e a jelenlegi
+         érték. -->
+    <div id="donchianwidth-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-left-right text-sky-400"></i> Donchian Width Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('donchianwidth-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A korábban tanult Donchian Csatorna felső és alsó sávja közti távolságot (nyers, extrém ártartomány) önálló indikátorként méri, a Bollinger Band Width-hez hasonló logikával — de a szórás helyett a nyers Magas/Alacsony értékekre épül. A szűkülő Width alacsony volatilitást, esetleg közelgő kitörést jelezhet. Add meg a gyertyákat (Magas,Alacsony) soronként, időrendben, elég hosszú sorozatban, hogy a squeeze/expanzió kimutatható legyen.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony (soronként egy)</label>
+            <textarea id="donchianwidth-candles" rows="7" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-sky-400/50">100.9,99.5
+101.5,100.1
+101.8,100.5
+101.6,100.6
+101.7,100.7
+101.5,100.8
+101.6,100.9
+101.4,101.0
+101.5,101.0
+101.6,100.9
+102.5,101.0
+104.0,101.5
+106.0,102.5
+107.5,104.0
+108.5,105.5
+109.5,106.0
+110.0,106.5
+109.0,105.0
+108.5,104.5
+109.5,105.5</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (klasszikusan 20)</label>
+            <input type="number" id="donchianwidth-period" value="10" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+
+            <button onclick="calcDonchianWidth()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-sky-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="donchianwidth-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Miben más, mint a Bollinger Band Width? A Donchian nyers, extrém ártartományra épül, míg a Bollinger a szórásra — eltérő matematikai alapon mérnek hasonló koncepciót (piaci szűkülés/tágulás).</p>
+        </div>
+    </div>
+
+    <!-- ================= COPPOCK CURVE KALKULÁTOR (OKTATÁSI) =================
+         Coppock = WMA(ROC(Záró,p1) + ROC(Záró,p2), p3). Edwin Coppock eredeti,
+         havi idősíkra kalibrált paraméterei: p1=14, p2=11, p3=10. A "Day Trading
+         variáns" preset (p1=7, p2=5, p3=5) a leckében tanított figyelmeztetést
+         demonstrálja: a periódusok puszta lerövidítése nem garantálja, hogy az
+         indikátor ugyanolyan jól működik egy rövidebb idősíkon — ezért a tool
+         mindkét presetnél kiírja ezt a figyelmeztetést. -->
+    <div id="coppock-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-lime-400"></i> Coppock Curve Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('coppock-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Coppock Curve két eltérő periódusú momentum-mérés (ROC) összegének súlyozott mozgóátlaga (WMA). Edwin Coppock eredetileg havi chartokon történő, hosszú távú vásárlási jelzésekre tervezte. Add meg a záróárakat vesszővel elválasztva, időrendben.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (vesszővel elválasztva, időrendben)</label>
+            <textarea id="coppock-prices" rows="4" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-lime-400/50">100,98,97,99,101,103,102,104,106,105,107,109,108,110,112,111,113,115,114,116,118,117,119,121,120,122,124,123,125,127,126,128</textarea>
+
+            <div class="flex gap-2 mb-3">
+                <button onclick="setCoppockPreset('classic')" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase bg-dark-800 border border-lime-400/30 text-lime-400 hover:bg-lime-400/10 transition">Klasszikus (14/11/10)</button>
+                <button onclick="setCoppockPreset('daytrading')" class="flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase bg-dark-800 border border-lime-400/30 text-lime-400 hover:bg-lime-400/10 transition">Day Trading (7/5/5)</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <div>
+                    <label class="text-[10px] font-semibold text-slate-400">ROC1 (p1)</label>
+                    <input type="number" id="coppock-roc1" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-lime-400/50">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-slate-400">ROC2 (p2)</label>
+                    <input type="number" id="coppock-roc2" value="11" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-lime-400/50">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-slate-400">WMA (p3)</label>
+                    <input type="number" id="coppock-wma" value="10" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-lime-400/50">
+                </div>
+            </div>
+
+            <button onclick="calcCoppock()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-lime-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="coppock-result" class="mt-4"></div>
         </div>
     </div>
 
@@ -8455,6 +8569,20 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Donchian Csatorna Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Periódus legmagasabb/legalacsonyabb ára</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('donchianwidth-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-sky-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrows-left-right"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Donchian Width Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Csatorna-szélesség, mint önálló volatilitás-mutató</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('coppock-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-lime-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-lime-400/10 text-lime-400 border border-lime-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Coppock Curve Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Momentum-mutató hosszú és rövidített variánssal</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15726,6 +15854,220 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <p class="text-[10px] text-slate-500 mt-2">A csatorna szélessége a volatilitás durva mérőszáma is lehet — minél szélesebb, annál nagyobb volt az árfolyam mozgástartománya a periódusban.</p>
+            `;
+        }
+
+        // ================= DONCHIAN WIDTH KALKULÁTOR (OKTATÁSI) =================
+        // Width%(i) = (Felső(i)-Alsó(i)) / Középérték(i) × 100, ahol Felső/Alsó a
+        // periódus max/min Magas/Alacsony értéke. A squeeze/expanzió detektálás a
+        // meglévő calcBollingerBandWidth() logikáját követi 1:1 (alsó/felső 5%).
+        function calcDonchianWidth() {
+            const candlesEl = document.getElementById('donchianwidth-candles');
+            const periodEl = document.getElementById('donchianwidth-period');
+            const out = document.getElementById('donchianwidth-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1] });
+                }
+            }
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 2 || candles.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább annyi gyertyát (Magas,Alacsony formátumban), amennyi a periódus, és érvényes, legalább 2-es periódust!</div>`;
+                return;
+            }
+
+            function widthAt(endIdx) {
+                const windowSlice = candles.slice(endIdx - period + 1, endIdx + 1);
+                const upper = Math.max(...windowSlice.map(c => c.high));
+                const lower = Math.min(...windowSlice.map(c => c.low));
+                const mid = (upper + lower) / 2;
+                if (mid === 0) return null;
+                return { width: upper - lower, widthPct: ((upper - lower) / mid) * 100, upper, lower, mid };
+            }
+
+            const widths = [];
+            for (let i = period - 1; i < candles.length; i++) {
+                const r = widthAt(i);
+                if (r !== null) widths.push(r.widthPct);
+            }
+            if (widths.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Donchian Width nem számolható (a sáv középértéke nulla valahol a sorozatban)!</div>`;
+                return;
+            }
+
+            const current = widthAt(candles.length - 1);
+            const currentWidthPct = current.widthPct;
+            const minWidth = Math.min(...widths);
+            const maxWidth = Math.max(...widths);
+            const isSqueeze = currentWidthPct <= minWidth + (maxWidth - minWidth) * 0.05;
+            const isExpansion = currentWidthPct >= maxWidth - (maxWidth - minWidth) * 0.05;
+
+            let colorClass, verdict;
+            if (isSqueeze) {
+                colorClass = 'text-sky-400';
+                verdict = '🔸 Squeeze: a jelenlegi Donchian Width a megadott sorozat legszűkebb tartományában van — ez gyakran egy közelgő, nagyobb volatilitású kitörés előjele lehet, bár az irányt nem jelzi előre.';
+            } else if (isExpansion) {
+                colorClass = 'text-neon-red';
+                verdict = 'A jelenlegi Donchian Width a sorozat legtágabb tartományában van — a volatilitás jelenleg magas, egy esetleges összehúzódás (squeeze) felé közelíthet idővel.';
+            } else {
+                colorClass = 'text-slate-300';
+                verdict = 'A jelenlegi Donchian Width a sorozat közepes tartományában van — nincs extrém szűkülés vagy tágulás.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-sky-400/30 bg-sky-400/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Jelenlegi Donchian Width</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${currentWidthPct.toFixed(3)}%</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Felső sáv (${period} periódus max.):</span>
+                        <span class="font-extrabold text-neon-green text-sm">${current.upper.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Alsó sáv (${period} periódus min.):</span>
+                        <span class="font-extrabold text-neon-red text-sm">${current.lower.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Nyers szélesség (Felső-Alsó):</span>
+                        <span class="font-extrabold text-white text-sm">${(current.upper - current.lower).toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Sorozat Width% tartománya:</span>
+                        <span class="font-extrabold text-white text-sm">${minWidth.toFixed(3)}% – ${maxWidth.toFixed(3)}%</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[11px] font-semibold ${colorClass} leading-relaxed">${verdict}</div>
+                </div>
+            `;
+        }
+
+        // ================= COPPOCK CURVE KALKULÁTOR (OKTATÁSI) =================
+        // Coppock = WMA(ROC(Záró,p1) + ROC(Záró,p2), p3). A WMA a legutóbbi raw
+        // értéknek p3 súlyt ad, a legrégebbinek 1-et (súlyösszeg = p3(p3+1)/2).
+        function setCoppockPreset(kind) {
+            const roc1El = document.getElementById('coppock-roc1');
+            const roc2El = document.getElementById('coppock-roc2');
+            const wmaEl = document.getElementById('coppock-wma');
+            if (!roc1El || !roc2El || !wmaEl) return;
+            if (kind === 'classic') {
+                roc1El.value = 14; roc2El.value = 11; wmaEl.value = 10;
+            } else if (kind === 'daytrading') {
+                roc1El.value = 7; roc2El.value = 5; wmaEl.value = 5;
+            }
+        }
+
+        function calcCoppock() {
+            const pricesEl = document.getElementById('coppock-prices');
+            const roc1El = document.getElementById('coppock-roc1');
+            const roc2El = document.getElementById('coppock-roc2');
+            const wmaEl = document.getElementById('coppock-wma');
+            const out = document.getElementById('coppock-result');
+            if (!pricesEl || !roc1El || !roc2El || !wmaEl || !out) return;
+
+            const closes = pricesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const p1 = parseInt(roc1El.value);
+            const p2 = parseInt(roc2El.value);
+            const p3 = parseInt(wmaEl.value);
+
+            if (!p1 || p1 < 1 || !p2 || p2 < 1 || !p3 || p3 < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív ROC és WMA periódusokat!</div>`;
+                return;
+            }
+
+            const maxRoc = Math.max(p1, p2);
+            const minNeeded = maxRoc + p3 + 1; // +1, hogy két Coppock-érték legyen (kereszteződés-detektáláshoz)
+            if (closes.length < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} érvényes záróár szükséges a megadott periódusokkal (jelenleg: ${closes.length})!</div>`;
+                return;
+            }
+
+            function rocAt(i, n) {
+                if (i - n < 0) return null;
+                const base = closes[i - n];
+                if (base === 0) return null;
+                return ((closes[i] - base) / base) * 100;
+            }
+
+            const raw = [];
+            for (let i = maxRoc; i < closes.length; i++) {
+                const r1 = rocAt(i, p1);
+                const r2 = rocAt(i, p2);
+                if (r1 === null || r2 === null) { raw.push(null); continue; }
+                raw.push(r1 + r2);
+            }
+
+            const weightSum = (p3 * (p3 + 1)) / 2;
+            const coppock = [];
+            for (let i = p3 - 1; i < raw.length; i++) {
+                const windowSlice = raw.slice(i - p3 + 1, i + 1);
+                if (windowSlice.some(v => v === null)) { coppock.push(null); continue; }
+                let weighted = 0;
+                for (let w = 0; w < p3; w++) weighted += windowSlice[w] * (w + 1);
+                coppock.push(weighted / weightSum);
+            }
+
+            const validCoppock = coppock.filter(v => v !== null);
+            if (validCoppock.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni a Coppock Curve-t — adj meg több, érvényes záróárat!</div>`;
+                return;
+            }
+
+            const current = coppock[coppock.length - 1];
+            const previous = coppock.length >= 2 ? coppock[coppock.length - 2] : null;
+
+            let crossover = null;
+            if (current !== null && previous !== null) {
+                if (previous < 0 && current >= 0) crossover = 'bullish';
+                else if (previous > 0 && current <= 0) crossover = 'bearish';
+            }
+
+            let colorClass, verdict;
+            if (crossover === 'bullish') {
+                colorClass = 'text-neon-green';
+                verdict = '🟢 Bullish nullavonal-kereszteződés: a Coppock Curve most lépett át negatívból pozitívba — a klasszikus Coppock-logika szerint ez egy hosszú távú vételi jelzés (eredetileg havi idősíkra kalibrálva).';
+            } else if (crossover === 'bearish') {
+                colorClass = 'text-neon-red';
+                verdict = '🔴 Bearish nullavonal-kereszteződés: a Coppock Curve most lépett át pozitívból negatívba — gyengülő hosszú távú momentumot jelez.';
+            } else if (current > 0) {
+                colorClass = 'text-neon-green';
+                verdict = 'Nincs friss kereszteződés — a Coppock Curve jelenleg pozitív tartományban van (hosszú távú momentum felfelé).';
+            } else if (current < 0) {
+                colorClass = 'text-neon-red';
+                verdict = 'Nincs friss kereszteződés — a Coppock Curve jelenleg negatív tartományban van (hosszú távú momentum lefelé).';
+            } else {
+                colorClass = 'text-slate-300';
+                verdict = 'A Coppock Curve jelenleg pontosan a nullavonalon van.';
+            }
+
+            const isShortened = (p1 !== 14 || p2 !== 11 || p3 !== 10);
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-lime-400/30 bg-lime-400/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Coppock Curve (ROC${p1}+ROC${p2}, WMA${p3})</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${current.toFixed(3)}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Előző érték:</span>
+                        <span class="font-extrabold text-white text-sm">${previous !== null ? previous.toFixed(3) : '—'}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Felhasznált záróárak száma:</span>
+                        <span class="font-extrabold text-white text-sm">${closes.length}</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="text-[11px] font-semibold ${colorClass} leading-relaxed">${verdict}</div>
+                </div>
+                ${isShortened ? `<p class="text-[9.5px] text-amber-400/90 leading-relaxed">⚠️ Figyelem: ezek nem az eredeti, havi idősíkra kalibrált Coppock-paraméterek. A periódusok lerövidítése nem garantálja, hogy az indikátor ugyanolyan jól működik rövidebb idősíkon — mindig teszteld a saját adataidon, mielőtt jelzésként használnád.</p>` : `<p class="text-[9.5px] text-slate-600 leading-relaxed">Az eredeti Coppock Curve-öt Edwin Coppock havi chartokra tervezte, medvepiacok utáni fordulatok azonosítására — napon belüli kereskedésnél a jelzés lassú lehet.</p>`}
             `;
         }
 
@@ -28058,6 +28400,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             39: { tool: 'spreadcost-modal', cta: 'Számold ki élesben a spread rejtett költségét' },
             537: { tool: 'yieldcurve-modal', cta: 'Ellenőrizd élesben a hozamgörbe inverzióját' },
             104: { tool: 'goldencross-modal', cta: 'Ellenőrizd élesben a Golden/Death Cross keresztezést' },
+            462: { tool: 'donchianwidth-modal', cta: 'Számold ki élesben a Donchian Width-öt' },
+            328: { tool: 'coppock-modal', cta: 'Számold ki élesben a Coppock Curve-t (klasszikus paraméterekkel)' },
+            486: { tool: 'coppock-modal', cta: 'Próbáld ki élesben a rövidített Day Trading variánst' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -28067,7 +28412,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
