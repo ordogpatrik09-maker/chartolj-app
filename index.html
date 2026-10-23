@@ -1715,6 +1715,13 @@
                                 <div class="text-[10px] text-slate-400">Split és visszavásárlás hatása az árra, EPS-re</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('vsa-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">VSA Szignál Klasszifikátor</div>
+                                <div class="text-[10px] text-slate-400">Volumen, tartomány és záróhelyzet együttes olvasása</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
                             <div>
@@ -4338,6 +4345,54 @@ Kripto: 15000, 20</textarea>
 
             <div id="split-buyback-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A split egy "0,01-es szorzóként" is megadható fordított (reverse) splithez — pl. 0.1 egy "1-az-10-hez" reverse splitet jelent. A buyback itt egyszerűsített modell: feltételezi, hogy az árfolyam a visszavásárlás pillanatában nem mozdul — a valóságban a bejelentés maga is hat az árra.</p>
+        </div>
+    </div>
+
+    <!-- ================= VSA (VOLUME SPREAD ANALYSIS) SZIGNÁL KLASSZIFIKÁTOR (OKTATÁSI) =================
+         Az utolsó gyertyát minősítjük a megelőző "referencia periódus" gyertyák
+         átlagos volumenéhez és átlagos tartományához (spread = Magas-Alacsony)
+         viszonyítva. VolArány = Volumen/ÁtlagVolumen, SpreadArány =
+         Spread/ÁtlagSpread, ZáróHelyzet = (Záró-Alacsony)/(Magas-Alacsony).
+         Magas volumen: VolArány≥1.5, Alacsony: VolArány≤0.7. Széles spread:
+         SpreadArány≥1.3, Szűk: SpreadArány≤0.7. Záró a tetőn: ZáróHelyzet≥0.66,
+         az alján: ZáróHelyzet≤0.34. A klasszikus VSA jelek (No Demand, No
+         Supply, Klimax, Effort vs Result, Test) ezen háromtényezős (volumen ×
+         spread × záróhelyzet) kombinációkból determinisztikusan következnek,
+         a lecke saját "No Demand"/"No Supply" definícióit pontosan követve,
+         a leggyakrabban idézett szabályokkal (ütköző esetben a sorban előbbi
+         szabály élvez elsőbbséget, hasonlóan a gyertyaminta-klasszifikátorhoz). -->
+    <div id="vsa-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass-chart text-neon-purple"></i> VSA Szignál Klasszifikátor
+                </h3>
+                <button onclick="closeToolModal('vsa-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Volume Spread Analysis (VSA) a gyertyatest méretét (spread), a záróár pozícióját és a volument együtt elemzi. Add meg a gyertyákat (Nyitó,Magas,Alacsony,Záró,Volumen, soronként egy, időrendben) — az UTOLSÓ sor az éppen minősítendő gyertya, a megelőzők adják a referencia-ablakot (átlagos volumen és átlagos tartomány).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Magas,Alacsony,Záró,Volumen (soronként egy)</label>
+            <textarea id="vsa-candles" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-purple/50">50.0,50.2,49.0,49.3,1000
+49.3,49.5,48.3,48.6,1050
+48.6,48.8,47.6,47.9,980
+47.9,48.1,46.9,47.2,1100
+47.2,47.4,46.2,46.5,1020
+46.5,46.7,45.5,45.8,1150
+45.8,46.0,44.8,45.1,1080
+45.1,45.3,44.1,44.4,1200
+44.4,44.6,43.4,43.7,1130
+43.7,43.9,42.7,43.0,1250
+43.0,43.2,39.5,42.8,8500</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Referencia periódus (hány megelőző gyertya átlaga)</label>
+            <input type="number" id="vsa-refperiod" value="10" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcVSASignal()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Szignál Azonosítása
+            </button>
+
+            <div id="vsa-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A VSA három tényező (test/tartomány, záróár-pozíció, volumen) egyidejű értelmezését igényli — ez a kalkulátor egy determinisztikus, oktatási közelítés, NEM helyettesíti a kontextus (előző trend, korábbi szintek) emberi mérlegelését. A jelek önmagukban sosem garantált belépési szignálok.</p>
         </div>
     </div>
 
@@ -9884,6 +9939,13 @@ Mean-reversion,1,0</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Stock Split &amp; Buyback Hatás Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Split és visszavásárlás hatása az árra, EPS-re</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('vsa-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">VSA Szignál Klasszifikátor</div>
+                    <div class="text-[10px] text-slate-400">Volumen, tartomány és záróhelyzet együttes olvasása</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -18675,6 +18737,122 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3">
                     <div class="text-[11px] font-semibold text-slate-300 leading-relaxed">A split önmagában (buyback nélkül) sosem változtatja meg a market capet vagy a teljes EPS-t arányosan — csak felaprózza a "szeleteket". A buyback viszont valóban csökkenti a kint lévő részvények számát, így ugyanaz a nettó profit kevesebb részvényre jut: ez emeli az EPS-t, még ha a vállalat nyeresége semmit sem nőtt.</div>
                 </div>
+            `;
+        }
+
+        // ================= VSA (VOLUME SPREAD ANALYSIS) SZIGNÁL KLASSZIFIKÁTOR (OKTATÁSI) =================
+        // VolArány = Volumen / ÁtlagVolumen(referencia); SpreadArány =
+        // (Magas-Alacsony) / ÁtlagSpread(referencia); ZáróHelyzet = (Záró-Alacsony)/(Magas-Alacsony).
+        // Küszöbök: Magas vol ≥1.5, Alacsony vol ≤0.7; Széles spread ≥1.3, Szűk spread ≤0.7;
+        // Záró a tetőn ≥0.66, az alján ≤0.34. A klasszikus VSA jelek ezen három tényező
+        // kombinációjából determinisztikusan adódnak, ütközés esetén a sorban előbbi szabály
+        // élvez elsőbbséget (a Klimax/Effort feltételek kölcsönösen kizárják egymást a
+        // spread-küszöbök miatt, így a sorrend csak a No Supply / Test átfedésnél dönt).
+        function calcVSASignal() {
+            const candlesEl = document.getElementById('vsa-candles');
+            const refPeriodEl = document.getElementById('vsa-refperiod');
+            const out = document.getElementById('vsa-result');
+            if (!candlesEl || !refPeriodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 5 && a.every(v => !isNaN(v)));
+            const refPeriod = parseInt(refPeriodEl.value, 10);
+
+            if (!isFinite(refPeriod) || refPeriod < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A referencia periódus legalább 1 legyen!</div>`;
+                return;
+            }
+            if (candles.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 gyertya szükséges (Nyitó,Magas,Alacsony,Záró,Volumen formátumban) — az utolsó az aktuális, a megelőzők adják a referencia-ablakot!</div>`;
+                return;
+            }
+            for (const row of candles) {
+                const [o, h, l, c, v] = row;
+                if (h < l) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden gyertyánál a Magas érték nem lehet kisebb az Alacsonynál!</div>`;
+                    return;
+                }
+                if (v < 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A volumen nem lehet negatív!</div>`;
+                    return;
+                }
+            }
+
+            const n = candles.length;
+            const current = candles[n - 1];
+            const refWindow = candles.slice(Math.max(0, n - 1 - refPeriod), n - 1);
+            if (refWindow.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég referencia-gyertya — adj meg több sort, vagy csökkentsd a referencia periódust!</div>`;
+                return;
+            }
+
+            const [o, h, l, c, vol] = current;
+            const spread = h - l;
+            const avgVolume = refWindow.reduce((s, x) => s + x[4], 0) / refWindow.length;
+            const avgSpread = refWindow.reduce((s, x) => s + (x[1] - x[2]), 0) / refWindow.length;
+
+            if (avgVolume <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A referencia-ablak átlagos volumene 0 — adj meg pozitív volumen-értékeket a referencia gyertyáknál!</div>`;
+                return;
+            }
+
+            const volRatio = vol / avgVolume;
+            const spreadRatio = avgSpread > 1e-12 ? (spread / avgSpread) : (spread > 1e-12 ? Infinity : 0);
+            const closePos = spread > 1e-12 ? (c - l) / spread : 0.5;
+            const isUp = c >= o;
+
+            const HIGH_VOL = volRatio >= 1.5;
+            const LOW_VOL = volRatio <= 0.7;
+            const WIDE_SPREAD = spreadRatio >= 1.3;
+            const NARROW_SPREAD = spreadRatio <= 0.7;
+            const CLOSE_HIGH = closePos >= 0.66;
+            const CLOSE_LOW = closePos <= 0.34;
+
+            let signal = 'NEUTRAL';
+            if (HIGH_VOL && WIDE_SPREAD && isUp && CLOSE_LOW) {
+                signal = 'BUYING_CLIMAX';
+            } else if (HIGH_VOL && WIDE_SPREAD && !isUp && CLOSE_HIGH) {
+                signal = 'SELLING_CLIMAX';
+            } else if (HIGH_VOL && NARROW_SPREAD) {
+                signal = 'EFFORT_NO_RESULT';
+            } else if (HIGH_VOL && WIDE_SPREAD && isUp && CLOSE_HIGH) {
+                signal = 'STRENGTH';
+            } else if (HIGH_VOL && WIDE_SPREAD && !isUp && CLOSE_LOW) {
+                signal = 'WEAKNESS';
+            } else if (LOW_VOL && NARROW_SPREAD && isUp) {
+                signal = 'NO_DEMAND';
+            } else if (LOW_VOL && NARROW_SPREAD && !isUp) {
+                signal = 'NO_SUPPLY';
+            } else if (LOW_VOL && !isUp && CLOSE_HIGH) {
+                signal = 'TEST';
+            }
+
+            const SIGNAL_INFO = {
+                BUYING_CLIMAX: { name: 'Felvásárlási Klimax (Buying Climax) / Upthrust', bias: 'bearish', desc: 'Magas volumen, széles tartomány, emelkedő gyertya — de a záróár a tartomány ALJÁN zár (hosszú felső kanóc). A nagy vételi erőfeszítés ellenére a profit-realizálás/eladói nyomás visszavette az irányítást a gyertya végére — klasszikus kifáradási/csapda jelzés egy felfutás tetején, különösen hosszabb emelkedő trend után.' },
+                SELLING_CLIMAX: { name: 'Eladási Klimax (Selling Climax) / Stopping Volume', bias: 'bullish', desc: 'Magas volumen, széles tartomány, csökkenő gyertya — de a záróár a tartomány TETEJÉN zár (hosszú alsó kanóc). A panikszerű eladás ellenére a vevők visszavásárolták az árat a mélypontról — klasszikus fordulós jelzés egy letörés alján, amit gyakran "smart money" felvásárlásként értelmeznek.' },
+                EFFORT_NO_RESULT: { name: 'Effort vs. Result (Erőfeszítés eredmény nélkül)', bias: 'neutral', desc: 'Magas volumen (nagy erőfeszítés), de szűk tartomány (kis eredmény) — valaki nagy mennyiséget nyel el anélkül, hogy az ár érdemben elmozdulna. Ez abszorpciót jelez: a trend irányával szemben álló nagy szereplő lehet a piacon, ami gyakran megelőz egy irányváltást.' },
+                STRENGTH: { name: 'Erő (Strength) — Egészséges Felfutás', bias: 'bullish', desc: 'Magas volumen, széles tartomány, emelkedő gyertya, ERŐS záróárral a tartomány tetején — a vételi nyomás végig kitartott a gyertya végéig. Egészséges, folytatódásra alkalmas felfelé mozgás jele, nem kifáradás.' },
+                WEAKNESS: { name: 'Gyengeség (Weakness) — Egészséges Letörés', bias: 'bearish', desc: 'Magas volumen, széles tartomány, csökkenő gyertya, GYENGE záróárral a tartomány alján — az eladási nyomás végig kitartott. Egészséges, folytatódásra alkalmas lefelé mozgás jele, nem fordulat.' },
+                NO_DEMAND: { name: 'No Demand', bias: 'bearish', desc: 'Kis testű/szűk tartományú, ALACSONY volumenű emelkedő gyertya — a valós vételi érdeklődés hiányát jelzi. Ha ez egy felfutás tetején jelenik meg, gyenge folytatódási esélyt, lehetséges tetőzést sugallhat.' },
+                NO_SUPPLY: { name: 'No Supply', bias: 'bullish', desc: 'Kis testű/szűk tartományú, ALACSONY volumenű csökkenő gyertya — az eladási nyomás hiányát jelzi. Downtrend alján megjelenve bullish jelnek számíthat: nincs erő a további eséshez.' },
+                TEST: { name: 'Test (Teszt)', bias: 'bullish', desc: 'Alacsony volumenű lefelé irányuló próba, amely a tartomány TETEJE közelében zár — a piac "letesztelte" az alacsonyabb árakat, de nem talált ott számottevő eladói nyomást, és visszapattant. Gyakran megelőz egy korábbi No Supply jelet, és együtt erősítik a bullish forgatókönyvet.' },
+                NEUTRAL: { name: 'Nincs egyértelmű VSA jel', bias: 'none', desc: 'A jelenlegi gyertya volumen/tartomány/záróhelyzet kombinációja nem illeszkedik egyik vizsgált klasszikus VSA mintára sem a megadott küszöbértékekkel — ez a leggyakoribb eset, a VSA jelek ritkák és kontextusfüggőek.' }
+            };
+
+            const info = SIGNAL_INFO[signal];
+            const colorMap = { bullish: 'text-neon-green', bearish: 'text-neon-red', neutral: 'text-amber-400', none: 'text-slate-400' };
+            const colorClass = colorMap[info.bias] || 'text-slate-400';
+            const spreadRatioText = isFinite(spreadRatio) ? spreadRatio.toFixed(2) + '×' : '∞';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Irány:</span><span class="${isUp ? 'text-neon-green' : 'text-neon-red'} font-bold">${isUp ? 'Emelkedő (Záró ≥ Nyitó)' : 'Csökkenő (Záró &lt; Nyitó)'}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Volumen-arány (vs. referencia):</span><span class="text-white">${volRatio.toFixed(2)}×${HIGH_VOL ? ' (magas)' : (LOW_VOL ? ' (alacsony)' : ' (átlagos)')}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Spread-arány (vs. referencia):</span><span class="text-white">${spreadRatioText}${WIDE_SPREAD ? ' (széles)' : (NARROW_SPREAD ? ' (szűk)' : ' (átlagos)')}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Záróhelyzet a tartományban:</span><span class="text-white">${(closePos * 100).toFixed(1)}%${CLOSE_HIGH ? ' (tetőn)' : (CLOSE_LOW ? ' (alján)' : ' (középen)')}</span></div>
+                </div>
+                <p class="text-xs font-bold ${colorClass} mb-1">${info.name}</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${info.desc}</p>
             `;
         }
 
@@ -32079,6 +32257,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             385: { tool: 'propchallenge-modal', cta: 'Ellenőrizd élesben Zita kihívás-paramétereit' },
             543: { tool: 'wfe-modal', cta: 'Számold ki élesben a Walk-Forward Efficiency-t a stratégiád szakaszaira' },
             547: { tool: 'split-buyback-modal', cta: 'Számold ki élesben egy stock split és buyback hatását az árra és az EPS-re' },
+            303: { tool: 'vsa-modal', cta: 'Azonosítsd élesben a VSA szignált (No Demand, No Supply, Klimax, stb.)' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -32088,7 +32267,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
