@@ -1722,6 +1722,13 @@
                                 <div class="text-[10px] text-slate-400">Volumen, tartomány és záróhelyzet együttes olvasása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('orderbook-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Order Book Mélység &amp; Egyensúly Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mid/Micro Price és Order Book Imbalance a Bid/Ask szintekből</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
                             <div>
@@ -4393,6 +4400,47 @@ Kripto: 15000, 20</textarea>
 
             <div id="vsa-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A VSA három tényező (test/tartomány, záróár-pozíció, volumen) egyidejű értelmezését igényli — ez a kalkulátor egy determinisztikus, oktatási közelítés, NEM helyettesíti a kontextus (előző trend, korábbi szintek) emberi mérlegelését. A jelek önmagukban sosem garantált belépési szignálok.</p>
+        </div>
+    </div>
+
+    <!-- ================= ORDER BOOK MÉLYSÉG & EGYENSÚLY KALKULÁTOR (OKTATÁSI) =================
+         Mid Price = (legjobb Bid + legjobb Ask) / 2.
+         Micro Price (Stoikov-formula) = (legjobbBidVol×legjobbAsk + legjobbAskVol×legjobbBid) / (legjobbBidVol + legjobbAskVol)
+         — a legjobb szintek volumenével SZEMBEN súlyoz: minél nagyobb a Bid oldal volumene a
+         Ask oldalhoz képest, a mikroár annál közelebb kerül az Ask árhoz (felfelé mutató rövid
+         távú nyomás), és viszont.
+         Order Book Imbalance (OBI) = (ΣBidVol - ΣAskVol) / (ΣBidVol + ΣAskVol), a megadott összes
+         szinten — tartománya [-1, +1]. -->
+    <div id="orderbook-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-sky-400"></i> Order Book Mélység &amp; Egyensúly Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('orderbook-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az ajánlati könyv (order book) Bid (vételi) és Ask (eladási) szintjeit — Ár,Volumen formátumban, soronként egyet. A kalkulátor kiszámolja a Mid Price-t, a Micro Price-t (a legjobb szintek volumenével súlyozott, torzítás-érzékeny "valódi" középár) és az Order Book Imbalance-t (a Bid/Ask oldal mélységének egyensúlyát) — ezek az order flow / tape reading alapmutatói.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Bid (vételi) szintek: Ár,Volumen (soronként egy)</label>
+            <textarea id="obcalc-bids" rows="5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-sky-400/50">100.45,1200
+100.40,900
+100.35,1500
+100.30,2100
+100.25,1800</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Ask (eladási) szintek: Ár,Volumen (soronként egy)</label>
+            <textarea id="obcalc-asks" rows="5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-sky-400/50">100.50,800
+100.55,1100
+100.60,1400
+100.65,1700
+100.70,2000</textarea>
+
+            <button onclick="calcOrderBookDepth()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-sky-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="obcalc-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A szintek sorrendje a bevitelnél nem számít — a kalkulátor a legjobb Bid-et (legmagasabb ár) és legjobb Ask-ot (legalacsonyabb ár) automatikusan megkeresi. Ez egy pillanatfelvétel-elemzés: a valós order book ennél sokkal gyorsabban változik, és "spoofing" (színlelt megbízások) miatt a látott mélység nem mindig valódi szándékot takar.</p>
         </div>
     </div>
 
@@ -9946,6 +9994,13 @@ Mean-reversion,1,0</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">VSA Szignál Klasszifikátor</div>
                     <div class="text-[10px] text-slate-400">Volumen, tartomány és záróhelyzet együttes olvasása</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('orderbook-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-sky-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Order Book Mélység &amp; Egyensúly Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mid/Micro Price és Order Book Imbalance a Bid/Ask szintekből</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -18853,6 +18908,84 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-xs font-bold ${colorClass} mb-1">${info.name}</p>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${info.desc}</p>
+            `;
+        }
+
+        // ================= ORDER BOOK MÉLYSÉG & EGYENSÚLY KALKULÁTOR (OKTATÁSI) =================
+        // Mid Price = (legjobb Bid + legjobb Ask) / 2.
+        // Micro Price (Stoikov-formula) = (legjobbBidVol×legjobbAsk + legjobbAskVol×legjobbBid) / (legjobbBidVol + legjobbAskVol).
+        // Order Book Imbalance (OBI) = (ΣBidVol - ΣAskVol) / (ΣBidVol + ΣAskVol), a megadott összes szinten.
+        function calcOrderBookDepth() {
+            const bidsEl = document.getElementById('obcalc-bids');
+            const asksEl = document.getElementById('obcalc-asks');
+            const out = document.getElementById('obcalc-result');
+            if (!bidsEl || !asksEl || !out) return;
+
+            const parseLevels = (text) => text.split('\n').map(l => l.trim()).filter(l => l.length > 0).map(l => l.split(',').map(v => parseFloat(v.trim())));
+
+            const bidRows = parseLevels(bidsEl.value);
+            const askRows = parseLevels(asksEl.value);
+            const validBids = bidRows.filter(a => a.length === 2 && a.every(v => !isNaN(v)));
+            const validAsks = askRows.filter(a => a.length === 2 && a.every(v => !isNaN(v)));
+
+            if (bidRows.length === 0 || askRows.length === 0 || validBids.length !== bidRows.length || validAsks.length !== askRows.length) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden sor "Ár,Volumen" formátumban legyen (pl. 100.45,1200) — mindkét oldalon (Bid és Ask) legalább 1 sor szükséges!</div>`;
+                return;
+            }
+            for (const [p, v] of [...validBids, ...validAsks]) {
+                if (!(p > 0)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden ár pozitív szám legyen!</div>`;
+                    return;
+                }
+                if (!(v > 0)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden volumen pozitív szám legyen!</div>`;
+                    return;
+                }
+            }
+
+            const bids = [...validBids].sort((a, b) => b[0] - a[0]);
+            const asks = [...validAsks].sort((a, b) => a[0] - b[0]);
+
+            const [bestBid, bestBidVol] = bids[0];
+            const [bestAsk, bestAskVol] = asks[0];
+
+            if (bestBid >= bestAsk) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen (kereszteződő) könyv: a legjobb Bid ár (${bestBid}) nem lehet nagyobb vagy egyenlő, mint a legjobb Ask ár (${bestAsk})!</div>`;
+                return;
+            }
+
+            const spread = bestAsk - bestBid;
+            const midPrice = (bestBid + bestAsk) / 2;
+            const spreadBps = (spread / midPrice) * 10000;
+            const microPrice = (bestBidVol * bestAsk + bestAskVol * bestBid) / (bestBidVol + bestAskVol);
+
+            const sumBidVol = bids.reduce((s, [, v]) => s + v, 0);
+            const sumAskVol = asks.reduce((s, [, v]) => s + v, 0);
+            const obi = (sumBidVol - sumAskVol) / (sumBidVol + sumAskVol);
+
+            let obiLabel, obiColor;
+            if (obi >= 0.2) { obiLabel = 'Erős vételi nyomás-túlsúly (mélyebb Bid oldal)'; obiColor = 'text-neon-green'; }
+            else if (obi <= -0.2) { obiLabel = 'Erős eladói nyomás-túlsúly (mélyebb Ask oldal)'; obiColor = 'text-neon-red'; }
+            else { obiLabel = 'Közelítőleg kiegyensúlyozott könyv'; obiColor = 'text-amber-400'; }
+
+            const microDiff = microPrice - midPrice;
+            let microLabel;
+            if (microDiff > 1e-9) microLabel = 'Az Ask felé torzul — a Bid oldal nagyobb volumene rövid távon felfelé mutató nyomásra utal';
+            else if (microDiff < -1e-9) microLabel = 'A Bid felé torzul — az Ask oldal nagyobb volumene rövid távon lefelé mutató nyomásra utal';
+            else microLabel = 'Pontosan a Mid Price-on — a két legjobb szint volumene kiegyenlíti egymást';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Legjobb Bid / Ask:</span><span class="text-white">${bestBid.toFixed(2)} / ${bestAsk.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Spread:</span><span class="text-white">${spread.toFixed(4)} (${spreadBps.toFixed(2)} bps)</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Mid Price:</span><span class="text-white">${midPrice.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Micro Price:</span><span class="text-neon-cyan font-bold">${microPrice.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Σ Bid Volumen / Σ Ask Volumen:</span><span class="text-white">${sumBidVol.toLocaleString('hu-HU')} / ${sumAskVol.toLocaleString('hu-HU')}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Order Book Imbalance (OBI):</span><span class="${obiColor} font-bold">${obi >= 0 ? '+' : ''}${(obi * 100).toFixed(1)}%</span></div>
+                </div>
+                <p class="text-xs font-bold ${obiColor} mb-1">${obiLabel}</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed mb-2">${microLabel}</p>
+                <p class="text-[10px] text-slate-500 leading-relaxed">Az OBI a megadott ÖSSZES szint volumenéből számol, a Micro Price viszont csak a két LEGJOBB (top-of-book) szintből — ezért a kettő eltérő irányba is mutathat, ha a mélyebb könyv és a legjobb szintek nyomása nem esik egybe.</p>
             `;
         }
 
@@ -32258,6 +32391,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             543: { tool: 'wfe-modal', cta: 'Számold ki élesben a Walk-Forward Efficiency-t a stratégiád szakaszaira' },
             547: { tool: 'split-buyback-modal', cta: 'Számold ki élesben egy stock split és buyback hatását az árra és az EPS-re' },
             303: { tool: 'vsa-modal', cta: 'Azonosítsd élesben a VSA szignált (No Demand, No Supply, Klimax, stb.)' },
+            38: { tool: 'orderbook-modal', cta: 'Számold ki élesben a Mid/Micro Price-t és az Order Book Imbalance-t' },
+            302: { tool: 'orderbook-modal', cta: 'Vizsgáld meg élesben az Order Book mélységét és egyensúlyát' },
+            500: { tool: 'volumedelta-modal', cta: 'Számold ki élesben a Volume Deltát (order flow közelítés)' },
+            221: { tool: 'vsa-modal', cta: 'Azonosítsd élesben az Effort vs. Result (abszorpció) VSA szignált' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -32267,7 +32404,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
