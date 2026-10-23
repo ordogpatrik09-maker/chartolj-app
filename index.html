@@ -1561,6 +1561,13 @@
                                 <div class="text-[10px] text-slate-400">Trend erősség mérése (Wilder-féle módszer)</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('chopzone-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-orange-400/10 text-orange-400 border border-orange-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Chop Zone Index Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Oldalazás vs trend színkódolt besorolása (100-ADX)</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('obv-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-column"></i></span>
                             <div>
@@ -4518,6 +4525,83 @@ Kripto: 15000, 20</textarea>
 
             <div id="adx-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az ADX kizárólag az erősséget méri — egy magas ADX ugyanúgy jelenthet erős emelkedést, mint erős esést. A +DI és -DI vonalak mutatják meg, melyik irány dominál.</p>
+        </div>
+    </div>
+
+    <!-- ================= CHOP ZONE INDEX KALKULÁTOR (OKTATÁSI) =================
+         A Chop Zone az ADX-hez hasonló trend-erősség mérést egyszerű,
+         színkódolt skálává alakítja át (a lecke leírása szerint). Ez a
+         kalkulátor a session saját, explicit módon dokumentált
+         egyszerűsítése: ugyanazt a klasszikus Wilder-féle ADX-et
+         számolja ki, mint az ADX Kalkulátor (azonos TR/+DM/-DM,
+         Wilder-simítás, DX, Wilder-simított ADX-átlag), majd
+         Chop Zone Index (CZI) = 100 - ADX. A CZI 0-100 skálán méri az
+         OLDALAZÁS mértékét (minél magasabb, annál choppabb a piac),
+         és az ADX ugyanazon 25/50 küszöbeit tükrözve 3 zónába sorol:
+         ADX<25 (CZI>75) = Erős Oldalazás (piros/narancs), 25≤ADX<50
+         (50<CZI≤75) = Átmeneti/Erősödő Trend (sárga), ADX≥50 (CZI≤50)
+         = Erős Trend Zóna (zöld/kék). -->
+    <div id="chopzone-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-orange-400"></i> Chop Zone Index Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('chopzone-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Chop Zone az ADX-hez hasonló trend-erősség mérést egy egyszerű, színkódolt 0-100 skálává alakítja: a Chop Zone Index (CZI) = 100 - ADX, tehát MINÉL MAGASABB, annál inkább OLDALAZÓ (choppy) a piac. Piros/narancs zóna = kerülendő a trendkövetés, inkább mean-reversion vagy pihenő; zöld/kék zóna = a trendkövető stratégiák relevánsabbak. A klasszikus Wilder-féle ADX-hez legalább 2×periódus+1 gyertya szükséges. Add meg a gyertyákat (Magas,Alacsony,Záró) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Záró (soronként egy, legalább 2×periódus+1 db)</label>
+            <textarea id="chopzone-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-orange-400/50">100.9149,100.4649,100.8774
+100.9866,98.8668,99.8819
+102.0271,101.2638,101.8967
+100.3587,99.2727,100.0308
+98.4484,97.1753,98.1502
+98.9331,97.7185,98.6024
+100.2546,99.0361,100.2449
+101.8969,101.1533,101.3865
+104.1988,103.5548,103.6939
+103.4004,101.2236,102.1292
+104.8558,102.9569,103.7612
+106.7081,105.3122,106.1403
+108.8004,106.5800,107.8726
+109.5275,108.4019,108.4707
+107.9303,107.3765,107.4962
+106.6953,106.1268,106.5438
+107.9516,106.8491,107.4043
+106.7476,104.9421,106.3471
+108.1770,107.0066,107.2633
+108.7895,107.9752,108.5444
+111.9572,110.1618,110.9972
+113.3423,110.9140,112.0780
+111.1568,110.6355,111.1087
+110.6300,108.8992,110.3135
+112.7292,111.2740,112.2572
+113.4093,111.3492,112.0375
+111.5994,110.3874,111.2295
+111.2887,109.0651,110.4118
+110.5381,108.7128,110.2091
+110.6384,110.4313,110.5020
+109.9366,107.8073,108.9954
+108.9904,108.3227,108.8951
+112.1714,109.9211,111.3777
+113.2684,112.1701,113.2512
+115.1243,113.9186,114.3189
+115.3705,114.5511,115.2032
+116.6757,113.9312,115.2450
+115.1811,114.1622,114.4302
+117.8428,116.0894,116.5370
+118.3258,117.1831,117.4123</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (klasszikusan 14, azonos az ADX-szel)</label>
+            <input type="number" id="chopzone-period" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50">
+
+            <button onclick="calcChopZoneIndex()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-orange-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="chopzone-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A CZI pusztán az ADX tükörképe (100-ADX) — nem jelez irányt, csak azt, mennyire HIÁNYZIK a kitartó, egyirányú mozgás. Iránykereséshez és megerősítéshez más eszközöket (pl. +DI/-DI, gyertyaminták, volumen) is érdemes bevonni, a lecke explicit figyelmeztetése szerint.</p>
         </div>
     </div>
 
@@ -8902,6 +8986,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">ADX Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Trend erősség mérése (Wilder-féle módszer)</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('chopzone-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-orange-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-orange-400/10 text-orange-400 border border-orange-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Chop Zone Index Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Oldalazás vs trend színkódolt besorolása (100-ADX)</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('obv-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15194,6 +15285,119 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Dominál irány:</span>
                         <span class="font-extrabold ${lastPlusDI >= lastMinusDI ? 'text-neon-green' : 'text-neon-red'} text-sm">${lastPlusDI >= lastMinusDI ? 'Emelkedő (+DI > -DI)' : 'Csökkenő (-DI > +DI)'}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= CHOP ZONE INDEX KALKULÁTOR (OKTATÁSI) =================
+        // Azonos Wilder-féle ADX-számítás, mint az ADX Kalkulátorban (TR,
+        // +DM, -DM, Wilder-simítás, DX, Wilder-simított ADX-átlag), majd
+        // Chop Zone Index (CZI) = 100 - ADX. A CZI 0-100 skálán az
+        // OLDALAZÁS mértékét méri (minél magasabb, annál choppabb).
+        // Zónák az ADX 25/50 küszöbeit tükrözve: ADX<25 (CZI>75) = Erős
+        // Oldalazás, 25≤ADX<50 (50<CZI≤75) = Átmeneti/Erősödő Trend,
+        // ADX≥50 (CZI≤50) = Erős Trend Zóna.
+        function calcChopZoneIndex() {
+            const candlesEl = document.getElementById('chopzone-candles');
+            const periodEl = document.getElementById('chopzone-period');
+            const out = document.getElementById('chopzone-result');
+            if (!candlesEl || !periodEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                    candles.push({ high: parts[0], low: parts[1], close: parts[2] });
+                }
+            }
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy pozitív egész periódust!</div>`;
+                return;
+            }
+
+            const n = candles.length;
+            const tr = [], plusDM = [], minusDM = [];
+            for (let i = 1; i < n; i++) {
+                const { high: h, low: l, close: c } = candles[i];
+                const { high: ph, low: pl, close: pc } = candles[i - 1];
+                tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+                const upMove = h - ph;
+                const downMove = pl - l;
+                plusDM.push((upMove > downMove && upMove > 0) ? upMove : 0);
+                minusDM.push((downMove > upMove && downMove > 0) ? downMove : 0);
+            }
+
+            const m = tr.length;
+            if (m < 2 * period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${2 * period + 1} gyertya szükséges a ${period}-es periódushoz (jelenleg ${n} van megadva)!</div>`;
+                return;
+            }
+
+            let smoothedTR = tr.slice(0, period).reduce((a, b) => a + b, 0);
+            let smoothedPDM = plusDM.slice(0, period).reduce((a, b) => a + b, 0);
+            let smoothedMDM = minusDM.slice(0, period).reduce((a, b) => a + b, 0);
+
+            const dxList = [];
+            function pushDx(sTR, sPDM, sMDM) {
+                const pdi = sTR > 0 ? 100 * sPDM / sTR : 0;
+                const mdi = sTR > 0 ? 100 * sMDM / sTR : 0;
+                const dx = (pdi + mdi) > 0 ? 100 * Math.abs(pdi - mdi) / (pdi + mdi) : 0;
+                dxList.push(dx);
+            }
+            pushDx(smoothedTR, smoothedPDM, smoothedMDM);
+
+            for (let i = period; i < m; i++) {
+                smoothedTR = smoothedTR - smoothedTR / period + tr[i];
+                smoothedPDM = smoothedPDM - smoothedPDM / period + plusDM[i];
+                smoothedMDM = smoothedMDM - smoothedMDM / period + minusDM[i];
+                pushDx(smoothedTR, smoothedPDM, smoothedMDM);
+            }
+
+            if (dxList.length < period) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég DX-érték a Chop Zone Index kiszámításához — adj meg több gyertyát!</div>`;
+                return;
+            }
+
+            let adx = dxList.slice(0, period).reduce((a, b) => a + b, 0) / period;
+            for (let i = period; i < dxList.length; i++) {
+                adx = (adx * (period - 1) + dxList[i]) / period;
+            }
+
+            const czi = Math.max(0, Math.min(100, 100 - adx));
+
+            let colorClass, zoneLabel, verdict;
+            if (adx < 25) {
+                colorClass = 'text-neon-red';
+                zoneLabel = 'Erős Oldalazás (Chop Zóna)';
+                verdict = 'A CZI magas, az ADX gyenge — a piac valószínűleg oldalazó (choppy). Trendkövető stratégiák helyett érdemesebb mean-reversion megközelítést vagy kimaradást fontolni.';
+            } else if (adx < 50) {
+                colorClass = 'text-amber-400';
+                zoneLabel = 'Átmeneti / Erősödő Trend';
+                verdict = 'A CZI közepes — a trend kezd kialakulni, de még nem egyértelműen erős. Óvatos, megerősítésre váró trendkövetés lehet indokolt.';
+            } else {
+                colorClass = 'text-neon-green';
+                zoneLabel = 'Erős Trend Zóna';
+                verdict = 'A CZI alacsony, az ADX nagyon erős — kitartó, egyirányú mozgás jellemzi a piacot. A trendkövető stratégiák relevánsabbá válnak, de az irányt a +DI/-DI (ADX Kalkulátor) mutatja meg.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-orange-400/30 bg-orange-400/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Chop Zone Index — CZI = 100 - ADX (${period} periódus)</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${czi.toFixed(2)}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Alapul vett ADX:</span>
+                        <span class="font-extrabold text-white text-sm">${adx.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Zóna:</span>
+                        <span class="font-extrabold ${colorClass} text-sm">${zoneLabel}</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -29651,6 +29855,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             412: { tool: 'multikelly-modal', cta: 'Számold ki élesben a korrelált portfólió Kelly-allokációját' },
             420: { tool: 'envelope-modal', cta: 'Számold ki élesben az Envelope Csatorna sávjait' },
             490: { tool: 'stc-modal', cta: 'Számold ki élesben a Schaff Trend Cycle-t' },
+            467: { tool: 'chopzone-modal', cta: 'Számold ki élesben a Chop Zone Indexet' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -29660,7 +29865,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
