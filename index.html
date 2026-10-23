@@ -7609,6 +7609,36 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="vp-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-bar text-amber-500"></i> Volume Profile Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('vp-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a gyertyák Magas,Alacsony,Volumen adatait (soronként egyet). A kalkulátor az árakt tartományt egyenlő sávokra osztja, minden gyertya volumenét szétosztja az általa lefedett sávok között, majd megkeresi a POC-ot (a legnagyobb volumenű sáv) és a Value Area-t (a volumen 70%-át lefedő, a POC-ból kifelé bővülő tartomány).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Magas,Alacsony,Volumen (soronként egy)</label>
+            <textarea id="vp-candles" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-[10px] text-white focus:outline-none focus:border-amber-500/50">105,100,1000
+108,104,1500
+110,106,3000
+109,105,2500
+107,103,1800
+106,102,1200
+104,100,900
+111,107,2000</textarea>
+            <label class="text-[11px] font-semibold text-slate-400">Sávok száma</label>
+            <input type="number" id="vp-bins" value="10" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+
+            <button onclick="calcVolumeProfile()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-500 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Profil Számolása
+            </button>
+
+            <div id="vp-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="mergerarb-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -19334,6 +19364,87 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        function calcVolumeProfile() {
+            const candlesEl = document.getElementById('vp-candles');
+            const binsEl = document.getElementById('vp-bins');
+            const out = document.getElementById('vp-result');
+            if (!candlesEl || !binsEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 3 && a.every(v => !isNaN(v)));
+            const numBins = parseInt(binsEl.value, 10) || 10;
+
+            if (candles.length < 1 || numBins < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 gyertya (Magas,Alacsony,Volumen) és legalább 2 sáv szükséges!</div>`;
+                return;
+            }
+
+            const allHigh = Math.max(...candles.map(c => c[0]));
+            const allLow = Math.min(...candles.map(c => c[1]));
+            const rng = (allHigh - allLow) > 0 ? (allHigh - allLow) : 1e-9;
+            const binSize = rng / numBins;
+            const bins = new Array(numBins).fill(0);
+
+            for (const [h, l, v] of candles) {
+                const overlapBins = [];
+                for (let b = 0; b < numBins; b++) {
+                    const binLow = allLow + b * binSize;
+                    const binHigh = allLow + (b + 1) * binSize;
+                    if (h > binLow && l < binHigh) overlapBins.push(b);
+                }
+                if (overlapBins.length === 0) continue;
+                const share = v / overlapBins.length;
+                for (const b of overlapBins) bins[b] += share;
+            }
+
+            const totalVol = bins.reduce((a, b) => a + b, 0);
+            let pocIdx = 0;
+            for (let i = 1; i < numBins; i++) if (bins[i] > bins[pocIdx]) pocIdx = i;
+
+            const included = new Set([pocIdx]);
+            let accumulated = bins[pocIdx];
+            let left = pocIdx - 1, right = pocIdx + 1;
+            while (accumulated < 0.7 * totalVol && (left >= 0 || right < numBins)) {
+                const leftVol = left >= 0 ? bins[left] : -1;
+                const rightVol = right < numBins ? bins[right] : -1;
+                if (leftVol >= rightVol && left >= 0) {
+                    included.add(left); accumulated += bins[left]; left--;
+                } else if (right < numBins) {
+                    included.add(right); accumulated += bins[right]; right++;
+                } else break;
+            }
+            const vaLowIdx = Math.min(...included);
+            const vaHighIdx = Math.max(...included);
+            const vaLow = allLow + vaLowIdx * binSize;
+            const vaHigh = allLow + (vaHighIdx + 1) * binSize;
+            const pocLow = allLow + pocIdx * binSize;
+            const pocHigh = allLow + (pocIdx + 1) * binSize;
+
+            const maxBin = Math.max(...bins);
+            const barsHtml = bins.map((v, i) => {
+                const pct = maxBin > 0 ? (v / maxBin * 100) : 0;
+                const binLow = allLow + i * binSize;
+                const binHigh = allLow + (i + 1) * binSize;
+                const isPoc = i === pocIdx;
+                const inVA = included.has(i);
+                const color = isPoc ? 'bg-amber-500' : (inVA ? 'bg-neon-cyan/60' : 'bg-slate-600');
+                return `<div class="flex items-center gap-2 text-[9px] font-mono">
+                    <span class="text-slate-400 w-20 text-right">${binLow.toLocaleString(undefined,{maximumFractionDigits:2})}-${binHigh.toLocaleString(undefined,{maximumFractionDigits:2})}</span>
+                    <div class="flex-1 h-3 bg-dark-850 rounded"><div class="h-3 rounded ${color}" style="width:${pct}%"></div></div>
+                </div>`;
+            }).reverse().join('');
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">POC (Point of Control):</span><span class="text-amber-400">${pocLow.toLocaleString(undefined,{maximumFractionDigits:4})} – ${pocHigh.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Value Area (70%):</span><span class="text-neon-cyan">${vaLow.toLocaleString(undefined,{maximumFractionDigits:4})} – ${vaHigh.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Teljes volumen:</span><span class="text-white">${totalVol.toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>
+                </div>
+                <div class="space-y-1 mb-3">${barsHtml}</div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">A POC az a sáv, ahol a legtöbb volumen cserélt tulajdonost — ez gyakran mágnesként viselkedik, ahova az ár visszatér. A Value Area a teljes volumen 70%-át lefedő, a POC-ból kifelé bővülő sávtartomány — ezen kívül az ár jellemzően gyorsabban mozog, mert kevesebb kereskedő "véd" ott árszintet.</p>
+            `;
+        }
+
         function calcMergerArb() {
             const preEl = document.getElementById('ma-pre');
             const offerEl = document.getElementById('ma-offer');
@@ -30720,6 +30831,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            77: { tool: 'vp-modal', cta: 'Számold ki élesben a Volume Profile-t (POC, Value Area)' },
+            501: { tool: 'vp-modal', cta: 'Próbáld ki élesben a Volume Profile-t' },
             549: { tool: 'mergerarb-modal', cta: 'Számold ki élesben a merger arbitrage spreadet' },
             539: { tool: 'pyramid-modal', cta: 'Tervezd meg élesben a piramizálási lépéseket' },
             163: { tool: 'fvg-modal', cta: 'Keresd meg élesben a Fair Value Gap-eket' },
@@ -30931,7 +31044,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
