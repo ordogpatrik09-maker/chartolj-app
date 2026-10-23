@@ -1876,6 +1876,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyit ér dollárban egy pip mozgás?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('il-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-droplet-slash"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Impermanent Loss Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Likviditási pool vs. HODL: mennyit veszítesz az árelmozdulással?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -6425,6 +6432,51 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= IMPERMANENT LOSS (NEM REALIZÁLT VESZTESÉG) KALKULÁTOR (OKTATÁSI) =================
+         Standard, 50/50 arányú állandó-szorzat (constant-product, x*y=k) likviditási poolra
+         (pl. Uniswap V2-stílus AMM) számolva. Ha a befizetett eszközpár ára egymáshoz
+         képest k = P1/P0 arányban elmozdul, a pool automatikus arbitrázs-rebalanszolása
+         miatt a likviditás-biztosító vagyona nem ugyanúgy nő/csökken, mintha egyszerűen
+         megtartotta volna a két eszközt külön ("HODL"):
+            HODL érték  = V/2 · (1 + k)
+            Pool érték  = V · √k
+            IL%         = Pool/HODL − 1 = 2√k / (1+k) − 1   (mindig ≤ 0, k=1-nél pontosan 0)
+         A képlet a befizetett összegtől (V) független — csak az árarány számít. -->
+    <div id="il-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-droplet-slash text-neon-red"></i> Impermanent Loss Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('il-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Egy 50/50 arányú, állandó-szorzatú (Uniswap V2-stílusú) likviditási poolban mekkora a "nem realizált veszteség" (impermanent loss), ha a két befizetett eszköz ára egymáshoz képest elmozdul — a poolban tartott vagyont hasonlítva ahhoz, mintha a két eszközt egyszerűen csak megtartottad volna (HODL) a pool helyett.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Belépéskori ár (A/B)</label>
+                    <input id="il-price0" type="number" value="2000" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Jelenlegi/végső ár (A/B)</label>
+                    <input id="il-price1" type="number" value="3000" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+                </div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Kezdeti befizetés értéke ($, mindkét eszköz együtt)</label>
+            <input id="il-deposit" type="number" value="10000" step="any" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Közben összegyűjtött díjbevétel (a befizetés %-ában, opcionális)</label>
+            <input id="il-fees" type="number" value="0" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcImpermanentLoss()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="il-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A képlet egy egyszerű, 50/50 arányú állandó-szorzatú (x·y=k) poolra vonatkozik, és csak az árarány elmozdulásától függ, a mozgás irányától nem — ugyanannyi IL keletkezik, ha az ár duplázódik, mint ha a felére esik. A valódi protokollok (koncentrált likviditás, eltérő súlyozás, stb.) ettől eltérő görbét követhetnek. A díjbevétel nem törli el az IL-t, csak ELLENSÚLYOZHATJA — ezért sosem elég csak a feltüntetett APY-t nézni, a várható árelmozdulást is figyelembe kell venni.</p>
+        </div>
+    </div>
+
     <!-- ================= ATR-ALAPÚ POZÍCIÓMÉRET KALKULÁTOR (OKTATÁSI) =================
          A fix pénzbeli/pont-alapú stop-loss helyett a profik gyakran az
          ATR-t (Average True Range — az adott eszköz átlagos napi/időkeretenkénti
@@ -9360,6 +9412,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Belépés Előtti Ellenőrzőlista</div>
                     <div class="text-[10px] text-slate-400">Fegyelmezett vagy, vagy csak sietsz?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('il-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-droplet-slash"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Impermanent Loss Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Likviditási pool vs. HODL: mennyit veszítesz az árelmozdulással?</div>
                 </div>
             </button>
         </div>
@@ -22711,6 +22770,89 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= IMPERMANENT LOSS KALKULÁTOR (OKTATÁSI) =================
+        // 50/50 arányú, állandó-szorzatú (x*y=k, Uniswap V2-stílusú) pool:
+        //   k      = price1 / price0                  (árarány-elmozdulás)
+        //   HODL   = V/2 * (1 + k)                     (ha egyszerűen megtartottad volna)
+        //   Pool   = V * sqrt(k)                       (a pool automatikus rebalanszolása után)
+        //   IL%    = Pool/HODL - 1 = 2*sqrt(k)/(1+k) - 1   (mindig <= 0; k=1-nél pontosan 0)
+        function calcImpermanentLoss() {
+            const out = document.getElementById('il-result');
+            if (!out) return;
+
+            const price0 = parseFloat(document.getElementById('il-price0').value);
+            const price1 = parseFloat(document.getElementById('il-price1').value);
+            const deposit = parseFloat(document.getElementById('il-deposit').value);
+            const feesPct = parseFloat(document.getElementById('il-fees').value);
+
+            if (!isFinite(price0) || price0 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A belépéskori ár pozitív szám legyen!</div>`;
+                return;
+            }
+            if (!isFinite(price1) || price1 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A jelenlegi/végső ár pozitív szám legyen!</div>`;
+                return;
+            }
+            if (!isFinite(deposit) || deposit <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kezdeti befizetés értéke pozitív szám legyen!</div>`;
+                return;
+            }
+            if (!isFinite(feesPct) || feesPct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A díjbevétel nem lehet negatív! (0 = nincs díjbevétel)</div>`;
+                return;
+            }
+
+            const k = price1 / price0;
+            const sqrtK = Math.sqrt(k);
+
+            const hodlValue = (deposit / 2) * (1 + k);
+            const poolValue = deposit * sqrtK;
+            const ilPct = (poolValue / hodlValue - 1) * 100; // <= 0
+            const ilAbs = poolValue - hodlValue; // <= 0
+
+            const feesValue = deposit * (feesPct / 100);
+            const netPoolValue = poolValue + feesValue;
+            const netVsHold = netPoolValue - hodlValue;
+            const breakEven = netVsHold >= 0;
+
+            const priceChangePct = (k - 1) * 100;
+            const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            let feesBlock = '';
+            if (feesPct > 0) {
+                feesBlock = `
+                <div class="glass-card rounded-xl border ${breakEven ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]'} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Nettó eredmény (IL + díjbevétel) a HODL-hoz képest</div>
+                    <div class="text-lg font-extrabold ${breakEven ? 'text-neon-green' : 'text-amber-400'}">${netVsHold >= 0 ? '+' : ''}${fmt(netVsHold)}</div>
+                    <div class="text-[10px] ${breakEven ? 'text-neon-green' : 'text-amber-400'} mt-1">${breakEven ? '✓ A díjbevétel fedezte (vagy túl is szárnyalta) az IL-t.' : '⚠️ A díjbevétel NEM fedezte teljesen az IL-t — nettó még így is rosszabbul állsz, mint HODL-lal.'}</div>
+                </div>`;
+            }
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="glass-card rounded-xl p-3">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Árarány-változás</div>
+                        <div class="text-sm font-extrabold text-white font-mono">${priceChangePct >= 0 ? '+' : ''}${priceChangePct.toFixed(2)}%</div>
+                        <div class="text-[10px] text-slate-500 font-mono mt-0.5">k = ${k.toFixed(4)}</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-3 border border-neon-red/30">
+                        <div class="text-[10px] text-neon-red uppercase font-bold mb-1">Impermanent Loss</div>
+                        <div class="text-sm font-extrabold text-neon-red font-mono">${ilPct.toFixed(3)}%</div>
+                        <div class="text-[10px] text-slate-500 font-mono mt-0.5">${fmt(ilAbs)}</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">HODL érték (ha nem mentél poolba):</span>
+                    <span class="font-bold text-white">${fmt(hodlValue)}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">Pool érték (díjbevétel nélkül):</span>
+                    <span class="font-bold text-white">${fmt(poolValue)}</span>
+                </div>
+                ${feesBlock}
+            `;
+        }
+
         // ================= ATR-ALAPÚ POZÍCIÓMÉRET KALKULÁTOR (OKTATÁSI) =================
         function calcATRPositionSize() {
             const balance = parseFloat(document.getElementById('atr-balance').value);
@@ -30356,6 +30498,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             134: { tool: 'var-modal', cta: 'Számold ki a saját portfóliód VaR, CVaR és LVaR kockázati mutatóit' },
             187: { tool: 'volscale-modal', cta: 'Oszd el a tőkét risk parity elv szerint a stratégiáid közt' },
             540: { tool: 'szjatax-modal', cta: 'Számold ki a nettó SZJA-kötelezettséged a saját ügyleteidre' },
+            514: { tool: 'il-modal', cta: 'Számold ki élesben az Impermanent Loss mértékét egy likviditási poolban' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -30365,7 +30508,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
