@@ -7609,6 +7609,43 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="pyramid-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chess-rook text-amber-500"></i> Piramizálás Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('pyramid-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a kezdő belépő árat és méretet, hány pótlást (add-ont) tervezel, mekkora profit% után lépsz be mindegyiknél (lineárisan a kezdő ártól mérve), és az egyes pótlások mérete a kezdő méret hány %-a. A kalkulátor lépésről lépésre kiszámolja az átlagos belépő árat és a teljes pozícióméretet minden pótlás után.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő belépő ár</label>
+            <input type="number" id="pyramid-entry" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő pozícióméret</label>
+            <input type="number" id="pyramid-size" value="10" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Pótlások száma</label>
+                    <input type="number" id="pyramid-addons" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Trigger %</label>
+                    <input type="number" id="pyramid-trigger" value="5" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Pótlás méret %</label>
+                    <input type="number" id="pyramid-addpct" value="50" step="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+            </div>
+
+            <button onclick="calcPyramid()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-500 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="pyramid-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="fvg-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -19264,6 +19301,64 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        function calcPyramid() {
+            const entryEl = document.getElementById('pyramid-entry');
+            const sizeEl = document.getElementById('pyramid-size');
+            const addonsEl = document.getElementById('pyramid-addons');
+            const triggerEl = document.getElementById('pyramid-trigger');
+            const addpctEl = document.getElementById('pyramid-addpct');
+            const out = document.getElementById('pyramid-result');
+            if (!entryEl || !sizeEl || !addonsEl || !triggerEl || !addpctEl || !out) return;
+
+            const entry = parseFloat(entryEl.value);
+            const initSize = parseFloat(sizeEl.value);
+            const numAddons = parseInt(addonsEl.value, 10);
+            const triggerPct = parseFloat(triggerEl.value);
+            const addPct = parseFloat(addpctEl.value);
+
+            if ([entry, initSize, numAddons, triggerPct, addPct].some(v => isNaN(v)) || entry <= 0 || initSize <= 0 || numAddons < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt érvényesen ki kell tölteni (pozitív belépő ár, méret, legalább 1 pótlás)!</div>`;
+                return;
+            }
+
+            let totalSize = initSize;
+            let totalCost = entry * initSize;
+            const rows = [{ step: 0, price: entry, size: initSize, avgEntry: entry, totalSize }];
+
+            for (let i = 1; i <= numAddons; i++) {
+                const price = entry * (1 + i * triggerPct / 100);
+                const size = initSize * addPct / 100;
+                totalCost += price * size;
+                totalSize += size;
+                const avgEntry = totalCost / totalSize;
+                rows.push({ step: i, price, size, avgEntry, totalSize });
+            }
+
+            const growthPct = (totalSize / initSize - 1) * 100;
+            const finalAvg = rows[rows.length - 1].avgEntry;
+            const avgDriftPct = (finalAvg / entry - 1) * 100;
+
+            const rowsHtml = rows.map(r => `
+                <div class="flex justify-between font-mono text-[10px] py-1 border-b border-dark-750/50">
+                    <span class="text-slate-400">${r.step === 0 ? 'Belépő' : 'Pótlás #' + r.step}</span>
+                    <span class="text-white">${r.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                    <span class="text-slate-400">méret: ${r.size.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                    <span class="text-neon-cyan">átlag: ${r.avgEntry.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                </div>
+            `).join('');
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    ${rowsHtml}
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Végső pozícióméret:</span><span class="text-white">${totalSize.toLocaleString(undefined, { maximumFractionDigits: 4 })} (+${growthPct.toFixed(1)}%)</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Végső átlagos belépő:</span><span class="text-white">${finalAvg.toLocaleString(undefined, { maximumFractionDigits: 4 })} (eredetitől +${avgDriftPct.toFixed(2)}%)</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-3 leading-relaxed">Piramizálásnál csak NYERTES pozícióhoz adsz hozzá, így az átlagos belépő mindig az eredeti ár felett marad (long esetben) — ez korlátozza a kockázatot, mert a pótlások már realizált nyereség "fölé" épülnek. Minél nagyobb az egyes pótlások mérete, annál jobban elmozdul az átlag az aktuális ártól, ami csökkenti a biztonsági margót egy visszapattanásnál.</p>
+            `;
+        }
+
         function calcFVG() {
             const candlesEl = document.getElementById('fvg-candles');
             const out = document.getElementById('fvg-result');
@@ -30548,6 +30643,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            539: { tool: 'pyramid-modal', cta: 'Tervezd meg élesben a piramizálási lépéseket' },
             163: { tool: 'fvg-modal', cta: 'Keresd meg élesben a Fair Value Gap-eket' },
             139: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Hammer/Shooting Star felismerést' },
             92: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Marubozu felismerést' },
@@ -30757,7 +30853,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
