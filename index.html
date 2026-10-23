@@ -7609,6 +7609,39 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="mergerarb-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-handshake text-amber-500"></i> M&A Merger Arbitrage Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('mergerarb-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a bejelentés előtti árat, az ajánlott felvásárlási árat, a jelenlegi piaci árat és a becsült lezárásig hátralévő napok számát. A kalkulátor kiszámolja a felvásárlási prémiumot, a jelenlegi "merger arbitrage" spreadet, annak annualizált hozamát, valamint a piac által a jelenlegi árba beárazott sikerességi valószínűséget.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Bejelentés előtti ár</label>
+            <input type="number" id="ma-pre" value="50" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+            <label class="text-[11px] font-semibold text-slate-400">Ajánlott felvásárlási ár</label>
+            <input type="number" id="ma-offer" value="65" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Jelenlegi piaci ár</label>
+                    <input type="number" id="ma-current" value="63" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Napok a lezárásig</label>
+                    <input type="number" id="ma-days" value="90" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+                </div>
+            </div>
+
+            <button onclick="calcMergerArb()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-500 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="ma-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="pyramid-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -19301,6 +19334,50 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        function calcMergerArb() {
+            const preEl = document.getElementById('ma-pre');
+            const offerEl = document.getElementById('ma-offer');
+            const currentEl = document.getElementById('ma-current');
+            const daysEl = document.getElementById('ma-days');
+            const out = document.getElementById('ma-result');
+            if (!preEl || !offerEl || !currentEl || !daysEl || !out) return;
+
+            const preAnnounce = parseFloat(preEl.value);
+            const offerPrice = parseFloat(offerEl.value);
+            const currentPrice = parseFloat(currentEl.value);
+            const daysToClose = parseFloat(daysEl.value);
+
+            if ([preAnnounce, offerPrice, currentPrice, daysToClose].some(v => isNaN(v)) || preAnnounce <= 0 || offerPrice <= 0 || currentPrice <= 0 || daysToClose <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden árnak és napszámnak pozitívnak kell lennie!</div>`;
+                return;
+            }
+            if (offerPrice === preAnnounce) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az ajánlati ár nem lehet egyenlő a bejelentés előtti árral (a bennefoglalt valószínűség nem számolható)!</div>`;
+                return;
+            }
+
+            const premiumPct = (offerPrice - preAnnounce) / preAnnounce * 100;
+            const spreadPct = (offerPrice - currentPrice) / currentPrice * 100;
+            const annualizedPct = spreadPct * (365 / daysToClose);
+            const impliedProb = (currentPrice - preAnnounce) / (offerPrice - preAnnounce) * 100;
+
+            let probNote;
+            if (impliedProb >= 85) probNote = 'A piac nagy biztonsággal (≥85%) árazza be az ügylet sikeres lezárását.';
+            else if (impliedProb >= 60) probNote = 'A piac közepesen magas (60-85%) sikerességi esélyt áraz be — van még bizonytalanság.';
+            else if (impliedProb >= 0) probNote = 'A piac alacsony vagy bizonytalan sikerességi esélyt áraz be — jelentős kockázatot lát (szabályozói, finanszírozási, szavazási) az ügylet körül.';
+            else probNote = 'A jelenlegi ár a bejelentés előtti ár ALATT van — a piac szerint az ügylet meghiúsulásának esélye és/vagy egy általánosabb árfolyam-visszaesés dominál.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Felvásárlási prémium:</span><span class="text-neon-green">+${premiumPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Jelenlegi merger-arb spread:</span><span class="text-white">${spreadPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Annualizált spread-hozam:</span><span class="text-white">${annualizedPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Beárazott siker-valószínűség:</span><span class="text-neon-cyan">${impliedProb.toFixed(1)}%</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${probNote} A beárazott valószínűség abból a feltételezésből számol, hogy sikertelen ügylet esetén az árfolyam visszaesne a bejelentés előtti szintre — ez egyszerűsítés, a valóságban a "deal-break" ár máshol is lehet.</p>
+            `;
+        }
+
         function calcPyramid() {
             const entryEl = document.getElementById('pyramid-entry');
             const sizeEl = document.getElementById('pyramid-size');
@@ -30643,6 +30720,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            549: { tool: 'mergerarb-modal', cta: 'Számold ki élesben a merger arbitrage spreadet' },
             539: { tool: 'pyramid-modal', cta: 'Tervezd meg élesben a piramizálási lépéseket' },
             163: { tool: 'fvg-modal', cta: 'Keresd meg élesben a Fair Value Gap-eket' },
             139: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Hammer/Shooting Star felismerést' },
@@ -30853,7 +30931,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
