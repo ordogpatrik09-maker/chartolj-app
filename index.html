@@ -1988,6 +1988,13 @@
                                 <div class="text-[10px] text-slate-400">Likviditási pool vs. HODL: mennyit veszítesz az árelmozdulással?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('tailhedge-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-umbrella"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Tail Hedge Költség-Haszon Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Fedezés várható költsége vs. várható kárcsökkentés, breakevennel</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -6961,6 +6968,73 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
+         Egyszerűsített, várható-érték alapú modell (NEM Monte Carlo, NEM
+         compoundolt útfüggő szimuláció) a tail risk hedging (pl. távoli
+         OTM put opciók rendszeres vásárlása) költsége és várható haszna
+         közti mérlegeléshez.
+
+         totalCostDragFrac = 1 - (1-c/100)^n   (a fedezés kumulált "drag"-ja
+         a portfólión a horizont alatt, compoundolva évente)
+         expectedCrashEvents = n × (p/100)      (várható tail-esemény szám)
+         expectedLossUnhedged = V × (L/100) × expectedCrashEvents
+         expectedLossHedged   = V × (L/100) × (1 − offset/100) × expectedCrashEvents
+         netBenefit = (expectedLossUnhedged − expectedLossHedged) − V×totalCostDragFrac
+
+         A breakeven offset% / breakeven évenkénti esély% azt mutatja meg,
+         mekkora hedge-hatékonyság / esemény-gyakoriság mellett térülne meg
+         PONTOSAN a fedezés költsége — ez NEM azt jelenti, hogy a hedge
+         "rossz döntés", ha alatta van: a legtöbb biztosítás, beleértve a
+         tail risk hedginget is, SZÁNDÉKOSAN negatív várható értékű — a
+         kérdés az, mennyit ér a nyugalom egy katasztrofális forgatókönyv
+         ellen (lásd lecke 292 és 409). -->
+    <div id="tailhedge-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-umbrella text-neon-red"></i> Tail Hedge Költség-Haszon Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('tailhedge-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A tail risk hedging (pl. távoli OTM put opciók rendszeres vásárlása) olyan "biztosítás", ami ritkán fizet ki, de akkor sokat — a rendszeres díj viszont nyugodt piacon is felmerül. Add meg a feltevéseidet, és a kalkulátor megmutatja, várható értékben mennyit térül meg a fedezés, és mekkora hatékonyság/esemény-gyakoriság mellett érné el pontosan a megtérülést (breakeven).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Portfólió értéke ($)</label>
+            <input type="number" id="tailhedge-portfolio" value="100000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Éves fedezési költség (%)</label>
+                    <input type="number" id="tailhedge-cost" value="2" step="0.1" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Horizont (év)</label>
+                    <input type="number" id="tailhedge-years" value="5" step="0.5" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Tail-esemény esélye (%/év)</label>
+                    <input type="number" id="tailhedge-prob" value="10" step="0.1" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Veszteség egy esemény esetén (%, fedezés nélkül)</label>
+                    <input type="number" id="tailhedge-loss" value="35" step="1" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Fedezés hatékonysága (%, mennyit térít az esemény veszteségéből)</label>
+            <input type="number" id="tailhedge-offset" value="70" step="1" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcTailHedgeCostBenefit()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="tailhedge-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy EGYSZERŰSÍTETT, várható-érték alapú közelítés (lineáris, nem compoundolt kárgyakoriság, nem teljes Monte Carlo eloszlás) — oktatási célra, a fedezés költség/haszon LOGIKÁJÁNAK megértésére, nem pontos árazási modellként. A legtöbb biztosítás — a tail risk hedging is — TERVEZETTEN negatív várható értékű; ha a breakeven alatt vagy, ez nem automatikusan hiba, hanem a "nyugalom ára", amit te döntesz el, hogy megér-e.</p>
+        </div>
+    </div>
+
     <!-- ================= ATR-ALAPÚ POZÍCIÓMÉRET KALKULÁTOR (OKTATÁSI) =================
          A fix pénzbeli/pont-alapú stop-loss helyett a profik gyakran az
          ATR-t (Average True Range — az adott eszköz átlagos napi/időkeretenkénti
@@ -10281,6 +10355,13 @@ SOL Long,1</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Impermanent Loss Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Likviditási pool vs. HODL: mennyit veszítesz az árelmozdulással?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('tailhedge-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-umbrella"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Tail Hedge Költség-Haszon Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Fedezés várható költsége vs. várható kárcsökkentés, breakevennel</div>
                 </div>
             </button>
         </div>
@@ -23029,6 +23110,87 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
+        // totalCostDragFrac = 1 - (1-c/100)^n  (kumulált, compoundolt "drag" a
+        // portfólión a horizont alatt a rendszeres fedezési díj miatt)
+        // expectedCrashEvents = n × (p/100)  (várható tail-esemény szám a horizonton,
+        // lineáris közelítés, nem compoundolt kárfolyamat)
+        // expectedLossUnhedged = V × (L/100) × expectedCrashEvents
+        // expectedLossHedged   = V × (L/100) × (1-offset/100) × expectedCrashEvents
+        // netBenefit = (expectedLossUnhedged - expectedLossHedged) - V×totalCostDragFrac
+        // breakevenOffsetFrac = totalCostDragFrac / (L/100 × expectedCrashEvents)
+        // breakevenPFrac      = totalCostDragFrac / (n × L/100 × offset/100)
+        // (mindkét breakeven FÜGGETLEN attól, hogy a megadott p/offset mellett
+        // a fedezés éppen megtérül-e — azt mutatják meg, HOL lenne pontosan a határ)
+        function calcTailHedgeCostBenefit() {
+            const ids = ['tailhedge-portfolio', 'tailhedge-cost', 'tailhedge-years', 'tailhedge-prob', 'tailhedge-loss', 'tailhedge-offset'];
+            const els = ids.map(id => document.getElementById(id));
+            const out = document.getElementById('tailhedge-result');
+            if (els.some(el => !el) || !out) return;
+
+            const [portfolio, costPct, years, probPct, lossPct, offsetPct] = els.map(el => parseFloat(el.value));
+
+            if (!portfolio || portfolio <= 0 ||
+                isNaN(costPct) || costPct < 0 || costPct > 100 ||
+                !years || years <= 0 ||
+                isNaN(probPct) || probPct < 0 || probPct > 100 ||
+                isNaN(lossPct) || lossPct < 0 || lossPct > 100 ||
+                isNaN(offsetPct) || offsetPct < 0 || offsetPct > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb portfólióértéket, egy nullánál nagyobb horizontot (év), és 0-100 közötti költség / esély / veszteség / hatékonyság %-okat!</div>`;
+                return;
+            }
+
+            const cFrac = costPct / 100;
+            const pFrac = probPct / 100;
+            const lFrac = lossPct / 100;
+            const offFrac = offsetPct / 100;
+
+            const totalCostDragFrac = 1 - Math.pow(1 - cFrac, years);
+            const totalCostCurrency = portfolio * totalCostDragFrac;
+            const probAtLeastOneFrac = 1 - Math.pow(1 - pFrac, years);
+            const expectedCrashEvents = years * pFrac;
+            const expectedLossUnhedged = portfolio * lFrac * expectedCrashEvents;
+            const netCrashLossFrac = lFrac * (1 - offFrac);
+            const expectedLossHedged = portfolio * netCrashLossFrac * expectedCrashEvents;
+            const lossReduction = expectedLossUnhedged - expectedLossHedged;
+            const netBenefit = lossReduction - totalCostCurrency;
+
+            const offsetDenom = lFrac * expectedCrashEvents;
+            const breakevenOffsetFrac = offsetDenom > 0 ? (totalCostDragFrac / offsetDenom) : Infinity;
+            const probDenom = years * lFrac * offFrac;
+            const breakevenPFrac = probDenom > 0 ? (totalCostDragFrac / probDenom) : Infinity;
+
+            const fmtPct = (frac) => isFinite(frac) ? `${(frac * 100).toFixed(1)}%` : 'nem érhető el (0 osztó)';
+            const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+
+            let colorClass, verdict;
+            if (netBenefit > 0) {
+                colorClass = 'text-neon-green';
+                verdict = '✅ A megadott feltevések mellett a fedezés VÁRHATÓ ÉRTÉKBEN is kifizetődik — a várt kárcsökkentés nagyobb, mint a fedezés teljes költsége a horizonton. Ez a tail hedgingnél nem a tipikus eset (a legtöbb biztosítás negatív EV), de előfordulhat magas esemény-esély vagy nagyon hatékony fedezés mellett.';
+            } else if (totalCostCurrency > 0 && netBenefit >= -0.5 * totalCostCurrency) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ A fedezés a költségének nagy részét várható értékben "visszahozza", de nem teljesen — a maradék a biztosítás ára. Ez ÖNMAGÁBAN nem hiba: a kérdés az, mennyit ér neked a nyugalom egy katasztrofális forgatókönyv ellen.';
+            } else {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 A fedezés jelentősen a költségén marad várható értékben ezekkel a feltevésekkel — ez a biztosítások TERVEZETT jellemzője, nem hiba. Ha a nyugalom nem ér ennyit neked, fontold meg az olcsóbb/ritkább fedezést, vagy a kockázattűrésed felülvizsgálatát.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes fedezési költség a horizonton:</span><span class="text-white">${fmtMoney(totalCostCurrency)} (${(totalCostDragFrac * 100).toFixed(2)}%)</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Legalább 1 tail-esemény esélye a horizonton:</span><span class="text-white">${(probAtLeastOneFrac * 100).toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Várható esemény-szám a horizonton:</span><span class="text-white">${expectedCrashEvents.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Várható veszteség fedezés NÉLKÜL:</span><span class="text-white">${fmtMoney(expectedLossUnhedged)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Várható veszteség fedezéssel:</span><span class="text-white">${fmtMoney(expectedLossHedged)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Veszteség-csökkenés a fedezés által:</span><span class="text-white">${fmtMoney(lossReduction)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Nettó eredmény (csökkenés − költség):</span><span class="font-extrabold ${colorClass} text-sm">${netBenefit >= 0 ? '+' : ''}${fmtMoney(netBenefit)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Megtérüléshez szükséges min. hatékonyság:</span><span class="text-white">${fmtPct(breakevenOffsetFrac)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Megtérüléshez szükséges min. esély/év:</span><span class="text-white">${fmtPct(breakevenPFrac)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
         // ================= PROP TRADING KIHÍVÁS KOCKÁZATKEZELŐ KALKULÁTOR (OKTATÁSI) =================
         // Minden limit a KEZDŐ egyenleg %-ában értendő, statikusan (nem
         // compoundolva). maxConsecLossesX = floor(limitX% / kockázat%) —
@@ -32946,6 +33108,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             356: { tool: 'seqsim-modal', cta: 'Hasonlítsd össze élesben a szekvenciális és egyidejű kockázatodat' },
             359: { tool: 'seqsim-modal', cta: 'Nézd meg élesben Ferenc esetét a Szekvenciális vs Egyidejű Kockázat kalkulátorban' },
             418: { tool: 'divrisk-modal', cta: 'Bontsd szét élesben a kockázatot szisztematikus és eszköz-specifikus részre' },
+            292: { tool: 'tailhedge-modal', cta: 'Számold ki élesben egy tail hedge várható költségét és hasznát' },
+            409: { tool: 'tailhedge-modal', cta: 'Vizsgáld meg élesben a tail hedging költsége vs. elmaradt haszon mérlegét' },
         };
 
         function tryToolFromLesson(lessonIdx) {
