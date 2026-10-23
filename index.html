@@ -1694,6 +1694,13 @@
                                 <div class="text-[10px] text-slate-400">ATR-alapú trailing stop a csúcsponttól</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('stc-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-rotate"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Schaff Trend Cycle Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">MACD + dupla Stochastic-simítás, 0-100 skálán</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('supertrend-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-trend-up"></i></span>
                             <div>
@@ -4265,6 +4272,42 @@ Kripto: 15000, 20</textarea>
 
             <div id="envelope-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Mivel a sáv szélessége fix százalék, az Envelope egyszerűbb és könnyebben érthető, mint a Bollinger vagy a Keltner — de nem alkalmazkodik automatikusan, ha a piac volatilitása hirtelen megváltozik.</p>
+        </div>
+    </div>
+
+    <!-- ================= SCHAFF TREND CYCLE KALKULÁTOR (OKTATÁSI) =================
+         Doug Schaff módszere: MACD vonal (gyors EMA - lassú EMA) ->
+         Stochastic-formula a MACD-re (%K1) -> EMA-szerű simítás (0.5
+         faktorral) -> %D1 -> újra Stochastic-formula a %D1-re (%K2) ->
+         ugyanaz a simítás -> %D2 = végső Schaff Trend Cycle, 0-100
+         skálán. A dupla Stochastic-lépés miatt gyorsabban reagál, mint a
+         sima MACD, de ezért nagyobb a hamis jelzés kockázata is. -->
+    <div id="stc-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-rotate text-neon-purple"></i> Schaff Trend Cycle Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('stc-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Schaff Trend Cycle a MACD-re alkalmaz Stochastic-szerű újraskálázást, MÉG EGYSZER megismételve a lépést — ezért gyorsabb, kevésbé késleltetett jelzéseket ad, mint a sima MACD, 0-100 közötti skálán (túlvett 75 fölött, túladott 25 alatt). Add meg a záróárakat vesszővel elválasztva, időrendben, valamint a gyors/lassú EMA és a ciklushossz periódusokat.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (vesszővel elválasztva, időrendben)</label>
+            <textarea id="stc-closes" rows="5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-purple/50">100,101.13,102.24,103.3,104.29,105.2,106.01,106.7,107.26,107.69,107.98,108.13,108.15,108.04,107.82,107.49,107.09,106.62,106.11,105.57,105.05,104.55,104.09,103.71,103.42,103.23,103.15,103.21,103.41,103.74,104.21,104.81,105.53,106.37,107.31,108.33,109.4,110.52,111.65,112.78,113.87,114.91,115.88,116.76,117.54,118.19,118.71,119.1,119.35,119.46,119.44,119.29,119.04,118.69,118.26,117.78,117.26,116.72,116.2,115.71,115.28,114.92,114.66,114.5,114.47,114.57,114.8,115.17,115.68,116.32,117.08,117.95,118.92,119.95,121.05,122.17,123.3,124.42,125.5,126.52,127.47,128.32,129.06,129.67,130.15,130.5,130.7,130.77,130.72,130.54</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyors EMA / Lassú EMA / Ciklushossz (klasszikusan 23 / 50 / 10)</label>
+            <div class="flex gap-2 mt-1 mb-4">
+                <input type="number" id="stc-fast" value="23" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                <input type="number" id="stc-slow" value="50" step="1" min="3" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                <input type="number" id="stc-cycle" value="10" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+            </div>
+
+            <button onclick="calcSchaffTrendCycle()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="stc-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A gyorsabb reagálás ára gyakran több hamis jelzés, különösen volatilis vagy oldalazó piacon — ez csak egy momentum-kiegészítő eszköz, önmagában nem kereskedési jelzés.</p>
         </div>
     </div>
 
@@ -8943,6 +8986,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Chandelier Exit Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">ATR-alapú trailing stop a csúcsponttól</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('stc-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-rotate"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Schaff Trend Cycle Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">MACD + dupla Stochastic-simítás, 0-100 skálán</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('supertrend-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -16527,6 +16577,115 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-slate-400">Pozíció a sávban (0-100%):</span>
                         <span class="font-extrabold text-white text-sm">${positionPct.toFixed(1)}%</span>
                     </div>` : ''}
+                </div>
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[11px] font-semibold ${colorClass} leading-relaxed">${verdict}</div>
+                </div>
+            `;
+        }
+
+        // ================= SCHAFF TREND CYCLE KALKULÁTOR (OKTATÁSI) =================
+        // MACD = EMA(gyors) - EMA(lassú); %K1 = Stochastic-formula a MACD-re
+        // (ciklushossz ablakban); %D1 = %K1 EMA-szerű simítása (faktor 0.5,
+        // seedelve az első %K1 értékkel); %K2 = Stochastic-formula a %D1-re;
+        // STC = %D2 = %K2 ugyanilyen simítása. A dupla Stochastic-lépés miatt
+        // gyorsabb, de zajosabb jelzés, mint a sima MACD.
+        function stcStochasticSeries(src, len) {
+            const result = [];
+            for (let i = len - 1; i < src.length; i++) {
+                const win = src.slice(i - len + 1, i + 1);
+                const lo = Math.min(...win);
+                const hi = Math.max(...win);
+                result.push(hi === lo ? 50 : 100 * (src[i] - lo) / (hi - lo));
+            }
+            return result;
+        }
+
+        function stcSmoothSeries(src, factor) {
+            const result = [src[0]];
+            for (let i = 1; i < src.length; i++) {
+                result.push(result[i - 1] + factor * (src[i] - result[i - 1]));
+            }
+            return result;
+        }
+
+        function calcSchaffTrendCycle() {
+            const closesEl = document.getElementById('stc-closes');
+            const fastEl = document.getElementById('stc-fast');
+            const slowEl = document.getElementById('stc-slow');
+            const cycleEl = document.getElementById('stc-cycle');
+            const out = document.getElementById('stc-result');
+            if (!closesEl || !fastEl || !slowEl || !cycleEl || !out) return;
+
+            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const fastPeriod = parseInt(fastEl.value);
+            const slowPeriod = parseInt(slowEl.value);
+            const cycleLength = parseInt(cycleEl.value);
+
+            if (!fastPeriod || !slowPeriod || !cycleLength || fastPeriod < 2 || slowPeriod < 3 || cycleLength < 2 || fastPeriod >= slowPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódusokat — a gyors EMA-nak kisebbnek kell lennie a lassú EMA-nál (legalább 2), a lassú EMA-nak legalább 3-nak, és a ciklushossznak legalább 2-nek!</div>`;
+                return;
+            }
+
+            const minNeeded = slowPeriod + 2 * cycleLength;
+            if (closes.length < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég záróár a dupla Stochastic-simításhoz — a megadott periódusokhoz legalább ${minNeeded} záróár szükséges (jelenleg ${closes.length} érvényes van megadva)!</div>`;
+                return;
+            }
+
+            const fastEma = emaSmaSeededAligned(closes, fastPeriod);
+            const slowEma = emaSmaSeededAligned(closes, slowPeriod);
+
+            const macdSeries = [];
+            for (let i = 0; i < closes.length; i++) {
+                if (fastEma[i] !== null && slowEma[i] !== null) {
+                    macdSeries.push(fastEma[i] - slowEma[i]);
+                }
+            }
+
+            const k1Series = stcStochasticSeries(macdSeries, cycleLength);
+            if (k1Series.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni az első Stochastic-lépést — adj meg több záróárat!</div>`;
+                return;
+            }
+            const d1Series = stcSmoothSeries(k1Series, 0.5);
+
+            const k2Series = stcStochasticSeries(d1Series, cycleLength);
+            if (k2Series.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni a második Stochastic-lépést — adj meg több záróárat!</div>`;
+                return;
+            }
+            const d2Series = stcSmoothSeries(k2Series, 0.5);
+
+            const stc = d2Series[d2Series.length - 1];
+            const prevStc = d2Series.length > 1 ? d2Series[d2Series.length - 2] : null;
+            const lastMacd = macdSeries[macdSeries.length - 1];
+
+            let colorClass, verdict;
+            if (stc > 75) {
+                colorClass = 'text-neon-red';
+                verdict = 'Túlvett zóna (STC > 75) — a felfelé momentum statisztikailag nagyobb eséllyel fulladhat ki hamarosan.';
+            } else if (stc < 25) {
+                colorClass = 'text-neon-green';
+                verdict = 'Túladott zóna (STC < 25) — a lefelé momentum statisztikailag nagyobb eséllyel fulladhat ki hamarosan.';
+            } else {
+                colorClass = 'text-slate-300';
+                verdict = 'Normál tartomány (25-75 között) — nincs extrém momentum-állapot jelenleg.';
+            }
+            if (prevStc !== null) {
+                const rising = stc > prevStc;
+                verdict += rising ? ' Az STC emelkedik az előző értékéhez képest.' : ' Az STC csökken az előző értékéhez képest.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-neon-purple/30 bg-neon-purple/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Schaff Trend Cycle (0-100)</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${stc.toFixed(2)}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">MACD (${fastPeriod},${slowPeriod}) utolsó értéke:</span><span class="text-white">${lastMacd.toFixed(4)}</span></div>
+                    ${prevStc !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző STC:</span><span class="text-slate-300">${prevStc.toFixed(2)}</span></div>` : ''}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">STC:</span><span class="${colorClass} font-extrabold text-sm">${stc.toFixed(2)}</span></div>
                 </div>
                 <div class="glass-card rounded-xl p-3">
                     <div class="text-[11px] font-semibold ${colorClass} leading-relaxed">${verdict}</div>
@@ -29365,6 +29524,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             473: { tool: 'atr-modal', cta: 'Számold ki élesben az ATR-t, és hasonlítsd a historikus volatilitáshoz' },
             412: { tool: 'multikelly-modal', cta: 'Számold ki élesben a korrelált portfólió Kelly-allokációját' },
             420: { tool: 'envelope-modal', cta: 'Számold ki élesben az Envelope Csatorna sávjait' },
+            490: { tool: 'stc-modal', cta: 'Számold ki élesben a Schaff Trend Cycle-t' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -29374,7 +29534,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
