@@ -1995,6 +1995,13 @@
                                 <div class="text-[10px] text-slate-400">Fedezés várható költsége vs. várható kárcsökkentés, breakevennel</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('feestruct-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-compare"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fix vs Százalékos Jutalék Összehasonlító</div>
+                                <div class="text-[10px] text-slate-400">Melyik díjazási modell olcsóbb a te tételméreteden?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -7035,6 +7042,53 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= FIX VS SZÁZALÉKOS JUTALÉK ÖSSZEHASONLÍTÓ (OKTATÁSI) =================
+         Két alapvető bróker díjazási modell: a FIX jutalék ugyanannyi minden
+         trade-nél a pozícióméret méretétől függetlenül, a SZÁZALÉKOS jutalék a
+         pozíció értékének adott hányada. Van egy pontos breakeven pozícióméret,
+         ahol a két modell költsége megegyezik:
+           breakEvenPosition = flatFeePerSide / (pctFeePerSide/100)
+         Ez alatt (kisebb pozícióméretnél) a FIX díj a drágább, mert a
+         százalékos díj a kis pozícióval arányosan kevesebbet kér, míg a fix
+         díj állandó marad; efelett (nagyobb pozícióméretnél) pedig a
+         SZÁZALÉKOS díj válik drágábbá, mert az a pozícióval arányosan nő,
+         míg a fix díj továbbra sem változik. -->
+    <div id="feestruct-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-code-compare text-amber-400"></i> Fix vs Százalékos Jutalék Összehasonlító
+                </h3>
+                <button onclick="closeToolModal('feestruct-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Melyik bróker-díjazási modell olcsóbb NEKED — a fix (mindig ugyanannyi) vagy a százalékos (a pozícióméret arányában nő)? Add meg a saját adataidat, és a kalkulátor megmutatja a pontos töréspontot (breakeven pozícióméretet) is, ahol a kettő egyenlő.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Jellemző pozícióméret ($)</label>
+            <input type="number" id="feestruct-position" value="1000" step="10" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Fix díj / oldal ($)</label>
+                    <input type="number" id="feestruct-flat" value="1" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Százalékos díj / oldal (%)</label>
+                    <input type="number" id="feestruct-pct" value="0.1" step="0.01" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Trade-ek száma (round-trip, adott időszakban)</label>
+            <input type="number" id="feestruct-trades" value="20" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcFeeStructureComparison()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="feestruct-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A breakeven pozícióméret azt mutatja, hol egyezik meg pontosan a két modell round-trip költsége (fix díj / oldal ÷ százalékos díj / oldal). Kisebb jellemző pozícióméretnél a FIX jutalék relatíve drágább (arányosan nagyobb terhet jelent kis tételnél), nagyobb pozícióméretnél pedig a SZÁZALÉKOS jutalék drágább, mert a díj a mérettel arányosan nő, míg a fix díj állandó marad.</p>
+        </div>
+    </div>
+
     <!-- ================= ATR-ALAPÚ POZÍCIÓMÉRET KALKULÁTOR (OKTATÁSI) =================
          A fix pénzbeli/pont-alapú stop-loss helyett a profik gyakran az
          ATR-t (Average True Range — az adott eszköz átlagos napi/időkeretenkénti
@@ -10362,6 +10416,13 @@ SOL Long,1</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Tail Hedge Költség-Haszon Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Fedezés várható költsége vs. várható kárcsökkentés, breakevennel</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('feestruct-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-code-compare"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Fix vs Százalékos Jutalék Összehasonlító</div>
+                    <div class="text-[10px] text-slate-400">Melyik díjazási modell olcsóbb a te tételméreteden?</div>
                 </div>
             </button>
         </div>
@@ -23191,6 +23252,90 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= FIX VS SZÁZALÉKOS JUTALÉK ÖSSZEHASONLÍTÓ (OKTATÁSI) =================
+        // flatCostPerSide = flatFeePerSide (állandó, pozícióméret-független)
+        // pctCostPerSide  = position × (pctFeePerSide/100)  (arányos a mérettel)
+        // round-trip (be+ki) = 2× az oldalankénti díj
+        // breakEvenPosition = flatFeePerSide / (pctFeePerSide/100)
+        //   (az a pozícióméret, ahol a két oldalankénti díj pontosan egyenlő —
+        //    a round-trip szorzó és a trade-szám mindkét oldalon ugyanaz, így
+        //    a töréspont nem függ tőlük)
+        function calcFeeStructureComparison() {
+            const ids = ['feestruct-position', 'feestruct-flat', 'feestruct-pct', 'feestruct-trades'];
+            const els = ids.map(id => document.getElementById(id));
+            const out = document.getElementById('feestruct-result');
+            if (els.some(el => !el) || !out) return;
+
+            const [position, flatFeePerSide, pctFeePerSide, tradesRaw] = els.map(el => parseFloat(el.value));
+            const trades = Math.max(1, Math.round(tradesRaw || 0));
+
+            if (!position || position <= 0 ||
+                isNaN(flatFeePerSide) || flatFeePerSide < 0 ||
+                isNaN(pctFeePerSide) || pctFeePerSide < 0 ||
+                !trades || trades <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb pozícióméretet, egy nullánál nem kisebb fix díjat és százalékos díjat, és legalább 1 trade-et!</div>`;
+                return;
+            }
+
+            const flatCostPerRoundTrip = flatFeePerSide * 2;
+            const pctCostPerRoundTrip = position * (pctFeePerSide / 100) * 2;
+            const totalFlatCost = flatCostPerRoundTrip * trades;
+            const totalPctCost = pctCostPerRoundTrip * trades;
+            const diff = totalPctCost - totalFlatCost;
+            const breakEvenPosition = pctFeePerSide > 0 ? (flatFeePerSide / (pctFeePerSide / 100)) : Infinity;
+            const flatAsPctOfPosition = (flatCostPerRoundTrip / position) * 100;
+            const pctAsPctOfPosition = pctCostPerRoundTrip / position * 100;
+
+            const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            const fmtPos = isFinite(breakEvenPosition) ? fmtMoney(breakEvenPosition) : 'nincs (a százalékos díj 0%, így sosem drágább)';
+
+            let colorClass, verdict, cheaperLabel;
+            const EPS = 1e-9;
+            if (Math.abs(diff) < EPS) {
+                colorClass = 'text-amber-400';
+                cheaperLabel = 'egyenlő';
+                verdict = '⚖️ A megadott pozícióméret pontosan a breakeven ponton van — a két díjmodell költsége egyenlő.';
+            } else if (diff > 0) {
+                colorClass = 'text-neon-green';
+                cheaperLabel = 'a FIX díj';
+                verdict = `✅ Ezen a pozícióméreten a FIX jutalék olcsóbb — a pozíció már elég nagy ahhoz, hogy a százalékos díj (amely a mérettel arányosan nő) meghaladja az állandó fix díjat. Minél nagyobb a tipikus pozícióméreted a breakeven (${fmtPos}) felett, annál jobban megéri a fix díjas bróker.`;
+            } else {
+                colorClass = 'text-neon-green';
+                cheaperLabel = 'a SZÁZALÉKOS díj';
+                verdict = `✅ Ezen a pozícióméreten a SZÁZALÉKOS jutalék olcsóbb — a pozíció még elég kicsi ahhoz, hogy a mérettel arányos díj kevesebb legyen, mint az állandó fix díj. Minél kisebb a tipikus pozícióméreted a breakeven (${fmtPos}) alatt, annál jobban megéri a százalékos díjas bróker.`;
+            }
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Összes FIX díj (${trades} trade)</div>
+                        <div class="text-sm font-extrabold text-white">${fmtMoney(totalFlatCost)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${flatAsPctOfPosition.toFixed(3)}% / trade</div>
+                    </div>
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Összes SZÁZALÉKOS díj (${trades} trade)</div>
+                        <div class="text-sm font-extrabold text-white">${fmtMoney(totalPctCost)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${pctAsPctOfPosition.toFixed(3)}% / trade</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Olcsóbb modell ezen a méreten:</span>
+                    <span class="font-extrabold ${colorClass}">${cheaperLabel}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Különbség a teljes időszakra:</span>
+                    <span class="font-bold text-white">${fmtMoney(Math.abs(diff))}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">Breakeven pozícióméret:</span>
+                    <span class="font-bold text-white">${fmtPos}</span>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-amber-400/10 border border-amber-400/30">
+                    <span class="text-xs text-amber-300 font-bold">${verdict}</span>
+                </div>
+            `;
+        }
+
         // ================= PROP TRADING KIHÍVÁS KOCKÁZATKEZELŐ KALKULÁTOR (OKTATÁSI) =================
         // Minden limit a KEZDŐ egyenleg %-ában értendő, statikusan (nem
         // compoundolva). maxConsecLossesX = floor(limitX% / kockázat%) —
@@ -33110,6 +33255,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             418: { tool: 'divrisk-modal', cta: 'Bontsd szét élesben a kockázatot szisztematikus és eszköz-specifikus részre' },
             292: { tool: 'tailhedge-modal', cta: 'Számold ki élesben egy tail hedge várható költségét és hasznát' },
             409: { tool: 'tailhedge-modal', cta: 'Vizsgáld meg élesben a tail hedging költsége vs. elmaradt haszon mérlegét' },
+            430: { tool: 'feestruct-modal', cta: 'Hasonlítsd össze élesben a fix és a százalékos jutalék modellt' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -33119,7 +33265,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
