@@ -1701,6 +1701,13 @@
                                 <div class="text-[10px] text-slate-400">Osztalékhozam, és a visszaforgatás (DRIP) hosszú-távú hatása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('split-buyback-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-building"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Stock Split &amp; Buyback Hatás Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Split és visszavásárlás hatása az árra, EPS-re</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
                             <div>
@@ -4277,6 +4284,53 @@ Kripto: 15000, 20</textarea>
 
             <div id="dividend-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az árfolyam-növekedési ráta itt egy BECSLÉS az illusztrációhoz, nem előrejelzés — a jövőbeli árfolyam valójában ismeretlen és ingadozó. Egy gyanúsan magas (pl. 2 számjegyű) osztalékhozam gyakran azt jelzi, hogy az árfolyam esett és a piac osztalékcsökkentésre számít, nem "ingyen pénzt".</p>
+        </div>
+    </div>
+
+    <!-- ================= STOCK SPLIT & BUYBACK HATÁS KALKULÁTOR (OKTATÁSI) =================
+         Split: ár/ratio, részvényszám×ratio — a market cap elméletileg változatlan.
+         Buyback: visszavásárolt db = összeg / split utáni ár; az EPS nő, mert
+         ugyanaz a nettó profit kevesebb részvényre jut szét. -->
+    <div id="split-buyback-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-building text-amber-400"></i> Stock Split &amp; Buyback Hatás Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('split-buyback-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg egy vállalat adatait — a kalkulátor megmutatja, mi történik az árfolyammal, a részvényszámmal és az EPS-sel (egy részvényre jutó nyereséggel) egy <strong class="text-white">stock split</strong> és/vagy egy <strong class="text-white">részvény-visszavásárlás (buyback)</strong> után.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Jelenlegi árfolyam</label>
+                    <input id="splitbb-price0" type="number" value="400" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Kint lévő részvények (db)</label>
+                    <input id="splitbb-shares0" type="number" value="1000000" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Éves nettó profit (ugyanaz a pénznem, mint az árfolyam)</label>
+            <input id="splitbb-ni" type="number" value="40000000" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2.5 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Split arány (pl. 4 = "4-az-1-hez"; 1 = nincs split)</label>
+                    <input id="splitbb-ratio" type="number" value="4" step="any" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Buyback összeg (0 = nincs visszavásárlás)</label>
+                    <input id="splitbb-buyback" type="number" value="0" step="any" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+            </div>
+
+            <button onclick="calcSplitBuyback()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="split-buyback-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A split egy "0,01-es szorzóként" is megadható fordított (reverse) splithez — pl. 0.1 egy "1-az-10-hez" reverse splitet jelent. A buyback itt egyszerűsített modell: feltételezi, hogy az árfolyam a visszavásárlás pillanatában nem mozdul — a valóságban a bejelentés maga is hat az árra.</p>
         </div>
     </div>
 
@@ -9759,6 +9813,13 @@ Mean-reversion,1,0</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Osztalékhozam &amp; DRIP Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Osztalékhozam, és a visszaforgatás (DRIP) hosszú-távú hatása</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('split-buyback-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-building"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Stock Split &amp; Buyback Hatás Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Split és visszavásárlás hatása az árra, EPS-re</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('keltner-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -18357,6 +18418,133 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <div class="glass-card rounded-xl p-3">
                     <div class="text-[11px] font-semibold text-slate-300 leading-relaxed">${dripBonus > 0.005 ? `A visszaforgatás (DRIP) ${dripBonus.toFixed(0)} extra értéket teremtett ${years} év alatt azáltal, hogy a megkapott osztalékokból vásárolt új részvények is tovább hoztak osztalékot és árfolyamnyereséget — ez a "compounding" ereje.` : (dripBonus < -0.005 ? `Ebben a szcenárióban a DRIP-bónusz negatív (${dripBonus.toFixed(0)}) — ez akkor fordulhat elő, ha az árfolyam csökkenő trendben van, így az újonnan vásárolt részvények már a csökkenő áron, majd további eséssel veszítenek értékükből.` : 'A DRIP-bónusz jelen szcenárióban elhanyagolható.')}</div>
+                </div>
+            `;
+        }
+
+        // Stock Split & Buyback Hatás Kalkulátor
+        // Split: ár/ratio, részvényszám×ratio (market cap elméletileg változatlan).
+        // Buyback: visszavásárolt db = összeg / split utáni ár; az új részvényszám
+        // csökken, így ugyanaz a nettó profit kevesebb részvényre jut (EPS nő).
+        function calcSplitBuyback() {
+            const out = document.getElementById('split-buyback-result');
+            if (!out) return;
+
+            const price0 = parseFloat(document.getElementById('splitbb-price0').value);
+            const shares0 = parseFloat(document.getElementById('splitbb-shares0').value);
+            const ni = parseFloat(document.getElementById('splitbb-ni').value);
+            const ratio = parseFloat(document.getElementById('splitbb-ratio').value);
+            const buyback = parseFloat(document.getElementById('splitbb-buyback').value);
+
+            if (!isFinite(price0) || price0 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A jelenlegi árfolyam pozitív szám legyen!</div>`;
+                return;
+            }
+            if (!isFinite(shares0) || shares0 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kint lévő részvények száma pozitív szám legyen!</div>`;
+                return;
+            }
+            if (!isFinite(ni)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az éves nettó profit érvénytelen szám!</div>`;
+                return;
+            }
+            if (!isFinite(ratio) || ratio <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A split arány pozitív szám legyen! (1 = nincs split, &gt;1 = forward split, &lt;1 = reverse split)</div>`;
+                return;
+            }
+            if (!isFinite(buyback) || buyback < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A buyback összeg nem lehet negatív! (0 = nincs visszavásárlás)</div>`;
+                return;
+            }
+
+            const marketCap0 = price0 * shares0;
+            const eps0 = ni / shares0;
+
+            // 1) Split hatása
+            const priceAfterSplit = price0 / ratio;
+            const sharesAfterSplit = shares0 * ratio;
+            const epsAfterSplit = ni / sharesAfterSplit;
+            const marketCapAfterSplit = priceAfterSplit * sharesAfterSplit;
+
+            // 2) Buyback hatása (a split utáni árfolyamon)
+            const sharesBoughtBack = buyback / priceAfterSplit;
+
+            if (sharesBoughtBack >= sharesAfterSplit) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott buyback összeg (${buyback.toFixed(0)}) túl nagy — ennyi pénzért a split utáni részvényállomány egészét vagy többet visszavásárolna a vállalat, ami nem lehetséges! Csökkentsd a buyback összeget.</div>`;
+                return;
+            }
+
+            const sharesAfterBuyback = sharesAfterSplit - sharesBoughtBack;
+            const epsAfterBuyback = ni / sharesAfterBuyback;
+            const marketCapAfterBuyback = priceAfterSplit * sharesAfterBuyback;
+            const buybackYieldPct = (buyback / marketCapAfterSplit) * 100;
+
+            const epsGrowthFromBuybackPct = epsAfterSplit !== 0
+                ? ((epsAfterBuyback - epsAfterSplit) / Math.abs(epsAfterSplit)) * 100
+                : null;
+
+            let splitNote = '';
+            if (Math.abs(ratio - 1) > 1e-9) {
+                splitNote = ratio > 1
+                    ? `<div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-amber-400 leading-relaxed">📈 Forward split ("${ratio}-az-1-hez"): a részvényszám ${ratio}×-ára nő, az árfolyam a ${ratio}×-ad részére esik — a market cap változatlan marad.</div></div>`
+                    : `<div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-amber-400 leading-relaxed">📉 Reverse split ("1-az-${(1/ratio).toFixed(2)}-hez"): a részvényszám a ${(1/ratio).toFixed(2)}×-ad részére csökken, az árfolyam ${(1/ratio).toFixed(2)}×-ára nő — a market cap változatlan marad.</div></div>`;
+            }
+
+            let buybackWarn = '';
+            if (buybackYieldPct > 10) {
+                buybackWarn = `<div class="glass-card rounded-xl border border-neon-red/30 bg-neon-red/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-neon-red leading-relaxed">⚠️ A ${buybackYieldPct.toFixed(1)}%-os buyback hozam rendkívül magas — vizsgáld meg, a vállalat miért fordít ekkora tőkét visszavásárlásra beruházás/K+F helyett.</div></div>`;
+            }
+
+            out.innerHTML = `
+                ${splitNote}
+                ${buybackWarn}
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Split előtt</div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Árfolyam / Részvényszám</span>
+                        <span class="text-white font-bold">${price0.toFixed(2)} / ${shares0.toFixed(0)} db</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Market cap / EPS</span>
+                        <span class="text-white font-bold">${marketCap0.toFixed(0)} / ${eps0.toFixed(4)}</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3">
+                    <div class="text-[10px] font-bold text-amber-400 uppercase mb-1">Split után</div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Árfolyam / Részvényszám</span>
+                        <span class="text-white font-bold">${priceAfterSplit.toFixed(2)} / ${sharesAfterSplit.toFixed(0)} db</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Market cap / EPS</span>
+                        <span class="text-white font-bold">${marketCapAfterSplit.toFixed(0)} / ${epsAfterSplit.toFixed(4)}</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3">
+                    <div class="text-[10px] font-bold text-emerald-400 uppercase mb-1">Buyback után (split utáni áron)</div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Visszavásárolt részvények</span>
+                        <span class="text-white font-bold">${sharesBoughtBack.toFixed(0)} db</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Új részvényszám / Market cap</span>
+                        <span class="text-white font-bold">${sharesAfterBuyback.toFixed(0)} db / ${marketCapAfterBuyback.toFixed(0)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">Új EPS</span>
+                        <span class="text-emerald-400 font-bold">${epsAfterBuyback.toFixed(4)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">EPS változás a buyback miatt</span>
+                        <span class="${epsGrowthFromBuybackPct === null ? 'text-slate-400' : (epsGrowthFromBuybackPct >= 0 ? 'text-neon-green' : 'text-neon-red')} font-bold">${epsGrowthFromBuybackPct === null ? 'N/A (EPS split után 0)' : (epsGrowthFromBuybackPct >= 0 ? '+' : '') + epsGrowthFromBuybackPct.toFixed(2) + '%'}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Buyback hozam (buyback / market cap)</span>
+                        <span class="text-white font-bold">${buybackYieldPct.toFixed(2)}%</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[11px] font-semibold text-slate-300 leading-relaxed">A split önmagában (buyback nélkül) sosem változtatja meg a market capet vagy a teljes EPS-t arányosan — csak felaprózza a "szeleteket". A buyback viszont valóban csökkenti a kint lévő részvények számát, így ugyanaz a nettó profit kevesebb részvényre jut: ez emeli az EPS-t, még ha a vállalat nyeresége semmit sem nőtt.</div>
                 </div>
             `;
         }
@@ -31761,6 +31949,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             377: { tool: 'propchallenge-modal', cta: 'Tervezd meg élesben a prop kihívásod kockázatát' },
             385: { tool: 'propchallenge-modal', cta: 'Ellenőrizd élesben Zita kihívás-paramétereit' },
             543: { tool: 'wfe-modal', cta: 'Számold ki élesben a Walk-Forward Efficiency-t a stratégiád szakaszaira' },
+            547: { tool: 'split-buyback-modal', cta: 'Számold ki élesben egy stock split és buyback hatását az árra és az EPS-re' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -31770,7 +31959,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
