@@ -1043,6 +1043,13 @@
                                 <div class="text-[10px] text-slate-400">Volumen-súlyozott átlagár "fair value"</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('avwap-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-anchor"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Anchored VWAP Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">VWAP egy tetszőleges, kiválasztott ponttól</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('omega-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-infinity"></i></span>
                             <div>
@@ -3020,6 +3027,57 @@
 
             <div id="vwap-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A VWAP csak az adott, lezárt időszakra érvényes "fair value" referencia — nem előrejelzés. Sok intraday kereskedő a VWAP-tól való jelentős eltérést mean-reversion jelzésként, a VWAP irányába történő visszatérést pedig trendmegerősítésként használja, más eszközökkel kombinálva.</p>
+        </div>
+    </div>
+
+    <!-- ================= ANCHORED VWAP KALKULÁTOR (OKTATÁSI) =================
+         A hagyományos VWAP mindig a teljes megadott sorozatra számol
+         (jellemzően a napi nyitástól). Az Anchored VWAP ugyanazt a
+         volumen-súlyozott átlagár formulát alkalmazza, de egy TETSZŐLEGES,
+         a felhasználó által kiválasztott gyertyától (anchor pont) indul —
+         pl. egy jelentős hír, csúcs vagy mélypont pillanatától.
+         Formula (anchor-tól az utolsó gyertyáig, i = anchor..n):
+           AVWAP = Σ(ár_i × volumen_i) / Σ(volumen_i)
+         Emellett a volumen-súlyozott szórást (sávokat) is számoljuk,
+         ami sok kereskedő számára az Anchored VWAP körüli dinamikus
+         támasz/ellenállás zónákat adja:
+           variancia = Σ(volumen_i × (ár_i − AVWAP)²) / Σ(volumen_i)
+           szórás = √variancia
+           sávok = AVWAP ± 1×szórás, AVWAP ± 2×szórás -->
+    <div id="avwap-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-anchor text-neon-purple"></i> Anchored VWAP Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('avwap-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A hagyományos VWAP mindig a teljes sorozatra (pl. a napi nyitástól) számol. Az Anchored VWAP ugyanazt a volumen-súlyozott átlagár-formulát egy TE ÁLTALAD kiválasztott kezdőponttól (pl. egy jelentős hír, csúcs vagy mélypont pillanatától) alkalmazza. Add meg a gyertyákat időrendben ("ár,volumen" soronként), és add meg, hányadik gyertyától induljon az anchor.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák időrendben (ár,volumen soronként)</label>
+            <textarea id="avwap-candles" rows="6" placeholder="100.5,1200&#10;101.2,800&#10;99.8,1500" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">98.2,1400
+99.1,900
+101.5,2600
+103.8,3100
+102.9,1700
+104.6,2200
+106.1,2800
+105.3,1500
+107.4,2000
+108.9,2400</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Anchor pozíció (hányadik gyertyától induljon, 1 = első)</label>
+            <input type="number" id="avwap-anchor" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Jelenlegi ár (a sávokhoz hasonlítva)</label>
+            <input type="number" id="avwap-current-price" value="109.5" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcAnchoredVwap()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="avwap-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az anchor pont kiválasztása szubjektív — kereskedőnként eltérhet, melyik eseményt tartja relevánsnak. Az ±1 / ±2 szórás sávok az anchor óta kialakult árszóródást mutatják, nem garantált támasz/ellenállás szinteket.</p>
         </div>
     </div>
 
@@ -8191,6 +8249,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">VWAP Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Volumen-súlyozott átlagár "fair value"</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('avwap-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-anchor"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Anchored VWAP Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">VWAP egy tetszőleges, kiválasztott ponttól</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('omega-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-green/30 transition text-left">
@@ -14324,6 +14389,85 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">VWAP:</span><span class="font-extrabold text-neon-cyan text-sm">${vwap.toFixed(4)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Jelenlegi ár:</span><span class="text-white">${currentPrice.toFixed(4)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Eltérés a VWAP-tól:</span><span class="${colorClass} font-bold">${deviationPct >= 0 ? '+' : ''}${deviationPct.toFixed(2)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= ANCHORED VWAP KALKULÁTOR (OKTATÁSI) =================
+        // Ugyanaz a volumen-súlyozott átlagár formula, mint a hagyományos
+        // VWAP-nál, de a felhasználó által kiválasztott "anchor" gyertyától
+        // indul, nem a sorozat elejétől. Emellett a volumen-súlyozott
+        // szórást (és ±1/±2 szórás sávokat) is kiszámolja. Önálló logika,
+        // nem épül a calcVwap()-ra (a bemeneti mező és az anchor-vágás
+        // miatt külön adatfolyam).
+        function calcAnchoredVwap() {
+            const candlesEl = document.getElementById('avwap-candles');
+            const anchorEl = document.getElementById('avwap-anchor');
+            const priceEl = document.getElementById('avwap-current-price');
+            const out = document.getElementById('avwap-result');
+            if (!candlesEl || !anchorEl || !priceEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const allBars = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] > 0 && parts[1] > 0) {
+                    allBars.push({ price: parts[0], volume: parts[1] });
+                }
+            }
+            const anchorPos = parseInt(anchorEl.value);
+            const currentPrice = parseFloat(priceEl.value);
+
+            if (allBars.length < 1 || isNaN(currentPrice) || currentPrice <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 érvényes "ár,volumen" sort (mindkét érték legyen nullánál nagyobb), és egy érvényes jelenlegi árat!</div>`;
+                return;
+            }
+            if (!anchorPos || anchorPos < 1 || anchorPos > allBars.length) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az anchor pozíció 1 és ${allBars.length} között kell legyen (jelenleg ${allBars.length} gyertya van megadva)!</div>`;
+                return;
+            }
+
+            const bars = allBars.slice(anchorPos - 1);
+            const sumPriceVolume = bars.reduce((acc, b) => acc + b.price * b.volume, 0);
+            const totalVolume = bars.reduce((acc, b) => acc + b.volume, 0);
+            const avwap = sumPriceVolume / totalVolume;
+
+            const variance = bars.reduce((acc, b) => acc + b.volume * Math.pow(b.price - avwap, 2), 0) / totalVolume;
+            const stdDev = Math.sqrt(variance);
+
+            const upper1 = avwap + stdDev, lower1 = avwap - stdDev;
+            const upper2 = avwap + 2 * stdDev, lower2 = avwap - 2 * stdDev;
+            const deviationPct = (currentPrice - avwap) / avwap * 100;
+
+            let colorClass, verdict;
+            if (currentPrice >= upper2) {
+                colorClass = 'text-neon-green';
+                verdict = `Az ár a +2 szórás sáv FELETT van az anchor pont óta — szokatlanul messze az átlagártól, sokan erős túlvettségként vagy nagyon erős momentumként értelmezik.`;
+            } else if (currentPrice >= upper1) {
+                colorClass = 'text-neon-green';
+                verdict = `Az ár a +1 és +2 szórás sáv KÖZÖTT van — az anchor óta kialakult átlagár felett, de nem szélsőséges mértékben.`;
+            } else if (currentPrice <= lower2) {
+                colorClass = 'text-neon-red';
+                verdict = `Az ár a −2 szórás sáv ALATT van az anchor pont óta — szokatlanul messze az átlagártól, sokan erős túladottságként vagy nagyon erős lefelé momentumként értelmezik.`;
+            } else if (currentPrice <= lower1) {
+                colorClass = 'text-neon-red';
+                verdict = `Az ár a −1 és −2 szórás sáv KÖZÖTT van — az anchor óta kialakult átlagár alatt, de nem szélsőséges mértékben.`;
+            } else {
+                colorClass = 'text-neon-purple';
+                verdict = `Az ár az ±1 szórás sávon BELÜL van — közel az anchor pont óta kialakult "fair value"-hoz.`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Anchor pozíciótól számolt gyertyák:</span><span class="text-white">${bars.length} / ${allBars.length}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Összes volumen (anchor óta):</span><span class="text-white">${totalVolume.toLocaleString('en-US')}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Anchored VWAP:</span><span class="font-extrabold text-neon-purple text-sm">${avwap.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Volumen-súlyozott szórás:</span><span class="text-white">${stdDev.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">+2σ / +1σ sáv:</span><span class="text-neon-green">${upper2.toFixed(4)} / ${upper1.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">−1σ / −2σ sáv:</span><span class="text-neon-red">${lower1.toFixed(4)} / ${lower2.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelenlegi ár:</span><span class="text-white">${currentPrice.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eltérés az AVWAP-tól:</span><span class="${colorClass} font-bold">${deviationPct >= 0 ? '+' : ''}${deviationPct.toFixed(2)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -28946,6 +29090,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             274: { tool: 'sortino-modal', cta: 'Számold ki élesben a Sortino-rátát' },
             487: { tool: 'ulcer-modal', cta: 'Számold ki élesben az Ulcer Indexet' },
             13: { tool: 'vwap-modal', cta: 'Számold ki élesben a VWAP-ot' },
+            105: { tool: 'avwap-modal', cta: 'Számold ki élesben az Anchored VWAP-ot és a szórás-sávokat' },
             439: { tool: 'omega-modal', cta: 'Számold ki élesben az Omega Ratiót' },
             471: { tool: 'treynor-modal', cta: 'Számold ki élesben a Treynor Ratiót és Jensen Alfát' },
             405: { tool: 'skewkurt-modal', cta: 'Számold ki élesben a Skewness és Kurtosis mutatókat' },
@@ -29090,7 +29235,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
