@@ -1568,6 +1568,13 @@
                                 <div class="text-[10px] text-slate-400">Oldalazás vs trend színkódolt besorolása (100-ADX)</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('feargreed-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gauge-high"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fear &amp; Greed Index Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Oktatási, egyszerűsített piaci hangulat-mérő (0-100)</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('obv-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-column"></i></span>
                             <div>
@@ -4602,6 +4609,84 @@ Kripto: 15000, 20</textarea>
 
             <div id="chopzone-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A CZI pusztán az ADX tükörképe (100-ADX) — nem jelez irányt, csak azt, mennyire HIÁNYZIK a kitartó, egyirányú mozgás. Iránykereséshez és megerősítéshez más eszközöket (pl. +DI/-DI, gyertyaminták, volumen) is érdemes bevonni, a lecke explicit figyelmeztetése szerint.</p>
+        </div>
+    </div>
+
+    <!-- ================= FEAR & GREED INDEX KALKULÁTOR (OKTATÁSI, EGYSZERŰSÍTETT) =================
+         FONTOS: ez NEM a CNN Fear & Greed Index hivatalos, nem publikus
+         képletének másolata — az egy proprietary, élő adatfolyamra épülő
+         index. Ez egy OKTATÁSI, egyszerűsített, önálló módszertan, amely
+         a leckében leírt 5 alapelvet (momentum, volatilitás, piaci
+         szélesség, biztonsági menedék kereslet, hitelkockázati felár)
+         mutatja be egyenlő súlyozású, saját 0-100 skálázással.
+         Score1 (Momentum) = clamp(50 + ((Ár-SMA125)/SMA125*100)*5, 0, 100)
+         Score2 (Volatilitás) = clamp(150 - (VolNow/VolAvg)*100, 0, 100)
+         Score3 (Piaci szélesség) = clamp(Breadth%, 0, 100)
+         Score4 (Biztonsági menedék) = clamp(50 + (RészvényHozam-KötvényHozam)*5, 0, 100)
+         Score5 (Hitelfelár) = clamp(50 - (FelárNow-FelárAvg)*20, 0, 100)
+         Composite = (Score1+Score2+Score3+Score4+Score5)/5
+         Sávok (a valódi CNN index publikus sávjait követve): <25 Extrém
+         Félelem, <45 Félelem, <=55 Neutrális, <=75 Kapzsiság, >75 Extrém
+         Kapzsiság. -->
+    <div id="feargreed-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high text-fuchsia-400"></i> Fear &amp; Greed Index Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('feargreed-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">FIGYELEM: ez EGY OKTATÁSI, EGYSZERŰSÍTETT módszertan — NEM a CNN hivatalos, publikusan nem dokumentált Fear &amp; Greed Indexének másolata. Az 5 megadott tényezőből (momentum, volatilitás, piaci szélesség, biztonsági menedék kereslet, hitelkockázati felár) egyenlő súlyozással, saját 0-100 skálázással számol egy összetett "hangulat-pontszámot" — a lecke által leírt alapelvek illusztrálására.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Jelenlegi árfolyam/index</label>
+                    <input id="fg-price" type="number" value="5800" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">125 napos mozgóátlag (SMA)</label>
+                    <input id="fg-sma125" type="number" value="5600" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Jelenlegi volatilitás (%)</label>
+                    <input id="fg-volnow" type="number" value="14" step="any" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Átlagos (50 napos) volatilitás (%)</label>
+                    <input id="fg-volavg" type="number" value="16" step="any" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Piaci szélesség: 50 napos MA fölötti eszközök aránya (%)</label>
+            <input id="fg-breadth" type="number" value="58" step="any" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2.5 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Részvény hozam, 20 nap (%)</label>
+                    <input id="fg-stockret" type="number" value="3.2" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Kötvény hozam, 20 nap (%)</label>
+                    <input id="fg-bondret" type="number" value="0.5" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Jelenlegi hitelkockázati felár (%)</label>
+                    <input id="fg-spreadnow" type="number" value="3.8" step="any" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Átlagos hitelkockázati felár (%)</label>
+                    <input id="fg-spreadavg" type="number" value="4.0" step="any" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+            </div>
+
+            <button onclick="calcFearGreedIndex()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-fuchsia-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="feargreed-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ahogy a lecke is hangsúlyozza: ez a pontszám a tömeghangulat PILLANATKÉPE, nem pontos belépési/kilépési szignál — extrém érték erős trendpiacon hetekig/hónapokig fennállhat fordulat nélkül. Kiegészítő kontextusként használd más elemzés és a saját kockázatkezelési szabályaid (pozícióméret, stop-loss) mellett, sosem azok helyett.</p>
         </div>
     </div>
 
@@ -8993,6 +9078,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Chop Zone Index Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Oldalazás vs trend színkódolt besorolása (100-ADX)</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('feargreed-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-fuchsia-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-high"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Fear &amp; Greed Index Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Oktatási, egyszerűsített piaci hangulat-mérő (0-100)</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('obv-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15398,6 +15490,124 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Zóna:</span>
                         <span class="font-extrabold ${colorClass} text-sm">${zoneLabel}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= FEAR & GREED INDEX KALKULÁTOR (OKTATÁSI, EGYSZERŰSÍTETT) =================
+        // NEM a CNN hivatalos indexének másolata — önálló, oktatási célú,
+        // egyenlő súlyozású 5-faktoros kompozit pontszám. Lásd a modal HTML
+        // feletti kommentet a pontos képletekért.
+        function calcFearGreedIndex() {
+            const ids = ['fg-price', 'fg-sma125', 'fg-volnow', 'fg-volavg', 'fg-breadth', 'fg-stockret', 'fg-bondret', 'fg-spreadnow', 'fg-spreadavg'];
+            const els = {};
+            for (const id of ids) {
+                els[id] = document.getElementById(id);
+                if (!els[id]) return;
+            }
+            const out = document.getElementById('feargreed-result');
+            if (!out) return;
+
+            const price = parseFloat(els['fg-price'].value);
+            const sma125 = parseFloat(els['fg-sma125'].value);
+            const volNow = parseFloat(els['fg-volnow'].value);
+            const volAvg = parseFloat(els['fg-volavg'].value);
+            const breadth = parseFloat(els['fg-breadth'].value);
+            const stockRet = parseFloat(els['fg-stockret'].value);
+            const bondRet = parseFloat(els['fg-bondret'].value);
+            const spreadNow = parseFloat(els['fg-spreadnow'].value);
+            const spreadAvg = parseFloat(els['fg-spreadavg'].value);
+
+            const vals = [price, sma125, volNow, volAvg, breadth, stockRet, bondRet, spreadNow, spreadAvg];
+            if (vals.some(v => isNaN(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt számmal kell kitölteni!</div>`;
+                return;
+            }
+            if (price <= 0 || sma125 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az árfolyamnak és a 125 napos SMA-nak pozitívnak kell lennie!</div>`;
+                return;
+            }
+            if (volNow < 0 || volAvg <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A jelenlegi volatilitás nem lehet negatív, az átlagos volatilitásnak pozitívnak kell lennie (nullával nem osztható)!</div>`;
+                return;
+            }
+            if (breadth < 0 || breadth > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A piaci szélesség 0 és 100 közötti százalék lehet!</div>`;
+                return;
+            }
+            if (spreadNow < 0 || spreadAvg < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A hitelkockázati felár nem lehet negatív!</div>`;
+                return;
+            }
+
+            const clamp = (v) => Math.max(0, Math.min(100, v));
+
+            const momentumPct = (price - sma125) / sma125 * 100;
+            const score1 = clamp(50 + momentumPct * 5);
+
+            const volRatio = volNow / volAvg;
+            const score2 = clamp(150 - volRatio * 100);
+
+            const score3 = clamp(breadth);
+
+            const safeHavenSpread = stockRet - bondRet;
+            const score4 = clamp(50 + safeHavenSpread * 5);
+
+            const creditDiff = spreadNow - spreadAvg;
+            const score5 = clamp(50 - creditDiff * 20);
+
+            const composite = (score1 + score2 + score3 + score4 + score5) / 5;
+
+            let colorClass, zoneLabel, verdict;
+            if (composite < 25) {
+                colorClass = 'text-neon-red';
+                zoneLabel = 'Extrém Félelem';
+                verdict = 'A pontszám extrém félelmet jelez — a piaci résztvevők túlzottan pánikolnak. Ez gyakran (de NEM mindig) az alj közelében fordul elő; sosem egyedüli belépési szignál.';
+            } else if (composite < 45) {
+                colorClass = 'text-orange-400';
+                zoneLabel = 'Félelem';
+                verdict = 'A pontszám félelmet jelez — a hangulat óvatos/negatív, de nem extrém. Kiegészítő kontextusként érdemes figyelembe venni, nem önálló szignálként.';
+            } else if (composite <= 55) {
+                colorClass = 'text-amber-400';
+                zoneLabel = 'Neutrális';
+                verdict = 'A pontszám a semleges tartományban van — a piaci hangulat sem extrém félelmet, sem extrém kapzsiságot nem mutat jelenleg.';
+            } else if (composite <= 75) {
+                colorClass = 'text-neon-green';
+                zoneLabel = 'Kapzsiság';
+                verdict = 'A pontszám kapzsiságot jelez — a hangulat optimista/pozitív, de nem extrém. Kiegészítő kontextusként érdemes figyelembe venni, nem önálló szignálként.';
+            } else {
+                colorClass = 'text-neon-purple';
+                zoneLabel = 'Extrém Kapzsiság';
+                verdict = 'A pontszám extrém kapzsiságot jelez — eufórikus a hangulat. Ez gyakran (de NEM mindig) a tetők közelében fordul elő; erős trendpiacon hetekig/hónapokig fennállhat fordulat nélkül.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-fuchsia-400/30 bg-fuchsia-400/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Fear &amp; Greed Pontszám (0-100, oktatási, egyszerűsített)</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${composite.toFixed(2)} — ${zoneLabel}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Momentum (Ár vs SMA125):</span>
+                        <span class="font-bold text-white">${score1.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Volatilitás (jelenlegi vs átlag):</span>
+                        <span class="font-bold text-white">${score2.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Piaci szélesség:</span>
+                        <span class="font-bold text-white">${score3.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Biztonsági menedék kereslet:</span>
+                        <span class="font-bold text-white">${score4.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">Hitelkockázati felár (junk bond demand):</span>
+                        <span class="font-bold text-white">${score5.toFixed(2)}</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -29856,6 +30066,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             420: { tool: 'envelope-modal', cta: 'Számold ki élesben az Envelope Csatorna sávjait' },
             490: { tool: 'stc-modal', cta: 'Számold ki élesben a Schaff Trend Cycle-t' },
             467: { tool: 'chopzone-modal', cta: 'Számold ki élesben a Chop Zone Indexet' },
+            535: { tool: 'feargreed-modal', cta: 'Számold ki élesben a Fear & Greed pontszámot' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -29865,7 +30076,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
