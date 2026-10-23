@@ -1498,6 +1498,13 @@
                                 <div class="text-[10px] text-slate-400">Piaci érzékenység: Cov/Var hozamokból</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('divrisk-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-violet-400/10 text-violet-400 border border-violet-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-pie"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Diverzifikálható vs Nem-diverzifikálható Kockázat</div>
+                                <div class="text-[10px] text-slate-400">Szisztematikus/eszköz-specifikus kockázat szétbontása</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('measuredmove-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler-combined"></i></span>
                             <div>
@@ -7793,6 +7800,36 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="divrisk-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-violet-400"></i> Diverzifikálható vs Nem-diverzifikálható Kockázat
+                </h3>
+                <button onclick="closeToolModal('divrisk-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az eszköz és a piaci benchmark időszaki hozamait soronként (Eszköz hozam %, Piac hozam %). A kalkulátor az eszköz teljes hozam-varianciáját szétbontja <strong style="color:#B026FF">szisztematikus (nem-diverzifikálható, piaci eredetű)</strong> és <strong style="color:#00F0FF">eszköz-specifikus (diverzifikálható)</strong> részre, az R² (korreláció négyzete) alapján — ez pontosan az a hányad, amit diverzifikációval sem lehet megszüntetni.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Eszköz hozam %, Piac hozam % (soronként)</label>
+            <textarea id="divrisk-returns" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-violet-400/50" placeholder="2,1&#10;-1,-0.5&#10;...">2,1
+-1,-0.5
+1.5,0.8
+3,2
+-2,-1.5
+1,0.5
+2.5,1.5
+-0.5,0.5
+4,1.5
+-3,-2</textarea>
+
+            <button onclick="calcDivRisk()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-violet-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="divrisk-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <!-- ================= MÉRT MOZGÁS (MEASURED MOVE) CÉLÁR KALKULÁTOR (OKTATÁSI) =================
          Target = Kitörési ár + irány × alakzat-magasság. Használható Head and Shoulders, Dupla
          Csúcs/Alj, Bull/Bear Flag, Háromszög és Ék alakzatoknál egyaránt. -->
@@ -9880,6 +9917,13 @@ SOL Long,1</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Béta Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Piaci érzékenység: Cov/Var hozamokból</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('divrisk-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-violet-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-violet-400/10 text-violet-400 border border-violet-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-pie"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Diverzifikálható vs Nem-diverzifikálható Kockázat</div>
+                    <div class="text-[10px] text-slate-400">Szisztematikus/eszköz-specifikus kockázat szétbontása</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('measuredmove-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-yellow-400/30 transition text-left">
@@ -20056,6 +20100,97 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Béta:</span><span class="${colorClass} font-extrabold text-sm">${beta.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= DIVERZIFIKÁLHATÓ VS NEM-DIVERZIFIKÁLHATÓ KOCKÁZAT =================
+        // A teljes hozam-variancia szétbontása szisztematikus (piaci, nem szüntethető meg
+        // diverzifikációval) és eszköz-specifikus (diverzifikálható) részre, az R² (a
+        // Béta-kalkulátorral azonos Cov/Var logikán alapuló korreláció négyzete) segítségével.
+        // Var(eszköz) = R²·Var(eszköz) [szisztematikus] + (1-R²)·Var(eszköz) [eszköz-specifikus]
+        function calcDivRisk() {
+            const returnsEl = document.getElementById('divrisk-returns');
+            const out = document.getElementById('divrisk-result');
+            if (!returnsEl || !out) return;
+
+            const lines = returnsEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const assetReturns = [], marketReturns = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                    assetReturns.push(parts[0]);
+                    marketReturns.push(parts[1]);
+                }
+            }
+
+            const n = assetReturns.length;
+            if (n < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 (eszköz, piac) hozampár szükséges!</div>`;
+                return;
+            }
+
+            const meanA = assetReturns.reduce((a, b) => a + b, 0) / n;
+            const meanM = marketReturns.reduce((a, b) => a + b, 0) / n;
+
+            let cov = 0, varA = 0, varM = 0;
+            for (let i = 0; i < n; i++) {
+                const dA = assetReturns[i] - meanA;
+                const dM = marketReturns[i] - meanM;
+                cov += dA * dM;
+                varA += dA * dA;
+                varM += dM * dM;
+            }
+            cov /= n;
+            varA /= n;
+            varM /= n;
+
+            if (varM === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A piaci hozamok varianciája nulla — nem lehet dekomponálni!</div>`;
+                return;
+            }
+            if (varA === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az eszköz hozamainak varianciája nulla — nincs mit szétbontani!</div>`;
+                return;
+            }
+
+            const beta = cov / varM;
+            const corr = cov / Math.sqrt(varA * varM);
+            let rsq = corr * corr;
+            if (rsq > 1) rsq = 1; // lebegőpontos kerekítési hiba elleni védelem
+            if (rsq < 0) rsq = 0;
+
+            const systematicVar = rsq * varA;
+            const unsystematicVar = (1 - rsq) * varA;
+            const stdA = Math.sqrt(varA);
+            const systematicStd = Math.sqrt(systematicVar);
+            const unsystematicStd = Math.sqrt(unsystematicVar);
+            const systematicPct = rsq * 100;
+            const unsystematicPct = (1 - rsq) * 100;
+
+            let verdict, colorClass;
+            if (rsq >= 0.7) {
+                verdict = `A kockázat ${systematicPct.toFixed(0)}%-a NEM-diverzifikálható (piaci eredetű) — ez magas érték, hasonló ahhoz, amikor válság idején "minden korrelál", és a diverzifikáció alig segít.`;
+                colorClass = 'text-neon-red';
+            } else if (rsq <= 0.3) {
+                verdict = `A kockázat ${unsystematicPct.toFixed(0)}%-a diverzifikálható (eszköz-specifikus) — alacsony a szisztematikus hányad, a diverzifikáció itt sokat segíthet.`;
+                colorClass = 'text-neon-green';
+            } else {
+                verdict = `Vegyes kép: a kockázat kb. ${systematicPct.toFixed(0)}%-a szisztematikus, ${unsystematicPct.toFixed(0)}%-a eszköz-specifikus.`;
+                colorClass = 'text-neon-yellow';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Béta:</span><span class="text-white font-bold">${beta.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">R² (korreláció²):</span><span class="text-white font-bold">${rsq.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes szórás (eszköz):</span><span class="text-white font-bold">${stdA.toLocaleString(undefined, { maximumFractionDigits: 4 })}%</span></div>
+                    <div class="h-px bg-dark-750 my-1"></div>
+                    <div class="flex justify-between"><span style="color:#B026FF">Szisztematikus (nem-div.) kockázat:</span><span style="color:#B026FF" class="font-extrabold">${systematicPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500 pl-2">↳ szórás-egyenérték:</span><span class="text-slate-300">${systematicStd.toLocaleString(undefined, { maximumFractionDigits: 4 })}%</span></div>
+                    <div class="flex justify-between"><span style="color:#00F0FF">Eszköz-specifikus (div.) kockázat:</span><span style="color:#00F0FF" class="font-extrabold">${unsystematicPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500 pl-2">↳ szórás-egyenérték:</span><span class="text-slate-300">${unsystematicStd.toLocaleString(undefined, { maximumFractionDigits: 4 })}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -32787,6 +32922,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             221: { tool: 'vsa-modal', cta: 'Azonosítsd élesben az Effort vs. Result (abszorpció) VSA szignált' },
             356: { tool: 'seqsim-modal', cta: 'Hasonlítsd össze élesben a szekvenciális és egyidejű kockázatodat' },
             359: { tool: 'seqsim-modal', cta: 'Nézd meg élesben Ferenc esetét a Szekvenciális vs Egyidejű Kockázat kalkulátorban' },
+            418: { tool: 'divrisk-modal', cta: 'Bontsd szét élesben a kockázatot szisztematikus és eszköz-specifikus részre' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -32796,7 +32932,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
