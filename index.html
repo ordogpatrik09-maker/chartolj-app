@@ -1589,6 +1589,13 @@
                                 <div class="text-[10px] text-slate-400">Kumulatív volumen-indikátor és divergencia-jelzés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('rsicalc-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gauge-high"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">RSI Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Wilder-féle RSI lépésről lépésre, túlvett/túladott zónával</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('williamsr-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler-combined"></i></span>
                             <div>
@@ -5290,6 +5297,56 @@ Kripto: 15000, 20</textarea>
 
             <div id="tii-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az árak egyenlőek is lehetnek az SMA-val (nem feltétlenül csak fölötte/alatta) — ezek nem számítanak "fölötte" lévőnek, ezért a TII nem feltétlenül 100 vagy 0, ha minden ár egy irányba tér el az átlagtól, de néhány pontosan egyenlő vele.</p>
+        </div>
+    </div>
+
+    <!-- ================= RSI KALKULÁTOR (OKTATÁSI) =================
+         Wilder-féle RSI: első átlagos nyereség/veszteség = az első N
+         árváltozás egyszerű átlaga, majd Wilder-simítás:
+         AvgGain_i = (AvgGain_{i-1}×(N-1) + Gain_i) / N (ugyanígy a veszteségre).
+         RS = AvgGain / AvgLoss, RSI = 100 - 100/(1+RS).
+         70 fölött hagyományosan túlvett, 30 alatt túladott. -->
+    <div id="rsicalc-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high text-amber-400"></i> RSI Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('rsicalc-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Relative Strength Index (RSI) az árváltozások átlagos nagyságát méri: a 0-100 skálán 70 fölött hagyományosan túlvett, 30 alatt túladott állapotot jelez. A Wilder-féle (klasszikus) simítást használjuk: az első periódus egyszerű átlaggal, utána exponenciális Wilder-simítással. Add meg a záróárakat soronként egyet, időrendben (legrégebbi elől).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy, időrendben)</label>
+            <textarea id="rsicalc-prices" rows="7" placeholder="44.34&#10;44.09&#10;44.15" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">44.34
+44.09
+44.15
+43.61
+44.33
+44.83
+45.10
+45.42
+45.84
+46.08
+45.89
+46.03
+45.61
+46.28
+46.28
+46.00
+46.03
+46.41
+46.22
+45.64</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (N)</label>
+            <input type="number" id="rsicalc-period" value="14" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcRSI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="rsicalc-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A Wilder-simítás miatt az RSI nem egyszerű mozgóátlag: minden korábbi árváltozás (csökkenő súllyal) örökre beleszámít az aktuális értékbe, ezért hosszabb árfolyamsoron az első néhány RSI-érték kevésbé pontos, mint a sorozat végén.</p>
         </div>
     </div>
 
@@ -9701,6 +9758,13 @@ Mean-reversion,1,0</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">On-Balance Volume (OBV) Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Kumulatív volumen-indikátor, divergencia-jelzéssel</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('rsicalc-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-high"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">RSI Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Wilder-féle RSI lépésről lépésre, túlvett/túladott zónával</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('williamsr-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -16772,6 +16836,71 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-slate-400">OBV-változás (teljes sorozat):</span>
                         <span class="font-extrabold ${obvChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${obvChange >= 0 ? '+' : ''}${obvChange.toFixed(0)}</span>
                     </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= RSI KALKULÁTOR (OKTATÁSI) =================
+        // Wilder-féle RSI: első AvgGain/AvgLoss = az első N árváltozás egyszerű
+        // átlaga, utána Wilder-simítás: Avg_i = (Avg_{i-1}×(N-1) + Val_i) / N.
+        // RS = AvgGain / AvgLoss, RSI = 100 - 100/(1+RS).
+        function calcRSI() {
+            const pricesEl = document.getElementById('rsicalc-prices');
+            const periodEl = document.getElementById('rsicalc-period');
+            const out = document.getElementById('rsicalc-result');
+            if (!pricesEl || !periodEl || !out) return;
+
+            const lines = pricesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const prices = [];
+            for (const line of lines) {
+                const v = parseFloat(line.replace(',', '.'));
+                if (!isNaN(v)) prices.push(v);
+            }
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A periódusnak legalább 2-nek kell lennie!</div>`;
+                return;
+            }
+            if (prices.length < period + 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább ${period + 1} záróárat (a periódus + 1 adatpontot), hogy ki lehessen számolni az első RSI-értéket!</div>`;
+                return;
+            }
+
+            const changes = [];
+            for (let i = 1; i < prices.length; i++) changes.push(prices[i] - prices[i - 1]);
+
+            const firstChunk = changes.slice(0, period);
+            let avgGain = firstChunk.filter(c => c > 0).reduce((s, c) => s + c, 0) / period;
+            let avgLoss = firstChunk.filter(c => c < 0).reduce((s, c) => s + Math.abs(c), 0) / period;
+
+            for (let i = period; i < changes.length; i++) {
+                const change = changes[i];
+                const gain = change > 0 ? change : 0;
+                const loss = change < 0 ? Math.abs(change) : 0;
+                avgGain = (avgGain * (period - 1) + gain) / period;
+                avgLoss = (avgLoss * (period - 1) + loss) / period;
+            }
+
+            let rsi;
+            if (avgLoss === 0 && avgGain === 0) rsi = 50;
+            else if (avgLoss === 0) rsi = 100;
+            else {
+                const rs = avgGain / avgLoss;
+                rsi = 100 - (100 / (1 + rs));
+            }
+
+            let colorClass, verdict;
+            if (rsi > 70) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (70 fölött) — az erős felfelé mozgás kifulladhat, lehetséges korrekció vagy fordulat jöhet.'; }
+            else if (rsi < 30) { colorClass = 'text-neon-green'; verdict = 'Túladott zóna (30 alatt) — az erős lefelé mozgás kifulladhat, lehetséges fordulat felfelé jöhet.'; }
+            else { colorClass = 'text-slate-300'; verdict = 'Neutrális zóna — nincs extrém túlvett/túladott jelzés, az RSI a sáv közepén mozog.'; }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">RSI (${period} periódus, Wilder-simítás)</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${rsi.toFixed(2)}</div>
+                    <div class="text-[10px] text-slate-500 mt-1 font-mono">Átlagos nyereség: ${avgGain.toFixed(4)} · Átlagos veszteség: ${avgLoss.toFixed(4)}</div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -31776,7 +31905,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             6: { tool: 'trendline', cta: 'Rajzold meg a trendvonalat a charton' },
             7: { tool: 'trendline', cta: 'Jelöld be a támaszt/ellenállást a charton' },
             9: { tool: 'ema', cta: 'Nézd meg az EMA-t élesben a charton' },
-            10: { tool: 'rsi', cta: 'Próbáld ki az RSI-t a charton' },
+            10: { tool: 'rsicalc-modal', cta: 'Számold ki élesben az RSI-t lépésről lépésre' },
             11: { tool: 'bollinger', cta: 'Kapcsold be a Bollinger Szalagokat' },
             27: { tool: 'fibonacci', cta: 'Húzz egy Fibonacci-t a charton' },
             115: { tool: 'backtest-modal', cta: 'Próbáld ki élesben a Stratégia Backtesterben' },
@@ -31959,7 +32088,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
