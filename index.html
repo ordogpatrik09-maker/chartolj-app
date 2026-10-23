@@ -1421,6 +1421,13 @@
                                 <div class="text-[10px] text-slate-400">23.6% / 38.2% / 50% / 61.8% / 78.6% korrekciós szintek</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('fibfan-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-fan"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fibonacci Legyező (Fan) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Dőlt trendvonalak Fibonacci-arányok szerint</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('emv-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-purple-400/10 text-purple-400 border border-purple-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-feather"></i></span>
                             <div>
@@ -6562,6 +6569,48 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="fibfan-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-fan text-amber-400"></i> Fibonacci Legyező (Fan) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('fibfan-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Fibonacci Legyező egy jelentős mozgás (A→B) kezdő- és végpontja közé felosztott, Fibonacci-arányok szerinti DŐLT trendvonalakat húz — nem vízszintes szinteket, mint a Retracement. Add meg a mozgás A és B pontját (gyertya sorszám + ár), és egy célgyertyát, ahol a legyező-vonalak árait szeretnéd leolvasni. A vonalak dinamikus (időben elmozduló) támasz/ellenállásként viselkednek.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">A pont — gyertya #</label>
+                    <input type="number" id="fibfan-x1" value="0" step="1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">A pont — ár</label>
+                    <input type="number" id="fibfan-y1" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">B pont — gyertya #</label>
+                    <input type="number" id="fibfan-x2" value="10" step="1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">B pont — ár</label>
+                    <input type="number" id="fibfan-y2" value="120" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Célgyertya sorszáma (hol olvassuk le a legyező árait)</label>
+            <input type="number" id="fibfan-target" value="20" step="1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcFibFan()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="fibfan-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A 0% vonal az A pontból húzott VÍZSZINTES bázisvonal, a 100% maga az A-B trendvonal — a köztes arányok (23.6% / 38.2% / 50% / 61.8% / 78.6%) ezek közt osztják fel dőlésszögben a teret. Minél messzebb vagyunk a B ponttól, annál inkább szétnyílnak a vonalak egymástól.</p>
+        </div>
+    </div>
+
     <!-- ================= EASE OF MOVEMENT (EMV) KALKULÁTOR (OKTATÁSI) =================
          Distance Moved = (H+L)/2 - (prevH+prevL)/2. Box Ratio = (Volume/skála) / (H-L).
          EMV = Distance Moved / Box Ratio. A simított (SMA) érték segít kiszűrni a zajt. -->
@@ -8713,6 +8762,13 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Fibonacci Retracement Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">23.6% / 38.2% / 50% / 61.8% / 78.6% korrekciós szintek</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('fibfan-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-fan"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Fibonacci Legyező (Fan) Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Dőlt trendvonalak Fibonacci-arányok szerint</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('emv-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-purple-400/30 transition text-left">
@@ -17377,6 +17433,75 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${rowsHtml}
                 </div>
                 <p class="text-[10px] font-semibold text-amber-400">${verdict786}</p>
+            `;
+        }
+
+        function calcFibFan() {
+            const x1El = document.getElementById('fibfan-x1');
+            const y1El = document.getElementById('fibfan-y1');
+            const x2El = document.getElementById('fibfan-x2');
+            const y2El = document.getElementById('fibfan-y2');
+            const targetEl = document.getElementById('fibfan-target');
+            const out = document.getElementById('fibfan-result');
+            if (!x1El || !y1El || !x2El || !y2El || !targetEl || !out) return;
+
+            const x1 = parseInt(x1El.value);
+            const y1 = parseFloat(y1El.value);
+            const x2 = parseInt(x2El.value);
+            const y2 = parseFloat(y2El.value);
+            const target = parseInt(targetEl.value);
+
+            if ([x1, y1, x2, y2, target].some(v => isNaN(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+                return;
+            }
+            if (x1 < 0 || x2 < 0 || target < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A gyertya-sorszámok nem lehetnek negatívak!</div>`;
+                return;
+            }
+            if (x2 <= x1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A B pont sorszáma nagyobb kell legyen, mint az A ponté — időben előre kell haladnia a mozgásnak!</div>`;
+                return;
+            }
+            if (y1 === y2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az A és B pont ára nem lehet egyenlő — nincs mozgás, amire legyezőt húzhatnánk!</div>`;
+                return;
+            }
+
+            const timeRange = x2 - x1;
+            const priceRange = y2 - y1;
+            const isUpSwing = y2 > y1;
+            const ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+
+            const rows = ratios.map(r => {
+                const slope = (r * priceRange) / timeRange;
+                const priceAtTarget = y1 + slope * (target - x1);
+                return { r, priceAtTarget };
+            });
+
+            const rowsHtml = rows.map(({ r, priceAtTarget }) => {
+                const highlight = r === 0.618;
+                const label = r === 0 ? '0% (bázisvonal)' : r === 1 ? '100% (A-B trendvonal)' : `${(r * 100).toFixed(1)}%`;
+                return `<div class="flex justify-between ${highlight ? 'border-y border-amber-400/30 py-1.5 my-0.5' : ''}">
+                    <span class="${highlight ? 'text-amber-400 font-bold' : 'text-slate-400'}">${label}${highlight ? ' ⭐' : ''}:</span>
+                    <span class="${highlight ? 'text-amber-400 font-bold' : 'text-white'} font-mono">${priceAtTarget.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                </div>`;
+            }).join('');
+
+            const direction = isUpSwing ? 'felfelé mozgás (A: Low → B: High) legyezője' : 'lefelé mozgás (A: High → B: Low) legyezője';
+            let projNote;
+            if (target === x2) projNote = 'pontosan a B pontnál (a legyező kiindulási vége)';
+            else if (target > x2) projNote = 'jövőbeli projekció a B ponton túl';
+            else if (target > x1) projNote = 'az A és B pont KÖZÖTTI, visszamenőleges vizsgálat';
+            else projNote = 'az A pont ELŐTTI, visszamenőleges extrapoláció';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between pb-2 border-b border-dark-750"><span class="text-slate-400">Irány:</span><span class="text-white font-sans text-[10.5px] text-right">${direction}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Célgyertya (#${target}):</span><span class="text-white font-sans text-[10.5px] text-right">${projNote}</span></div>
+                    ${rowsHtml}
+                </div>
+                <p class="text-[10px] font-semibold text-amber-400">A 61.8%-os legyező-vonal a leggyakrabban figyelt dinamikus szint — ha az ár ezen a vonalon pattog vagy töri át, azt sokan dinamikus támasz/ellenállás jelzésként kezelik.</p>
             `;
         }
 
@@ -29464,6 +29589,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             129: { tool: 'renko-modal', cta: 'Alakítsd át élesben a záróárakat Renko téglákká' },
             220: { tool: 'volumedelta-modal', cta: 'Számold ki élesben a Volume Deltát' },
             181: { tool: 'fibtime-modal', cta: 'Rajzold fel élesben a Fibonacci Időzónákat' },
+            202: { tool: 'fibfan-modal', cta: 'Rajzold fel élesben a Fibonacci Legyezőt' },
             476: { tool: 'sortino-modal', cta: 'Számold ki élesben a Downside Deviationt (Sortino alapja)' },
             491: { tool: 'm2-modal', cta: 'Számold ki élesben a Modigliani M2 mutatót' },
             300: { tool: 'cmo-modal', cta: 'Számold ki élesben a Chande Momentum Oscillatort' },
@@ -29534,7 +29660,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
