@@ -1799,6 +1799,13 @@
                                 <div class="text-[10px] text-slate-400">Napi/teljes DD limit, expectancy, becsült időigény</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('wfe-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-route"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Walk-Forward Efficiency Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">In-sample vs out-of-sample konzisztencia, overfitting-jelzés</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-diagram-project"></i></span>
                             <div>
@@ -5950,6 +5957,40 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= WALK-FORWARD EFFICIENCY (WFE) KALKULÁTOR (OKTATÁSI) =================
+         Robert Pardo klasszikus mutatója az overfitting kiszűrésére: az
+         adatot egymást követő in-sample (optimalizált) / out-of-sample
+         (ki nem látott) szakaszokra bontjuk, majd:
+           WFE = (összes out-of-sample hozam / összes in-sample hozam) × 100%
+         Minél közelebb van a WFE 100%-hoz, annál kevésbé "memorizálta"
+         a stratégia a múltbeli zajt. Elterjedt ökölszabály (Pardo): a
+         WFE >= 50% tekinthető minimálisan elfogadhatónak. -->
+    <div id="wfe-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-route text-neon-cyan"></i> Walk-Forward Efficiency Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('wfe-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Walk-Forward Efficiency (WFE) megmutatja, mennyire "élte túl" a stratégiád teljesítménye az optimalizálást: az adatot egymást követő <strong>in-sample</strong> (azon optimalizáltad a paramétereket) és <strong>out-of-sample</strong> (ezt a stratégia NEM látta optimalizáláskor) szakaszokra bontva, a WFE = (összes out-of-sample hozam ÷ összes in-sample hozam) × 100%. Add meg szakaszonként az in-sample és out-of-sample hozamot (%), soronként egyet, "in-sample,out-of-sample" formátumban.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Szakaszok: in-sample%,out-of-sample% (soronként egy szakasz)</label>
+            <textarea id="wfe-windows" rows="5" placeholder="8.5,6.0&#10;7.2,5.1&#10;9.0,-1.5&#10;6.5,3.8&#10;8.8,4.2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">8.5,6.0
+7.2,5.1
+9.0,-1.5
+6.5,3.8
+8.8,4.2</textarea>
+
+            <button onclick="calcWalkForwardEfficiency()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="wfe-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A WFE csak akkor értelmezhető érdemben, ha az összesített in-sample hozam POZITÍV (a stratégia magán az optimalizált szakaszon is nyereséges volt) — ha nem, a mutató nem a overfitting mértékét jelzi, hanem azt, hogy a stratégia alapvetően nem működik. A Pardo-féle 50%-os küszöb egy elterjedt ökölszabály, nem matematikai törvény — mindig a konzisztenciát (hány szakasz volt egyedileg is nyereséges out-of-sample) is nézd a puszta összesített szám mellett.</p>
+        </div>
+    </div>
+
     <div id="rmultiple-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -9742,6 +9783,13 @@ Mean-reversion,1,0</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Prop Kihívás Kockázatkezelő</div>
                     <div class="text-[10px] text-slate-400">Napi/teljes DD limit, expectancy, becsült időigény</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('wfe-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-route"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Walk-Forward Efficiency Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">In-sample vs out-of-sample konzisztencia, overfitting-jelzés</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -21973,6 +22021,127 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= WALK-FORWARD EFFICIENCY (WFE) KALKULÁTOR (OKTATÁSI) =================
+        // Pardo-féle definíció: WFE = (összes out-of-sample hozam / összes
+        // in-sample hozam) × 100%. Az ÖSSZESÍTETT (nem szakaszonkénti
+        // átlagolt) hozamokkal számolunk, mert ez a klasszikus, forrásban
+        // dokumentált módszer — egy kiugró szakasz aránya így az ő súlyának
+        // megfelelően (nem egyenlő súllyal) számít bele. A szakaszonkénti
+        // egyedi WFE_i-t és a konzisztencia-arányt (hány szakasz nyereséges
+        // out-of-sample is) KIEGÉSZÍTŐ bontásként adjuk meg, mert egyetlen
+        // összesített szám elfedheti, hogy csak egy-két szakasz húzza fel
+        // az átlagot.
+        function calcWalkForwardEfficiency() {
+            const textEl = document.getElementById('wfe-windows');
+            const out = document.getElementById('wfe-result');
+            if (!textEl || !out) return;
+
+            const lines = textEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább egy szakaszt "in-sample%,out-of-sample%" formátumban!</div>`;
+                return;
+            }
+
+            const windows = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(p => parseFloat(p.trim()));
+                if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hibás sor: "${line}" — a formátum "in-sample%,out-of-sample%" legyen, két számmal!</div>`;
+                    return;
+                }
+                windows.push({ is: parts[0], oos: parts[1] });
+            }
+
+            const n = windows.length;
+            const sumIS = windows.reduce((s, w) => s + w.is, 0);
+            const sumOOS = windows.reduce((s, w) => s + w.oos, 0);
+
+            // Szakaszonkénti bontás: egyedi WFE_i csak akkor értelmezhető,
+            // ha az adott szakasz in-sample hozama pozitív.
+            const rows = windows.map((w, idx) => {
+                let wfeI = null;
+                let flag, flagColor;
+                if (w.is <= 0) {
+                    flag = 'in-sample ≤ 0% — nem értékelhető';
+                    flagColor = 'text-slate-500';
+                } else {
+                    wfeI = (w.oos / w.is) * 100;
+                    if (w.oos <= 0) {
+                        flag = 'overfitting jel (OOS veszteséges)';
+                        flagColor = 'text-neon-red';
+                    } else if (wfeI >= 70) {
+                        flag = 'erős konzisztencia';
+                        flagColor = 'text-neon-green';
+                    } else if (wfeI >= 50) {
+                        flag = 'elfogadható';
+                        flagColor = 'text-amber-400';
+                    } else {
+                        flag = 'gyenge konzisztencia';
+                        flagColor = 'text-amber-400';
+                    }
+                }
+                return { idx: idx + 1, is: w.is, oos: w.oos, wfeI, flag, flagColor };
+            });
+
+            const profitableOOSCount = windows.filter(w => w.oos > 0).length;
+            const consistencyPct = (profitableOOSCount / n) * 100;
+
+            const rowsHtml = rows.map(r => `
+                <div class="flex justify-between items-baseline border-b border-dark-800 pb-1 last:border-0">
+                    <span class="text-slate-500">#${r.idx}: IS ${r.is >= 0 ? '+' : ''}${r.is.toFixed(2)}% / OOS ${r.oos >= 0 ? '+' : ''}${r.oos.toFixed(2)}%</span>
+                    <span class="${r.flagColor} text-[10px] text-right">${r.wfeI === null ? '—' : r.wfeI.toFixed(0) + '%'} <span class="block text-[9px]">${r.flag}</span></span>
+                </div>
+            `).join('');
+
+            if (sumIS <= 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-[11px] mb-3">${rowsHtml}</div>
+                    <div class="glass-card rounded-xl p-3 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Összesített in-sample hozam:</span><span class="text-neon-red font-extrabold">${sumIS >= 0 ? '+' : ''}${sumIS.toFixed(2)}%</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Összesített out-of-sample hozam:</span><span class="${sumOOS >= 0 ? 'text-neon-green' : 'text-neon-red'}">${sumOOS >= 0 ? '+' : ''}${sumOOS.toFixed(2)}%</span></div>
+                    </div>
+                    <p class="text-[10px] font-semibold mt-2 text-neon-red">🚨 Az összesített in-sample hozam NEM pozitív (${sumIS.toFixed(2)}%) — a WFE mutató itt nem értelmezhető érdemben. Ez nem overfitting kérdése: a stratégia már az OPTIMALIZÁLT szakaszon (in-sample) sem volt összességében nyereséges, tehát magát a stratégia-logikát kell javítani, mielőtt walk-forward tesztelésre időt fordítanál.</p>
+                `;
+                return;
+            }
+
+            const wfe = (sumOOS / sumIS) * 100;
+            const degradation = 100 - wfe;
+
+            let wfeColor, wfeVerdict;
+            if (wfe < 0) {
+                wfeColor = 'text-neon-red';
+                wfeVerdict = `🚨 SÚLYOS OVERFITTING JEL: a WFE negatív (${wfe.toFixed(1)}%) — az in-sample szakaszokon összesen nyereséges stratégia az out-of-sample szakaszokon ÖSSZESÍTVE veszteséges. Ez tipikus jele annak, hogy a paraméterek a múltbeli adat véletlen zajára illeszkedtek, nem egy valódi, ismétlődő piaci mintázatra.`;
+            } else if (wfe < 50) {
+                wfeColor = 'text-neon-red';
+                wfeVerdict = `⚠️ OVERFITTING KOCKÁZAT: a WFE ${wfe.toFixed(1)}% — az elterjedt Pardo-féle 50%-os ökölszabály küszöbe ALATT. A stratégia teljesítménye jelentősen (${degradation.toFixed(1)} százalékponttal) visszaesett az optimalizáláshoz nem használt adaton — érdemes egyszerűsíteni a stratégiát (kevesebb paraméter) és/vagy több, hosszabb out-of-sample szakaszon újratesztelni.`;
+            } else if (wfe < 70) {
+                wfeColor = 'text-amber-400';
+                wfeVerdict = `🙂 ELFOGADHATÓ: a WFE ${wfe.toFixed(1)}% — a Pardo-féle 50%-os küszöb felett, de a teljes konzisztenciától (100%) még távol. Van némi teljesítmény-visszaesés (${degradation.toFixed(1)} százalékpont) az out-of-sample szakaszon, ami normális mértékű — érdemes óvatos (pl. csökkentett) pozícióméretezéssel élőben tesztelni, nem azonnal teljes tőkével.`;
+            } else {
+                wfeColor = 'text-neon-green';
+                wfeVerdict = `✅ ERŐS KONZISZTENCIA: a WFE ${wfe.toFixed(1)}% — az out-of-sample teljesítmény közel áll az in-sample eredményhez, ami arra utal, hogy a stratégia valódi, ismétlődő mintázatot ragadott meg, nem a múltbeli adat véletlen zaját.`;
+            }
+
+            let consistencyNote = '';
+            if (wfe >= 50 && consistencyPct < 50) {
+                consistencyNote = `<p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ Figyelem: az összesített WFE elfogadható, de csak a szakaszok ${consistencyPct.toFixed(0)}%-a volt EGYEDILEG is nyereséges out-of-sample — lehet, hogy az összesített szám egy-két kiugróan jó szakasz miatt néz jónak, nem egy konzisztens edge miatt.</p>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-[11px] mb-3">${rowsHtml}</div>
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Összesített in-sample hozam:</span><span class="text-white">${sumIS >= 0 ? '+' : ''}${sumIS.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Összesített out-of-sample hozam:</span><span class="${sumOOS >= 0 ? 'text-neon-green' : 'text-neon-red'}">${sumOOS >= 0 ? '+' : ''}${sumOOS.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Walk-Forward Efficiency:</span><span class="font-extrabold ${wfeColor}">${wfe.toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljesítmény-visszaesés:</span><span class="text-white">${degradation.toFixed(1)} pp</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Konzisztencia (OOS-ben nyereséges szakaszok):</span><span class="text-white">${profitableOOSCount}/${n} (${consistencyPct.toFixed(0)}%)</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${wfeColor}">${wfeVerdict}</p>
+                ${consistencyNote}
+            `;
+        }
+
         // ================= R-MULTIPLE NAPLÓ KALKULÁTOR (OKTATÁSI) =================
         // Van Tharp rendszere: R_i = tényleges P/L_i ÷ kezdeti kockáztatott összeg_i.
         // Az "R-expectancy" az átlagos R; a szórás a populációs (n-osztós)
@@ -31429,6 +31598,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             514: { tool: 'il-modal', cta: 'Számold ki élesben az Impermanent Loss mértékét egy likviditási poolban' },
             377: { tool: 'propchallenge-modal', cta: 'Tervezd meg élesben a prop kihívásod kockázatát' },
             385: { tool: 'propchallenge-modal', cta: 'Ellenőrizd élesben Zita kihívás-paramétereit' },
+            543: { tool: 'wfe-modal', cta: 'Számold ki élesben a Walk-Forward Efficiency-t a stratégiád szakaszaira' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -31438,7 +31608,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
