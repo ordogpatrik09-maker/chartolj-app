@@ -2002,6 +2002,13 @@
                                 <div class="text-[10px] text-slate-400">Melyik díjazási modell olcsóbb a te tételméreteden?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('stresstest-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-red-400/10 text-red-400 border border-red-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-radiation"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Stressz-teszt Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Szélsőséges ár-sokk forgatókönyvek hatása a pozíciódra</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -7089,6 +7096,59 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= STRESSZ-TESZT KALKULÁTOR (OKTATÁSI) =================
+         A backtest VALÓS, múltbeli adatokat teszt; a Monte Carlo a MEGLÉVŐ
+         trade-eloszlásból húz véletlen mintákat. A stressz-teszt ezekkel
+         szemben egy DETERMINISZTIKUS, a felhasználó által megadott, szélsőséges
+         egyszeri ár-sokk forgatókönyv-halmazt futtat le ("mi történne, ha az
+         ár hirtelen X%-ot esne/emelkedne egyetlen nap alatt?"), ami akár még
+         sosem fordult elő a historikus adatokban. Minden shock%-ra:
+         újÁr = max(0, belépés × (1 + shock/100)); P&L = irány × (újÁr-belépés)
+         × méret; P&L% = P&L / tőke × 100. Ha P&L <= -tőke, a veszteség elérte
+         vagy túllépte a teljes számlát (reális életben ennél a bróker már
+         likvidálna/marginhívást küldene). -->
+    <div id="stresstest-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-radiation text-red-400"></i> Stressz-teszt Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('stresstest-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A backtest valós múltbeli adatokat, a Monte Carlo a meglévő eloszlásból húzott véletlen mintákat teszt — a stressz-teszt viszont SAJÁT, szélsőséges, egyszeri ár-sokk forgatókönyveket futtat le a pozíciódon (pl. "mi történne, ha az ár hirtelen 20%-ot esne?"), amik a historikus adatban esetleg még sosem fordultak elő.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Belépési ár ($)</label>
+                    <input type="number" id="stresstest-entry" value="100" step="0.01" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-red-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Pozícióméret (egység)</label>
+                    <input type="number" id="stresstest-qty" value="10" step="0.01" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-red-400/50">
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Irány</label>
+            <select id="stresstest-direction" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 text-xs text-white focus:outline-none focus:border-red-400/50">
+                <option value="long">Long (vétel)</option>
+                <option value="short">Short (eladás)</option>
+            </select>
+
+            <label class="text-[11px] font-semibold text-slate-400">Számla tőke ($)</label>
+            <input type="number" id="stresstest-balance" value="1000" step="10" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-red-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Sokk-forgatókönyvek (%, vesszővel elválasztva)</label>
+            <input type="text" id="stresstest-shocks" value="-20,-10,-5,5,10,20" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-red-400/50">
+
+            <button onclick="calcStressTest()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-red-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="stresstest-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A -100% vagy annál kisebb sokk esetén az árat nullán vágjuk (nem lehet negatív ár) — ezt a kalkulátor jelzi. A stressz-teszt NEM jóslás: nem azt mondja, hogy a megadott sokk BEKÖVETKEZIK, csak azt, hogy HA bekövetkezne, mekkora lenne a hatása — ez segít előre, "hideg fejjel" eldönteni, mekkora pozícióméret és tőkeáttétel mellett még elviselhető egy ilyen szélsőséges nap.</p>
+        </div>
+    </div>
+
     <!-- ================= ATR-ALAPÚ POZÍCIÓMÉRET KALKULÁTOR (OKTATÁSI) =================
          A fix pénzbeli/pont-alapú stop-loss helyett a profik gyakran az
          ATR-t (Average True Range — az adott eszköz átlagos napi/időkeretenkénti
@@ -10423,6 +10483,13 @@ SOL Long,1</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Fix vs Százalékos Jutalék Összehasonlító</div>
                     <div class="text-[10px] text-slate-400">Melyik díjazási modell olcsóbb a te tételméreteden?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('stresstest-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-red-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-red-400/10 text-red-400 border border-red-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-radiation"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Stressz-teszt Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Szélsőséges ár-sokk forgatókönyvek hatása a pozíciódra</div>
                 </div>
             </button>
         </div>
@@ -23336,6 +23403,115 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= STRESSZ-TESZT KALKULÁTOR (OKTATÁSI) =================
+        // Minden shock%-ra: újÁr = max(0, belépés × (1 + shock/100)).
+        // P&L = irányszorzó × (újÁr - belépés) × méret. P&L% = P&L / tőke × 100.
+        // irányszorzó: long = +1, short = -1.
+        function calcStressTest() {
+            const entryEl = document.getElementById('stresstest-entry');
+            const qtyEl = document.getElementById('stresstest-qty');
+            const directionEl = document.getElementById('stresstest-direction');
+            const balanceEl = document.getElementById('stresstest-balance');
+            const shocksEl = document.getElementById('stresstest-shocks');
+            const out = document.getElementById('stresstest-result');
+            if (!entryEl || !qtyEl || !directionEl || !balanceEl || !shocksEl || !out) return;
+
+            const entry = parseFloat(entryEl.value);
+            const qty = parseFloat(qtyEl.value);
+            const direction = directionEl.value;
+            const balance = parseFloat(balanceEl.value);
+            const shocks = shocksEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+
+            if (!entry || entry <= 0 || !qty || qty <= 0 || !balance || balance <= 0 || shocks.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb belépési árat, pozícióméretet és számla tőkét, valamint legalább egy érvényes, vesszővel elválasztott %-os sokk-forgatókönyvet (pl. -20,-10,10,20)!</div>`;
+                return;
+            }
+
+            const dirMult = direction === 'short' ? -1 : 1;
+            const rows = shocks.map(shock => {
+                const newPriceRaw = entry * (1 + shock / 100);
+                const clamped = newPriceRaw < 0;
+                const newPrice = Math.max(0, newPriceRaw);
+                const priceChange = newPrice - entry;
+                const pnl = dirMult * priceChange * qty;
+                const pnlPct = (pnl / balance) * 100;
+
+                let colorClass, weightClass, status;
+                if (pnl <= -balance) {
+                    colorClass = 'text-neon-red';
+                    weightClass = 'font-extrabold';
+                    status = '💀 TELJES TŐKEVESZTÉS+';
+                } else if (pnl < 0 && Math.abs(pnlPct) >= 50) {
+                    colorClass = 'text-neon-red';
+                    weightClass = 'font-bold';
+                    status = '🚨 SÚLYOS VESZTÉS';
+                } else if (pnl < 0 && Math.abs(pnlPct) >= 20) {
+                    colorClass = 'text-amber-400';
+                    weightClass = 'font-bold';
+                    status = '⚠️ JELENTŐS VESZTÉS';
+                } else if (pnl < 0) {
+                    colorClass = 'text-neon-red';
+                    weightClass = 'font-bold';
+                    status = 'Veszteség';
+                } else if (pnl === 0) {
+                    colorClass = 'text-slate-400';
+                    weightClass = 'font-bold';
+                    status = 'Nincs változás';
+                } else {
+                    colorClass = 'text-neon-green';
+                    weightClass = 'font-bold';
+                    status = 'Nyereség';
+                }
+
+                return { shock, newPrice, pnl, pnlPct, colorClass, weightClass, status, clamped };
+            }).sort((a, b) => a.shock - b.shock);
+
+            const worst = rows.reduce((a, b) => (b.pnl < a.pnl ? b : a), rows[0]);
+            const best = rows.reduce((a, b) => (b.pnl > a.pnl ? b : a), rows[0]);
+            const anyWipeout = rows.some(r => r.pnl <= -balance);
+            const anySevere = rows.some(r => r.pnl < 0 && Math.abs(r.pnlPct) >= 50);
+
+            let overallColor, overallVerdict;
+            if (anyWipeout) {
+                overallColor = 'text-neon-red';
+                overallVerdict = `💀 Legalább egy megadott forgatókönyvben (${worst.shock > 0 ? '+' : ''}${worst.shock}%) a veszteség elérné vagy meghaladná a teljes számla tőkédet — ez a pozícióméret/tőkeáttétel ÉS tőke-arány túl kockázatos egy ilyen szélsőséges, de nem lehetetlen napra.`;
+            } else if (anySevere) {
+                overallColor = 'text-amber-400';
+                overallVerdict = `⚠️ A legrosszabb megadott forgatókönyvben (${worst.shock > 0 ? '+' : ''}${worst.shock}%) a veszteség a tőke 50%-át is elérné vagy meghaladná — érdemes kisebb pozícióméretet vagy tőkeáttételt fontolni, ha ez a kockázati szint elfogadhatatlan számodra.`;
+            } else {
+                overallColor = 'text-neon-cyan';
+                overallVerdict = `A legrosszabb megadott forgatókönyvben (${worst.shock > 0 ? '+' : ''}${worst.shock}%) a veszteség a tőke kevesebb mint 20%-a — a jelenlegi pozícióméret ezekre a sokkokra viszonylag jól tolerálható, de ettől a stressz-teszt nem garancia a jövőre.`;
+            }
+
+            const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Legrosszabb eset (${worst.shock > 0 ? '+' : ''}${worst.shock}%)</div>
+                        <div class="text-sm font-extrabold ${worst.pnl < 0 ? 'text-neon-red' : 'text-neon-green'}">${fmtMoney(worst.pnl)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${worst.pnlPct.toFixed(2)}% a tőkéhez</div>
+                    </div>
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Legjobb eset (${best.shock > 0 ? '+' : ''}${best.shock}%)</div>
+                        <div class="text-sm font-extrabold ${best.pnl < 0 ? 'text-neon-red' : 'text-neon-green'}">${fmtMoney(best.pnl)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${best.pnlPct.toFixed(2)}% a tőkéhez</div>
+                    </div>
+                </div>
+                <div class="space-y-1.5 mb-3">
+                    ${rows.map(r => `
+                        <div class="flex items-center justify-between font-mono text-[11px] bg-dark-900 rounded-lg px-2.5 py-1.5">
+                            <span class="text-slate-400 w-14">${r.shock > 0 ? '+' : ''}${r.shock}%</span>
+                            <span class="text-slate-300 flex-1 text-center">$${r.newPrice.toLocaleString('en-US', { maximumFractionDigits: 4 })}${r.clamped ? ' (vágva 0-n)' : ''}</span>
+                            <span class="${r.weightClass} ${r.colorClass} w-20 text-right">${fmtMoney(r.pnl)}</span>
+                            <span class="${r.weightClass} ${r.colorClass} ml-2 text-right">${r.status}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <p class="text-[10px] font-semibold ${overallColor}">${overallVerdict}</p>
+            `;
+        }
+
         // ================= PROP TRADING KIHÍVÁS KOCKÁZATKEZELŐ KALKULÁTOR (OKTATÁSI) =================
         // Minden limit a KEZDŐ egyenleg %-ában értendő, statikusan (nem
         // compoundolva). maxConsecLossesX = floor(limitX% / kockázat%) —
@@ -33256,6 +33432,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             292: { tool: 'tailhedge-modal', cta: 'Számold ki élesben egy tail hedge várható költségét és hasznát' },
             409: { tool: 'tailhedge-modal', cta: 'Vizsgáld meg élesben a tail hedging költsége vs. elmaradt haszon mérlegét' },
             430: { tool: 'feestruct-modal', cta: 'Hasonlítsd össze élesben a fix és a százalékos jutalék modellt' },
+            451: { tool: 'stresstest-modal', cta: 'Futtasd le élesben a stressz-teszt forgatókönyveidet' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -33265,7 +33442,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
