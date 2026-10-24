@@ -7448,6 +7448,14 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-layer-group mr-1"></i> Blokk-Bootstrap MC (soros korreláció)
                 </button>
                 <div id="backtest-blockbootstrap-result" class="mt-3"></div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div><label class="text-[10px] font-semibold text-slate-400">Díj/oldal (%)</label><input type="number" id="backtest-costdrag-fee" value="0.04" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-green/50"></div>
+                    <div><label class="text-[10px] font-semibold text-slate-400">Csúszás/oldal (%)</label><input type="number" id="backtest-costdrag-slippage" value="0.05" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-green/50"></div>
+                </div>
+                <button onclick="calcBacktestCostDrag()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-coins mr-1"></i> Reális Költség-Szimuláció (díj + csúszás)
+                </button>
+                <div id="backtest-costdrag-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7515,6 +7523,14 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-layer-group mr-1"></i> Blokk-Bootstrap MC (soros korreláció)
                 </button>
                 <div id="sb-blockbootstrap-result" class="mt-3"></div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div><label class="text-[10px] font-semibold text-slate-400">Díj/oldal (%)</label><input type="number" id="sb-costdrag-fee" value="0.04" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-green/50"></div>
+                    <div><label class="text-[10px] font-semibold text-slate-400">Csúszás/oldal (%)</label><input type="number" id="sb-costdrag-slippage" value="0.05" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-green/50"></div>
+                </div>
+                <button onclick="calcStrategyBuilderCostDrag()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-coins mr-1"></i> Reális Költség-Szimuláció (díj + csúszás)
+                </button>
+                <div id="sb-costdrag-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -16102,6 +16118,130 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const stats = runBlockBootstrapMC(tradeReturns, sbLastRunConfig.startEquity, numSims, ddThresholdPct, blockSize);
                 const iidStats = runBootstrapMC(tradeReturns, sbLastRunConfig.startEquity, numSims, ddThresholdPct);
                 out.innerHTML = renderBlockBootstrapMCHtml(stats, iidStats, tradeReturns.length, numSims, ddThresholdPct, blockSize);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= REÁLIS KÖLTSÉG-SZIMULÁCIÓ (DÍJ + CSÚSZÁS DRAG) =================
+        // A meglévő Díj-Hatás és Spread-Költség kalkulátorok (feeimpact-modal,
+        // spreadcost-modal) EGYSZERI, elvont példákon mutatják be a költségek
+        // hatását. Ez az eszköz a VALÓDI, az imént lefutott backtestből
+        // származó trade-sorozatra alkalmazza a díj+csúszás "drag"-et: minden
+        // trade-ből levon egy kerekített (belépés+kilépés, azaz round-trip)
+        // költséghányadot, és összeveti a költség NÉLKÜLI (idealizált) és a
+        // költséggel terhelt equity-görbét. Ez konkrétan megmutatja, hogy egy
+        // VÉKONY, alacsony átlagos trade-méretű "élű" stratégia mennyire
+        // elolvadhat a kereskedési díjakban és a csúszásban — ez a
+        // leckékben tanított "transaction cost drag" klasszikus, sokszor
+        // alábecsült veszélye. Csak olvassa a már kiszámolt trades tömböt,
+        // a runBootstrapMC-t és a core motorokat NEM módosítja.
+        function runCostDragSimulation(tradeReturns, startEquity, feePctPerSide, slippagePctPerSide) {
+            const n = tradeReturns.length;
+            if (n < 1) throw new Error('Legalább 1 trade szükséges a költség-szimulációhoz.');
+            if (feePctPerSide < 0 || slippagePctPerSide < 0) throw new Error('A díj és a csúszás mértéke nem lehet negatív.');
+
+            const costFraction = 2 * (feePctPerSide + slippagePctPerSide) / 100; // round-trip (belépés+kilépés)
+
+            let equityIdeal = startEquity;
+            let equityDegraded = startEquity;
+            let peakIdeal = startEquity;
+            let peakDegraded = startEquity;
+            let maxDdIdeal = 0;
+            let maxDdDegraded = 0;
+            let flippedToLossCount = 0;
+
+            for (let i = 0; i < n; i++) {
+                const r = tradeReturns[i];
+                const degradedR = r - costFraction;
+                if (r > 0 && degradedR <= 0) flippedToLossCount++;
+
+                equityIdeal *= (1 + r);
+                equityDegraded *= (1 + degradedR);
+
+                if (equityIdeal > peakIdeal) peakIdeal = equityIdeal;
+                const ddI = peakIdeal > 0 ? (peakIdeal - equityIdeal) / peakIdeal * 100 : 0;
+                if (ddI > maxDdIdeal) maxDdIdeal = ddI;
+
+                if (equityDegraded > peakDegraded) peakDegraded = equityDegraded;
+                const ddD = peakDegraded > 0 ? (peakDegraded - equityDegraded) / peakDegraded * 100 : 0;
+                if (ddD > maxDdDegraded) maxDdDegraded = ddD;
+            }
+
+            const idealReturnPct = (equityIdeal - startEquity) / startEquity * 100;
+            const degradedReturnPct = (equityDegraded - startEquity) / startEquity * 100;
+
+            return {
+                idealReturnPct, degradedReturnPct,
+                maxDrawdownIdealPct: maxDdIdeal, maxDrawdownDegradedPct: maxDdDegraded,
+                flippedToLossCount, costFractionPct: costFraction * 100, tradeCount: n
+            };
+        }
+
+        function renderCostDragHtml(stats) {
+            const edgeSurvives = stats.degradedReturnPct > 0;
+            const erosionPct = stats.idealReturnPct - stats.degradedReturnPct;
+            return `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Idealizált (költség nélküli) hozam:</span><span class="${stats.idealReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.idealReturnPct >= 0 ? '+' : ''}${stats.idealReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-cyan font-semibold">Költséggel terhelt (valós) hozam:</span><span class="${stats.degradedReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${stats.degradedReturnPct >= 0 ? '+' : ''}${stats.degradedReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown (idealizált / valós):</span><span class="text-amber-400">${stats.maxDrawdownIdealPct.toFixed(2)}% / ${stats.maxDrawdownDegradedPct.toFixed(2)}%</span></div>
+                </div>
+                <div class="glass-card rounded-xl border ${edgeSurvives ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
+                    <div class="flex justify-between"><span class="text-slate-400">Round-trip költség trade-enként:</span><span class="text-white font-bold">${stats.costFractionPct.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam-erózió (idealizált − valós):</span><span class="text-amber-400 font-bold">${erosionPct.toFixed(2)}pp</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Nyereségesből veszteségessé vált trade-ek:</span><span class="${stats.flippedToLossCount > 0 ? 'text-neon-red font-bold' : 'text-white'}">${stats.flippedToLossCount} / ${stats.tradeCount}</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${edgeSurvives ?
+                    `A stratégia EDGE-e a megadott díj+csúszás mellett is POZITÍV marad — de minél közelebb van a költséggel terhelt hozam nullához, annál sérülékenyebb a stratégia egy esetleges likviditás-romlásra vagy magasabb díjakra.`
+                    : `A stratégia idealizált (költség nélküli) edge-e POZITÍV volt, de a reális díj+csúszás mellett NEGATÍVBA fordult — ez a klasszikus "transaction cost drag" csapda: egy sok, kis méretű trade-ből álló stratégia látszólag nyereséges lehet papíron, de a valós költségek teljesen felemészthetik az edge-et. Próbálj ritkább, nagyobb átlagos mozgást célzó belépéseket, vagy csökkentsd a trade-gyakoriságot!`}</p>
+            `;
+        }
+
+        function calcBacktestCostDrag() {
+            const out = document.getElementById('backtest-costdrag-result');
+            if (!out) return;
+            const last = window.lastBacktestResult;
+            if (!last || !last.trades || last.trades.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 trade szükséges a költség-szimulációhoz — futtasd le újra a backtestet!</div>`;
+                return;
+            }
+            const feeEl = document.getElementById('backtest-costdrag-fee');
+            const slipEl = document.getElementById('backtest-costdrag-slippage');
+            const feePctPerSide = feeEl ? parseFloat(feeEl.value) : 0.04;
+            const slippagePctPerSide = slipEl ? parseFloat(slipEl.value) : 0.05;
+            if (isNaN(feePctPerSide) || isNaN(slippagePctPerSide)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes díj és csúszás értékeket!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = last.trades.map(t => t.returnPct);
+                const stats = runCostDragSimulation(tradeReturns, last.startEquity, feePctPerSide, slippagePctPerSide);
+                out.innerHTML = renderCostDragHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderCostDrag() {
+            const out = document.getElementById('sb-costdrag-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 1 || !sbLastRunConfig) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 trade szükséges a költség-szimulációhoz — futtasd le újra a stratégiát!</div>`;
+                return;
+            }
+            const feeEl = document.getElementById('sb-costdrag-fee');
+            const slipEl = document.getElementById('sb-costdrag-slippage');
+            const feePctPerSide = feeEl ? parseFloat(feeEl.value) : 0.04;
+            const slippagePctPerSide = slipEl ? parseFloat(slipEl.value) : 0.05;
+            if (isNaN(feePctPerSide) || isNaN(slippagePctPerSide)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes díj és csúszás értékeket!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
+                const stats = runCostDragSimulation(tradeReturns, sbLastRunConfig.startEquity, feePctPerSide, slippagePctPerSide);
+                out.innerHTML = renderCostDragHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
