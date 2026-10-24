@@ -7475,6 +7475,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-hourglass-half mr-1"></i> Trade Futamidő és Kitettség Elemző
                 </button>
                 <div id="backtest-duration-result" class="mt-3"></div>
+                <button onclick="calcBacktestEquityCurveConsistency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-chart-area mr-1"></i> Egyenleg-görbe Konzisztencia (K-Ratio)
+                </button>
+                <div id="backtest-kratio-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7562,6 +7566,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-hourglass-half mr-1"></i> Trade Futamidő és Kitettség Elemző
                 </button>
                 <div id="sb-duration-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderEquityCurveConsistency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-chart-area mr-1"></i> Egyenleg-görbe Konzisztencia (K-Ratio)
+                </button>
+                <div id="sb-kratio-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -16538,6 +16546,102 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
                 const stats = runPerformanceDecayDetector(tradeReturns, windowSize);
                 out.innerHTML = renderPerformanceDecayHtml(stats, windowSize);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= EGYENLEG-GÖRBE KONZISZTENCIA ELEMZŐ (K-RATIO) ("BRUTÁL" FEJLESZTÉS) =================
+        // Két stratégia ADHATJA UGYANAZT a végső hozamot, de egészen másképp jutnak el odáig:
+        // az egyik SIMÁN, kiszámíthatóan nő, a másik hektikusan ugrál fel-le. Ez az eszköz ezt a
+        // "simaságot" számszerűsíti: a logaritmizált egyenleg-görbére lineáris regressziót illeszt,
+        // és megadja az R²-t (mennyire illik rá egyenes vonal) és a K-Ratio-t (a trend meredeksége
+        // a becslés bizonytalanságához viszonyítva — minél magasabb, annál konzisztensebb a növekedés).
+        // Csak a már létező, változatlan equityCurve tömböt olvassa — semmilyen core motort nem hív.
+        function runEquityCurveConsistencyAnalysis(equityCurve) {
+            const n = equityCurve ? equityCurve.length : 0;
+            if (n < 3) throw new Error('Legalább 3 egyenleg-pont szükséges az elemzéshez.');
+            for (const v of equityCurve) {
+                if (v <= 0) throw new Error('Az egyenleg-görbe nem tartalmazhat 0 vagy negatív értéket (log-transzformáció miatt).');
+            }
+
+            const logEquity = equityCurve.map(v => Math.log(v));
+            const xs = Array.from({ length: n }, (_, i) => i);
+            const meanX = xs.reduce((a, b) => a + b, 0) / n;
+            const meanY = logEquity.reduce((a, b) => a + b, 0) / n;
+
+            let sxx = 0, sxy = 0;
+            for (let i = 0; i < n; i++) {
+                sxx += (xs[i] - meanX) ** 2;
+                sxy += (xs[i] - meanX) * (logEquity[i] - meanY);
+            }
+            const slope = sxx !== 0 ? sxy / sxx : 0;
+            const intercept = meanY - slope * meanX;
+
+            let sse = 0, sst = 0;
+            for (let i = 0; i < n; i++) {
+                const pred = slope * xs[i] + intercept;
+                sse += (logEquity[i] - pred) ** 2;
+                sst += (logEquity[i] - meanY) ** 2;
+            }
+            const rSquared = sst !== 0 ? (1 - sse / sst) : 1;
+
+            const dof = n - 2;
+            let stdErrSlope = 0, kRatio = 0;
+            if (dof > 0 && sxx > 0) {
+                const residualVariance = sse / dof;
+                stdErrSlope = Math.sqrt(residualVariance / sxx);
+                kRatio = stdErrSlope !== 0 ? (slope / stdErrSlope) : 0;
+            }
+
+            return { slope, intercept, rSquared, stdErrSlope, kRatio };
+        }
+
+        function renderEquityCurveConsistencyHtml(stats) {
+            const fmt = (v, d = 4) => Number.isFinite(v) ? v.toFixed(d) : (v > 0 ? '∞' : (v < 0 ? '-∞' : 'N/A'));
+            const r2Pct = (stats.rSquared * 100).toFixed(1);
+            let verdict, verdictClass;
+            if (stats.rSquared >= 0.9) { verdict = 'NAGYON SIMA, KONZISZTENS NÖVEKEDÉS'; verdictClass = 'text-neon-green'; }
+            else if (stats.rSquared >= 0.7) { verdict = 'ÁLTALÁBAN KONZISZTENS, NÉHÁNY ELTÉRÉSSEL'; verdictClass = 'text-neon-amber'; }
+            else { verdict = 'HEKTIKUS, KISZÁMÍTHATATLAN EGYENLEG-GÖRBE'; verdictClass = 'text-neon-red'; }
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Egyenleg-görbe Konzisztencia (K-Ratio)</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">R² (illesztés minősége)</div><div class="font-bold text-white">${r2Pct}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">K-Ratio</div><div class="font-bold text-white">${fmt(stats.kRatio, 2)}</div></div>
+                    </div>
+                    <div class="text-xs font-bold ${verdictClass} mt-1">${verdict}</div>
+                    <div class="text-xs text-gray-500 mt-1">Az R² megmutatja, mennyire illeszkedik egyenes trendvonal a (log) egyenleg-görbére (0–100%). A K-Ratio ezt a trendet a becslés bizonytalanságával súlyozza — két azonos végső hozamú stratégia közül a magasabb K-Ratio-jú simábban, kisebb "hullámvasúttal" érte el az eredményt.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestEquityCurveConsistency() {
+            const out = document.getElementById('backtest-kratio-result');
+            if (!out) return;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.equityCurve || window.lastBacktestResult.equityCurve.length < 3) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 3 egyenleg-pont szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const stats = runEquityCurveConsistencyAnalysis(window.lastBacktestResult.equityCurve);
+                out.innerHTML = renderEquityCurveConsistencyHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderEquityCurveConsistency() {
+            const out = document.getElementById('sb-kratio-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.equityCurve || sbLastRunResult.equityCurve.length < 3) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 3 egyenleg-pont szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const stats = runEquityCurveConsistencyAnalysis(sbLastRunResult.equityCurve);
+                out.innerHTML = renderEquityCurveConsistencyHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
