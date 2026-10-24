@@ -1904,6 +1904,13 @@
                                 <div class="text-[10px] text-slate-400">Valódi stratégiák keverése élő adaton, diverzifikációs előny számszerűsítve</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('robustmap-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-mountain-sun"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Paraméter Robosztusság-Térkép</div>
+                                <div class="text-[10px] text-slate-400">Elszigetelt "csúcs" vs. robusztus "fennsík" felismerése grid search-ben</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-diagram-project"></i></span>
                             <div>
@@ -8832,6 +8839,44 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= PARAMÉTER ROBOSZTUSSÁG-TÉRKÉP (OKTATÁSI, "BRUTÁL" FEJLESZTÉS) =================
+         A Grid Search eszközre épül, de egy lépéssel tovább megy: nem csak
+         a legjobb in-sample pontot nézi, hanem azt is, hogy a SZOMSZÉDOS
+         paraméter-kombinációk hasonlóan jól teljesítenek-e ("fennsík" —
+         robusztus) vagy a legjobb pont egy ELSZIGETELT csúcs ("spike" —
+         valószínűleg túlillesztés). Mindkettőt leteszteli out-of-sample-ön. -->
+    <div id="robustmap-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-mountain-sun text-neon-cyan"></i> Paraméter Robosztusság-Térkép
+                </h3>
+                <button onclick="closeToolModal('robustmap-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A JELENLEG BETÖLTÖTT chart in-sample szakaszán rácskeresést futtat, majd minden pontnál megnézi a SZOMSZÉDOS paraméter-kombinációk átlagos teljesítményét is. Megkülönbözteti a legjobb ÖNMAGÁBAN teljesítő, de elszigetelt pontot ("csúcs" — tipikus túlillesztés-jel) attól a ponttól, ahol a KÖRNYEZŐ kombinációk is hasonlóan jól teljesítenek ("fennsík" — robusztusabb). Mindkettőt leteszteli az out-of-sample szakaszon.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA min</label><input type="number" id="robustmap-fastmin" value="3" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA max</label><input type="number" id="robustmap-fastmax" value="12" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA min</label><input type="number" id="robustmap-slowmin" value="15" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA max</label><input type="number" id="robustmap-slowmax" value="35" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div><label class="text-[11px] font-semibold text-slate-400">In-sample split %</label><input type="number" id="robustmap-split" value="70" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Kezdő tőke</label><input type="number" id="robustmap-equity" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+            </div>
+
+            <button onclick="calcParamRobustnessMap()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Robosztusság Elemzése
+            </button>
+
+            <div id="robustmap-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A "szomszédok átlaga" a rácson közvetlenül melletti (legfeljebb 8) gyors/lassú EMA kombináció in-sample hozamának átlaga. Minél kisebb a különbség egy pont saját hozama és a szomszédai átlaga közt, annál ROBUSZTUSABB az a paramétertartomány — nem egyetlen szerencsés beállításról van szó.</p>
+        </div>
+    </div>
+
     <div id="pitchfork-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -11266,6 +11311,13 @@ Mean-reversion,2.5</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Több-Stratégiás Portfólió-Kombináló</div>
                     <div class="text-[10px] text-slate-400">Valódi stratégiák keverése élő adaton, diverzifikációs előny számszerűsítve</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('robustmap-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-mountain-sun"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Paraméter Robosztusság-Térkép</div>
+                    <div class="text-[10px] text-slate-400">Elszigetelt "csúcs" vs. robusztus "fennsík" felismerése grid search-ben</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -13724,6 +13776,94 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 })),
                 blended: { totalReturnPct, maxDrawdownPct, finalEquity },
                 weightedAvgMaxDD, diversificationBenefitPct, correlations, blendedEquityCurve: blendedEquity
+            };
+        }
+
+        // ================= PARAMÉTER ROBOSZTUSSÁG-TÉRKÉP (OKTATÁSI, "BRUTÁL" FEJLESZTÉS) =================
+        // A Grid Search & Overfitting Demonstráló már megmutatja, hogy a
+        // legjobb in-sample paraméter gyakran rosszul teljesít out-of-sample-ön
+        // — ez az eszköz egy LÉPÉSSEL TOVÁBB megy: megkülönbözteti a rács
+        // "ISOLÁLT CSÚCSÁT" (egyetlen, szerencsés paraméter-pont, aminek a
+        // SZOMSZÉDAI sokkal rosszabbul teljesítenek — ez a túlillesztés
+        // klasszikus jele, egy véletlen "zajcsúcs") a "FENNSÍKTÓL" (egy
+        // paraméter-TARTOMÁNY, ahol a szomszédos kombinációk is hasonlóan jól
+        // teljesítenek — ez robusztus, nem véletlen mintázatra utal).
+        //
+        // Konkrét módszer: in-sample szakaszon teljes rácskeresést futtat (mint
+        // a Grid Search eszköz), minden rácspontra kiszámolja a 8-szomszédos
+        // cellák ÁTLAGÁT (neighborAvgReturn). A "csúcs" (topSpike) a legjobb
+        // ÖNMAGÁBAN teljesítő pont, a "fennsík" (topPlateau) az a pont, ahol a
+        // SZOMSZÉDOK átlaga a legjobb (legalább 3 érvényes szomszéd kell).
+        // Mindkét kiválasztott paramétert KÜLÖN leteszteli az out-of-sample
+        // szakaszon, hogy konkrétan megmutassa: melyik "éli túl" jobban a
+        // váltást az élő adatra. Kizárólag a meglévő, SOHA nem módosított
+        // runEMACrossoverBacktest motort hívja, sem azt, sem a Grid Search
+        // eszköz saját logikáját nem változtatja meg.
+        function prmNeighborReturns(grid, fast, slow) {
+            const out = [];
+            for (let df = -1; df <= 1; df++) {
+                for (let ds = -1; ds <= 1; ds++) {
+                    if (df === 0 && ds === 0) continue;
+                    const key = (fast + df) + ',' + (slow + ds);
+                    if (grid.has(key)) out.push(grid.get(key));
+                }
+            }
+            return out;
+        }
+
+        function runParamRobustnessMap(candles, fastMin, fastMax, slowMin, slowMax, startEquity, inSamplePct) {
+            if (!candles || candles.length < 20) throw new Error('Túl kevés gyertya a robosztusság-térképhez.');
+            const n = candles.length;
+            const splitIdx = Math.floor(n * inSamplePct / 100);
+            const inSample = candles.slice(0, splitIdx);
+            const outSample = candles.slice(splitIdx);
+            if (inSample.length < 10 || outSample.length < 10) throw new Error('Az in-sample/out-of-sample szakaszok túl rövidek ehhez az adathosszhoz.');
+
+            const grid = new Map();
+            for (let fast = fastMin; fast <= fastMax; fast++) {
+                for (let slow = slowMin; slow <= slowMax; slow++) {
+                    if (slow <= fast) continue;
+                    const r = runEMACrossoverBacktest(inSample, fast, slow, startEquity);
+                    grid.set(fast + ',' + slow, r.totalReturnPct);
+                }
+            }
+            if (grid.size < 9) throw new Error('Túl kicsi a paramétertartomány a fennsík-detektáláshoz (legalább 3×3 érvényes kombináció szükséges).');
+
+            const neighborAvg = new Map();
+            const neighborCount = new Map();
+            for (const key of grid.keys()) {
+                const [fast, slow] = key.split(',').map(Number);
+                const nb = prmNeighborReturns(grid, fast, slow);
+                neighborCount.set(key, nb.length);
+                neighborAvg.set(key, nb.length ? nb.reduce((s, v) => s + v, 0) / nb.length : null);
+            }
+
+            let topSpikeKey = null, topSpikeVal = -Infinity;
+            for (const [key, val] of grid) { if (val > topSpikeVal) { topSpikeVal = val; topSpikeKey = key; } }
+
+            let topPlateauKey = null, topPlateauVal = -Infinity;
+            for (const key of grid.keys()) {
+                if (neighborCount.get(key) >= 3 && neighborAvg.get(key) > topPlateauVal) {
+                    topPlateauVal = neighborAvg.get(key);
+                    topPlateauKey = key;
+                }
+            }
+            if (topPlateauKey === null) throw new Error('Nem található elég szomszédos kombináció a fennsík-detektáláshoz.');
+
+            function buildEntry(key) {
+                const [fast, slow] = key.split(',').map(Number);
+                const oos = runEMACrossoverBacktest(outSample, fast, slow, startEquity);
+                return {
+                    fast, slow, inReturnPct: grid.get(key),
+                    neighborAvgReturn: neighborAvg.get(key), neighborCount: neighborCount.get(key),
+                    oosReturnPct: oos.totalReturnPct, oosMaxDrawdownPct: oos.maxDrawdownPct
+                };
+            }
+
+            return {
+                topSpike: buildEntry(topSpikeKey),
+                topPlateau: buildEntry(topPlateauKey),
+                gridSize: grid.size, inSampleSize: inSample.length, outSampleSize: outSample.length
             };
         }
 
@@ -22754,6 +22894,66 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     }
                 }
             });
+        }
+
+        function calcParamRobustnessMap() {
+            const out = document.getElementById('robustmap-result');
+            if (!out) return;
+
+            if (typeof candleData === 'undefined' || !candleData || candleData.length < 40) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton (legalább 40 gyertya szükséges) — válts hosszabb idősíkra!</div>`;
+                return;
+            }
+
+            const fastMin = parseInt(document.getElementById('robustmap-fastmin').value, 10);
+            const fastMax = parseInt(document.getElementById('robustmap-fastmax').value, 10);
+            const slowMin = parseInt(document.getElementById('robustmap-slowmin').value, 10);
+            const slowMax = parseInt(document.getElementById('robustmap-slowmax').value, 10);
+            const inSamplePct = parseFloat(document.getElementById('robustmap-split').value);
+            const startEquity = parseFloat(document.getElementById('robustmap-equity').value);
+
+            if ([fastMin, fastMax, slowMin, slowMax, inSamplePct, startEquity].some(v => isNaN(v)) ||
+                fastMin < 2 || fastMax < fastMin || slowMin < 2 || slowMax < slowMin ||
+                inSamplePct <= 0 || inSamplePct >= 100 || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — minden min ≤ max legyen, a split 0-100 közt, a tőke pozitív!</div>`;
+                return;
+            }
+            const combos = (fastMax - fastMin + 1) * (slowMax - slowMin + 1);
+            if (combos > 900) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Túl nagy a rács (&gt;900 kombináció) — szűkítsd a tartományokat!</div>`;
+                return;
+            }
+
+            let result;
+            try {
+                result = runParamRobustnessMap(candleData, fastMin, fastMax, slowMin, slowMax, startEquity, inSamplePct);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+                return;
+            }
+
+            const spike = result.topSpike, plateau = result.topPlateau;
+            const spikeGap = spike.inReturnPct - spike.neighborAvgReturn;
+            const plateauGap = plateau.inReturnPct - plateau.neighborAvgReturn;
+            const spikeIsRisky = spikeGap > 5;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3 font-mono text-[11px] space-y-1.5">
+                    <div class="text-amber-400 font-bold text-xs mb-1">⚡ "Csúcs" (legjobb önmagában): EMA ${spike.fast}/${spike.slow}</div>
+                    <div class="flex justify-between"><span class="text-slate-400">In-sample hozam:</span><span class="text-white">${spike.inReturnPct >= 0 ? '+' : ''}${spike.inReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Szomszédok átlaga (${spike.neighborCount} db):</span><span class="text-white">${spike.neighborAvgReturn.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Rés (csúcs − szomszédok):</span><span class="${spikeIsRisky ? 'text-neon-red' : 'text-white'} font-bold">${spikeGap >= 0 ? '+' : ''}${spikeGap.toFixed(2)}% pont</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Out-of-sample hozam:</span><span class="${spike.oosReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${spike.oosReturnPct >= 0 ? '+' : ''}${spike.oosReturnPct.toFixed(2)}%</span></div>
+                </div>
+                <div class="glass-card rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.05] p-3 mb-3 font-mono text-[11px] space-y-1.5">
+                    <div class="text-neon-cyan font-bold text-xs mb-1">⛰️ "Fennsík" (legjobb szomszédsági átlag): EMA ${plateau.fast}/${plateau.slow}</div>
+                    <div class="flex justify-between"><span class="text-slate-400">In-sample hozam:</span><span class="text-white">${plateau.inReturnPct >= 0 ? '+' : ''}${plateau.inReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Szomszédok átlaga (${plateau.neighborCount} db):</span><span class="text-white">${plateau.neighborAvgReturn.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Rés (fennsík − szomszédok):</span><span class="text-white font-bold">${plateauGap >= 0 ? '+' : ''}${plateauGap.toFixed(2)}% pont</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Out-of-sample hozam:</span><span class="${plateau.oosReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${plateau.oosReturnPct >= 0 ? '+' : ''}${plateau.oosReturnPct.toFixed(2)}%</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${spikeIsRisky ? `A "csúcs" pont (EMA ${spike.fast}/${spike.slow}) sokkal jobban teljesít önmagában, mint a szomszédos kombinációi (nagy rés) — ez klasszikus túlillesztés-jel: valószínűleg ez a konkrét paraméterpár "véletlenül" talált rá az in-sample adat zajára, nem egy valódi, tartós mintázatra. A "fennsík" pont kisebb réssel robusztusabb választás lehet, még ha az in-sample hozama alacsonyabb is.` : 'Ebben az esetben a "csúcs" és a szomszédai közti rés nem kirívóan nagy — ez önmagában nem garancia, de kevésbé tipikus túlillesztés-mintázat, mint egy nagy, elszigetelt csúcs.'}</p>
+            `;
         }
 
         function calcPitchfork() {
@@ -35905,7 +36105,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
