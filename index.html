@@ -8671,6 +8671,31 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="ladderbreak-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-stairs text-amber-500"></i> Ladder & Breakaway Minta Felismerő
+                </h3>
+                <button onclick="closeToolModal('ladderbreak-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 5 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a Ladder Bottom, Ladder Top és a klasszikus (bullish/bearish) Breakaway mintát — mindhárom 4+1 gyertyás szerkezetű: négy azonos irányú "lépcsőző" gyertya, majd egy erős ellentétes irányú fordulós gyertya.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Magas,Alacsony,Záró (soronként egy, legalább 5 sor)</label>
+            <textarea id="ladderbreak-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-500/50">110,111,100,101
+101,102,90,91
+91,92,80,81
+81,82,70,71
+71,90,70,89</textarea>
+
+            <button onclick="calcLadderBreakaway()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-500 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Minta Felismerése
+            </button>
+
+            <div id="ladderbreak-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="abcd-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -21979,6 +22004,65 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        function calcLadderBreakaway() {
+            const candlesEl = document.getElementById('ladderbreak-candles');
+            const out = document.getElementById('ladderbreak-result');
+            if (!candlesEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 4 && a.every(v => !isNaN(v)));
+
+            if (candles.length < 5) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 5 gyertya szükséges (Nyitó,Magas,Alacsony,Záró formátumban)!</div>`;
+                return;
+            }
+
+            function metrics(ohlc) {
+                const [o, h, l, c] = ohlc;
+                const rng = (h - l) > 0 ? (h - l) : 1e-9;
+                const body = Math.abs(c - o);
+                const bodyPct = body / rng * 100;
+                const bullish = c > o;
+                return { o, h, l, c, bodyPct, bullish };
+            }
+
+            const n = candles.length;
+            const m = candles.slice(n - 5).map(metrics);
+            const [c0, c1, c2, c3, c4] = m;
+
+            let pattern = 'NONE';
+
+            if (!c0.bullish && c0.bodyPct >= 50 && Math.max(c1.o, c1.c) < c0.c &&
+                c4.bullish && c4.bodyPct >= 50 && c4.c > c0.o && c4.o > c3.c) {
+                pattern = 'BREAKAWAY_BULLISH';
+            } else if (c0.bullish && c0.bodyPct >= 50 && Math.min(c1.o, c1.c) > c0.c &&
+                !c4.bullish && c4.bodyPct >= 50 && c4.c < c0.o && c4.o > c3.c) {
+                pattern = 'BREAKAWAY_BEARISH';
+            } else if (!c0.bullish && !c1.bullish && !c2.bullish && !c3.bullish &&
+                c1.c < c0.c && c2.c < c1.c && c3.c < c2.c &&
+                c4.bullish && c4.bodyPct >= 50 && c4.c > c3.o && c4.c <= c0.o) {
+                pattern = 'LADDER_BOTTOM';
+            } else if (c0.bullish && c1.bullish && c2.bullish && c3.bullish &&
+                c1.c > c0.c && c2.c > c1.c && c3.c > c2.c &&
+                !c4.bullish && c4.bodyPct >= 50 && c4.c < c3.o && c4.c >= c0.o) {
+                pattern = 'LADDER_TOP';
+            }
+
+            const PATTERN_INFO = {
+                LADDER_BOTTOM: { name: 'Ladder Bottom (Létra Alj)', color: 'text-neon-green', desc: 'Négy egymást követő, egyre lejjebb záró bearish gyertya ("létra" lefelé), majd egy erős, felfelé forduló bullish gyertya. A fokozatos, lépcsőzetes esés hirtelen erőváltását, bullish fordulót jelezhet.' },
+                LADDER_TOP: { name: 'Ladder Top (Létra Tető)', color: 'text-neon-red', desc: 'Négy egymást követő, egyre feljebb záró bullish gyertya ("létra" felfelé), majd egy erős, lefelé forduló bearish gyertya. A Ladder Bottom tükörképe — a fokozatos emelkedés hirtelen megtörését, bearish fordulót jelezheti.' },
+                BREAKAWAY_BULLISH: { name: 'Breakaway (Bullish)', color: 'text-neon-green', desc: 'Hosszú bearish gyertya, majd lefelé réssel nyíló, kisebb testű gyertyák sorozata, végül egy erős bullish gyertya, amely visszatölti a teljes mozgást az első gyertya nyitóáráig vagy afölé. A letörés kifulladását és erős bullish fordulatot jelez.' },
+                BREAKAWAY_BEARISH: { name: 'Breakaway (Bearish)', color: 'text-neon-red', desc: 'A Breakaway (Bullish) tükörképe: hosszú bullish gyertya, felfelé réssel nyíló kisebb gyertyák sorozata, majd egy erős bearish gyertya, amely az első gyertya nyitóáráig vagy alá zár. A felfutás kifulladását és erős bearish fordulatot jelezheti.' },
+                NONE: { name: 'Nincs felismert minta', color: 'text-slate-400', desc: 'Az utolsó 5 gyertya nem illeszkedik a Ladder Bottom, Ladder Top vagy Breakaway minta kritériumaira a megadott küszöbértékekkel.' }
+            };
+
+            const info = PATTERN_INFO[pattern];
+            out.innerHTML = `
+                <p class="text-xs font-bold ${info.color} mb-1">${info.name}</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${info.desc}</p>
+            `;
+        }
+
         function calcABCD() {
             const aEl = document.getElementById('abcd-a');
             const bEl = document.getElementById('abcd-b');
@@ -34681,6 +34765,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            321: { tool: 'ladderbreak-modal', cta: 'Próbáld ki élesben a Ladder Bottom felismerést' },
+            464: { tool: 'ladderbreak-modal', cta: 'Próbáld ki élesben a Ladder Top felismerést' },
+            470: { tool: 'ladderbreak-modal', cta: 'Próbáld ki élesben a Breakaway minta felismerését' },
             229: { tool: 'abcd-modal', cta: 'Ellenőrizd élesben az AB=CD mintát' },
             142: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Megafon alakzat célárat' },
             191: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Rectangle kitörési célárat' },
@@ -34955,7 +35042,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
