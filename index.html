@@ -7495,6 +7495,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-calendar-day mr-1"></i> Napi PnL Bontás
                 </button>
                 <div id="backtest-dailypnl-result" class="mt-3"></div>
+                <button onclick="calcBacktestMfeMae()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-arrows-up-down mr-1"></i> MFE/MAE Elemző
+                </button>
+                <div id="backtest-mfemae-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7602,6 +7606,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-calendar-day mr-1"></i> Napi PnL Bontás
                 </button>
                 <div id="sb-dailypnl-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderMfeMae()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-arrows-up-down mr-1"></i> MFE/MAE Elemző
+                </button>
+                <div id="sb-mfemae-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -16578,6 +16586,122 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
                 const stats = runPerformanceDecayDetector(tradeReturns, windowSize);
                 out.innerHTML = renderPerformanceDecayHtml(stats, windowSize);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= MFE/MAE (MAX. KEDVEZŐ/KEDVEZŐTLEN ELMOZDULÁS) ELEMZŐ ("BRUTÁL" FEJLESZTÉS) =================
+        // Klasszikus trade-menedzsment eszköz: minden trade-nél megnézi, hogy a pozíció
+        // NYITVA LÉTE ALATT (entry→exit gyertyák között) mekkora volt a LEGJOBB elérhető
+        // nem realizált nyereség (MFE = Max Favorable Excursion, a legmagasabb high alapján)
+        // és a LEGROSSZABB nem realizált veszteség (MAE = Max Adverse Excursion, a legalacsonyabb
+        // low alapján) — majd ezt veti össze a TÉNYLEGESEN realizált hozammal. Megmutatja, hogy a
+        // nyertes trade-ek mennyit "adtak vissza" a csúcsból (capture ratio), ami segít eldönteni,
+        // hogy a Take-Profit/Trailing-Stop szintek jól vannak-e beállítva. Az összes core motor
+        // (EMA/RSI/Bollinger/MACD stb.) kizárólag LONG pozíciókat nyit, ezért ez mindig a long-oldali
+        // excursiót méri. Csak meglévő candle.high/low és trade.entryPrice/returnPct mezőket olvas.
+        function runMfeMaeAnalysis(trades, candles) {
+            const n = candles ? candles.length : 0;
+            if (!trades || trades.length === 0) throw new Error('Legalább 1 trade szükséges az MFE/MAE elemzéshez.');
+            if (n < 1) throw new Error('Legalább 1 gyertya szükséges az MFE/MAE elemzéshez.');
+
+            const enriched = [];
+            let skipped = 0;
+            for (const t of trades) {
+                let exitIdx = t.exitIndex;
+                if (t.stillOpenAtEnd || exitIdx === undefined || exitIdx === null) exitIdx = n - 1;
+                const entryIdx = t.entryIndex;
+                if (entryIdx === undefined || entryIdx === null || entryIdx < 0 || entryIdx >= n || exitIdx < entryIdx || exitIdx >= n) {
+                    skipped++;
+                    continue;
+                }
+                const entryPrice = t.entryPrice;
+                let highest = -Infinity, lowest = Infinity;
+                for (let i = entryIdx; i <= exitIdx; i++) {
+                    if (candles[i].high > highest) highest = candles[i].high;
+                    if (candles[i].low < lowest) lowest = candles[i].low;
+                }
+
+                let mfePct = (highest - entryPrice) / entryPrice * 100;
+                let maePct = (entryPrice - lowest) / entryPrice * 100;
+                mfePct = Math.max(mfePct, 0);
+                maePct = Math.max(maePct, 0);
+
+                const realizedPct = t.returnPct * 100;
+                const captureRatio = mfePct > 0 ? (realizedPct / mfePct * 100) : null;
+
+                enriched.push({ mfePct, maePct, realizedPct, captureRatio });
+            }
+            if (enriched.length === 0) throw new Error('Nincs érvényes trade az MFE/MAE elemzéshez.');
+
+            const cnt = enriched.length;
+            const avgMfePct = enriched.reduce((a, e) => a + e.mfePct, 0) / cnt;
+            const avgMaePct = enriched.reduce((a, e) => a + e.maePct, 0) / cnt;
+            const maxMfePct = Math.max(...enriched.map(e => e.mfePct));
+            const maxMaePct = Math.max(...enriched.map(e => e.maePct));
+            const captures = enriched.filter(e => e.captureRatio !== null).map(e => e.captureRatio);
+            const avgCaptureRatioPct = captures.length ? (captures.reduce((a, b) => a + b, 0) / captures.length) : 0;
+
+            const winners = enriched.filter(e => e.realizedPct > 0 && e.mfePct > 0);
+            const givebackCount = winners.filter(e => e.captureRatio !== null && e.captureRatio < 50).length;
+            const givebackPct = winners.length ? (givebackCount / winners.length * 100) : 0;
+
+            return {
+                tradeCount: cnt, skippedCount: skipped,
+                avgMfePct, avgMaePct, maxMfePct, maxMaePct,
+                avgCaptureRatioPct, winnersCount: winners.length, givebackCount, givebackPct
+            };
+        }
+
+        function renderMfeMaeHtml(stats) {
+            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            let verdict, verdictClass;
+            if (stats.winnersCount > 0 && stats.givebackPct >= 50) { verdict = 'A NYERTES TRADE-EK TÖBBSÉGE SOKAT VISSZAADOTT A CSÚCSBÓL — FONTOLD MEG A SZOROSABB TAKE-PROFIT/TRAILING-STOP BEÁLLÍTÁST'; verdictClass = 'text-neon-amber'; }
+            else if (stats.winnersCount > 0) { verdict = 'A NYERTES TRADE-EK ÁLTALÁBAN JÓL "ELFOGTÁK" A RENDELKEZÉSRE ÁLLÓ MOZGÁST'; verdictClass = 'text-neon-green'; }
+            else { verdict = 'NINCS NYERTES TRADE EBBEN A MINTÁBAN A CAPTURE-RATIO SZÁMÍTÁSÁHOZ'; verdictClass = 'text-gray-400'; }
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">MFE/MAE Elemzés (Max. Kedvező/Kedvezőtlen Elmozdulás)</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos MFE</div><div class="font-bold text-neon-green">${fmt(stats.avgMfePct)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos MAE</div><div class="font-bold text-neon-red">${fmt(stats.avgMaePct)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Legnagyobb MFE</div><div class="font-bold text-white">${fmt(stats.maxMfePct)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Legnagyobb MAE</div><div class="font-bold text-white">${fmt(stats.maxMaePct)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">Átlagos "Capture Ratio" (realizált/MFE)</div><div class="font-bold text-white">${fmt(stats.avgCaptureRatioPct, 1)}%</div></div>
+                    </div>
+                    <div class="text-xs font-bold ${verdictClass} mt-1">${verdict}</div>
+                    ${stats.skippedCount > 0 ? `<div class="text-xs text-gray-500">${stats.skippedCount} trade kihagyva érvénytelen index miatt.</div>` : ''}
+                    <div class="text-xs text-gray-500 mt-1">A Capture Ratio azt mutatja, a nyitott pozíció alatt elérhető legjobb (nem realizált) hozam hány %-át sikerült a stratégiának "megtartania" a zárásig. Alacsony capture ratio arra utalhat, hogy a Take-Profit túl laza, vagy a Trailing-Stop nem reagál elég gyorsan a visszapattanásra.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestMfeMae() {
+            const out = document.getElementById('backtest-mfemae-result');
+            if (!out) return;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.trades || window.lastBacktestResult.trades.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 trade szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const stats = runMfeMaeAnalysis(window.lastBacktestResult.trades, candleData);
+                out.innerHTML = renderMfeMaeHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderMfeMae() {
+            const out = document.getElementById('sb-mfemae-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 trade szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const stats = runMfeMaeAnalysis(sbLastRunResult.trades, candleData);
+                out.innerHTML = renderMfeMaeHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
