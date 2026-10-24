@@ -8671,6 +8671,33 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="abcd-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-draw-polygon text-neon-purple"></i> AB=CD Minta Ellenőrző
+                </h3>
+                <button onclick="closeToolModal('abcd-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az A, B, C, D fordulópontok árát. A kalkulátor összehasonlítja a CD láb méretét az AB lábbal — ha a kettő ±5%-on belül egyenlő, érvényes AB=CD mintáról beszélhetünk. Megmutatja a BC visszahúzódás mértékét is, és kiszámolja, hol lenne a "tökéletes" D pont, ha a CD pontosan egyenlő lenne az AB-vel.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">A pont ára</label>
+            <input type="number" id="abcd-a" value="120" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+            <label class="text-[11px] font-semibold text-slate-400">B pont ára</label>
+            <input type="number" id="abcd-b" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+            <label class="text-[11px] font-semibold text-slate-400">C pont ára</label>
+            <input type="number" id="abcd-c" value="108" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+            <label class="text-[11px] font-semibold text-slate-400">D pont ára</label>
+            <input type="number" id="abcd-d" value="88" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcABCD()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Minta Ellenőrzése
+            </button>
+
+            <div id="abcd-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <div id="gapclass-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -21952,6 +21979,58 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        function calcABCD() {
+            const aEl = document.getElementById('abcd-a');
+            const bEl = document.getElementById('abcd-b');
+            const cEl = document.getElementById('abcd-c');
+            const dEl = document.getElementById('abcd-d');
+            const out = document.getElementById('abcd-result');
+            if (!aEl || !bEl || !cEl || !dEl || !out) return;
+
+            const A = parseFloat(aEl.value);
+            const B = parseFloat(bEl.value);
+            const C = parseFloat(cEl.value);
+            const D = parseFloat(dEl.value);
+
+            if ([A, B, C, D].some(v => isNaN(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat mind a négy pontnál!</div>`;
+                return;
+            }
+
+            const AB = Math.abs(B - A);
+            const BC = Math.abs(C - B);
+            const CD = Math.abs(D - C);
+
+            if (AB === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az A és B pont ára nem lehet egyenlő (az AB láb nem lehet nulla hosszú)!</div>`;
+                return;
+            }
+
+            const cdOverAbPct = CD / AB * 100;
+            const bcRetracePct = BC / AB * 100;
+            const diff = Math.abs(cdOverAbPct - 100);
+            const tolerancePct = 5;
+            const isValid = diff <= tolerancePct;
+            const direction = (B - A) > 0 ? 1 : -1;
+            const projectedD = C + direction * AB;
+            const biasLabel = direction > 0 ? 'Bullish AB=CD (a D pont várt alja)' : 'Bearish AB=CD (a D pont várt teteje)';
+
+            const verdict = isValid
+                ? `Érvényes AB=CD minta — a CD láb (${CD.toLocaleString(undefined, { maximumFractionDigits: 4 })}) az AB lábbal (${AB.toLocaleString(undefined, { maximumFractionDigits: 4 })}) csaknem egyenlő (${cdOverAbPct.toFixed(1)}%, ±${tolerancePct}% tolerancia).`
+                : `A CD láb (${CD.toLocaleString(undefined, { maximumFractionDigits: 4 })}) jelentősen eltér az AB lábtól (${cdOverAbPct.toFixed(1)}% az AB-hez képest, a ±${tolerancePct}% tolerancián kívül) — ez NEM egy tiszta AB=CD minta.`;
+            const colorClass = isValid ? 'text-neon-green' : 'text-neon-red';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">AB láb mérete:</span><span class="text-white">${AB.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">BC visszahúzódás (AB-hez):</span><span class="text-white">${bcRetracePct.toFixed(1)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">CD láb / AB láb:</span><span class="text-white">${cdOverAbPct.toFixed(1)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${biasLabel}:</span><span class="text-neon-cyan">${projectedD.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
         function calcGapClassifier() {
             const prevEl = document.getElementById('gapclass-prev');
             const openEl = document.getElementById('gapclass-open');
@@ -34602,6 +34681,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            229: { tool: 'abcd-modal', cta: 'Ellenőrizd élesben az AB=CD mintát' },
+            142: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Megafon alakzat célárat' },
+            191: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Rectangle kitörési célárat' },
             58: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Cup and Handle célárat' },
             89: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Rounding Top/Bottom célárat' },
             130: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Diamond alakzat célárat' },
@@ -34873,7 +34955,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
