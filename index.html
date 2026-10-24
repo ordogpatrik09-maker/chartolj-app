@@ -1603,6 +1603,13 @@
                                 <div class="text-[10px] text-slate-400">Wilder-féle RSI lépésről lépésre, túlvett/túladott zónával</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('rsifailure-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">RSI Failure Swing Detektor</div>
+                                <div class="text-[10px] text-slate-400">Bullish/bearish failure swing mintázat-keresés az RSI-n</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('williamsr-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler-combined"></i></span>
                             <div>
@@ -7881,6 +7888,81 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= RSI FAILURE SWING DETEKTOR (OKTATÁSI) =================
+         Wilder-féle Failure Swing: bullish = RSI túladott (< oversold) mélypont (T1), köztes csúcs (P),
+         majd egy magasabb, de az oversold szint fölötti második mélypont (T2), végül az RSI áttöri a
+         P szintjét felfelé — ez a megerősítés. Bearish: tükörkép a túlvett zónával. A detektor a megadott
+         záróár-sorozatból teljes Wilder RSI-sorozatot számol, azon 1-báros fraktál-pivotokat keres, majd
+         sorban végigszkenneli a pivot-listát a T1→P→T2→megerősítés (illetve P1→T→P2→megerősítés) mintára. -->
+    <div id="rsifailure-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-fuchsia-400"></i> RSI Failure Swing Detektor
+                </h3>
+                <button onclick="closeToolModal('rsifailure-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróárak sorozatát (soronként egy érték), és a kalkulátor a teljes Wilder RSI-sorozatból megkeresi a <strong class="text-white">bullish</strong> (túladott mélypont → köztes csúcs → magasabb, oversold feletti mélypont → megerősítés) és <strong class="text-white">bearish</strong> (tükörkép, túlvett zónával) Failure Swing mintázatokat — ez önmagában az RSI-n belüli jelzés, nem igényel árfolyam-divergenciát.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy érték, min. 18 adat)</label>
+            <textarea id="rsifailure-prices" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50" placeholder="100&#10;99&#10;...">100
+99
+98
+97
+96
+95
+94
+93
+92
+91
+90
+89
+88
+87
+86
+85.2
+85.5
+84.6
+84.9
+83.9
+86.4
+88.6
+90.4
+90.1
+89.9
+91.1
+92.4
+93.8
+95.3
+96.9
+98.6
+100.4
+102.3
+104.3</textarea>
+
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">RSI periódus</label>
+                    <input type="number" id="rsifailure-period" value="14" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Túladott (oversold)</label>
+                    <input type="number" id="rsifailure-oversold" value="30" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Túlvett (overbought)</label>
+                    <input type="number" id="rsifailure-overbought" value="70" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+                </div>
+            </div>
+
+            <button onclick="calcRSIFailureSwing()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-fuchsia-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Mintázat-keresés
+            </button>
+
+            <div id="rsifailure-result" class="mt-4"></div>
+        </div>
+    </div>
+
     <!-- ================= VOLUME-WEIGHTED MOVING AVERAGE (VWMA) KALKULÁTOR (OKTATÁSI) =================
          VWMA = Σ(Close×Volume) / ΣVolume, az N-periódusos gördülő ablakon belül. -->
     <div id="vwma-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -10282,6 +10364,13 @@ SOL Long,1</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">RSI Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Wilder-féle RSI lépésről lépésre, túlvett/túladott zónával</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('rsifailure-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-fuchsia-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">RSI Failure Swing Detektor</div>
+                    <div class="text-[10px] text-slate-400">Bullish/bearish failure swing mintázat-keresés az RSI-n</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('williamsr-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -17469,6 +17558,182 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-[10px] text-slate-500 mt-1 font-mono">Átlagos nyereség: ${avgGain.toFixed(4)} · Átlagos veszteség: ${avgLoss.toFixed(4)}</div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= RSI FAILURE SWING DETEKTOR (OKTATÁSI) =================
+        // Bullish: T1 (pivot-low, RSI<oversold) -> P (pivot-high) -> T2 (pivot-low, RSI>oversold ÉS RSI>T1)
+        // -> megerősítés, amikor az RSI később áttöri P szintjét felfelé.
+        // Bearish: tükörkép a túlvett zónával (P1 -> T -> P2 -> megerősítés lefelé törve T szintje alá).
+        function calcRSIFailureSwing() {
+            const pricesEl = document.getElementById('rsifailure-prices');
+            const periodEl = document.getElementById('rsifailure-period');
+            const oversoldEl = document.getElementById('rsifailure-oversold');
+            const overboughtEl = document.getElementById('rsifailure-overbought');
+            const out = document.getElementById('rsifailure-result');
+            if (!pricesEl || !periodEl || !oversoldEl || !overboughtEl || !out) return;
+
+            const lines = pricesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const prices = [];
+            for (const line of lines) {
+                const v = parseFloat(line.replace(',', '.'));
+                if (!isNaN(v)) prices.push(v);
+            }
+            const period = parseInt(periodEl.value);
+            const oversold = parseFloat(oversoldEl.value);
+            const overbought = parseFloat(overboughtEl.value);
+
+            if (!period || period < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A periódusnak legalább 2-nek kell lennie!</div>`;
+                return;
+            }
+            if (isNaN(oversold) || isNaN(overbought) || oversold <= 0 || overbought >= 100 || oversold >= overbought) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen küszöbök — a túladott szintnek 0 és a túlvett szint között kell lennie, és a túlvett szintnek 100 alatt!</div>`;
+                return;
+            }
+            if (prices.length < period + 4) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább ${period + 4} záróárat, hogy elég hosszú RSI-sorozat álljon elő a mintázat-kereséshez!</div>`;
+                return;
+            }
+
+            // --- Wilder RSI teljes sorozat, árindexre illesztve ---
+            const changes = [];
+            for (let i = 1; i < prices.length; i++) changes.push(prices[i] - prices[i - 1]);
+            const firstChunk = changes.slice(0, period);
+            let avgGain = firstChunk.filter(c => c > 0).reduce((s, c) => s + c, 0) / period;
+            let avgLoss = firstChunk.filter(c => c < 0).reduce((s, c) => s + Math.abs(c), 0) / period;
+            function rsiFromAvgs(ag, al) {
+                if (al === 0 && ag === 0) return 50;
+                if (al === 0) return 100;
+                return 100 - (100 / (1 + ag / al));
+            }
+            const rsiMap = {};
+            rsiMap[period] = rsiFromAvgs(avgGain, avgLoss);
+            for (let i = period; i < changes.length; i++) {
+                const change = changes[i];
+                const gain = change > 0 ? change : 0;
+                const loss = change < 0 ? Math.abs(change) : 0;
+                avgGain = (avgGain * (period - 1) + gain) / period;
+                avgLoss = (avgLoss * (period - 1) + loss) / period;
+                rsiMap[i + 1] = rsiFromAvgs(avgGain, avgLoss);
+            }
+            const idxs = Object.keys(rsiMap).map(Number).sort((a, b) => a - b);
+            const minIdx = idxs[0], maxIdx = idxs[idxs.length - 1];
+
+            // --- Fraktál-pivotok (1-báros helyi szélsőérték) az RSI-sorozaton ---
+            const pivots = [];
+            for (let i = minIdx + 1; i < maxIdx; i++) {
+                const prev = rsiMap[i - 1], cur = rsiMap[i], next = rsiMap[i + 1];
+                if (cur < prev && cur < next) pivots.push({ idx: i, val: cur, type: 'low' });
+                else if (cur > prev && cur > next) pivots.push({ idx: i, val: cur, type: 'high' });
+            }
+
+            if (pivots.length < 3) {
+                out.innerHTML = `<div class="text-xs text-neon-amber font-semibold">Túl kevés helyi szélsőérték (pivot) alakult ki az RSI-sorozaton — adj meg hosszabb vagy hullámzóbb árfolyam-sorozatot!</div>`;
+                return;
+            }
+
+            // --- Bullish Failure Swing keresés ---
+            const bullish = [];
+            {
+                let p = 0;
+                while (p < pivots.length) {
+                    while (p < pivots.length && !(pivots[p].type === 'low' && pivots[p].val < oversold)) p++;
+                    if (p >= pivots.length) break;
+                    const T1 = pivots[p]; p++;
+                    let q = p;
+                    while (q < pivots.length && pivots[q].type !== 'high') q++;
+                    if (q >= pivots.length) break;
+                    const P = pivots[q];
+                    let r = q + 1;
+                    let T2 = null;
+                    while (r < pivots.length) {
+                        if (pivots[r].type === 'low' && pivots[r].val > oversold && pivots[r].val > T1.val) { T2 = pivots[r]; break; }
+                        r++;
+                    }
+                    if (!T2) { p = q + 1; continue; }
+                    let confirmIdx = null;
+                    for (let i = T2.idx + 1; i <= maxIdx; i++) {
+                        if (rsiMap[i] !== undefined && rsiMap[i] > P.val) { confirmIdx = i; break; }
+                    }
+                    bullish.push({ T1, P, T2, confirmIdx });
+                    p = pivots.indexOf(T2) + 1;
+                }
+            }
+
+            // --- Bearish Failure Swing keresés (tükörkép) ---
+            const bearish = [];
+            {
+                let p = 0;
+                while (p < pivots.length) {
+                    while (p < pivots.length && !(pivots[p].type === 'high' && pivots[p].val > overbought)) p++;
+                    if (p >= pivots.length) break;
+                    const P1 = pivots[p]; p++;
+                    let q = p;
+                    while (q < pivots.length && pivots[q].type !== 'low') q++;
+                    if (q >= pivots.length) break;
+                    const T = pivots[q];
+                    let r = q + 1;
+                    let P2 = null;
+                    while (r < pivots.length) {
+                        if (pivots[r].type === 'high' && pivots[r].val < overbought && pivots[r].val < P1.val) { P2 = pivots[r]; break; }
+                        r++;
+                    }
+                    if (!P2) { p = q + 1; continue; }
+                    let confirmIdx = null;
+                    for (let i = P2.idx + 1; i <= maxIdx; i++) {
+                        if (rsiMap[i] !== undefined && rsiMap[i] < T.val) { confirmIdx = i; break; }
+                    }
+                    bearish.push({ P1, T, P2, confirmIdx });
+                    p = pivots.indexOf(P2) + 1;
+                }
+            }
+
+            const patterns = [];
+            bullish.forEach(b => patterns.push({ type: 'bullish', start: b.T1.idx, data: b }));
+            bearish.forEach(b => patterns.push({ type: 'bearish', start: b.P1.idx, data: b }));
+            patterns.sort((a, b) => a.start - b.start);
+
+            if (patterns.length === 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl border border-dark-750 p-3 mb-2">
+                        <div class="text-[11px] text-slate-400">Nem található failure swing mintázat a megadott küszöbökkel és árfolyam-sorozattal.</div>
+                    </div>
+                    <p class="text-[10px] text-slate-500 font-mono">Helyi RSI-pivotok száma: ${pivots.length} · Utolsó RSI (idx ${maxIdx}): ${rsiMap[maxIdx].toFixed(2)}</p>
+                `;
+                return;
+            }
+
+            const rows = patterns.map((pat, i) => {
+                const isBull = pat.type === 'bullish';
+                const colorClass = isBull ? 'text-neon-green' : 'text-neon-red';
+                const label = isBull ? 'Bullish Failure Swing' : 'Bearish Failure Swing';
+                const d = pat.data;
+                const p1 = isBull ? d.T1 : d.P1;
+                const mid = isBull ? d.P : d.T;
+                const p2 = isBull ? d.T2 : d.P2;
+                const p1Label = isBull ? 'T1 (oversold mélypont)' : 'P1 (overbought csúcs)';
+                const midLabel = isBull ? 'P (köztes csúcs)' : 'T (köztes mélypont)';
+                const p2Label = isBull ? 'T2 (magasabb mélypont)' : 'P2 (alacsonyabb csúcs)';
+                const confirmTxt = d.confirmIdx !== null
+                    ? `<span class="text-neon-green font-bold">Megerősítve (idx ${d.confirmIdx}, RSI=${rsiMap[d.confirmIdx].toFixed(2)})</span>`
+                    : `<span class="text-neon-amber font-bold">Még nincs megerősítve a sorozat végéig</span>`;
+                return `
+                    <div class="glass-card rounded-xl border border-${isBull ? 'neon-green' : 'neon-red'}/30 bg-${isBull ? 'neon-green' : 'neon-red'}/[0.05] p-3 mb-2">
+                        <div class="text-xs font-extrabold ${colorClass} mb-1">#${i + 1} · ${label}</div>
+                        <div class="text-[10px] text-slate-400 font-mono space-y-0.5">
+                            <div>${p1Label}: idx ${p1.idx}, RSI=${p1.val.toFixed(2)}</div>
+                            <div>${midLabel}: idx ${mid.idx}, RSI=${mid.val.toFixed(2)}</div>
+                            <div>${p2Label}: idx ${p2.idx}, RSI=${p2.val.toFixed(2)}</div>
+                        </div>
+                        <div class="text-[10px] mt-1.5">${confirmTxt}</div>
+                    </div>
+                `;
+            }).join('');
+
+            out.innerHTML = `
+                ${rows}
+                <p class="text-[10px] text-slate-500 font-mono mt-1">Összesen ${patterns.length} mintázat (${bullish.length} bullish, ${bearish.length} bearish) · ${pivots.length} helyi RSI-pivot az árindexek ${minIdx}–${maxIdx} között.</p>
             `;
         }
 
@@ -33602,6 +33867,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             409: { tool: 'tailhedge-modal', cta: 'Vizsgáld meg élesben a tail hedging költsége vs. elmaradt haszon mérlegét' },
             430: { tool: 'feestruct-modal', cta: 'Hasonlítsd össze élesben a fix és a százalékos jutalék modellt' },
             451: { tool: 'stresstest-modal', cta: 'Futtasd le élesben a stressz-teszt forgatókönyveidet' },
+            172: { tool: 'rsifailure-modal', cta: 'Keresd meg élesben a bullish/bearish RSI Failure Swinget' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -33611,7 +33877,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
