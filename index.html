@@ -7410,6 +7410,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-dice mr-1"></i> Bootstrap Monte Carlo (szekvencia-kockázat)
                 </button>
                 <div id="backtest-bootstrap-result" class="mt-3"></div>
+                <button onclick="calcBacktestIndependenceTest()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-amber-400/30 text-amber-400 hover:bg-amber-400/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-link-slash mr-1"></i> Trade-Függetlenségi Teszt
+                </button>
+                <div id="backtest-indeptest-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7469,6 +7473,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-dice mr-1"></i> Bootstrap Monte Carlo (szekvencia-kockázat)
                 </button>
                 <div id="sb-bootstrap-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderIndependenceTest()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-link-slash mr-1"></i> Trade-Függetlenségi Teszt
+                </button>
+                <div id="sb-indeptest-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -14238,6 +14246,66 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             };
         }
 
+        // ================= TRADE-FÜGGETLENSÉGI TESZT (OKTATÁSI, "BRUTÁL" FEJLESZTÉS) =================
+        // A korábban leszállított Bootstrap Monte Carlo eszköz (backtest-modal,
+        // Strategy Builder) egy KRITIKUS, de hallgatólagos feltevésre épül: hogy
+        // a trade-ek hozamai EGYMÁSTÓL FÜGGETLENEK, és ezért véletlenszerűen
+        // újramintavételezhetők. Ez az eszköz PONTOSAN ezt a feltevést teszteli
+        // statisztikailag, a VALÓS, már lefutott backtest trade-sorozatán:
+        //
+        // 1) Lag-1 autokorreláció: a trade[i] és trade[i+1] hozamok közti
+        //    korreláció — ha jelentősen eltér 0-tól, a trade-ek NEM
+        //    függetlenek egymástól.
+        // 2) Wald-Wolfowitz "runs test": megszámolja, hány egymást követő,
+        //    azonos előjelű (nyertes/vesztes) "szériát" (runt) tartalmaz a
+        //    trade-sorozat, és ezt összeveti azzal, amit TISZTÁN VÉLETLEN
+        //    sorrend esetén várnánk (normál közelítéssel, Z-score-ral). Ha a
+        //    tényleges szériák száma szignifikánsan KEVESEBB a várhatónál,
+        //    az klaszterezést (hosszabb nyerő/vesztő sorozatokat) jelez —
+        //    pontosan azt a kockázatot, amit a Bootstrap MC ALÁBECSÜLHET,
+        //    mert a véletlen keverés szétzilálja ezeket a valós sorozatokat.
+        //
+        // ÖNÁLLÓ, tisztán statisztikai függvény — nem hív és nem módosít
+        // semmilyen meglévő backtest-motort, csak a trade-ek `.returnPct`
+        // listáját (vagy sima számtömböt) olvassa.
+        function ptfPearsonCorrGeneric(a, b) {
+            const n = a.length;
+            const meanA = a.reduce((s, v) => s + v, 0) / n;
+            const meanB = b.reduce((s, v) => s + v, 0) / n;
+            let cov = 0, varA = 0, varB = 0;
+            for (let i = 0; i < n; i++) {
+                const da = a[i] - meanA, db = b[i] - meanB;
+                cov += da * db; varA += da * da; varB += db * db;
+            }
+            if (varA === 0 || varB === 0) return 0;
+            return cov / Math.sqrt(varA * varB);
+        }
+
+        function runTradeIndependenceTest(tradeReturns) {
+            const n = tradeReturns.length;
+            if (n < 10) throw new Error('Legalább 10 trade szükséges a függetlenségi teszthez.');
+
+            const lag1Corr = ptfPearsonCorrGeneric(tradeReturns.slice(0, n - 1), tradeReturns.slice(1));
+
+            const signs = tradeReturns.map(r => r > 0 ? 1 : -1);
+            const n1 = signs.filter(s => s === 1).length;
+            const n2 = signs.filter(s => s === -1).length;
+            if (n1 === 0 || n2 === 0) throw new Error('Minden trade azonos eredményű (csak nyertes vagy csak vesztes) — a runs teszt nem értelmezhető.');
+
+            let runsActual = 1;
+            for (let i = 1; i < n; i++) { if (signs[i] !== signs[i - 1]) runsActual++; }
+
+            const expectedRuns = (2 * n1 * n2) / (n1 + n2) + 1;
+            const varianceRuns = (2 * n1 * n2 * (2 * n1 * n2 - n1 - n2)) / (((n1 + n2) ** 2) * (n1 + n2 - 1));
+            const zScore = varianceRuns > 0 ? (runsActual - expectedRuns) / Math.sqrt(varianceRuns) : 0;
+            const significant = Math.abs(zScore) > 1.96;
+
+            return {
+                lag1Corr, n1, n2, runsActual, expectedRuns, varianceRuns, zScore,
+                significant, clustering: runsActual < expectedRuns
+            };
+        }
+
         // ================= VIZUÁLIS STRATÉGIA-ÉPÍTŐ MOTORJA (OKTATÁSI, NAGY FEJLESZTÉS) =================
         // Négy ÖNÁLLÓ "jelzés-generátor" függvény — mindegyik egy boolean
         // tömböt ad vissza (igaz azon az indexen, ahol a belépési feltétel
@@ -15507,6 +15575,55 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const numSims = 2000, ddThresholdPct = 20;
             const stats = runBootstrapMC(tradeReturns, sbLastRunConfig.startEquity, numSims, ddThresholdPct);
             out.innerHTML = renderBootstrapMCHtml(stats, tradeReturns.length, numSims, ddThresholdPct);
+        }
+
+        function renderIndependenceTestHtml(stats, tradeCount) {
+            const corrIsMeaningful = Math.abs(stats.lag1Corr) > 0.2;
+            return `
+                <div class="glass-card rounded-xl border ${stats.significant ? 'border-amber-400/30 bg-amber-400/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Lag-1 autokorreláció (trade[i] ↔ trade[i+1]):</span><span class="${corrIsMeaningful ? 'text-amber-400' : 'text-white'} font-bold">${stats.lag1Corr.toFixed(3)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Tényleges szériák (runs) száma:</span><span class="text-white">${stats.runsActual}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Várt szériák száma (ha véletlen lenne):</span><span class="text-white">${stats.expectedRuns.toFixed(1)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Z-score:</span><span class="${stats.significant ? 'text-amber-400' : 'text-neon-green'} font-bold">${stats.zScore.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Statisztikailag szignifikáns (|Z| &gt; 1.96)?</span><span class="${stats.significant ? 'text-amber-400' : 'text-neon-green'} font-bold">${stats.significant ? 'IGEN' : 'NEM'}</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${stats.significant ?
+                    (stats.clustering
+                        ? `A ${tradeCount} trade-ből VALÓSZÍNŰLEG NEM véletlenszerű a nyertes/vesztes sorrend — szignifikánsan KEVESEBB szériát (hosszabb nyerő/vesztő sorozatokat) látunk, mint tiszta véletlen esetén várnánk. Ez KRITIKUS figyelmeztetés a fenti Bootstrap Monte Carlo szimulációra: az ALÁBECSÜLHETI a valódi szekvencia-kockázatot, mert a véletlen újrakeverés szétzilálja ezeket a valós, egymásra épülő sorozatokat (pl. piaci rezsim-tartósság miatt).`
+                        : `A ${tradeCount} trade-ből VALÓSZÍNŰLEG NEM véletlenszerű a nyertes/vesztes sorrend — szignifikánsan TÖBB szériát (gyakoribb váltást nyertes és vesztes közt) látunk, mint tiszta véletlen esetén várnánk. Ez enyhébb aggály a Bootstrap MC-re, de így is azt jelzi, hogy a trade-ek NEM teljesen függetlenek egymástól.`)
+                    : `Ezen a ${tradeCount} trade-en a szériák száma statisztikailag NEM tér el szignifikánsan a véletlentől — ez ALÁTÁMASZTJA a fenti Bootstrap Monte Carlo szimuláció mögötti függetlenségi feltevést (bár kevés trade esetén a teszt ereje korlátozott, kis mintán nehéz kimutatni a függést még ha létezik is).`}</p>
+            `;
+        }
+
+        function calcBacktestIndependenceTest() {
+            const out = document.getElementById('backtest-indeptest-result');
+            if (!out) return;
+            const last = window.lastBacktestResult;
+            if (!last || !last.trades || last.trades.length < 10) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 10 trade szükséges a függetlenségi teszthez — futtasd le újra a backtestet hosszabb adaton!</div>`;
+                return;
+            }
+            try {
+                const stats = runTradeIndependenceTest(last.trades.map(t => t.returnPct));
+                out.innerHTML = renderIndependenceTestHtml(stats, last.trades.length);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderIndependenceTest() {
+            const out = document.getElementById('sb-indeptest-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 10) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 10 trade szükséges a függetlenségi teszthez — futtasd le újra a stratégiát hosszabb adaton!</div>`;
+                return;
+            }
+            try {
+                const stats = runTradeIndependenceTest(sbLastRunResult.trades.map(t => t.returnPct));
+                out.innerHTML = renderIndependenceTestHtml(stats, sbLastRunResult.trades.length);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
         }
 
         function calcRSISeries(closes, period = 14) {
