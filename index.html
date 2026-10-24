@@ -85,13 +85,47 @@
         #viewport-stage {
             position: relative;
             width: 100%;
-            min-height: 100dvh;
+            height: 100dvh;
+            overflow: hidden;
             background: #000;
         }
 
         #app-scale-wrapper {
             width: 100%;
-            min-height: 100dvh;
+            height: 100dvh;
+        }
+
+        /* ================= VALÓDI GYÖKÉR-OK JAVÍTÁSA: "nem látszik az app
+           alja, nem lehet lejjebb görgetni" =================
+           A fenti #viewport-stage / #app-scale-wrapper korábban csak
+           `min-height: 100dvh`-t használt (egy ALSÓ KORLÁTOT, nem felső
+           határt). Emellett a klasszikus flexbox-csapda: egy flex-elem
+           alapértelmezett `min-height` értéke `auto`, ami azt jelenti,
+           hogy SOSEM zsugorodik a saját TARTALMÁNAK természetes mérete
+           alá — még akkor sem, ha az ŐT tartalmazó flex-konténer explicit
+           magassággal rendelkezik. Emiatt, ha egy panel tartalma (pl. a
+           jobb oldali Kereskedési Panel: pozícióméret, tőkeáttétel-
+           csúszka, figyelmeztetés, TP/SL, margó-infók, BUY/SELL gombok)
+           magasabb volt, mint a tényleges nézőablak, a teljes lánc
+           (#main-trade-layout → #orderdesk-aside → a panel belső,
+           `overflow-y-auto` tartalma) egyszerűen MAGASABBRA nőtt a
+           nézőablaknál — a `body`-n lévő `overflow: hidden` miatt pedig
+           a kilógó rész láthatatlanul LEVÁGÓDOTT, és mivel sehol sem
+           volt tényleges scroll-konténer (a `min-height: auto` miatt a
+           belső `overflow-y-auto` div sosem szorult rá), a felhasználó
+           SEMMILYEN módon nem tudta elgörgetni/elérni a levágott részt.
+           A javítás: minden érintett flex-elemre explicit `min-height: 0`
+           — ez felülírja az `auto` alapértelmezést, és végre tényleg
+           engedi, hogy a lánc összezsugorodjon a rendelkezésre álló
+           (fejléc alatti) helyre, aminek hatására a panel belső
+           `overflow-y-auto` konténere VALÓBAN korlátozottá válik, és
+           ténylegesen scrollozhatóvá, ha a tartalma nem fér ki. */
+        #main-trade-layout,
+        #orderdesk-aside,
+        #orderdesk-aside > .flex-grow,
+        #left-toolbar-aside,
+        #main-trade-layout > main {
+            min-height: 0;
         }
 
         /* MOBIL ÁLLÓ-MÓD: az app kizárólag álló (portrait) módra lett
