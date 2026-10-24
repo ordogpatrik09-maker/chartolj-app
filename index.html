@@ -1918,6 +1918,13 @@
                                 <div class="text-[10px] text-slate-400">Valódi backtest hosszabb idősíkos trendmegerősítéssel, lookahead nélkül</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('weightopt-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-sliders"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Portfólió Súly-Optimalizáló</div>
+                                <div class="text-[10px] text-slate-400">Rácskeresés a stratégia-súlyokon a legjobb hozam/drawdown arányért</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-diagram-project"></i></span>
                             <div>
@@ -8815,6 +8822,69 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= PORTFÓLIÓ SÚLY-OPTIMALIZÁLÓ (OKTATÁSI, "BRUTÁL" FEJLESZTÉS) =================
+         A Több-Stratégiás Portfólió-Kombináló eszközre épül: itt NEM a
+         felhasználó adja meg a súlyokat, hanem a kalkulátor rácskeresést
+         futtat a LEHETSÉGES súlyelosztásokon, és megkeresi a legjobb
+         hozam/drawdown arányt adó kombinációt — majd összeveti az "naiv"
+         egyenlő súlyozással. -->
+    <div id="weightopt-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-amber-400"></i> Portfólió Súly-Optimalizáló
+                </h3>
+                <button onclick="closeToolModal('weightopt-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a 2-3 stratégiát (típust és paramétereket) — a SÚLYOKAT NEM te adod meg. A kalkulátor a JELENLEG BETÖLTÖTT charton lefuttatja mindegyiket, majd rácskeresést végez az ÖSSZES lehetséges súlyelosztáson (a megadott lépésközzel), hogy megtalálja azt a kombinációt, amely a legjobb hozam/max.drawdown arányt adja — és ezt veti össze az egyenlő (naiv) súlyozással.</p>
+
+            <div class="space-y-3 mb-3">
+                <div class="border border-dark-750 rounded-xl p-2.5">
+                    <span class="text-[11px] font-bold text-neon-cyan">1. Stratégia</span>
+                    <select id="pwo-type-1" onchange="pwoUpdateParamFields(1)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 mb-1.5 text-[11px] text-white focus:outline-none focus:border-neon-cyan/50">
+                        <option value="ema" selected>EMA-keresztezés</option>
+                        <option value="rsi">RSI mean-reversion</option>
+                        <option value="boll">Bollinger mean-reversion</option>
+                        <option value="macd">MACD-keresztezés</option>
+                    </select>
+                    <div id="pwo-params-1" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+                <div class="border border-dark-750 rounded-xl p-2.5">
+                    <span class="text-[11px] font-bold text-amber-400">2. Stratégia</span>
+                    <select id="pwo-type-2" onchange="pwoUpdateParamFields(2)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 mb-1.5 text-[11px] text-white focus:outline-none focus:border-amber-400/50">
+                        <option value="ema">EMA-keresztezés</option>
+                        <option value="rsi" selected>RSI mean-reversion</option>
+                        <option value="boll">Bollinger mean-reversion</option>
+                        <option value="macd">MACD-keresztezés</option>
+                    </select>
+                    <div id="pwo-params-2" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+                <div class="border border-dark-750 rounded-xl p-2.5">
+                    <label class="flex items-center gap-1.5 text-[11px] font-bold text-fuchsia-400"><input type="checkbox" id="pwo-enable-3" onchange="pwoUpdateParamFields(3)"> 3. Stratégia (opcionális)</label>
+                    <select id="pwo-type-3" onchange="pwoUpdateParamFields(3)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 mb-1.5 text-[11px] text-white focus:outline-none focus:border-fuchsia-400/50">
+                        <option value="ema">EMA-keresztezés</option>
+                        <option value="rsi">RSI mean-reversion</option>
+                        <option value="boll" selected>Bollinger mean-reversion</option>
+                        <option value="macd">MACD-keresztezés</option>
+                    </select>
+                    <div id="pwo-params-3" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div><label class="text-[11px] font-semibold text-slate-400">Súly-lépésköz (%)</label><input type="number" id="pwo-step" value="10" step="1" min="1" max="50" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Kezdő tőke</label><input type="number" id="pwo-equity" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50"></div>
+            </div>
+
+            <button onclick="calcPortfolioWeightOptimizerUI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Optimális Súlyok Keresése
+            </button>
+
+            <div id="weightopt-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A "pontszám" a hozam és a max. drawdown aránya (Calmar-szerű mutató) — minél nagyobb, annál jobb az adott súlyelosztás hozam/kockázat profilja. Kisebb lépésköz pontosabb, de lassabb (3 lábnál a kombinációk száma négyzetesen nő).</p>
+        </div>
+    </div>
+
     <div id="gridopt-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -11370,6 +11440,13 @@ Mean-reversion,2.5</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Többidősíkos Trend-Szűrős Backtest</div>
                     <div class="text-[10px] text-slate-400">Valódi backtest hosszabb idősíkos trendmegerősítéssel, lookahead nélkül</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('weightopt-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-sliders"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Portfólió Súly-Optimalizáló</div>
+                    <div class="text-[10px] text-slate-400">Rácskeresés a stratégia-súlyokon a legjobb hozam/drawdown arányért</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -14029,6 +14106,83 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             };
         }
 
+        // ================= PORTFÓLIÓ SÚLY-OPTIMALIZÁLÓ (OKTATÁSI, "BRUTÁL" FEJLESZTÉS) =================
+        // A Több-Stratégiás Portfólió-Kombináló eszközben a felhasználó MAGA
+        // adja meg a súlyokat — ez az eszköz egy lépéssel tovább megy: a
+        // MEGADOTT lábakhoz (ugyanazok a típusok/paraméterek) rácskeresést
+        // futtat a LEHETSÉGES súlykombinációkon (10%-os lépésekben), és
+        // megkeresi azt a súlyelosztást, ami a legjobb hozam/drawdown
+        // (Calmar-szerű) arányt adja — majd ezt veti össze az "naiv" egyenlő
+        // súlyozással. Kizárólag a már verifikált, SOHA nem módosított
+        // ptfRunLeg és ptfDenseMultiplier segédfüggvényeket hívja — minden
+        // lábat csak EGYSZER futtat le (a backtest maga nem függ a súlytól),
+        // a rácskeresés csak az OLCSÓ, utólagos keverést ismétli sok
+        // súlykombináción, ezért gyors is marad.
+        function ptfBlendedMetrics(denseList, weights, startEquity, n) {
+            const blendedMult = new Array(n).fill(0);
+            for (let i = 0; i < n; i++) {
+                let s = 0;
+                for (let k = 0; k < weights.length; k++) s += weights[k] * denseList[k][i];
+                blendedMult[i] = s;
+            }
+            const blendedEquity = blendedMult.map(m => m * startEquity);
+            let peak = blendedEquity[0];
+            let maxDrawdownPct = 0;
+            for (let i = 0; i < n; i++) {
+                if (blendedEquity[i] > peak) peak = blendedEquity[i];
+                const dd = peak > 0 ? (peak - blendedEquity[i]) / peak * 100 : 0;
+                if (dd > maxDrawdownPct) maxDrawdownPct = dd;
+            }
+            const finalEquity = blendedEquity[n - 1];
+            const totalReturnPct = (finalEquity - startEquity) / startEquity * 100;
+            return { totalReturnPct, maxDrawdownPct };
+        }
+
+        function runPortfolioWeightOptimizer(candles, legs, startEquity, stepPct) {
+            if (!candles || candles.length < 2) throw new Error('Túl kevés gyertya a súly-optimalizáláshoz.');
+            if (!legs || (legs.length !== 2 && legs.length !== 3)) throw new Error('Csak 2 vagy 3 lábas súly-optimalizálás támogatott.');
+            if (!stepPct || stepPct < 1 || stepPct > 50) throw new Error('A súly-lépésköznek 1 és 50 közé kell esnie.');
+
+            const n = candles.length;
+            const denseList = legs.map(leg => {
+                const r = ptfRunLeg(candles, leg, startEquity);
+                return ptfDenseMultiplier(r.equityCurve, startEquity, n);
+            });
+
+            const combos = [];
+            if (legs.length === 2) {
+                for (let w1 = 0; w1 <= 100; w1 += stepPct) {
+                    const w2 = 100 - w1;
+                    combos.push([w1 / 100, w2 / 100]);
+                }
+            } else {
+                for (let w1 = 0; w1 <= 100; w1 += stepPct) {
+                    for (let w2 = 0; w2 <= 100 - w1; w2 += stepPct) {
+                        const w3 = 100 - w1 - w2;
+                        combos.push([w1 / 100, w2 / 100, w3 / 100]);
+                    }
+                }
+            }
+            if (combos.length > 10000) throw new Error('Túl sok súlykombináció — növeld a lépésközt.');
+
+            let best = null;
+            for (const weights of combos) {
+                const { totalReturnPct, maxDrawdownPct } = ptfBlendedMetrics(denseList, weights, startEquity, n);
+                const score = totalReturnPct / Math.max(maxDrawdownPct, 0.01);
+                if (!best || score > best.score) best = { weights, totalReturnPct, maxDrawdownPct, score };
+            }
+
+            const equalWeights = legs.map(() => 1 / legs.length);
+            const eq = ptfBlendedMetrics(denseList, equalWeights, startEquity, n);
+            const equalScore = eq.totalReturnPct / Math.max(eq.maxDrawdownPct, 0.01);
+
+            return {
+                bestWeights: best.weights, bestReturnPct: best.totalReturnPct, bestMaxDrawdownPct: best.maxDrawdownPct, bestScore: best.score,
+                equalWeights, equalReturnPct: eq.totalReturnPct, equalMaxDrawdownPct: eq.maxDrawdownPct, equalScore,
+                combosTested: combos.length
+            };
+        }
+
         // ================= VIZUÁLIS STRATÉGIA-ÉPÍTŐ MOTORJA (OKTATÁSI, NAGY FEJLESZTÉS) =================
         // Négy ÖNÁLLÓ "jelzés-generátor" függvény — mindegyik egy boolean
         // tömböt ad vissza (igaz azon az indexen, ahol a belépési feltétel
@@ -16547,6 +16701,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (!document.getElementById('ptf-params-1').children.length) ptfUpdateParamFields(1);
                 if (!document.getElementById('ptf-params-2').children.length) ptfUpdateParamFields(2);
                 if (!document.getElementById('ptf-params-3').children.length) ptfUpdateParamFields(3);
+            }
+            if (id === 'weightopt-modal') {
+                if (!document.getElementById('pwo-params-1').children.length) pwoUpdateParamFields(1);
+                if (!document.getElementById('pwo-params-2').children.length) pwoUpdateParamFields(2);
+                if (!document.getElementById('pwo-params-3').children.length) pwoUpdateParamFields(3);
             }
             document.getElementById(id).classList.remove('hidden');
         }
@@ -22955,6 +23114,90 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-1">${corrHtml}</div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${isBenefit ? 'A kombinált portfólió maximális visszaesése ALACSONYABB, mint a résztvevő stratégiák súlyozott átlaga — ez a diverzifikáció NUMERIKUS bizonyítéka: amikor az egyik stratégia veszít, a másik(ok) nem feltétlenül veszítenek ugyanakkor, így a KÖZÖS tőke ingadozása kisebb, mint bármelyik egyéni stratégiáé.' : 'Ebben az esetben a kombinálás NEM csökkentette a max. drawdownt a súlyozott átlaghoz képest — ez akkor fordulhat elő, ha a stratégiák erősen együtt mozognak (magas korreláció), vagyis egyszerre buknak. A diverzifikáció csak akkor segít, ha a stratégiák logikája VALÓBAN különböző (pl. trendkövető + mean-reversion), nem csak a neve más.'}</p>
+            `;
+        }
+
+        // ================= PORTFÓLIÓ SÚLY-OPTIMALIZÁLÓ UI =================
+        function pwoUpdateParamFields(legNum) {
+            const typeSel = document.getElementById('pwo-type-' + legNum);
+            const container = document.getElementById('pwo-params-' + legNum);
+            if (!typeSel || !container) return;
+            const fields = PTF_PARAM_FIELDS[typeSel.value] || [];
+            container.innerHTML = fields.map(f => `
+                <div>
+                    <label class="text-[9.5px] text-slate-500">${f.label}</label>
+                    <input type="number" id="pwo-p-${legNum}-${f.id}" value="${f.val}" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+            `).join('');
+        }
+        function pwoReadLeg(legNum) {
+            const typeSel = document.getElementById('pwo-type-' + legNum);
+            const type = typeSel.value;
+            const fields = PTF_PARAM_FIELDS[type] || [];
+            const params = {};
+            for (const f of fields) {
+                const el = document.getElementById(`pwo-p-${legNum}-${f.id}`);
+                params[f.id] = el ? parseFloat(el.value) : NaN;
+            }
+            return { type, params };
+        }
+        function calcPortfolioWeightOptimizerUI() {
+            const out = document.getElementById('weightopt-result');
+            if (!out) return;
+
+            if (typeof candleData === 'undefined' || !candleData || candleData.length < 40) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton (legalább 40 gyertya szükséges) — válts hosszabb idősíkra!</div>`;
+                return;
+            }
+
+            const legs = [pwoReadLeg(1), pwoReadLeg(2)];
+            const leg3Enabled = document.getElementById('pwo-enable-3').checked;
+            if (leg3Enabled) legs.push(pwoReadLeg(3));
+
+            for (const leg of legs) {
+                if (Object.values(leg.params).some(v => isNaN(v))) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméter valamelyik stratégiánál!</div>`;
+                    return;
+                }
+            }
+
+            const stepPct = parseInt(document.getElementById('pwo-step').value, 10);
+            const startEquity = parseFloat(document.getElementById('pwo-equity').value);
+            if (isNaN(stepPct) || isNaN(startEquity) || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen lépésköz vagy kezdő tőke!</div>`;
+                return;
+            }
+
+            let result;
+            try {
+                result = runPortfolioWeightOptimizer(candleData, legs, startEquity, stepPct);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+                return;
+            }
+
+            const typeNames = { ema: 'EMA-keresztezés', rsi: 'RSI mean-rev.', boll: 'Bollinger mean-rev.', macd: 'MACD-keresztezés' };
+            const legColors = ['text-neon-cyan', 'text-amber-400', 'text-fuchsia-400'];
+            const bestRowsHtml = legs.map((leg, i) => `<div class="flex justify-between"><span class="${legColors[i]} font-semibold">${typeNames[leg.type]}:</span><span class="text-white">${(result.bestWeights[i] * 100).toFixed(0)}%</span></div>`).join('');
+            const eqRowsHtml = legs.map((leg, i) => `<div class="flex justify-between"><span class="${legColors[i]} font-semibold">${typeNames[leg.type]}:</span><span class="text-white">${(result.equalWeights[i] * 100).toFixed(0)}%</span></div>`).join('');
+            const isImproved = result.bestScore > result.equalScore + 0.001;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3 font-mono text-[11px] space-y-1">
+                    <div class="text-amber-400 font-bold text-xs mb-1">🏆 Legjobb talált súlyelosztás</div>
+                    ${bestRowsHtml}
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam:</span><span class="${result.bestReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${result.bestReturnPct >= 0 ? '+' : ''}${result.bestReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Max. drawdown:</span><span class="text-white">${result.bestMaxDrawdownPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Pontszám (hozam/DD):</span><span class="text-white font-bold">${result.bestScore.toFixed(3)}</span></div>
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-1">
+                    <div class="text-slate-300 font-bold text-xs mb-1">⚖️ Egyenlő (naiv) súlyozás</div>
+                    ${eqRowsHtml}
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam:</span><span class="${result.equalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${result.equalReturnPct >= 0 ? '+' : ''}${result.equalReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Max. drawdown:</span><span class="text-white">${result.equalMaxDrawdownPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Pontszám (hozam/DD):</span><span class="text-white font-bold">${result.equalScore.toFixed(3)}</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${isImproved ? `A rácskeresés jobb hozam/kockázat arányt talált, mint az egyenlő súlyozás (${result.combosTested} kombináció vizsgálva) — ez konkrétan megmutatja, hogy a súlyelosztás NEM mellékes döntés, számottevően befolyásolja a portfólió kockázat-hozam profilját.` : `Ezen a konkrét adaton az egyenlő súlyozás már közel optimális volt (${result.combosTested} kombináció vizsgálva) — ez is tanulság: a súly-optimalizálás NEM garantál mindig jelentős javulást, és a talált "legjobb" súly erősen FÜGGHET a konkrét in-sample adattól (túlillesztés kockázata itt is fennáll).`}</p>
             `;
         }
 
@@ -36313,7 +36556,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
