@@ -21422,6 +21422,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const c3 = m[n - 1];
             const c2 = n >= 2 ? m[n - 2] : null;
             const c1 = n >= 3 ? m[n - 3] : null;
+            const c0 = n >= 4 ? m[n - 4] : null;
 
             const PATTERN_INFO = {
                 MORNING_STAR: { name: 'Morning Star (Hajnalcsillag)', bias: 'bullish', desc: 'Három gyertyás fordulós minta: hosszú bearish gyertya, egy kis testű "csillag" lefelé réssel, majd egy hosszú bullish gyertya, amely az első gyertya testének felénél tovább zár. Erős bullish fordulós jelzés letesztelt eladási nyomás után.' },
@@ -21451,6 +21452,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 THREE_INSIDE_DOWN: { name: 'Three Inside Down', bias: 'bearish', desc: 'A Three Inside Up tükörképe: hosszú testű bullish gyertya, majd egy kisebb bearish gyertya az első testén belül (Bearish Harami), végül egy harmadik bearish gyertya, amely az első gyertya záróára alá zár, megerősítve a lefelé fordulást.' },
                 THREE_OUTSIDE_UP: { name: 'Three Outside Up', bias: 'bullish', desc: 'A Bullish Engulfing megerősített, háromgyertyás változata: bearish gyertya, amelyet egy nagyobb testű, elnyelő bullish gyertya követ (Engulfing), majd egy harmadik, tovább emelkedő bullish gyertya, amely a második gyertya záróára fölé zár. Mivel az alap az Engulfing (nem a kisebb testű Harami), ez jellemzően erősebb jelzésnek számít a Three Inside Upnál.' },
                 THREE_OUTSIDE_DOWN: { name: 'Three Outside Down', bias: 'bearish', desc: 'A Three Outside Up tükörképe: bullish gyertya, amelyet egy nagyobb testű, elnyelő bearish gyertya követ (Bearish Engulfing), majd egy harmadik, tovább csökkenő bearish gyertya, amely a második gyertya záróára alá zár, megerősítve a lefelé fordulást.' },
+                BULLISH_THREE_LINE_STRIKE: { name: 'Bullish Three Line Strike', bias: 'context-dependent', desc: 'Négygyertyás minta: három egymást követő, emelkedő záróárú hosszú bullish gyertya, majd egy negyedik, a harmadik záróára felett (vagy annál feljebb) nyitó bearish gyertya, amely az első gyertya nyitóára ALÁ zár — egyetlen mozdulattal "visszatörli" mind a három előző gyertya mozgását. Vitatott minta: a negyedik gyertya látszólag bearish fordulást jelez, de a hagyományos elmélet szerint gyakran a korábbi FELFELÉ irány folytatódását jelzi, nem megfordulást — emiatt mindig saját backteszt szükséges.' },
+                BEARISH_THREE_LINE_STRIKE: { name: 'Bearish Three Line Strike', bias: 'context-dependent', desc: 'A Bullish Three Line Strike tükörképe: három egymást követő, csökkenő záróárú hosszú bearish gyertya, majd egy negyedik, a harmadik záróára alatt (vagy annál lejjebb) nyitó bullish gyertya, amely az első gyertya nyitóára FÖLÉ zár — egy mozdulattal törli a három előző gyertya mozgását. Hasonlóan vitatott: sokan a korábbi LEFELÉ irány folytatódásaként értelmezik, nem fordulásként.' },
                 NONE: { name: 'Nincs felismert minta', bias: 'none', desc: 'Az utolsó gyertya(k) nem illeszkednek egyik vizsgált klasszikus gyertyaminta kritériumaira sem a megadott küszöbértékekkel.' }
             };
 
@@ -21459,7 +21462,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (c1 && c2 && c3) {
                 const bodyHi1 = Math.max(c1.o, c1.c), bodyLo1 = Math.min(c1.o, c1.c);
                 const bodyHi2b = Math.max(c2.o, c2.c), bodyLo2b = Math.min(c2.o, c2.c);
-                if (isLongBullish(c1) && isLongBullish(c2) && isLongBullish(c3) &&
+                if (c0 && isLongBullish(c0) && isLongBullish(c1) && isLongBullish(c2) &&
+                    c1.c > c0.c && c2.c > c1.c &&
+                    !c3.bullish && c3.o >= c2.c && c3.c < c0.o) {
+                    pattern = 'BULLISH_THREE_LINE_STRIKE';
+                } else if (c0 && isLongBearish(c0) && isLongBearish(c1) && isLongBearish(c2) &&
+                    c1.c < c0.c && c2.c < c1.c &&
+                    c3.bullish && c3.o <= c2.c && c3.c > c0.o) {
+                    pattern = 'BEARISH_THREE_LINE_STRIKE';
+                } else if (isLongBullish(c1) && isLongBullish(c2) && isLongBullish(c3) &&
                     c2.o >= c1.o && c2.o <= c1.c && c3.o >= c2.o && c3.o <= c2.c &&
                     c2.c > c1.c && c3.c > c2.c) {
                     pattern = 'THREE_WHITE_SOLDIERS';
@@ -33965,6 +33976,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             449: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Three Outside Down felismerését' },
             140: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Tweezer Top/Bottom felismerését' },
             212: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Belt Hold felismerését' },
+            173: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Three Line Strike felismerését' },
             244: { tool: 'kelly-modal', cta: 'Számold ki élesben a Kelly-arányt' },
             240: { tool: 'heat-modal', cta: 'Nézd meg élesben a portfólió-hőtérképet' },
             316: { tool: 'riskbudget-modal', cta: 'Oszd el élesben a közös kockázati büdzsét a stratégiáid közt' },
