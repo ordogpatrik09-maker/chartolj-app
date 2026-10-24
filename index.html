@@ -1841,6 +1841,13 @@
                                 <div class="text-[10px] text-slate-400">Egyenlő kockázati hozzájárulás, nem egyenlő dollár-elosztás</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('depeg-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-red-400/10 text-red-400 border border-red-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-link-slash"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Stablecoin De-peg Kockázat</div>
+                                <div class="text-[10px] text-slate-400">Fedezeti hiány, kockázat-súlyozott kitettség, bank run futamidő</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('vp-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-bar"></i></span>
                             <div>
@@ -9739,6 +9746,56 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
+    <!-- ================= STABLECOIN DE-PEG KOCKÁZAT KALKULÁTOR (OKTATÁSI) =================
+         A "Stablecoin-ok és a De-peg Kockázat" lecke tanítja, hogy egy
+         stablecoin NEM automatikusan kockázatmentes csak azért, hogy
+         "stabil"-nak hívják — a de-peg (a $1 céltól való elszakadás)
+         bizalmi válság, elégtelen fedezet vagy algoritmikus mechanizmus-
+         összeomlás miatt történhet (lásd: TerraUSD/UST, 2022). Ez az
+         eszköz 5 bemenetből (kitettség, jelenlegi ár, bejelentett
+         fedezeti arány, fedezet-típus, napi kiáramlási ráta) számol
+         azonnali mark-to-market veszteséget, kockázat-súlyozott
+         fedezetlen kitettséget, és egy "bank run" stressz-forgatókönyvet
+         (hány nap alatt merülne ki a túlfedezeti puffer a jelenlegi
+         kiáramlási ráta mellett). -->
+    <div id="depeg-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-link-slash text-red-400"></i> Stablecoin De-peg Kockázat Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('depeg-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a stablecoin-kitettségedet, a jelenlegi piaci árat, a bejelentett fedezeti arányt és típust, valamint egy megfigyelt napi kiáramlási rátát — a kalkulátor megmutatja az azonnali mark-to-market veszteséget, a kockázat-súlyozott fedezetlen kitettséget, és egy "bank run" stressz-forgatókönyvet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Stablecoin kitettség névleges értéke ($)</label>
+            <input type="number" id="depeg-holding" value="10000" step="any" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-red-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Jelenlegi piaci ár ($, 1.00 = teljes peg)</label>
+            <input type="number" id="depeg-price" value="0.97" step="0.0001" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-red-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Bejelentett fedezeti arány (%, 100 = teljes fedezet)</label>
+            <input type="number" id="depeg-collateral" value="80" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-red-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Fedezet típusa</label>
+            <select id="depeg-type" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 text-xs text-white focus:outline-none focus:border-red-400/50">
+                <option value="cash">Készpénz / állampapír (alacsony kockázati súly)</option>
+                <option value="crypto">Kripto-fedezet (közepes kockázati súly)</option>
+                <option value="algo">Algoritmikus / nincs valós fedezet (magas kockázati súly)</option>
+            </select>
+
+            <label class="text-[11px] font-semibold text-slate-400">Napi nettó kiáramlás a piaci kapitalizációból (%, "bank run" sebesség)</label>
+            <input type="number" id="depeg-outflow" value="2" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-red-400/50">
+
+            <button onclick="calcDepegRisk()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-red-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="depeg-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Oktatási célú közelítés — a "kockázati súly" és a "biztonságos allokáció" heurisztikus becslés, NEM valós fedezet-audit vagy garancia. A valóságban MINDIG nézd meg, mivel van fedezve egy stablecoin, és hogy a fedezet transzparensen auditált-e, mielőtt jelentős összeget tartanál benne hosszabb ideig.</p>
+        </div>
+    </div>
+
     <!-- ================= KORRELÁCIÓS MÁTRIX (OKTATÁSI, ILLUSZTRATÍV) =================
          Az app 4 eszközének (BTC, ETH, EUR/USD, NVDA) tipikus, oktatási célú
          korrelációs kapcsolatát mutatja — NEM élő piaci adat, hanem
@@ -10833,6 +10890,13 @@ Mean-reversion,2.5</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Risk Parity Súlyozó</div>
                     <div class="text-[10px] text-slate-400">Egyenlő kockázati hozzájárulás, nem egyenlő dollár-elosztás</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('depeg-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-red-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-red-400/10 text-red-400 border border-red-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-link-slash"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Stablecoin De-peg Kockázat</div>
+                    <div class="text-[10px] text-slate-400">Fedezeti hiány, kockázat-súlyozott kitettség, bank run futamidő</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('vp-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-500/30 transition text-left">
@@ -27073,6 +27137,119 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= STABLECOIN DE-PEG KOCKÁZAT KALKULÁTOR (OKTATÁSI) =================
+        // pegDeviationPct = (1 - price) * 100  (pozitív = peg alatt / veszteség irány)
+        // immediateLoss = holding * (1 - price)
+        // riskWeight = {cash: 0.1, crypto: 0.5, algo: 1.0}[type]
+        // uncollateralizedFraction = max(0, 1 - collateralPct/100)
+        // tailRiskExposure = holding * uncollateralizedFraction * riskWeight
+        // bufferPct = max(0, collateralPct - 100)
+        // runwayDays = collateralPct<=100 ? 0 : (outflowPct<=0 ? Infinity : bufferPct/outflowPct)
+        // safeAllocationCapPct = clamp(0,100, (collateralPct/100) * (1-riskWeight) * 100)
+        function calcDepegRisk() {
+            const ids = ['depeg-holding', 'depeg-price', 'depeg-collateral', 'depeg-type', 'depeg-outflow'];
+            const els = ids.map(id => document.getElementById(id));
+            const out = document.getElementById('depeg-result');
+            if (els.some(el => !el) || !out) return;
+
+            const holding = parseFloat(els[0].value);
+            const price = parseFloat(els[1].value);
+            const collateralPct = parseFloat(els[2].value);
+            const type = els[3].value;
+            const outflowPct = parseFloat(els[4].value);
+
+            const RISK_WEIGHTS = { cash: 0.1, crypto: 0.5, algo: 1.0 };
+
+            if (isNaN(holding) || holding <= 0 ||
+                isNaN(price) || price < 0 ||
+                isNaN(collateralPct) || collateralPct < 0 ||
+                !RISK_WEIGHTS.hasOwnProperty(type) ||
+                isNaN(outflowPct) || outflowPct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb stablecoin kitettséget, egy nullánál nem kisebb aktuális árat, egy nullánál nem kisebb fedezeti arány %-ot, egy érvényes fedezet-típust, és egy nullánál nem kisebb napi kiáramlási %-ot!</div>`;
+                return;
+            }
+
+            const riskWeight = RISK_WEIGHTS[type];
+            const typeLabel = { cash: 'Készpénz / állampapír', crypto: 'Kripto-fedezet', algo: 'Algoritmikus / nincs valós fedezet' }[type];
+
+            const pegDeviationPct = (1 - price) * 100;
+            const immediateLoss = holding * (1 - price);
+            const absDev = Math.abs(pegDeviationPct);
+
+            let severityLabel, severityColor, severityEmoji;
+            if (absDev < 0.5) { severityLabel = 'Normál ingadozás'; severityColor = 'text-neon-green'; severityEmoji = '✅'; }
+            else if (absDev < 2) { severityLabel = 'Enyhe de-peg'; severityColor = 'text-amber-400'; severityEmoji = '⚠️'; }
+            else if (absDev < 10) { severityLabel = 'Súlyos de-peg'; severityColor = 'text-neon-red'; severityEmoji = '🚨'; }
+            else { severityLabel = 'Kritikus összeomlás'; severityColor = 'text-neon-red'; severityEmoji = '💀'; }
+
+            const uncollateralizedFraction = Math.max(0, 1 - collateralPct / 100);
+            const tailRiskExposure = holding * uncollateralizedFraction * riskWeight;
+
+            const bufferPct = Math.max(0, collateralPct - 100);
+            let runwayDays;
+            if (collateralPct <= 100) runwayDays = 0;
+            else if (outflowPct <= 0) runwayDays = Infinity;
+            else runwayDays = bufferPct / outflowPct;
+
+            const safeAllocationCapPct = Math.min(100, Math.max(0, (collateralPct / 100) * (1 - riskWeight) * 100));
+
+            let verdict, verdictColor;
+            if (severityLabel === 'Kritikus összeomlás' || collateralPct <= 0) {
+                verdictColor = 'text-neon-red';
+                verdict = `💀 KRITIKUS: a stablecoin ára ${absDev.toFixed(2)}%-kal tért el a pegtől, és/vagy nincs bejelentett fedezet — ez a TerraUSD (UST) 2022-es összeomlásához hasonló mintázat. Egy ilyen forgatókönyvben a teljes kitettség elvesztésére kell készülni, nem csak egy részleges korrekcióra.`;
+            } else if (collateralPct <= 100) {
+                verdictColor = 'text-neon-red';
+                verdict = `🚨 FIGYELEM: a fedezeti arány (${collateralPct}%) NEM éri el a 100%-ot — már most sincs elég fedezet minden kibocsátott egységre, tehát egy tömeges kivonás esetén a hiány azonnal nyilvánvalóvá válna (0 nap puffer a bejelentett adatok szerint).`;
+            } else if (runwayDays !== Infinity && runwayDays < 7) {
+                verdictColor = 'text-amber-400';
+                verdict = `⚠️ A megadott ${outflowPct}%-os napi kiáramlási ráta mellett a túlfedezeti puffer (${bufferPct.toFixed(1)}%) kevesebb mint egy hét (${runwayDays.toFixed(1)} nap) alatt kimerülne, ha ez a sebesség folytatódna — ez egy "bank run"-szerű forgatókönyv korai szakaszára hasonlíthat.`;
+            } else if (tailRiskExposure > holding * 0.1) {
+                verdictColor = 'text-amber-400';
+                verdict = `⚠️ A fedezetlen, kockázat-súlyozott kitettséged (${tailRiskExposure < 0 ? '-' : ''}$${Math.abs(tailRiskExposure).toLocaleString('en-US', { maximumFractionDigits: 2 })}) jelentős a pozíció méretéhez képest — a fedezet típusa és aránya miatt egy komolyabb de-peg esetén ez az összeg reális veszélyben lenne.`;
+            } else {
+                verdictColor = 'text-neon-cyan';
+                verdict = `✅ A jelenlegi adatok alapján a de-peg kockázat viszonylag alacsony: a fedezeti arány meghaladja a 100%-ot, a peg-eltérés minimális, és a kockázat-súlyozott fedezetlen kitettség kicsi a teljes pozícióhoz képest. Ez nem garancia — a fedezet TÉNYLEGES auditáltsága és transzparenciája ettől függetlenül fontos.`;
+            }
+
+            const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            const runwayDisplay = runwayDays === Infinity ? '∞ (nincs megadott kiáramlás)' : (runwayDays === 0 ? 'Már hiányban (0 nap)' : `${runwayDays.toFixed(1)} nap`);
+            const runwayColor = runwayDays === 0 ? 'text-neon-red' : (runwayDays === Infinity ? 'text-neon-green' : (runwayDays < 7 ? 'text-amber-400' : 'text-neon-green'));
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Peg-eltérés</div>
+                        <div class="text-sm font-extrabold ${severityColor}">${pegDeviationPct >= 0 ? '+' : ''}${pegDeviationPct.toFixed(3)}%</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${severityEmoji} ${severityLabel}</div>
+                    </div>
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Azonnali veszteség eladásnál</div>
+                        <div class="text-sm font-extrabold ${immediateLoss > 0 ? 'text-neon-red' : (immediateLoss < 0 ? 'text-neon-green' : 'text-slate-400')}">${fmtMoney(immediateLoss)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">ár: $${price.toFixed(4)} (cél: $1.00)</div>
+                    </div>
+                </div>
+                <div class="space-y-1.5 mb-3">
+                    <div class="flex items-center justify-between font-mono text-[11px] bg-dark-900 rounded-lg px-2.5 py-1.5">
+                        <span class="text-slate-400">Fedezet típusa:</span>
+                        <span class="font-bold text-slate-300">${typeLabel} (súly: ${riskWeight.toFixed(1)})</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px] bg-dark-900 rounded-lg px-2.5 py-1.5">
+                        <span class="text-slate-400">Fedezetlen, kockázat-súlyozott kitettség:</span>
+                        <span class="font-bold ${tailRiskExposure > 0 ? 'text-neon-red' : 'text-neon-green'}">${fmtMoney(tailRiskExposure)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px] bg-dark-900 rounded-lg px-2.5 py-1.5">
+                        <span class="text-slate-400">Túlfedezeti puffer kifutása:</span>
+                        <span class="font-bold ${runwayColor}">${runwayDisplay}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px] bg-dark-900 rounded-lg px-2.5 py-1.5">
+                        <span class="text-slate-400">Javasolt max. biztonságos allokáció (heurisztika):</span>
+                        <span class="font-bold text-neon-cyan">${safeAllocationCapPct.toFixed(1)}%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold ${verdictColor}">${verdict}</p>
+            `;
+        }
+
         // ================= KORRELÁCIÓS MÁTRIX (OKTATÁSI, ILLUSZTRATÍV) =================
         // Statikus, oktatási célú közelítő értékek az app 4 eszköze közötti
         // TIPIKUS kapcsolatról — szándékosan NEM élő, számolt korreláció
@@ -34284,6 +34461,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             240: { tool: 'heat-modal', cta: 'Nézd meg élesben a portfólió-hőtérképet' },
             316: { tool: 'riskbudget-modal', cta: 'Oszd el élesben a közös kockázati büdzsét a stratégiáid közt' },
             187: { tool: 'riskparity-modal', cta: 'Számold ki élesben a risk parity súlyokat a stratégiáid közt' },
+            512: { tool: 'depeg-modal', cta: 'Ellenőrizd élesben egy stablecoin de-peg kockázatát' },
             416: { tool: 'corrmatrix-modal', cta: 'Számold ki élesben a korrelációs mátrixot' },
             231: { tool: 'corrmatrix-modal', cta: 'Nézd meg élesben az eszközök korrelációját' },
             336: { tool: 'volscale-modal', cta: 'Számold ki élesben a volatilitás-alapú pozícióméretezést' },
@@ -34505,7 +34683,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
