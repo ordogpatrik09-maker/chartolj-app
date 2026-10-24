@@ -8656,7 +8656,7 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 </h3>
                 <button onclick="closeToolModal('candlepattern-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-4 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Rickshaw Man, Hammer, Engulfing, Harami, Morning/Evening Star, Abandoned Baby, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Two Crows, Three Inside Up/Down, Three Outside Up/Down, Three Line Strike, Tweezer Top/Bottom, Belt Hold, Stick Sandwich, Matching Low/High, Homing Pigeon, Separating Lines, Meeting Lines, Tasuki Gap) az utolsó gyertyá(k)on, 4 gyertyás minták elsőbbségével, majd 3, 2, végül 1 gyertyásakkal.</p>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-4 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Rickshaw Man, Hammer, Engulfing, Harami, Morning/Evening Star, Abandoned Baby, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Two Crows, Three Inside Up/Down, Three Outside Up/Down, Three Line Strike, Tweezer Top/Bottom, Belt Hold, Stick Sandwich, Matching Low/High, Homing Pigeon, Separating Lines, Meeting Lines, Tasuki Gap, Upside Gap Two Crows, Advance Block, Deliberation) az utolsó gyertyá(k)on, 4 gyertyás minták elsőbbségével, majd 3, 2, végül 1 gyertyásakkal.</p>
 
             <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Magas,Alacsony,Záró (soronként egy, 1-3 sor)</label>
             <textarea id="candlepattern-candles" rows="4" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-500/50">110,111,95,96
@@ -21713,6 +21713,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 TASUKI_GAP_DOWNSIDE: { name: 'Downside Tasuki Gap (Lefelé Rés)', bias: 'bearish', desc: 'Az Upside Tasuki Gap tükörképe, háromgyertyás folytatódási minta csökkenő trendben: egy hosszú bearish gyertyát egy másik bearish gyertya követ, amely lefelé réssel, átfedés nélkül nyit, majd egy harmadik, bullish gyertya a résen BELÜL zár, de nem tölti be azt teljesen (záróára a rés alatt marad). A be nem töltött rés azt jelzi, hogy a mögöttes eladási erő továbbra is jelen van — a csökkenő trend valószínűleg folytatódik.' },
                 TWO_CROWS: { name: 'Two Crows (Két Holló)', bias: 'bearish', desc: 'Háromgyertyás bearish fordulós minta emelkedő trend tetején: egy hosszú bullish gyertyát egy bearish gyertya követ, amely felfelé réssel nyit és a réshez közeli szinten is zár (a gap még nincs betöltve), majd egy harmadik bearish gyertya a második testén belül nyit, és visszazár az első gyertya testébe — betöltve a felfelé rést. A Tasuki Gap-pel ellentétben itt a harmadik gyertya is BEARISH (nem bullish), ami azt jelzi, hogy az eladók teljesen átvették az irányítást, és a gap-et kiváltó vételi lendület kifulladt.' },
                 RICKSHAW_MAN: { name: 'Rickshaw Man', bias: 'neutral', desc: 'A Doji speciális, extrém változata: a test elenyészően kicsi, miközben a felső ÉS az alsó kanóc is nagyon hosszú és közelítőleg egyforma méretű — a nyitás és zárás pontosan a tartomány közepén történt. Erősebb bizonytalansági/egyensúlyi jelzés a sima Dojinál, mert a piac mindkét irányba nagy kilengést tett, mielőtt visszatért a középre; jelentősége — mint minden Dojinál — a trendkontextustól és a következő gyertyától függ.' },
+                UPSIDE_GAP_TWO_CROWS: { name: 'Upside Gap Two Crows', bias: 'bearish', desc: 'Háromgyertyás bearish figyelmeztető minta emelkedő trendben: egy hosszú bullish gyertyát egy VALÓDI felfelé réssel (a kanócok sem érnek össze) nyíló bearish gyertya követ, majd egy harmadik bearish gyertya, amely a második testén belül nyit és annál lejjebb zár, benyúlva az első gyertya csúcsa felé — de a réshez nem ér le, az NEM töltődik be teljesen (a záróár az első gyertya csúcsa felett marad). Amíg a Two Crows a rést teljesen betölti, itt a rés fennmarad, ami gyengébb, de korai figyelmeztető jelzés a vételi erő kifulladására.' },
+                ADVANCE_BLOCK: { name: 'Advance Block', bias: 'bearish', desc: 'Három egymást követő, egyre magasabb záróárú bullish gyertya — látszatra a Three White Soldiers-hez hasonló folytatódási minta —, de a testek fokozatosan kisebbednek, és a felső kanócok fokozatosan nyúlnak az első gyertyához képest. Ez az eltérő "minőség" leplezi, hogy a vételi erő valójában gyengül minden gyertyával — a felszínes erő mögött kifulladás zajlik, ami a Three White Soldiers-szel szemben bearish figyelmeztető jelzés.' },
+                DELIBERATION: { name: 'Deliberation (Töprengés)', bias: 'bearish', desc: 'Két erős, hasonlóan nagy testű bullish gyertya emelkedő trendben, majd egy harmadik, hirtelen és jelentősen kisebb testű bullish gyertya, amely még magasabbra zár, de csak alig. Az Evening Starral ellentétben a harmadik gyertya itt is bullish marad (nem fordul bearishre) — csak a lendület hirtelen megtorpanását, "töprengést" jelez, finomabb és korábbi figyelmeztető jel a fordulat előtt, mint az Advance Block fokozatos gyengülése.' },
                 NONE: { name: 'Nincs felismert minta', bias: 'none', desc: 'Az utolsó gyertya(k) nem illeszkednek egyik vizsgált klasszikus gyertyaminta kritériumaira sem a megadott küszöbértékekkel.' }
             };
 
@@ -21737,6 +21740,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     c2.o <= c1.o && c2.o >= c1.c && c3.o <= c2.o && c3.o >= c2.c &&
                     c2.c < c1.c && c3.c < c2.c) {
                     pattern = 'THREE_BLACK_CROWS';
+                } else if (c1.bullish && c1.bodyPct >= 40 && c2.bullish && c3.bullish &&
+                    c2.c > c1.c && c3.c > c2.c &&
+                    c2.bodyPct < c1.bodyPct && c3.bodyPct < c2.bodyPct &&
+                    c3.upperPct > c1.upperPct && c3.bodyPct >= 18) {
+                    pattern = 'ADVANCE_BLOCK';
+                } else if (c1.bullish && c1.bodyPct >= 45 &&
+                    c2.bullish && c2.bodyPct >= 45 && c2.c > c1.c &&
+                    c3.bullish && c3.c >= c2.c && c3.bodyPct < 18) {
+                    pattern = 'DELIBERATION';
                 } else if (c1.bullish && c2.bullish && c2.l > c1.h &&
                     !c3.bullish && c3.o >= c2.o && c3.o <= c2.c &&
                     c3.c < c2.l && c3.c > c1.h) {
@@ -21778,6 +21790,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     !c3.bullish && c3.o < c2.o && c3.o > c2.c &&
                     c3.c < c2.c && c3.c < c1.c && c3.c > c1.o) {
                     pattern = 'TWO_CROWS';
+                } else if (c1.bullish && c1.bodyPct > 35 &&
+                    !c2.bullish && c2.bodyPct > 8 && c2.l > c1.h &&
+                    !c3.bullish && c3.bodyPct > 8 && c3.o <= c2.o && c3.o >= c2.c &&
+                    c3.c < c2.c && c3.c > c1.h) {
+                    pattern = 'UPSIDE_GAP_TWO_CROWS';
                 }
             }
 
@@ -34702,6 +34719,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             261: { tool: 'premdisc-modal', cta: 'Számold ki élesben a Premium / Discount zónát' },
             429: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Rickshaw Man felismerését' },
             456: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Two Crows felismerését' },
+            354: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben az Upside Gap Two Crows felismerését' },
+            382: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Deliberation minta felismerését' },
+            393: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben az Advance Block minta felismerését' },
         };
 
         function tryToolFromLesson(lessonIdx) {
