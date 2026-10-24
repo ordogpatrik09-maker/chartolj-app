@@ -200,7 +200,7 @@
                 display: flex;
                 flex-direction: row !important;
                 position: fixed;
-                left: 0; right: 0; bottom: 60px;
+                left: 0; right: 0; bottom: 68px;
                 width: 100% !important;
                 height: auto !important;
                 max-height: 22vh;
@@ -216,7 +216,7 @@
                 display: flex;
                 flex-direction: column !important;
                 position: fixed;
-                left: 0; right: 0; bottom: 60px;
+                left: 0; right: 0; bottom: 68px;
                 width: 100% !important;
                 max-height: 75vh;
                 overflow-y: auto;
@@ -254,14 +254,14 @@
            (<1024px) jelenik meg, desktopon a sűrű terminál-nézet marad az
            elsődleges, navigáció nélkül. */
         #mobile-bottom-nav {
-            height: 60px;
+            height: 68px;
             display: none;
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @media (max-width: 1023px) {
             #mobile-bottom-nav { display: flex; }
-            #app-scale-wrapper { padding-bottom: 60px; }
+            #app-scale-wrapper { padding-bottom: 68px; }
 
             /* JAVÍTÁS: a felső fejléc (logó+márkanév+eszközválasztó bal
                oldalon; Demó Egyenleg + Bejelentkezés + Akadémia-gyorsgomb +
@@ -388,15 +388,15 @@
             #ai-chat-launcher {
                 left: auto !important;
                 right: 20px !important;
-                bottom: calc(60px + env(safe-area-inset-bottom) + 76px) !important;
+                bottom: calc(68px + env(safe-area-inset-bottom) + 76px) !important;
             }
             #ai-chat-panel {
                 left: auto !important;
                 right: 20px !important;
-                bottom: calc(60px + env(safe-area-inset-bottom) + 136px) !important;
+                bottom: calc(68px + env(safe-area-inset-bottom) + 136px) !important;
             }
             #toast-container {
-                bottom: calc(60px + env(safe-area-inset-bottom) + 16px) !important;
+                bottom: calc(68px + env(safe-area-inset-bottom) + 16px) !important;
             }
 
             /* JAVÍTÁS: az Akadémia "Leckék", "Chart Alakzatok" és "Mi lenne, ha..."
@@ -2149,7 +2149,7 @@
     <div id="main-trade-layout" class="flex-grow flex overflow-hidden relative">
 
         <!-- Mobil lebegő gombok: Eszközök / Kereskedés bottom sheet nyitása -->
-        <div id="mobile-trade-fab-row" class="fixed left-0 right-0 z-[93] items-center justify-center gap-3" style="bottom: 72px;">
+        <div id="mobile-trade-fab-row" class="fixed left-0 right-0 z-[93] items-center justify-center gap-3" style="bottom: 80px;">
             <!-- JAVÍTÁS (2026-10-09, "ízléstelen" visszajelzés nyomán): korábban a
                  lebegő AI-chat gomb (#ai-chat-launcher) a Kereskedés fülön ÖNÁLLÓAN,
                  ettől a gombsortól függetlenül lebegett a jobb oldalon — emiatt
@@ -12610,6 +12610,44 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
            a chart canvas már eleve a saját konténerének TÉNYLEGES
            méretéből (clientWidth/clientHeight) dolgozik, ezért elég
            újrarajzolni ablakméret-változáskor. */
+
+        /* ================= TÉNYLEGES LÁTHATÓ MAGASSÁG KORREKCIÓ =================
+           JAVÍTÁS (felhasználói jelzés alapján: "nem látszik az app alja,
+           ott van az asztali/navigációs sáv"): a html/body korábban
+           CSS `height: 100%` (illetve a belső konténerek `100dvh`) alapján
+           kapták a magasságukat. Ez a CSS-érték NEM mindig egyezik meg a
+           TÉNYLEGESEN látható képernyőterülettel: Windows-on a böngésző-
+           ablak mérete tartalmazhat olyan sávot, amit a feladatsáv kitakar;
+           Androidon/iOS-on a cím- vagy gesztussáv néha a "nagy" (layout)
+           nézőablakhoz igazít, nem a "kis" (éppen látható, vizuális)
+           nézőablakhoz — ez a klasszikus "fixed alsó elem a tényleges
+           képernyő alatt landol" hiba, és mivel az app szándékosan
+           letiltja a scrollozást (natív-app-érzés), a felhasználónak
+           NINCS módja lescrollozni, hogy elérje a kitakart részt.
+           A megoldás: a `window.visualViewport` API-t (ha elérhető — ez
+           PONTOSAN a tényleges, böngészőkeret/tálca nélküli látható
+           területet adja vissza, és automatikusan frissül, ha az OS vagy
+           a böngérző UI mérete változik) figyelve, JS-ből EXPLICIT pixelben
+           állítjuk be a html/body magasságát — ez mindig felülírja/pontosítja
+           a CSS 100%/100dvh esetleges elmaradását vagy hibás számítását. */
+        function applyRealViewportHeight() {
+            try {
+                const h = (window.visualViewport && window.visualViewport.height)
+                    ? window.visualViewport.height
+                    : window.innerHeight;
+                if (!h || h < 100) return; // védelem: ne állítsunk be nyilvánvalóan hibás (túl kicsi) értéket
+                document.documentElement.style.height = h + 'px';
+                document.body.style.height = h + 'px';
+            } catch (e) { /* ha a visualViewport API hibázna, a CSS fallback (100%/100dvh) marad érvényben */ }
+        }
+        applyRealViewportHeight();
+        window.addEventListener('resize', applyRealViewportHeight);
+        window.addEventListener('orientationchange', applyRealViewportHeight);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', applyRealViewportHeight);
+            window.visualViewport.addEventListener('scroll', applyRealViewportHeight);
+        }
+
         function applyScaleToFit() {
             try {
                 if (typeof resizeCanvas === 'function') {
