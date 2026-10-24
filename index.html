@@ -21707,6 +21707,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 HOMING_PIGEON: { name: 'Homing Pigeon (Hazatérő Galamb)', bias: 'bullish', desc: 'A Harami bearish "rokona": két egymást követő BEARISH (piros) gyertya, ahol a második, kisebb testű gyertya teljesen az első testén belül van. A hagyományos Haramival ellentétben itt mindkét gyertya azonos (piros) színű — a kisebb második test mégis a csökkenő lendület gyengülését, lehetséges bullish fordulást jelezheti, különösen letesztelt támasznál megjelenve. Mint minden Harami-típusú mintánál, itt is megerősítést igényel a következő gyertyától.' },
                 SEPARATING_LINES_BULLISH: { name: 'Bullish Separating Lines', bias: 'bullish', desc: 'Két gyertya, amelyek UGYANARRÓL a nyitóárról indulnak, de ellentétes irányba mozognak: egy bearish (piros) gyertyát egy bullish (zöld) gyertya követ, amely majdnem pontosan az első gyertya nyitóárán nyit, majd tovább emelkedik. Emelkedő trendben megjelenve folytatódási (nem fordulós) jelzés — a második gyertya "elválasztja" magát az ellentétes színű előzőtől, visszaigazolva a fő trend irányát. Ritkább, kevésbé tanulmányozott minta, elsődleges stratégia alapjául nem ajánlott.' },
                 SEPARATING_LINES_BEARISH: { name: 'Bearish Separating Lines', bias: 'bearish', desc: 'A Bullish Separating Lines tükörképe: egy bullish (zöld) gyertyát egy bearish (piros) gyertya követ, amely majdnem pontosan ugyanazon a nyitóáron nyit, mint az előző, majd tovább csökken. Csökkenő trendben megjelenve folytatódási jelzés, amely visszaigazolja a lefelé irányt. Önmagában ritka és gyenge jelzés, megerősítést igényel.' },
+                MEETING_LINES_BULLISH: { name: 'Bullish Meeting Lines (Találkozó Vonalak)', bias: 'bullish', desc: 'Két ELLENTÉTES színű gyertya, amelyek majdnem pontosan azonos záróáron "találkoznak": egy hosszú bearish (piros) gyertyát egy hosszú bullish (zöld) gyertya követ, amely jóval lejjebb nyit, de ugyanarra a szintre zár fel, mint az előző gyertya záróára. A Matching Low-tól eltérően itt a két gyertya színe ELLENTÉTES — csökkenő trend végén megjelenve az eladási lendület megtorpanását, lehetséges bullish fordulatot jelezhet. Gyengébb jelzés, megerősítést igényel.' },
+                MEETING_LINES_BEARISH: { name: 'Bearish Meeting Lines (Találkozó Vonalak)', bias: 'bearish', desc: 'A Bullish Meeting Lines tükörképe: egy hosszú bullish (zöld) gyertyát egy hosszú bearish (piros) gyertya követ, amely jóval feljebb nyit, de ugyanarra a szintre zár le, mint az előző gyertya záróára. Emelkedő trend végén megjelenve a vételi lendület megtorpanását, lehetséges bearish fordulatot jelezheti. Gyengébb jelzés, megerősítést igényel.' },
+                TASUKI_GAP_UPSIDE: { name: 'Upside Tasuki Gap (Felfelé Rés)', bias: 'bullish', desc: 'Háromgyertyás FOLYTATÓDÁSI (nem fordulós) minta emelkedő trendben: egy hosszú bullish gyertyát egy másik bullish gyertya követ, amely felfelé réssel, átfedés nélkül nyit, majd egy harmadik, bearish gyertya a résen BELÜL zár, de nem tölti be azt teljesen (záróára a rés fölött marad). A be nem töltött rés azt jelzi, hogy a mögöttes vételi erő továbbra is jelen van — a trend valószínűleg folytatódik.' },
+                TASUKI_GAP_DOWNSIDE: { name: 'Downside Tasuki Gap (Lefelé Rés)', bias: 'bearish', desc: 'Az Upside Tasuki Gap tükörképe, háromgyertyás folytatódási minta csökkenő trendben: egy hosszú bearish gyertyát egy másik bearish gyertya követ, amely lefelé réssel, átfedés nélkül nyit, majd egy harmadik, bullish gyertya a résen BELÜL zár, de nem tölti be azt teljesen (záróára a rés alatt marad). A be nem töltött rés azt jelzi, hogy a mögöttes eladási erő továbbra is jelen van — a csökkenő trend valószínűleg folytatódik.' },
                 NONE: { name: 'Nincs felismert minta', bias: 'none', desc: 'Az utolsó gyertya(k) nem illeszkednek egyik vizsgált klasszikus gyertyaminta kritériumaira sem a megadott küszöbértékekkel.' }
             };
 
@@ -21731,6 +21735,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     c2.o <= c1.o && c2.o >= c1.c && c3.o <= c2.o && c3.o >= c2.c &&
                     c2.c < c1.c && c3.c < c2.c) {
                     pattern = 'THREE_BLACK_CROWS';
+                } else if (c1.bullish && c2.bullish && c2.l > c1.h &&
+                    !c3.bullish && c3.o >= c2.o && c3.o <= c2.c &&
+                    c3.c < c2.l && c3.c > c1.h) {
+                    pattern = 'TASUKI_GAP_UPSIDE';
+                } else if (!c1.bullish && !c2.bullish && c2.h < c1.l &&
+                    c3.bullish && c3.o <= c2.o && c3.o >= c2.c &&
+                    c3.c > c2.h && c3.c < c1.l) {
+                    pattern = 'TASUKI_GAP_DOWNSIDE';
                 } else if (!c1.bullish && c1.bodyPct > 40 && c2.bullish &&
                     bodyHi2b < bodyHi1 && bodyLo2b > bodyLo1 &&
                     c3.bullish && c3.c > c1.c) {
@@ -21793,6 +21805,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         pattern = 'MATCHING_LOW';
                     } else if (c2.bullish && c3.bullish && c2.bodyPct > 15 && c3.bodyPct > 15 && Math.abs(c2.c - c3.c) <= matchTol) {
                         pattern = 'MATCHING_HIGH';
+                    } else if (c2.bullish !== c3.bullish && c2.bodyPct >= 50 && c3.bodyPct >= 50 && Math.abs(c2.c - c3.c) <= matchTol) {
+                        pattern = c3.bullish ? 'MEETING_LINES_BULLISH' : 'MEETING_LINES_BEARISH';
                     } else {
                         const tweezerTol = Math.max((c2.rng + c3.rng) / 2 * 0.1, Math.max(c2.h, c3.h, Math.abs(c2.l), Math.abs(c3.l), 1e-9) * 0.0015);
                         if (Math.abs(c2.h - c3.h) <= tweezerTol) {
@@ -34673,6 +34687,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             262: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Matching Low/High felismerését' },
             363: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Homing Pigeon felismerését' },
             263: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Separating Lines felismerését' },
+            411: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Meeting Lines felismerését' },
+            478: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben az Upside Tasuki Gap felismerését' },
+            484: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Downside Tasuki Gap felismerését' },
             261: { tool: 'premdisc-modal', cta: 'Számold ki élesben a Premium / Discount zónát' },
         };
 
