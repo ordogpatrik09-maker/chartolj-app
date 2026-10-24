@@ -1948,6 +1948,13 @@
                                 <div class="text-[10px] text-slate-400">Dinamikus pozícióméret minden belépéskor az aktuális ATR alapján, állandó kockázati célra</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('leveragesweep-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bolt"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Tőkeáttétel-Érzékenységi Backtest</div>
+                                <div class="text-[10px] text-slate-400">Ugyanaz a trade-sorozat több tőkeáttétel-szinten — hol van a likvidációs "cliff"</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('weightopt-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-sliders"></i></span>
                             <div>
@@ -9130,6 +9137,34 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="leveragesweep-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-neon-red"></i> Tőkeáttétel-Érzékenységi Backtest
+                </h3>
+                <button onclick="closeToolModal('leveragesweep-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A MÁR VERIFIKÁLT, 1×-es EMA-keresztezéses backtestet futtatja le a jelenlegi charton, majd a kapott, VALÓDI trade-sorozatot több tőkeáttétel-szinten "játssza le" újra. Minden szinten figyeli, hogy egyetlen trade (tőkeáttétellel felnagyított) vesztesége elérte vagy meghaladta-e a 100%-ot — ha igen, az adott szinten a számla LIKVIDÁLÓDOTT volna. Konkrétan megmutatja a "tőkeáttétel-cliffet": egy pontig nő a hozam, utána már csak a kockázat.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div><label class="text-[11px] font-semibold text-slate-400">EMA gyors</label><input type="number" id="ls-fast" value="9" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">EMA lassú</label><input type="number" id="ls-slow" value="21" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50"></div>
+            </div>
+            <label class="text-[11px] font-semibold text-slate-400">Tőkeáttétel-szintek (vesszővel elválasztva)</label>
+            <input type="text" id="ls-levels" value="1, 2, 3, 5, 10, 20, 50" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke</label>
+            <input type="number" id="ls-equity" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+            <button onclick="calcLeverageSweepBacktest()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Tőkeáttétel-Érzékenység Futtatása
+            </button>
+
+            <div id="leveragesweep-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">FONTOS: ez ugyanazt a trade-SOROZATOT nagyítja fel különböző tőkeáttétellel — a BELÉPÉSI/KILÉPÉSI pontok minden szinten azonosak, csak a méret és ezáltal a kockázat/hozam változik. A valóságban a magas tőkeáttétel a margin-követelmény miatt korábban is kényszerítheti a zárást, mint ahogy ez az egyszerűsített modell mutatja.</p>
+        </div>
+    </div>
+
     <div id="pitchfork-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -11633,6 +11668,13 @@ Mean-reversion,2.5</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Volatilitás-Célzásos Pozícióméretezés Backtest</div>
                     <div class="text-[10px] text-slate-400">Dinamikus pozícióméret minden belépéskor az aktuális ATR alapján, állandó kockázati célra</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('leveragesweep-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-bolt"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Tőkeáttétel-Érzékenységi Backtest</div>
+                    <div class="text-[10px] text-slate-400">Ugyanaz a trade-sorozat több tőkeáttétel-szinten — hol van a likvidációs "cliff"</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('weightopt-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-400/30 transition text-left">
@@ -16245,6 +16287,55 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
+        }
+
+        // ================= TŐKEÁTTÉTEL-ÉRZÉKENYSÉGI BACKTEST ("BRUTÁL" FEJLESZTÉS) =================
+        // A leckékben sokszor elhangzik, hogy a tőkeáttétel "kétélű kard":
+        // felnagyítja a nyereséget IS, a veszteséget IS. Ez az eszköz ezt
+        // KONKRÉT SZÁMOKKAL mutatja meg: a MÁR VERIFIKÁLT, változatlan
+        // runEMACrossoverBacktest-et EGYSZER lefuttatja 1×-es alap-
+        // tőkeáttétellel a jelenlegi charton, majd a kapott trade-sorozatot
+        // (a VALÓDI árfolyam-elmozdulásokat) újra "lejátssza" több, a
+        // felhasználó által megadott tőkeáttétel-szinten. Minden szinten
+        // figyeli, hogy egyetlen trade vesztesége (tőkeáttétellel
+        // felnagyítva) elérte-e vagy meghaladta-e a 100%-ot — ha igen, az
+        // adott tőkeáttétel-szinten a számla LIKVIDÁLÓDOTT volna, és onnantól
+        // nincs több trade (nulla tőke). Ez konkrétan megmutatja a
+        // "tőkeáttétel-cliff" jelenséget: egy adott szint alatt a hozam nő
+        // a tőkeáttétellel, egy ponton túl viszont már csak a likvidáció
+        // valószínűsége nő. Kizárólag a már verifikált, VÁLTOZATLAN
+        // runEMACrossoverBacktest-et hívja — nem módosítja és nem
+        // valósít meg saját, párhuzamos backtest-motort.
+        function runLeverageSweepBacktest(candles, fastPeriod, slowPeriod, startEquity, leverageLevels) {
+            const baseResult = runEMACrossoverBacktest(candles, fastPeriod, slowPeriod, startEquity);
+            const baseTrades = baseResult.trades.map(t => t.returnPct);
+            if (baseTrades.length < 1) throw new Error('Nincs egyetlen lezárt trade sem az alap (1×) backteszten — nem futtatható a tőkeáttétel-érzékenység. Próbálj hosszabb idősíkot vagy más EMA-periódusokat!');
+
+            const results = [];
+            for (const lev of leverageLevels) {
+                if (!lev || lev <= 0) throw new Error('A tőkeáttétel szintjeinek pozitívnak kell lenniük.');
+                let equity = startEquity;
+                let peak = startEquity;
+                let maxDrawdownPct = 0;
+                let liquidated = false;
+                let liquidatedAtTradeIndex = null;
+                for (let idx = 0; idx < baseTrades.length; idx++) {
+                    const leveragedR = baseTrades[idx] * lev;
+                    if (leveragedR <= -1) {
+                        liquidated = true;
+                        liquidatedAtTradeIndex = idx;
+                        equity = 0;
+                        break;
+                    }
+                    equity = equity * (1 + leveragedR);
+                    if (equity > peak) peak = equity;
+                    const dd = peak > 0 ? (peak - equity) / peak * 100 : 0;
+                    if (dd > maxDrawdownPct) maxDrawdownPct = dd;
+                }
+                const totalReturnPct = (equity - startEquity) / startEquity * 100;
+                results.push({ leverage: lev, totalReturnPct, maxDrawdownPct, liquidated, liquidatedAtTradeIndex, finalEquity: equity });
+            }
+            return { baseTradeCount: baseTrades.length, results };
         }
 
         function calcRSISeries(closes, period = 14) {
@@ -24296,6 +24387,61 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Győzelmi arány a méretezéssel:</span><span class="text-white">${sized.winRatePct.toFixed(1)}%</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${ddImproved ? 'A volatilitás-célzásos méretezés ezen az adaton CSÖKKENTETTE a maximális visszaesést a fix méretű változathoz képest — ez összhangban van az elvvel: nyugodt szakaszokban nagyobb, kapkodó szakaszokban kisebb pozícióméret a kockázatot egyenletesebben tartja.' : 'Ezen a konkrét adaton a volatilitás-célzásos méretezés NEM csökkentette a maximális visszaesést — ez önmagában nem jelenti, hogy a módszer hibás, csak azt, hogy ezen az adathosszon és paraméterezéssel nem adott előnyt. Próbálj más cél-kockázat szintet vagy ATR-periódust!'}</p>
+            `;
+        }
+
+        function calcLeverageSweepBacktest() {
+            const out = document.getElementById('leveragesweep-result');
+            if (!out) return;
+
+            if (typeof candleData === 'undefined' || !candleData || candleData.length < 20) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton (legalább 20 gyertya szükséges) — válts hosszabb idősíkra!</div>`;
+                return;
+            }
+
+            const fast = parseInt(document.getElementById('ls-fast').value, 10);
+            const slow = parseInt(document.getElementById('ls-slow').value, 10);
+            const startEquity = parseFloat(document.getElementById('ls-equity').value);
+            const levelsRaw = document.getElementById('ls-levels').value;
+            const leverageLevels = levelsRaw.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+
+            if ([fast, slow, startEquity].some(v => isNaN(v)) || fast < 2 || slow <= fast || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — a gyors EMA legyen kisebb a lassúnál, a tőke pozitív!</div>`;
+                return;
+            }
+            if (leverageLevels.length < 1 || leverageLevels.some(l => l <= 0)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább egy pozitív tőkeáttétel-szintet, vesszővel elválasztva (pl. 1, 2, 5, 10)!</div>`;
+                return;
+            }
+
+            let sweep;
+            try {
+                sweep = runLeverageSweepBacktest(candleData, fast, slow, startEquity, leverageLevels);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+                return;
+            }
+
+            const rows = sweep.results.map(r => {
+                if (r.liquidated) {
+                    return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-red font-semibold">${r.leverage}×:</span><span class="text-neon-red font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>LIKVIDÁLÓDOTT (${r.liquidatedAtTradeIndex + 1}. trade-nél)</span></div>`;
+                }
+                return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${r.leverage}×:</span><span class="${r.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${r.totalReturnPct >= 0 ? '+' : ''}${r.totalReturnPct.toFixed(2)}% · DD ${r.maxDrawdownPct.toFixed(2)}%</span></div>`;
+            }).join('');
+
+            const firstLiquidation = sweep.results.find(r => r.liquidated);
+            const bestResult = sweep.results.filter(r => !r.liquidated).reduce((best, r) => (!best || r.totalReturnPct > best.totalReturnPct) ? r : best, null);
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-0">
+                    <div class="flex justify-between pb-1.5"><span class="text-slate-400">Alap (1×) trade-ek száma:</span><span class="text-white font-bold">${sweep.baseTradeCount}</span></div>
+                    ${rows}
+                </div>
+                <div class="glass-card rounded-xl border ${firstLiquidation ? 'border-neon-red/30 bg-neon-red/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
+                    ${bestResult ? `<div class="flex justify-between"><span class="text-slate-400">Legjobb (likvidáció nélküli) szint:</span><span class="text-white font-bold">${bestResult.leverage}× (${bestResult.totalReturnPct >= 0 ? '+' : ''}${bestResult.totalReturnPct.toFixed(2)}%)</span></div>` : ''}
+                    ${firstLiquidation ? `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Első likvidációs szint:</span><span class="text-neon-red font-bold">${firstLiquidation.leverage}×</span></div>` : ''}
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${firstLiquidation ? `A ${firstLiquidation.leverage}×-os (és afölötti) tőkeáttételnél EBBEN A TRADE-SOROZATBAN volt olyan egyetlen mozgás, ami önmagában elérte vagy meghaladta volna a 100%-os veszteséget — vagyis a számla likvidálódott volna. Ez konkrétan mutatja, hogy a tőkeáttétel növelése egy ponton túl NEM lineárisan, hanem UGRÁSSZERŰEN növeli a totális veszteség kockázatát.` : `Ezen a konkrét trade-sorozaton egyik vizsgált tőkeáttétel-szint sem vezetett volna likvidációhoz — de ez NEM garancia a jövőre: egyetlen, a múltban nem látott méretű hirtelen mozgás bármelyik szinten likvidációt okozhat.`}</p>
             `;
         }
 
@@ -37526,7 +37672,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
