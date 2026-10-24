@@ -1897,6 +1897,13 @@
                                 <div class="text-[10px] text-slate-400">Valódi, élő adaton futó ablakos optimalizáció és WFE</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('portfoliocombiner-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-diagram-project"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Több-Stratégiás Portfólió-Kombináló</div>
+                                <div class="text-[10px] text-slate-400">Valódi stratégiák keverése élő adaton, diverzifikációs előny számszerűsítve</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-diagram-project"></i></span>
                             <div>
@@ -8723,6 +8730,77 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= TÖBB-STRATÉGIÁS PORTFÓLIÓ-KOMBINÁLÓ (OKTATÁSI, "BRUTÁL" FEJLESZTÉS) =================
+         2-3 meglévő, VALÓDI backtest-motort futtat le a JELENLEG BETÖLTÖTT
+         charton, majd a megadott súlyokkal keveri az equity-görbéiket, hogy
+         SZÁMOKKAL (nem csak elméletben) demonstrálja a diverzifikáció
+         hatását: a kombinált max. drawdown alacsonyabb lehet, mint a
+         résztvevő stratégiák súlyozott átlaga, ha a stratégiák nem
+         korrelálnak tökéletesen egymással. -->
+    <div id="portfoliocombiner-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-diagram-project text-neon-cyan"></i> Több-Stratégiás Portfólió-Kombináló
+                </h3>
+                <button onclick="closeToolModal('portfoliocombiner-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">2-3 VALÓDI stratégiát futtat le egyszerre a JELENLEG BETÖLTÖTT charton, és a megadott tőke-súlyokkal egyetlen közös portfólió-equity-görbévé keveri őket. A cél megmutatni: ha a stratégiák nem mozognak tökéletesen együtt, a kombinált max. visszaesés (drawdown) kisebb lehet, mint a stratégiák súlyozott átlaga — ez a diverzifikáció NUMERIKUS bizonyítéka a saját adatodon.</p>
+
+            <div class="space-y-3 mb-3">
+                <div class="border border-dark-750 rounded-xl p-2.5">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[11px] font-bold text-neon-cyan">1. Stratégia</span>
+                        <input type="number" id="ptf-weight-1" value="50" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-neon-cyan/50">
+                    </div>
+                    <select id="ptf-type-1" onchange="ptfUpdateParamFields(1)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-neon-cyan/50">
+                        <option value="ema" selected>EMA-keresztezés</option>
+                        <option value="rsi">RSI mean-reversion</option>
+                        <option value="boll">Bollinger mean-reversion</option>
+                        <option value="macd">MACD-keresztezés</option>
+                    </select>
+                    <div id="ptf-params-1" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+                <div class="border border-dark-750 rounded-xl p-2.5">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[11px] font-bold text-amber-400">2. Stratégia</span>
+                        <input type="number" id="ptf-weight-2" value="50" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-amber-400/50">
+                    </div>
+                    <select id="ptf-type-2" onchange="ptfUpdateParamFields(2)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-amber-400/50">
+                        <option value="ema">EMA-keresztezés</option>
+                        <option value="rsi" selected>RSI mean-reversion</option>
+                        <option value="boll">Bollinger mean-reversion</option>
+                        <option value="macd">MACD-keresztezés</option>
+                    </select>
+                    <div id="ptf-params-2" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+                <div class="border border-dark-750 rounded-xl p-2.5">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="flex items-center gap-1.5 text-[11px] font-bold text-fuchsia-400"><input type="checkbox" id="ptf-enable-3" onchange="ptfUpdateParamFields(3)"> 3. Stratégia (opcionális)</label>
+                        <input type="number" id="ptf-weight-3" value="0" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-fuchsia-400/50">
+                    </div>
+                    <select id="ptf-type-3" onchange="ptfUpdateParamFields(3)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-fuchsia-400/50">
+                        <option value="ema">EMA-keresztezés</option>
+                        <option value="rsi">RSI mean-reversion</option>
+                        <option value="boll" selected>Bollinger mean-reversion</option>
+                        <option value="macd">MACD-keresztezés</option>
+                    </select>
+                    <div id="ptf-params-3" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke</label>
+            <input type="number" id="ptf-equity" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcPortfolioCombinerUI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Portfólió Kombinálása
+            </button>
+
+            <div id="portfoliocombiner-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A súlyoknak 100%-ra kell összeadniuk. Minden stratégia a TELJES, valós, betöltött árfolyamadaton fut le, egymástól függetlenül — a kombinálás csak az equity-görbék utólagos, súlyozott keverése, a mögöttes motorok (EMA/RSI/Bollinger/MACD-keresztezés) nem változnak.</p>
+        </div>
+    </div>
+
     <div id="gridopt-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -11183,6 +11261,13 @@ Mean-reversion,2.5</textarea>
                     <div class="text-[10px] text-slate-400">Valódi, élő adaton futó ablakos optimalizáció és WFE</div>
                 </div>
             </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('portfoliocombiner-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-diagram-project"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Több-Stratégiás Portfólió-Kombináló</div>
+                    <div class="text-[10px] text-slate-400">Valódi stratégiák keverése élő adaton, diverzifikációs előny számszerűsítve</div>
+                </div>
+            </button>
             <button onclick="closeMobileToolsModal(); openToolModal('corr-modal'); renderCorrelationMatrix();" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
                 <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-diagram-project"></i></span>
                 <div>
@@ -13534,6 +13619,111 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             return {
                 trades, equityCurve, winRatePct, totalReturnPct, maxDrawdownPct,
                 finalEquity: equity, buyHoldReturnPct, tradeCount: trades.length
+            };
+        }
+
+        // ================= TÖBB-STRATÉGIÁS PORTFÓLIÓ-KOMBINÁLÓ (OKTATÁSI, "BRUTÁL" FEJLESZTÉS) =================
+        // Konkrét, SZÁMOKKAL demonstrálja a diverzifikáció hatását: 2-3, egymástól
+        // FÜGGETLENÜL futtatott, meglévő (SOHA nem módosított) backtest-motort
+        // (EMA-keresztezés, RSI mean-reversion, Bollinger mean-reversion,
+        // MACD-keresztezés) futtat le UGYANAZON a valós, betöltött candleData-n,
+        // majd a felhasználó által megadott súlyokkal (tőkeallokációval) egyetlen,
+        // közös equity-görbévé keveri őket. A kulcskérdés: a kombinált portfólió
+        // maximális visszaesése (drawdown) kisebb-e, mint az egyes stratégiák
+        // súlyozott átlaga? Ha igen, az a diverzifikáció NUMERIKUSAN bizonyított
+        // előnye — nem csak elmélet, hanem a saját adatokon kiszámolt szám.
+        //
+        // Technikai megoldás: minden láb saját, teljes `startEquity`-vel fut le
+        // (a meglévő motorok interfészét nem módosítjuk), az eredmény equity-
+        // görbéjét normalizáljuk "szorzóra" (equity/startEquity), majd ezt a
+        // szorzót "sűrítjük" (dense) a candleData minden egyes indexére (előre
+        // kitöltve a motor által kihagyott bemelegítési/inaktív szakaszokon —
+        // ott a tőke nincs pozícióban, így a szorzó jogosan marad az utolsó
+        // ismert értéken). A kombinált szorzó a súlyozott összeg, ebből adódik
+        // a kombinált equity-görbe és abból a kombinált max. drawdown.
+        function ptfDenseMultiplier(equityCurve, startEquity, n) {
+            const byIndex = new Map(equityCurve.map(e => [e.index, e.equity / startEquity]));
+            const dense = new Array(n);
+            let last = 1;
+            for (let i = 0; i < n; i++) {
+                if (byIndex.has(i)) last = byIndex.get(i);
+                dense[i] = last;
+            }
+            return dense;
+        }
+
+        function ptfPearsonCorrelation(a, b) {
+            const n = a.length;
+            const retsA = [], retsB = [];
+            for (let i = 1; i < n; i++) { retsA.push(a[i] - a[i - 1]); retsB.push(b[i] - b[i - 1]); }
+            const n2 = retsA.length;
+            const meanA = retsA.reduce((s, v) => s + v, 0) / n2;
+            const meanB = retsB.reduce((s, v) => s + v, 0) / n2;
+            let cov = 0, varA = 0, varB = 0;
+            for (let i = 0; i < n2; i++) {
+                const da = retsA[i] - meanA, db = retsB[i] - meanB;
+                cov += da * db; varA += da * da; varB += db * db;
+            }
+            if (varA === 0 || varB === 0) return 0;
+            return cov / Math.sqrt(varA * varB);
+        }
+
+        function ptfRunLeg(candles, leg, startEquity) {
+            if (leg.type === 'ema') return runEMACrossoverBacktest(candles, leg.params.fast, leg.params.slow, startEquity);
+            if (leg.type === 'rsi') return runRSIReversionBacktest(candles, leg.params.period, leg.params.oversold, leg.params.overbought, startEquity);
+            if (leg.type === 'boll') return runBollingerReversionBacktest(candles, leg.params.period, leg.params.stdDev, startEquity);
+            if (leg.type === 'macd') return runMACDCrossoverBacktest(candles, leg.params.fast, leg.params.slow, leg.params.signal, startEquity);
+            throw new Error('Ismeretlen stratégia-típus: ' + leg.type);
+        }
+
+        function runPortfolioCombiner(candles, legs, startEquity) {
+            if (!candles || candles.length < 2) throw new Error('Túl kevés gyertya a kombináláshoz.');
+            if (!legs || legs.length < 2) throw new Error('Legalább 2 stratégia szükséges a kombináláshoz.');
+            const weightSum = legs.reduce((s, l) => s + l.weight, 0);
+            if (Math.abs(weightSum - 1) > 0.001) throw new Error('A súlyok összege 100% kell legyen (jelenleg ' + (weightSum * 100).toFixed(1) + '%).');
+
+            const n = candles.length;
+            const results = legs.map(leg => {
+                const r = ptfRunLeg(candles, leg, startEquity);
+                const dense = ptfDenseMultiplier(r.equityCurve, startEquity, n);
+                return { r, dense };
+            });
+
+            const blendedMult = new Array(n).fill(0);
+            for (let i = 0; i < n; i++) {
+                let s = 0;
+                for (let k = 0; k < legs.length; k++) s += legs[k].weight * results[k].dense[i];
+                blendedMult[i] = s;
+            }
+            const blendedEquity = blendedMult.map(m => m * startEquity);
+            let peak = blendedEquity[0];
+            let maxDrawdownPct = 0;
+            for (let i = 0; i < n; i++) {
+                if (blendedEquity[i] > peak) peak = blendedEquity[i];
+                const dd = peak > 0 ? (peak - blendedEquity[i]) / peak * 100 : 0;
+                if (dd > maxDrawdownPct) maxDrawdownPct = dd;
+            }
+            const finalEquity = blendedEquity[n - 1];
+            const totalReturnPct = (finalEquity - startEquity) / startEquity * 100;
+
+            const weightedAvgMaxDD = legs.reduce((s, leg, k) => s + leg.weight * results[k].r.maxDrawdownPct, 0);
+            const diversificationBenefitPct = weightedAvgMaxDD - maxDrawdownPct;
+
+            const correlations = [];
+            for (let i = 0; i < legs.length; i++) {
+                for (let j = i + 1; j < legs.length; j++) {
+                    correlations.push({ i, j, corr: ptfPearsonCorrelation(results[i].dense, results[j].dense) });
+                }
+            }
+
+            return {
+                legResults: results.map((res, k) => ({
+                    type: legs[k].type, weight: legs[k].weight,
+                    totalReturnPct: res.r.totalReturnPct, maxDrawdownPct: res.r.maxDrawdownPct,
+                    tradeCount: res.r.tradeCount, winRatePct: res.r.winRatePct
+                })),
+                blended: { totalReturnPct, maxDrawdownPct, finalEquity },
+                weightedAvgMaxDD, diversificationBenefitPct, correlations, blendedEquityCurve: blendedEquity
             };
         }
 
@@ -16050,6 +16240,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (id === 'dailylimit-modal') {
                 document.getElementById('dl-balance').value = Math.round(accountBalance);
                 document.getElementById('dl-result').innerHTML = '';
+            }
+            if (id === 'portfoliocombiner-modal') {
+                if (!document.getElementById('ptf-params-1').children.length) ptfUpdateParamFields(1);
+                if (!document.getElementById('ptf-params-2').children.length) ptfUpdateParamFields(2);
+                if (!document.getElementById('ptf-params-3').children.length) ptfUpdateParamFields(3);
             }
             document.getElementById(id).classList.remove('hidden');
         }
@@ -22365,6 +22560,99 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Nyereséges out-of-sample ablakok:</span><span class="text-white">${consistentWindows} / ${windows.length}</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">Minden ablaknál az "in" az adott szakasz ELSŐ (in-sample) részén optimalizált legjobb EMA-periódus hozama, az "out" pedig UGYANANNAK a paraméternek a teljesítménye az ablak MÁSODIK, korábban nem látott (out-of-sample) részén. A "láncolt" hozam azt mutatja, mi történt volna, ha minden ablak optimalizált paraméterét valóban élesben, sorban használtad volna — ez reálisabb becslés, mint egyetlen, a teljes adatra optimalizált paraméterkombináció eredménye.</p>
+            `;
+        }
+
+        // ================= PORTFÓLIÓ-KOMBINÁLÓ UI =================
+        const PTF_PARAM_FIELDS = {
+            ema: [{ id: 'fast', label: 'Gyors EMA', val: 9 }, { id: 'slow', label: 'Lassú EMA', val: 21 }],
+            rsi: [{ id: 'period', label: 'RSI periódus', val: 14 }, { id: 'oversold', label: 'Túladott', val: 30 }, { id: 'overbought', label: 'Túlvett', val: 70 }],
+            boll: [{ id: 'period', label: 'SMA periódus', val: 20 }, { id: 'stdDev', label: 'StdDev szorzó', val: 2 }],
+            macd: [{ id: 'fast', label: 'Gyors EMA', val: 12 }, { id: 'slow', label: 'Lassú EMA', val: 26 }, { id: 'signal', label: 'Jelvonal', val: 9 }]
+        };
+        function ptfUpdateParamFields(legNum) {
+            const typeSel = document.getElementById('ptf-type-' + legNum);
+            const container = document.getElementById('ptf-params-' + legNum);
+            if (!typeSel || !container) return;
+            const fields = PTF_PARAM_FIELDS[typeSel.value] || [];
+            container.innerHTML = fields.map(f => `
+                <div>
+                    <label class="text-[9.5px] text-slate-500">${f.label}</label>
+                    <input type="number" id="ptf-p-${legNum}-${f.id}" value="${f.val}" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            `).join('');
+        }
+        function ptfReadLeg(legNum) {
+            const weightInput = document.getElementById('ptf-weight-' + legNum);
+            const typeSel = document.getElementById('ptf-type-' + legNum);
+            const type = typeSel.value;
+            const fields = PTF_PARAM_FIELDS[type] || [];
+            const params = {};
+            for (const f of fields) {
+                const el = document.getElementById(`ptf-p-${legNum}-${f.id}`);
+                params[f.id] = el ? parseFloat(el.value) : NaN;
+            }
+            return { type, params, weight: parseFloat(weightInput.value) / 100 };
+        }
+        function calcPortfolioCombinerUI() {
+            const out = document.getElementById('portfoliocombiner-result');
+            if (!out) return;
+
+            if (typeof candleData === 'undefined' || !candleData || candleData.length < 40) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton (legalább 40 gyertya szükséges) — válts hosszabb idősíkra!</div>`;
+                return;
+            }
+
+            const legs = [ptfReadLeg(1), ptfReadLeg(2)];
+            const leg3Enabled = document.getElementById('ptf-enable-3').checked;
+            if (leg3Enabled) legs.push(ptfReadLeg(3));
+
+            for (const leg of legs) {
+                if (isNaN(leg.weight) || leg.weight < 0 || Object.values(leg.params).some(v => isNaN(v))) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméter vagy súly valamelyik stratégiánál!</div>`;
+                    return;
+                }
+            }
+
+            const startEquity = parseFloat(document.getElementById('ptf-equity').value);
+            if (isNaN(startEquity) || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen kezdő tőke!</div>`;
+                return;
+            }
+
+            let result;
+            try {
+                result = runPortfolioCombiner(candleData, legs, startEquity);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+                return;
+            }
+
+            const typeNames = { ema: 'EMA-keresztezés', rsi: 'RSI mean-rev.', boll: 'Bollinger mean-rev.', macd: 'MACD-keresztezés' };
+            const legColors = ['text-neon-cyan', 'text-amber-400', 'text-fuchsia-400'];
+            const legRowsHtml = result.legResults.map((lr, i) => `
+                <div class="flex justify-between border-t border-dark-750 pt-1.5 first:border-t-0 first:pt-0">
+                    <span class="${legColors[i]} font-semibold">${typeNames[lr.type]} (${(lr.weight * 100).toFixed(0)}%)</span>
+                    <span class="${lr.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${lr.totalReturnPct >= 0 ? '+' : ''}${lr.totalReturnPct.toFixed(2)}% · DD ${lr.maxDrawdownPct.toFixed(2)}% · ${lr.tradeCount} trade</span>
+                </div>
+            `).join('');
+
+            const corrHtml = result.correlations.map(c => {
+                const nameA = typeNames[result.legResults[c.i].type], nameB = typeNames[result.legResults[c.j].type];
+                return `<div class="flex justify-between"><span class="text-slate-400">${nameA} ↔ ${nameB} korreláció:</span><span class="text-white">${c.corr.toFixed(2)}</span></div>`;
+            }).join('');
+
+            const isBenefit = result.diversificationBenefitPct > 0.01;
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-1.5">${legRowsHtml}</div>
+                <div class="glass-card rounded-xl border ${isBenefit ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
+                    <div class="flex justify-between"><span class="text-slate-400">Kombinált portfólió hozama:</span><span class="${result.blended.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${result.blended.totalReturnPct >= 0 ? '+' : ''}${result.blended.totalReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Kombinált max. drawdown:</span><span class="text-white font-bold">${result.blended.maxDrawdownPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Stratégiák súlyozott átlag drawdownja:</span><span class="text-white">${result.weightedAvgMaxDD.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Diverzifikációs előny:</span><span class="${isBenefit ? 'text-neon-green' : 'text-amber-400'} font-bold">${result.diversificationBenefitPct >= 0 ? '+' : ''}${result.diversificationBenefitPct.toFixed(2)}% pont</span></div>
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-1">${corrHtml}</div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${isBenefit ? 'A kombinált portfólió maximális visszaesése ALACSONYABB, mint a résztvevő stratégiák súlyozott átlaga — ez a diverzifikáció NUMERIKUS bizonyítéka: amikor az egyik stratégia veszít, a másik(ok) nem feltétlenül veszítenek ugyanakkor, így a KÖZÖS tőke ingadozása kisebb, mint bármelyik egyéni stratégiáé.' : 'Ebben az esetben a kombinálás NEM csökkentette a max. drawdownt a súlyozott átlaghoz képest — ez akkor fordulhat elő, ha a stratégiák erősen együtt mozognak (magas korreláció), vagyis egyszerre buknak. A diverzifikáció csak akkor segít, ha a stratégiák logikája VALÓBAN különböző (pl. trendkövető + mean-reversion), nem csak a neve más.'}</p>
             `;
         }
 
@@ -35377,6 +35665,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             244: { tool: 'kelly-modal', cta: 'Számold ki élesben a Kelly-arányt' },
             240: { tool: 'heat-modal', cta: 'Nézd meg élesben a portfólió-hőtérképet' },
             316: { tool: 'riskbudget-modal', cta: 'Oszd el élesben a közös kockázati büdzsét a stratégiáid közt' },
+            52: { tool: 'portfoliocombiner-modal', cta: 'Mérd meg élesben, mennyit segít a stratégia-diverzifikáció' },
+            295: { tool: 'portfoliocombiner-modal', cta: 'Nézd meg számokkal, mikor NEM segít a "diverzifikáció"' },
             187: { tool: 'riskparity-modal', cta: 'Számold ki élesben a risk parity súlyokat a stratégiáid közt' },
             512: { tool: 'depeg-modal', cta: 'Ellenőrizd élesben egy stablecoin de-peg kockázatát' },
             416: { tool: 'corrmatrix-modal', cta: 'Számold ki élesben a korrelációs mátrixot' },
@@ -35615,7 +35905,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
