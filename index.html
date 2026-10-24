@@ -8598,7 +8598,7 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 </h3>
                 <button onclick="closeToolModal('candlepattern-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-3 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Hammer, Engulfing, Harami, Morning/Evening Star, Abandoned Baby, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Three Inside Up/Down, Three Outside Up/Down, Tweezer Top/Bottom, Belt Hold) az utolsó gyertyá(k)on, 3 gyertyás minták elsőbbségével, majd 2 gyertyásakkal, végül 1 gyertyásakkal.</p>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-3 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Hammer, Engulfing, Harami, Morning/Evening Star, Abandoned Baby, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Three Inside Up/Down, Three Outside Up/Down, Tweezer Top/Bottom, Belt Hold, Stick Sandwich, Matching Low/High) az utolsó gyertyá(k)on, 3 gyertyás minták elsőbbségével, majd 2 gyertyásakkal, végül 1 gyertyásakkal.</p>
 
             <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Magas,Alacsony,Záró (soronként egy, 1-3 sor)</label>
             <textarea id="candlepattern-candles" rows="4" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-500/50">110,111,95,96
@@ -21456,6 +21456,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 BEARISH_THREE_LINE_STRIKE: { name: 'Bearish Three Line Strike', bias: 'context-dependent', desc: 'A Bullish Three Line Strike tükörképe: három egymást követő, csökkenő záróárú hosszú bearish gyertya, majd egy negyedik, a harmadik záróára alatt (vagy annál lejjebb) nyitó bullish gyertya, amely az első gyertya nyitóára FÖLÉ zár — egy mozdulattal törli a három előző gyertya mozgását. Hasonlóan vitatott: sokan a korábbi LEFELÉ irány folytatódásaként értelmezik, nem fordulásként.' },
                 ABANDONED_BABY_BULLISH: { name: 'Abandoned Baby (Bullish)', bias: 'bullish', desc: 'Ritka, háromgyertyás fordulós minta: hosszú bearish gyertya, majd egy Doji, amely VALÓDI réssel (a teljes magas-alacsony tartomány átfedése nélkül) van elválasztva az első gyertyától, végül egy hosszú bullish gyertya, amely a Dojitól is valódi réssel, felfelé szakad el. A Morning Starnál szigorúbb — ott elég, ha a testek nem fedik egymást, itt a teljes tartománynak kell gap-elnie —, ezért ritkább, de erősebb jelzésnek számít.' },
                 ABANDONED_BABY_BEARISH: { name: 'Abandoned Baby (Bearish)', bias: 'bearish', desc: 'Az Abandoned Baby (Bullish) tükörképe: hosszú bullish gyertya, majd egy Doji, amely VALÓDI réssel szakad el felfelé az első gyertyától, végül egy hosszú bearish gyertya, amely a Dojitól is valódi réssel, lefelé szakad el. Az Evening Starnál szigorúbb a kettős, teljes tartományú gap miatt — ritka, de erős bearish fordulós jelzés.' },
+                STICK_SANDWICH: { name: 'Stick Sandwich (Rúd-szendvics)', bias: 'bullish', desc: 'Háromgyertyás bullish fordulós minta csökkenő trend végén: egy bearish gyertya, amelyet egy bullish gyertya követ magasabb záróárral, majd egy harmadik bearish gyertya, amely az ELSŐ gyertya záróárával majdnem pontosan azonos szinten zár — a bullish gyertya "szendvicselve" van a két, azonos szintű záróárú bearish gyertya közé. A kétszer megérintett záróár erős támaszra utal, hasonlóan az Equal Lows koncepcióhoz.' },
+                MATCHING_LOW: { name: 'Matching Low (Egyező Mélypont)', bias: 'bullish', desc: 'Két egymást követő bearish gyertya, amelyeknek a ZÁRÓÁRA (nem a kanóca) majdnem pontosan egyforma. Csökkenő trend végén, fontos szintnél megjelenve bullish fordulós jelzés — az ár kétszer is ugyanazon a záróáron állt meg, ami valódi támaszra utalhat. A Tweezer Bottomtól eltérően itt a záróár egyezik, nem a mélypont (kanóc).' },
+                MATCHING_HIGH: { name: 'Matching High (Egyező Csúcs)', bias: 'bearish', desc: 'A Matching Low tükörképe: két egymást követő bullish gyertya, amelyeknek a záróára majdnem pontosan egyforma. Emelkedő trend végén, fontos szintnél megjelenve bearish fordulós jelzés — az ár kétszer is ugyanazon a záróáron torpant meg felfelé.' },
                 NONE: { name: 'Nincs felismert minta', bias: 'none', desc: 'Az utolsó gyertya(k) nem illeszkednek egyik vizsgált klasszikus gyertyaminta kritériumaira sem a megadott küszöbértékekkel.' }
             };
 
@@ -21498,6 +21501,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     pattern = 'ABANDONED_BABY_BULLISH';
                 } else if (c1.bullish && c1.bodyPct > 50 && isDoji(c2) && c2.l > c1.h && !c3.bullish && c3.bodyPct > 50 && c3.h < c2.l) {
                     pattern = 'ABANDONED_BABY_BEARISH';
+                } else if (!c1.bullish && c1.bodyPct > 15 && c2.bullish && !c3.bullish && c3.bodyPct > 15 &&
+                    c2.c > c1.c && c2.c > c3.c && c3.o > c1.c &&
+                    Math.abs(c1.c - c3.c) <= Math.max((c1.rng + c3.rng) / 2 * 0.1, Math.max(Math.abs(c1.c), Math.abs(c3.c), 1e-9) * 0.0015)) {
+                    pattern = 'STICK_SANDWICH';
                 } else if (!c1.bullish && c1.bodyPct > 50 && c2.bodyPct < 30 && Math.max(c2.o, c2.c) < c1.c && c3.bullish && c3.bodyPct > 50 && c3.c > (c1.o + c1.c) / 2) {
                     pattern = 'MORNING_STAR';
                 } else if (c1.bullish && c1.bodyPct > 50 && c2.bodyPct < 30 && Math.min(c2.o, c2.c) > c1.c && !c3.bullish && c3.bodyPct > 50 && c3.c < (c1.o + c1.c) / 2) {
@@ -21524,11 +21531,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     if (!c2.bullish && c3.bullish && c3.l > c2.h) pattern = 'KICKING_BULLISH';
                     else if (c2.bullish && !c3.bullish && c3.h < c2.l) pattern = 'KICKING_BEARISH';
                 } else {
-                    const tweezerTol = Math.max((c2.rng + c3.rng) / 2 * 0.1, Math.max(c2.h, c3.h, Math.abs(c2.l), Math.abs(c3.l), 1e-9) * 0.0015);
-                    if (Math.abs(c2.h - c3.h) <= tweezerTol) {
-                        pattern = 'TWEEZER_TOP';
-                    } else if (Math.abs(c2.l - c3.l) <= tweezerTol) {
-                        pattern = 'TWEEZER_BOTTOM';
+                    const matchTol = Math.max((c2.rng + c3.rng) / 2 * 0.1, Math.max(Math.abs(c2.c), Math.abs(c3.c), 1e-9) * 0.0015);
+                    if (!c2.bullish && !c3.bullish && c2.bodyPct > 15 && c3.bodyPct > 15 && Math.abs(c2.c - c3.c) <= matchTol) {
+                        pattern = 'MATCHING_LOW';
+                    } else if (c2.bullish && c3.bullish && c2.bodyPct > 15 && c3.bodyPct > 15 && Math.abs(c2.c - c3.c) <= matchTol) {
+                        pattern = 'MATCHING_HIGH';
+                    } else {
+                        const tweezerTol = Math.max((c2.rng + c3.rng) / 2 * 0.1, Math.max(c2.h, c3.h, Math.abs(c2.l), Math.abs(c3.l), 1e-9) * 0.0015);
+                        if (Math.abs(c2.h - c3.h) <= tweezerTol) {
+                            pattern = 'TWEEZER_TOP';
+                        } else if (Math.abs(c2.l - c3.l) <= tweezerTol) {
+                            pattern = 'TWEEZER_BOTTOM';
+                        }
                     }
                 }
             }
@@ -34193,6 +34207,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             222: { tool: 'mtfrsi-modal', cta: 'Vesd össze élesben a rövid és hosszú idősíkú RSI-t' },
             149: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben az Abandoned Baby felismerését' },
             150: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Kicker minta felismerését' },
+            264: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Stick Sandwich felismerését' },
+            262: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Matching Low/High felismerését' },
         };
 
         function tryToolFromLesson(lessonIdx) {
