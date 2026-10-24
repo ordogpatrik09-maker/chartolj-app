@@ -7422,6 +7422,12 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
             </button>
 
             <div id="sb-result" class="mt-4"></div>
+            <div id="sb-bootstrap-section" class="hidden mt-3">
+                <button onclick="calcStrategyBuilderBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-amber-400/30 text-amber-400 hover:bg-amber-400/10 active:scale-[0.98] transition">
+                    <i class="fa-solid fa-dice mr-1"></i> Bootstrap Monte Carlo (szekvencia-kockázat)
+                </button>
+                <div id="sb-bootstrap-result" class="mt-3"></div>
+            </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
             <!-- ======== SAJÁT STRATÉGIÁK MENTÉSE ÉS ÖSSZEHASONLÍTÁSA (KITERJESZTÉS) ========
@@ -13901,6 +13907,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             sbLastRunResult = result;
             const saveBtn = document.getElementById('sb-save-btn');
             if (saveBtn) saveBtn.disabled = false;
+
+            const bootstrapSection = document.getElementById('sb-bootstrap-section');
+            const bootstrapResult = document.getElementById('sb-bootstrap-result');
+            if (bootstrapSection) bootstrapSection.classList.toggle('hidden', result.tradeCount < 2);
+            if (bootstrapResult) bootstrapResult.innerHTML = '';
         }
 
         let sbLastRunConfig = null;
@@ -14665,20 +14676,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // eredményezhetnek (szekvencia/path-kockázat). Nem módosítja a
         // runBacktestFromUI/runEMACrossoverBacktest meglévő motorját, csak
         // olvassa a már kiszámolt trades tömböt.
-        function calcBacktestBootstrap() {
-            const out = document.getElementById('backtest-bootstrap-result');
-            if (!out) return;
-            const last = window.lastBacktestResult;
-            if (!last || !last.trades || last.trades.length < 2) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges a bootstrap szimulációhoz — futtasd le újra a backtestet!</div>`;
-                return;
-            }
-
-            const tradeReturns = last.trades.map(t => t.returnPct);
-            const startEquity = last.startEquity;
-            const numSims = 2000;
-            const ddThresholdPct = 20;
-
+        // Megosztott (DRY) bootstrap-számoló: mindkét backtest-eszköz (a fix
+        // Stratégia Backtester ÉS a Vizuális Stratégia-építő) ugyanezt a
+        // tiszta, csak-számoló függvényt hívja meg — maga a számítási logika
+        // egyetlen helyen él, csak a HTML-megjelenítés külön a két eszköznél.
+        function runBootstrapMC(tradeReturns, startEquity, numSims, ddThresholdPct) {
             const finals = [];
             const maxDDs = [];
             let breaches = 0;
@@ -14710,19 +14712,53 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const ddP50 = percentile(maxDDs, 50), ddP95 = percentile(maxDDs, 95);
             const breachProbPct = breaches / numSims * 100;
             const originalFinal = startEquity * tradeReturns.reduce((acc, r) => acc * (1 + r), 1);
-            const retP5 = (p5 - startEquity) / startEquity * 100;
-            const retP50 = (p50 - startEquity) / startEquity * 100;
-            const retP95 = (p95 - startEquity) / startEquity * 100;
 
-            out.innerHTML = `
+            return {
+                retP5: (p5 - startEquity) / startEquity * 100,
+                retP50: (p50 - startEquity) / startEquity * 100,
+                retP95: (p95 - startEquity) / startEquity * 100,
+                ddP50, ddP95, breachProbPct,
+                originalReturnPct: (originalFinal - startEquity) / startEquity * 100
+            };
+        }
+
+        function renderBootstrapMCHtml(stats, tradeCount, numSims, ddThresholdPct) {
+            return `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Eredeti (egyszeri) sorrend hozama:</span><span class="text-white">${((originalFinal - startEquity) / startEquity * 100).toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${numSims} újrasorsolt szekvencia, hozam P5/P50/P95:</span><span class="text-white">${retP5.toFixed(1)}% / ${retP50.toFixed(1)}% / ${retP95.toFixed(1)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown P50/P95:</span><span class="text-amber-400">${ddP50.toFixed(2)}% / ${ddP95.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">P(max. drawdown ≥ ${ddThresholdPct}%):</span><span class="${breachProbPct > 20 ? 'text-neon-red' : 'text-neon-green'}">${breachProbPct.toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eredeti (egyszeri) sorrend hozama:</span><span class="text-white">${stats.originalReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${numSims} újrasorsolt szekvencia, hozam P5/P50/P95:</span><span class="text-white">${stats.retP5.toFixed(1)}% / ${stats.retP50.toFixed(1)}% / ${stats.retP95.toFixed(1)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown P50/P95:</span><span class="text-amber-400">${stats.ddP50.toFixed(2)}% / ${stats.ddP95.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">P(max. drawdown ≥ ${ddThresholdPct}%):</span><span class="${stats.breachProbPct > 20 ? 'text-neon-red' : 'text-neon-green'}">${stats.breachProbPct.toFixed(1)}%</span></div>
                 </div>
-                <p class="text-[10px] text-slate-400 leading-relaxed">Ugyanazokat a ${tradeReturns.length} trade-hozamot ${numSims}-szer véletlenszerűen újrasorsoltuk (visszatevéssel mintavételezve) — ez megmutatja, hogy a backtest EREDETI sorrendje csak EGY lehetséges kimenet a sok közül. Ha a P5 és P95 hozam közti sáv nagyon széles, vagy a drawdown-küszöb áttörésének esélye magas, az arra figyelmeztet, hogy a stratégia eredménye erősen függ a trade-ek véletlenszerű sorrendjétől (szekvencia-kockázat), nem csak a stratégia "minőségétől".</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed">Ugyanazokat a ${tradeCount} trade-hozamot ${numSims}-szer véletlenszerűen újrasorsoltuk (visszatevéssel mintavételezve) — ez megmutatja, hogy a backtest EREDETI sorrendje csak EGY lehetséges kimenet a sok közül. Ha a P5 és P95 hozam közti sáv nagyon széles, vagy a drawdown-küszöb áttörésének esélye magas, az arra figyelmeztet, hogy a stratégia eredménye erősen függ a trade-ek véletlenszerű sorrendjétől (szekvencia-kockázat), nem csak a stratégia "minőségétől".</p>
             `;
+        }
+
+        function calcBacktestBootstrap() {
+            const out = document.getElementById('backtest-bootstrap-result');
+            if (!out) return;
+            const last = window.lastBacktestResult;
+            if (!last || !last.trades || last.trades.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges a bootstrap szimulációhoz — futtasd le újra a backtestet!</div>`;
+                return;
+            }
+            const tradeReturns = last.trades.map(t => t.returnPct);
+            const numSims = 2000, ddThresholdPct = 20;
+            const stats = runBootstrapMC(tradeReturns, last.startEquity, numSims, ddThresholdPct);
+            out.innerHTML = renderBootstrapMCHtml(stats, tradeReturns.length, numSims, ddThresholdPct);
+        }
+
+        function calcStrategyBuilderBootstrap() {
+            const out = document.getElementById('sb-bootstrap-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 2 || !sbLastRunConfig) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges a bootstrap szimulációhoz — futtasd le újra a stratégiát!</div>`;
+                return;
+            }
+            const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
+            const numSims = 2000, ddThresholdPct = 20;
+            const stats = runBootstrapMC(tradeReturns, sbLastRunConfig.startEquity, numSims, ddThresholdPct);
+            out.innerHTML = renderBootstrapMCHtml(stats, tradeReturns.length, numSims, ddThresholdPct);
         }
 
         function calcRSISeries(closes, period = 14) {
