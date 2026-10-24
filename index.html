@@ -1610,6 +1610,13 @@
                                 <div class="text-[10px] text-slate-400">Bullish/bearish failure swing mintázat-keresés az RSI-n</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('mtfrsi-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Multi-Timeframe RSI Rétegezés</div>
+                                <div class="text-[10px] text-slate-400">Rövid és hosszú idősíkú RSI egyidejű összevetése</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('williamsr-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler-combined"></i></span>
                             <div>
@@ -7963,6 +7970,154 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= MULTI-TIMEFRAME RSI RÉTEGEZÉS KALKULÁTOR (OKTATÁSI) =================
+         A megadott (rövidebb idősíkú) záróár-sorozatból KÉT RSI-t számol ugyanazzal
+         a Wilder-simítású calcRSISeries() függvénnyel:
+         1) a nyers sorozaton — ez a RÖVID idősík RSI-je;
+         2) egy HOSSZABB idősíkon, amit az aggregációs faktor (N) szerint képez: minden
+            N egymást követő rövid-idősíkos záróárból csak a csoport UTOLSÓ elemét
+            tartja meg (pontosan úgy, ahogy egy valódi magasabb idősíkos gyertya
+            záróára is az utolsó alacsonyabb-idősíkos záróár) — ez a tömörített
+            sorozat adja a HOSSZÚ idősík RSI-jének alapját.
+         A két RSI egyidejű túladott/túlvett/neutrális állapotát hasonlítja össze, és
+         a leckében tanult rétegezési logika szerint ad interpretációt (egyező jelzés
+         = erősebb szignál; ellentmondó jelzés = óvatosság; rövid extrém + hosszú
+         neutrális = valószínűbb, hogy csak rövid távú korrekció/pullback, nem fordulat). -->
+    <div id="mtfrsi-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-sky-400"></i> Multi-Timeframe RSI Rétegezés
+                </h3>
+                <button onclick="closeToolModal('mtfrsi-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a RÖVIDEBB idősík záróárait időrendben, soronként egyet. A kalkulátor kiszámolja ezen a rövid távú RSI-t, majd az "Aggregáció (N)" szerint minden N egymást követő árat egy HOSSZABB idősíkos gyertyává tömörít (a csoport utolsó záróárát véve a tömörített gyertya záróárának), és a tömörített sorozaton is kiszámolja az RSI-t — pontosan a leckében tanult "egyszerre nézed a rövid és hosszú távú momentumot" elv szerint.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak — rövidebb idősík (soronként egy, időrendben)</label>
+            <textarea id="mtfrsi-prices" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50" placeholder="100&#10;99.8&#10;...">100
+99.8
+99.58
+99.42
+99.17
+98.85
+98.59
+98.27
+97.75
+97.48
+97.24
+96.97
+96.55
+96.3
+96.13
+95.98
+95.78
+95.31
+94.81
+94.52
+94.3
+93.82
+93.45
+93.02
+92.67
+92.39
+91.85
+91.52
+91.28
+90.9
+90.64
+90.14
+89.95
+89.59
+89.11
+88.92
+88.44
+88.03
+87.78
+87.35
+86.81
+87.1
+87.16
+87.36
+87.64
+87.73
+87.93
+87.95
+87.97
+88.09
+88.33
+88.59
+88.7
+88.85
+88.89
+89.18
+89.12
+88.95
+88.86
+88.79
+88.81
+88.74
+88.74
+88.83
+88.72
+88.67
+88.49
+88.45
+88.38
+88.15
+88.05
+87.76
+87.47
+87.36
+87.21
+87.02
+87.1
+86.83
+86.65
+86.51
+86.41
+86.73
+86.94
+87.12
+87.41
+87.79
+88.03
+88.3
+88.61
+88.9
+89.3
+89.72
+89.89
+90.08
+90.32
+90.61</textarea>
+
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">RSI periódus</label>
+                    <input type="number" id="mtfrsi-period" value="14" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Aggregáció (N)</label>
+                    <input type="number" id="mtfrsi-aggregation" value="4" step="1" min="2" max="20" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">OS / OB küszöb</label>
+                    <div class="flex gap-1 mt-1">
+                        <input type="number" id="mtfrsi-oversold" value="30" step="1" min="1" max="99" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50">
+                        <input type="number" id="mtfrsi-overbought" value="70" step="1" min="1" max="99" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="calcMTFRSI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-sky-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Rétegezés Kiszámolása
+            </button>
+
+            <div id="mtfrsi-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A "hosszabb idősík" itt a rövid idősíkból képzett N-szeres tömörítés — ez közelíti (de nem adatfolyam-szinten egyezteti) pl. egy 4×5 perces = 20 perces gyertyasor RSI-jét. Minél nagyobb N, annál kevesebb tömörített gyertya áll elő, ezért a hosszú idősíkú RSI-hez arányosan több rövid idősíkos adat szükséges (legalább N×(periódus+1) rövid idősíkos ár).</p>
+        </div>
+    </div>
+
     <!-- ================= VOLUME-WEIGHTED MOVING AVERAGE (VWMA) KALKULÁTOR (OKTATÁSI) =================
          VWMA = Σ(Close×Volume) / ΣVolume, az N-periódusos gördülő ablakon belül. -->
     <div id="vwma-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -10371,6 +10526,13 @@ SOL Long,1</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">RSI Failure Swing Detektor</div>
                     <div class="text-[10px] text-slate-400">Bullish/bearish failure swing mintázat-keresés az RSI-n</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('mtfrsi-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-sky-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Multi-Timeframe RSI Rétegezés</div>
+                    <div class="text-[10px] text-slate-400">Rövid és hosszú idősíkú RSI egyidejű összevetése</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('williamsr-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-purple/30 transition text-left">
@@ -17734,6 +17896,123 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 ${rows}
                 <p class="text-[10px] text-slate-500 font-mono mt-1">Összesen ${patterns.length} mintázat (${bullish.length} bullish, ${bearish.length} bearish) · ${pivots.length} helyi RSI-pivot az árindexek ${minIdx}–${maxIdx} között.</p>
+            `;
+        }
+
+        // ================= MULTI-TIMEFRAME RSI RÉTEGEZÉS KALKULÁTOR (OKTATÁSI) =================
+        // Rövid idősík RSI-je a nyers záróár-sorozaton; hosszú idősík RSI-je az N-es
+        // tömböző aggregáción (minden N egymást követő záróárból a csoport UTOLSÓ
+        // elemét tartjuk meg, mint a tömörített gyertya záróárát) — mindkettő a
+        // calcRSISeries() közös Wilder-simítású függvényével számolva, hogy a két
+        // idősík RSI-je egymással is bit-pontosan összevethető legyen.
+        function calcMTFRSI() {
+            const pricesEl = document.getElementById('mtfrsi-prices');
+            const periodEl = document.getElementById('mtfrsi-period');
+            const aggEl = document.getElementById('mtfrsi-aggregation');
+            const oversoldEl = document.getElementById('mtfrsi-oversold');
+            const overboughtEl = document.getElementById('mtfrsi-overbought');
+            const out = document.getElementById('mtfrsi-result');
+            if (!pricesEl || !periodEl || !aggEl || !oversoldEl || !overboughtEl || !out) return;
+
+            const lines = pricesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const prices = [];
+            for (const line of lines) {
+                const v = parseFloat(line.replace(',', '.'));
+                if (!isNaN(v)) prices.push(v);
+            }
+            const period = parseInt(periodEl.value);
+            const agg = parseInt(aggEl.value);
+            const oversold = parseFloat(oversoldEl.value);
+            const overbought = parseFloat(overboughtEl.value);
+
+            if (prices.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább egy érvényes záróárat!</div>`;
+                return;
+            }
+            if (!period || period < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az RSI periódusnak legalább 2-nek kell lennie!</div>`;
+                return;
+            }
+            if (!agg || agg < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az aggregációs faktornak (N) legalább 2-nek kell lennie — N=1 esetén a "hosszabb" idősík megegyezne a rövidebbel, így nincs mit rétegezni!</div>`;
+                return;
+            }
+            if (isNaN(oversold) || isNaN(overbought) || oversold <= 0 || overbought >= 100 || oversold >= overbought) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen küszöbök — a túladott szintnek 0 és a túlvett szint között kell lennie, és a túlvett szintnek 100 alatt!</div>`;
+                return;
+            }
+            if (prices.length < period + 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább ${period + 1} záróárat a rövid idősíkú RSI-hez!</div>`;
+                return;
+            }
+
+            // --- Hosszú idősík: minden N egymást követő záróár csoport UTOLSÓ eleme ---
+            const aggregated = [];
+            for (let i = agg - 1; i < prices.length; i += agg) {
+                aggregated.push(prices[i]);
+            }
+            if (aggregated.length < period + 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A tömörített (hosszú idősíkú) sorozat csak ${aggregated.length} teljes gyertyát ad N=${agg} mellett — legalább ${period + 1} kell a hosszú idősíkú RSI-hez. Adj meg több rövid idősíkos árat, vagy csökkentsd N-t / a periódust!</div>`;
+                return;
+            }
+
+            const shortRSISeries = calcRSISeries(prices, period);
+            const longRSISeries = calcRSISeries(aggregated, period);
+            const shortRSI = shortRSISeries[shortRSISeries.length - 1];
+            const longRSI = longRSISeries[longRSISeries.length - 1];
+
+            function classify(v) {
+                if (v >= overbought) return { label: 'Túlvett', color: 'text-neon-red' };
+                if (v <= oversold) return { label: 'Túladott', color: 'text-neon-green' };
+                return { label: 'Neutrális', color: 'text-slate-300' };
+            }
+            const shortClass = classify(shortRSI);
+            const longClass = classify(longRSI);
+
+            // --- Rétegezett interpretáció a lecke logikája szerint ---
+            const shortOS = shortRSI <= oversold, shortOB = shortRSI >= overbought;
+            const longOS = longRSI <= oversold, longOB = longRSI >= overbought;
+            let verdict, verdictColor;
+            if (shortOS && longOS) {
+                verdict = 'EGYEZŐ TÚLADOTT jelzés mindkét idősíkon — ez sokkal megbízhatóbb jelzés egy lehetséges fordulatra/pattanásra felfelé, mint ha csak egyetlen idősík lenne túladott.';
+                verdictColor = 'text-neon-green';
+            } else if (shortOB && longOB) {
+                verdict = 'EGYEZŐ TÚLVETT jelzés mindkét idősíkon — ez sokkal megbízhatóbb jelzés egy lehetséges korrekcióra/fordulatra lefelé, mint ha csak egyetlen idősík lenne túlvett.';
+                verdictColor = 'text-neon-red';
+            } else if (shortOS && longOB) {
+                verdict = 'ELLENTMONDÓ jelzés: a rövid idősík túladott, míg a hosszú idősík túlvett — ez nem egy tiszta rétegezett szignál, extra óvatosság indokolt, mielőtt bármelyik jelzésre lépnél.';
+                verdictColor = 'text-neon-amber';
+            } else if (shortOB && longOS) {
+                verdict = 'ELLENTMONDÓ jelzés: a rövid idősík túlvett, míg a hosszú idősík túladott — ez nem egy tiszta rétegezett szignál, extra óvatosság indokolt, mielőtt bármelyik jelzésre lépnél.';
+                verdictColor = 'text-neon-amber';
+            } else if (shortOS) {
+                verdict = 'A rövid idősík túladott, de a hosszú idősík messze van ettől (neutrális) — a lecke szerint ez inkább egy RÖVID TÁVÚ KORREKCIÓT jelezhet a hosszabb távú trenden belül, nem egy teljes trendfordulatot.';
+                verdictColor = 'text-neon-cyan';
+            } else if (shortOB) {
+                verdict = 'A rövid idősík túlvett, de a hosszú idősík messze van ettől (neutrális) — a lecke szerint ez inkább egy RÖVID TÁVÚ PULLBACKET/KORREKCIÓT jelezhet a hosszabb távú trenden belül, nem egy teljes trendfordulatot.';
+                verdictColor = 'text-neon-cyan';
+            } else {
+                verdict = 'Nincs extrém jelzés semelyik idősíkon — jelenleg nincs erős, rétegezett RSI-szignál, csak a két érték önmagában informatív.';
+                verdictColor = 'text-slate-300';
+            }
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="glass-card rounded-xl border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-400 mb-1">Rövid idősík RSI (${period})</div>
+                        <div class="text-lg font-extrabold ${shortClass.color}">${shortRSI.toFixed(2)}</div>
+                        <div class="text-[10px] font-semibold ${shortClass.color}">${shortClass.label}</div>
+                    </div>
+                    <div class="glass-card rounded-xl border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-400 mb-1">Hosszú idősík RSI (${period}, N=${agg})</div>
+                        <div class="text-lg font-extrabold ${longClass.color}">${longRSI.toFixed(2)}</div>
+                        <div class="text-[10px] font-semibold ${longClass.color}">${longClass.label}</div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl border border-sky-400/30 bg-sky-400/[0.05] p-3">
+                    <div class="text-[11px] font-semibold ${verdictColor} leading-relaxed">${verdict}</div>
+                </div>
+                <p class="text-[10px] text-slate-500 font-mono mt-2">Rövid idősík: ${prices.length} záróár · Hosszú idősík: ${aggregated.length} tömörített gyertya (N=${agg}).</p>
             `;
         }
 
@@ -33868,6 +34147,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             430: { tool: 'feestruct-modal', cta: 'Hasonlítsd össze élesben a fix és a százalékos jutalék modellt' },
             451: { tool: 'stresstest-modal', cta: 'Futtasd le élesben a stressz-teszt forgatókönyveidet' },
             172: { tool: 'rsifailure-modal', cta: 'Keresd meg élesben a bullish/bearish RSI Failure Swinget' },
+            222: { tool: 'mtfrsi-modal', cta: 'Vesd össze élesben a rövid és hosszú idősíkú RSI-t' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -33877,7 +34157,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
