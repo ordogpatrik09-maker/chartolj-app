@@ -8598,7 +8598,7 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 </h3>
                 <button onclick="closeToolModal('candlepattern-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-3 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Hammer, Engulfing, Harami, Morning/Evening Star, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Three Inside Up/Down, Three Outside Up/Down) az utolsó gyertyá(k)on, 3 gyertyás minták elsőbbségével, majd 2 gyertyásakkal, végül 1 gyertyásakkal.</p>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-3 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Hammer, Engulfing, Harami, Morning/Evening Star, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Three Inside Up/Down, Three Outside Up/Down, Tweezer Top/Bottom) az utolsó gyertyá(k)on, 3 gyertyás minták elsőbbségével, majd 2 gyertyásakkal, végül 1 gyertyásakkal.</p>
 
             <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Magas,Alacsony,Záró (soronként egy, 1-3 sor)</label>
             <textarea id="candlepattern-candles" rows="4" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-500/50">110,111,95,96
@@ -21435,6 +21435,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 DARK_CLOUD_COVER: { name: 'Dark Cloud Cover (Sötét Felhő)', bias: 'bearish', desc: 'Bullish gyertya után egy bearish gyertya nyit a csúcspont felett, majd az előző test felénél lejjebb zár. Bearish fordulós jelzés uptrend tetején.' },
                 KICKING_BULLISH: { name: 'Kicking (Bullish)', bias: 'bullish', desc: 'Egy bearish marubozu után egy felfelé réssel nyíló bullish marubozu jön, átfedés nélkül. Nagyon erős, ritka fordulós jelzés — a rés mutatja a hirtelen hangulatváltást.' },
                 KICKING_BEARISH: { name: 'Kicking (Bearish)', bias: 'bearish', desc: 'Egy bullish marubozu után egy lefelé réssel nyíló bearish marubozu jön, átfedés nélkül. Nagyon erős, ritka bearish fordulós jelzés.' },
+                TWEEZER_TOP: { name: 'Tweezer Top (Csipesz Tető)', bias: 'bearish', desc: 'Két egymást követő gyertya, amelyeknek a csúcsa (magas pontja) szinte pontosan egyforma — az árfolyam kétszer egymás után ugyanott torpant meg. Emelkedő trend végén, fontos ellenállásnál megjelenve bearish fordulós jelzés; megbízhatóbb, ha a két gyertya színe ellentétes.' },
+                TWEEZER_BOTTOM: { name: 'Tweezer Bottom (Csipesz Alj)', bias: 'bullish', desc: 'A Tweezer Top tükörképe: két egymást követő gyertya, amelyeknek a mélypontja szinte pontosan egyforma — az árfolyam kétszer egymás után ugyanott talált támaszt. Csökkenő trend végén, fontos támasznál megjelenve bullish fordulós jelzés; megbízhatóbb, ha a két gyertya színe ellentétes.' },
                 MARUBOZU_BULLISH: { name: 'Marubozu (Bullish)', bias: 'bullish', desc: 'Gyakorlatilag nincs kanóc — a gyertya a nyitástól a csúcsig egyenesen felment. Erőteljes, egyoldalú vételi nyomást jelez, folytatódó trend mellett szól.' },
                 MARUBOZU_BEARISH: { name: 'Marubozu (Bearish)', bias: 'bearish', desc: 'Gyakorlatilag nincs kanóc — a gyertya a nyitástól a mélypontig egyenesen lement. Erőteljes, egyoldalú eladási nyomást jelez, folytatódó letörést sugall.' },
                 HAMMER_OR_HANGINGMAN: { name: 'Hammer / Hanging Man', bias: 'context-dependent', desc: 'Kis test a tartomány felső részén, hosszú alsó kanóccal, minimális felső kanóccal. Downtrend után Hammer (bullish fordulás), uptrend után Hanging Man (bearish figyelmeztetés) — az irány a megelőző trendtől függ, ezért mindig nézd meg a kontextust.' },
@@ -21502,6 +21504,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 } else if (isMarubozu(c2) && isMarubozu(c3) && c2.bullish !== c3.bullish) {
                     if (!c2.bullish && c3.bullish && c3.l > c2.h) pattern = 'KICKING_BULLISH';
                     else if (c2.bullish && !c3.bullish && c3.h < c2.l) pattern = 'KICKING_BEARISH';
+                } else {
+                    const tweezerTol = Math.max((c2.rng + c3.rng) / 2 * 0.1, Math.max(c2.h, c3.h, Math.abs(c2.l), Math.abs(c3.l), 1e-9) * 0.0015);
+                    if (Math.abs(c2.h - c3.h) <= tweezerTol) {
+                        pattern = 'TWEEZER_TOP';
+                    } else if (Math.abs(c2.l - c3.l) <= tweezerTol) {
+                        pattern = 'TWEEZER_BOTTOM';
+                    }
                 }
             }
 
@@ -21523,6 +21532,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const colorMap = { bullish: 'text-neon-green', bearish: 'text-neon-red', neutral: 'text-amber-400', 'context-dependent': 'text-amber-400', none: 'text-slate-400' };
             const colorClass = colorMap[info.bias] || 'text-slate-400';
 
+            let extraNote = '';
+            if ((pattern === 'TWEEZER_TOP' || pattern === 'TWEEZER_BOTTOM') && c2) {
+                extraNote = c2.bullish !== c3.bullish
+                    ? `<p class="text-[10px] text-neon-green font-semibold mt-2">✓ A két gyertya színe ellentétes — ez erősebbé teszi a jelzést.</p>`
+                    : `<p class="text-[10px] text-slate-500 mt-2">A két gyertya színe azonos — ellentétes szín esetén a jelzés erősebb lenne.</p>`;
+            }
+
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Utolsó gyertya teste:</span><span class="text-white">${c3.bodyPct.toFixed(1)}%</span></div>
@@ -21530,6 +21546,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-xs font-bold ${colorClass} mb-1">${info.name}</p>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${info.desc}</p>
+                ${extraNote}
             `;
         }
 
@@ -33940,6 +33957,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             296: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Three Inside Up/Three Inside Down felismerését' },
             437: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Three Outside Up felismerését' },
             449: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Three Outside Down felismerését' },
+            140: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Tweezer Top/Bottom felismerését' },
             244: { tool: 'kelly-modal', cta: 'Számold ki élesben a Kelly-arányt' },
             240: { tool: 'heat-modal', cta: 'Nézd meg élesben a portfólió-hőtérképet' },
             316: { tool: 'riskbudget-modal', cta: 'Oszd el élesben a közös kockázati büdzsét a stratégiáid közt' },
