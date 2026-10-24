@@ -8598,7 +8598,7 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 </h3>
                 <button onclick="closeToolModal('candlepattern-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-3 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Hammer, Engulfing, Harami, Morning/Evening Star, Abandoned Baby, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Three Inside Up/Down, Three Outside Up/Down, Tweezer Top/Bottom, Belt Hold, Stick Sandwich, Matching Low/High) az utolsó gyertyá(k)on, 3 gyertyás minták elsőbbségével, majd 2 gyertyásakkal, végül 1 gyertyásakkal.</p>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-3 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Hammer, Engulfing, Harami, Morning/Evening Star, Abandoned Baby, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Three Inside Up/Down, Three Outside Up/Down, Tweezer Top/Bottom, Belt Hold, Stick Sandwich, Matching Low/High, Homing Pigeon, Separating Lines) az utolsó gyertyá(k)on, 3 gyertyás minták elsőbbségével, majd 2 gyertyásakkal, végül 1 gyertyásakkal.</p>
 
             <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Magas,Alacsony,Záró (soronként egy, 1-3 sor)</label>
             <textarea id="candlepattern-candles" rows="4" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-500/50">110,111,95,96
@@ -21459,6 +21459,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 STICK_SANDWICH: { name: 'Stick Sandwich (Rúd-szendvics)', bias: 'bullish', desc: 'Háromgyertyás bullish fordulós minta csökkenő trend végén: egy bearish gyertya, amelyet egy bullish gyertya követ magasabb záróárral, majd egy harmadik bearish gyertya, amely az ELSŐ gyertya záróárával majdnem pontosan azonos szinten zár — a bullish gyertya "szendvicselve" van a két, azonos szintű záróárú bearish gyertya közé. A kétszer megérintett záróár erős támaszra utal, hasonlóan az Equal Lows koncepcióhoz.' },
                 MATCHING_LOW: { name: 'Matching Low (Egyező Mélypont)', bias: 'bullish', desc: 'Két egymást követő bearish gyertya, amelyeknek a ZÁRÓÁRA (nem a kanóca) majdnem pontosan egyforma. Csökkenő trend végén, fontos szintnél megjelenve bullish fordulós jelzés — az ár kétszer is ugyanazon a záróáron állt meg, ami valódi támaszra utalhat. A Tweezer Bottomtól eltérően itt a záróár egyezik, nem a mélypont (kanóc).' },
                 MATCHING_HIGH: { name: 'Matching High (Egyező Csúcs)', bias: 'bearish', desc: 'A Matching Low tükörképe: két egymást követő bullish gyertya, amelyeknek a záróára majdnem pontosan egyforma. Emelkedő trend végén, fontos szintnél megjelenve bearish fordulós jelzés — az ár kétszer is ugyanazon a záróáron torpant meg felfelé.' },
+                HOMING_PIGEON: { name: 'Homing Pigeon (Hazatérő Galamb)', bias: 'bullish', desc: 'A Harami bearish "rokona": két egymást követő BEARISH (piros) gyertya, ahol a második, kisebb testű gyertya teljesen az első testén belül van. A hagyományos Haramival ellentétben itt mindkét gyertya azonos (piros) színű — a kisebb második test mégis a csökkenő lendület gyengülését, lehetséges bullish fordulást jelezheti, különösen letesztelt támasznál megjelenve. Mint minden Harami-típusú mintánál, itt is megerősítést igényel a következő gyertyától.' },
+                SEPARATING_LINES_BULLISH: { name: 'Bullish Separating Lines', bias: 'bullish', desc: 'Két gyertya, amelyek UGYANARRÓL a nyitóárról indulnak, de ellentétes irányba mozognak: egy bearish (piros) gyertyát egy bullish (zöld) gyertya követ, amely majdnem pontosan az első gyertya nyitóárán nyit, majd tovább emelkedik. Emelkedő trendben megjelenve folytatódási (nem fordulós) jelzés — a második gyertya "elválasztja" magát az ellentétes színű előzőtől, visszaigazolva a fő trend irányát. Ritkább, kevésbé tanulmányozott minta, elsődleges stratégia alapjául nem ajánlott.' },
+                SEPARATING_LINES_BEARISH: { name: 'Bearish Separating Lines', bias: 'bearish', desc: 'A Bullish Separating Lines tükörképe: egy bullish (zöld) gyertyát egy bearish (piros) gyertya követ, amely majdnem pontosan ugyanazon a nyitóáron nyit, mint az előző, majd tovább csökken. Csökkenő trendben megjelenve folytatódási jelzés, amely visszaigazolja a lefelé irányt. Önmagában ritka és gyenge jelzés, megerősítést igényel.' },
                 NONE: { name: 'Nincs felismert minta', bias: 'none', desc: 'Az utolsó gyertya(k) nem illeszkednek egyik vizsgált klasszikus gyertyaminta kritériumaira sem a megadott küszöbértékekkel.' }
             };
 
@@ -21522,7 +21525,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 } else if (c2.bullish && !c3.bullish && c3.o >= c2.c && c3.c <= c2.o && c3.body > c2.body) {
                     pattern = 'BEARISH_ENGULFING';
                 } else if (c2.bodyPct > 40 && hi3 < hi2 && lo3 > lo2) {
-                    pattern = isDoji(c3) ? 'HARAMI_CROSS' : 'HARAMI';
+                    if (isDoji(c3)) {
+                        pattern = 'HARAMI_CROSS';
+                    } else if (!c2.bullish && !c3.bullish) {
+                        pattern = 'HOMING_PIGEON';
+                    } else {
+                        pattern = 'HARAMI';
+                    }
                 } else if (!c2.bullish && c3.bullish && c3.o < c2.l && c3.c > (c2.o + c2.c) / 2 && c3.c < c2.o) {
                     pattern = 'PIERCING_LINE';
                 } else if (c2.bullish && !c3.bullish && c3.o > c2.h && c3.c < (c2.o + c2.c) / 2 && c3.c > c2.o) {
@@ -21530,6 +21539,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 } else if (isMarubozu(c2) && isMarubozu(c3) && c2.bullish !== c3.bullish) {
                     if (!c2.bullish && c3.bullish && c3.l > c2.h) pattern = 'KICKING_BULLISH';
                     else if (c2.bullish && !c3.bullish && c3.h < c2.l) pattern = 'KICKING_BEARISH';
+                } else if (c2.bullish !== c3.bullish && c2.bodyPct >= 40 && c3.bodyPct >= 40 &&
+                    Math.abs(c2.o - c3.o) <= Math.max((c2.rng + c3.rng) / 2 * 0.1, Math.max(Math.abs(c2.o), Math.abs(c3.o), 1e-9) * 0.0015)) {
+                    pattern = c3.bullish ? 'SEPARATING_LINES_BULLISH' : 'SEPARATING_LINES_BEARISH';
                 } else {
                     const matchTol = Math.max((c2.rng + c3.rng) / 2 * 0.1, Math.max(Math.abs(c2.c), Math.abs(c3.c), 1e-9) * 0.0015);
                     if (!c2.bullish && !c3.bullish && c2.bodyPct > 15 && c3.bodyPct > 15 && Math.abs(c2.c - c3.c) <= matchTol) {
@@ -34209,6 +34221,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             150: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Kicker minta felismerését' },
             264: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Stick Sandwich felismerését' },
             262: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Matching Low/High felismerését' },
+            363: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Homing Pigeon felismerését' },
+            263: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Separating Lines felismerését' },
         };
 
         function tryToolFromLesson(lessonIdx) {
