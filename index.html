@@ -1878,6 +1878,13 @@
                                 <div class="text-[10px] text-slate-400">Átfedés-mentes ártartomány-rések 3 gyertyán</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('structure-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-indigo-400/10 text-indigo-400 border border-indigo-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-diagram-project"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Piaci Struktúra (BOS/CHoCH) Elemző</div>
+                                <div class="text-[10px] text-slate-400">Swing-sorozatból: trendfolytatás vagy karakterváltás?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('pyramid-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chess-rook"></i></span>
                             <div>
@@ -9306,6 +9313,53 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= PIACI STRUKTÚRA (BOS/CHoCH) ELEMZŐ (OKTATÁSI) =================
+         Determinisztikus, lépésről lépésre feldolgozó algoritmus a swing-pontok
+         (szigorúan váltakozó csúcs/mélypont) sorozatán:
+         - trend kezdetben ISMERETLEN (null); csak az első irányított töréskor áll be.
+         - minden ÚJ csúcsot az UTOLSÓ regisztrált csúcshoz hasonlítunk, minden ÚJ
+           mélypontot az UTOLSÓ regisztrált mélyponthoz.
+         - csúcs > utolsó csúcs: ha trend === DOWN → CHoCH (felfelé, karakterváltás);
+           ha trend === UP → BOS (felfelé, folytatás); ha trend === null → kezdeti
+           irány megállapítása (UP).
+         - mélypont < utolsó mélypont: tükörkép logika lefelé (CHoCH/BOS/kezdeti DOWN).
+         - csúcs < utolsó csúcs (LH) vagy mélypont > utolsó mélypont (HL): nincs
+           töréses esemény, csak leíró jelzés (gyengülés/megerősítés), a trend nem
+           változik. Minden összehasonlítás után az "utolsó csúcs/mélypont" referencia
+           mindig a LEGÚJABB swingre frissül (nem egy régi, fix szintre). -->
+    <div id="structure-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-diagram-project text-indigo-400"></i> Piaci Struktúra (BOS/CHoCH) Elemző
+                </h3>
+                <button onclick="closeToolModal('structure-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az azonosított swing-pontokat (Ár,HIGH vagy Ár,LOW formátumban, soronként egyet, időrendben, SZIGORÚAN váltakozva). A kalkulátor minden új csúcsot/mélypontot az előzőhöz hasonlít: ha a trend IRÁNYÁBAN tör ki egy új szintet, az <strong class="text-white">Break of Structure (BOS)</strong> — a trend folytatódik; ha a trend ELLEN tör ki, az <strong class="text-white">Change of Character (CHoCH)</strong> — ez az első jele, hogy a struktúra megfordulhat.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Swing pontok: Ár,HIGH vagy Ár,LOW (soronként egy, váltakozva)</label>
+            <textarea id="structure-swings" rows="9" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-indigo-400/50">100,LOW
+110,HIGH
+105,LOW
+120,HIGH
+112,LOW
+130,HIGH
+108,LOW
+118,HIGH
+95,LOW
+105,HIGH
+100,LOW
+112,HIGH</textarea>
+
+            <button onclick="calcMarketStructure()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-indigo-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Struktúra Elemzése
+            </button>
+
+            <div id="structure-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">FONTOS: a kalkulátor a MEGADOTT swing-sorozatot elemzi — a swingek (lokális csúcsok/mélypontok) azonosítása magán a charton külön készség, ide már a kiválasztott fordulópontokat kell behoznod. A CHoCH csak FIGYELMEZETŐ jel (a korábbi trend ellen történt első törés), nem automatikus belépési szignál — sok esetben csupán egy mélyebb korrekció, és csak egy rákövetkező BOS erősíti meg az új irányt.</p>
+        </div>
+    </div>
+
     <div id="ladderbreak-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -11678,6 +11732,13 @@ Mean-reversion,2.5</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Fair Value Gap (FVG) Kereső</div>
                     <div class="text-[10px] text-slate-400">Átfedés-mentes ártartomány-rések 3 gyertyán</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('structure-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-indigo-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-indigo-400/10 text-indigo-400 border border-indigo-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-diagram-project"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Piaci Struktúra (BOS/CHoCH) Elemző</div>
+                    <div class="text-[10px] text-slate-400">Swing-sorozatból: trendfolytatás vagy karakterváltás?</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('pyramid-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-amber-500/30 transition text-left">
@@ -25728,6 +25789,122 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // Piaci Struktúra (BOS/CHoCH) Elemző: lásd a modal fölötti HTML-kommentet
+        // a pontos algoritmusért. Minden swinget csakis az ELŐZŐ, VELE AZONOS
+        // TÍPUSÚ (azaz a legutóbb regisztrált csúcshoz, illetve a legutóbb
+        // regisztrált mélyponthoz) swinghez hasonlítunk — a referencia-szint
+        // minden összehasonlítás UTÁN a legújabb swingre frissül.
+        function calcMarketStructure() {
+            const swingsEl = document.getElementById('structure-swings');
+            const out = document.getElementById('structure-result');
+            if (!swingsEl || !out) return;
+
+            const lines = swingsEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const swings = lines.map((l, idx) => {
+                const parts = l.split(',').map(v => v.trim());
+                const price = parseFloat(parts[0]);
+                const type = (parts[1] || '').toUpperCase();
+                return { idx: idx + 1, price, type };
+            }).filter(s => !isNaN(s.price) && (s.type === 'HIGH' || s.type === 'LOW'));
+
+            if (swings.length < 4) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 4 érvényes swing pont szükséges (minimum 2 csúcs és 2 mélypont, Ár,HIGH vagy Ár,LOW formátumban)!</div>`;
+                return;
+            }
+
+            for (let i = 0; i < swings.length - 1; i++) {
+                if (swings[i].type === swings[i + 1].type) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A swingeknek szigorúan váltakozniuk kell (csúcs, mélypont, csúcs, mélypont, ...) — a #${swings[i].idx} és #${swings[i + 1].idx} swing egyaránt ${swings[i].type === 'HIGH' ? 'csúcs' : 'mélypont'}!</div>`;
+                    return;
+                }
+            }
+            const highCount = swings.filter(s => s.type === 'HIGH').length;
+            const lowCount = swings.filter(s => s.type === 'LOW').length;
+            if (highCount < 2 || lowCount < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 csúcs ÉS legalább 2 mélypont szükséges az összehasonlításhoz!</div>`;
+                return;
+            }
+
+            let trend = null; // 'UP' | 'DOWN' | null
+            let lastHigh = null, lastLow = null;
+            const events = [];
+
+            for (const s of swings) {
+                if (s.type === 'HIGH') {
+                    if (lastHigh === null) {
+                        events.push({ s, label: 'BÁZIS', event: null });
+                    } else if (s.price > lastHigh.price) {
+                        let event;
+                        if (trend === 'DOWN') { event = 'CHOCH_UP'; trend = 'UP'; }
+                        else if (trend === 'UP') { event = 'BOS_UP'; }
+                        else { event = 'INITIAL_UP'; trend = 'UP'; }
+                        events.push({ s, label: 'HH', event });
+                    } else {
+                        events.push({ s, label: 'LH', event: null });
+                    }
+                    lastHigh = s;
+                } else {
+                    if (lastLow === null) {
+                        events.push({ s, label: 'BÁZIS', event: null });
+                    } else if (s.price < lastLow.price) {
+                        let event;
+                        if (trend === 'UP') { event = 'CHOCH_DOWN'; trend = 'DOWN'; }
+                        else if (trend === 'DOWN') { event = 'BOS_DOWN'; }
+                        else { event = 'INITIAL_DOWN'; trend = 'DOWN'; }
+                        events.push({ s, label: 'LL', event });
+                    } else {
+                        events.push({ s, label: 'HL', event: null });
+                    }
+                    lastLow = s;
+                }
+            }
+
+            const EVENT_META = {
+                INITIAL_UP: { text: 'Kezdeti irány: FELFELÉ', color: 'text-neon-green', badge: 'bg-neon-green/15 border-neon-green/40 text-neon-green' },
+                INITIAL_DOWN: { text: 'Kezdeti irány: LEFELÉ', color: 'text-neon-red', badge: 'bg-neon-red/15 border-neon-red/40 text-neon-red' },
+                BOS_UP: { text: 'BOS (folytatás, felfelé)', color: 'text-neon-green', badge: 'bg-neon-green/15 border-neon-green/40 text-neon-green' },
+                BOS_DOWN: { text: 'BOS (folytatás, lefelé)', color: 'text-neon-red', badge: 'bg-neon-red/15 border-neon-red/40 text-neon-red' },
+                CHOCH_UP: { text: 'CHoCH (karakterváltás, felfelé)', color: 'text-neon-amber', badge: 'bg-neon-amber/15 border-neon-amber/40 text-neon-amber' },
+                CHOCH_DOWN: { text: 'CHoCH (karakterváltás, lefelé)', color: 'text-neon-amber', badge: 'bg-neon-amber/15 border-neon-amber/40 text-neon-amber' }
+            };
+
+            const rows = events.map(ev => {
+                const meta = ev.event ? EVENT_META[ev.event] : null;
+                const badgeHtml = meta
+                    ? `<span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold border ${meta.badge}">${meta.text}</span>`
+                    : `<span class="text-[9.5px] text-slate-500">${ev.label === 'BÁZIS' ? 'bázis-szint' : ev.label === 'LH' ? 'LH — nincs törés' : 'HL — nincs törés'}</span>`;
+                return `
+                    <div class="flex items-center justify-between font-mono text-[10px] py-1.5 border-b border-dark-750/50 gap-2">
+                        <span class="text-slate-500 shrink-0">#${ev.s.idx}</span>
+                        <span class="font-bold shrink-0 ${ev.s.type === 'HIGH' ? 'text-slate-300' : 'text-slate-400'}">${ev.s.type === 'HIGH' ? 'Csúcs' : 'Mélypont'}</span>
+                        <span class="text-white shrink-0">${ev.s.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                        <span class="text-right flex-1">${badgeHtml}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const lastEvent = [...events].reverse().find(e => e.event);
+            const trendText = trend === 'UP' ? 'FELFELÉ (bullish)' : trend === 'DOWN' ? 'LEFELÉ (bearish)' : 'MÉG NEM MEGHATÁROZOTT';
+            const trendColor = trend === 'UP' ? 'text-neon-green' : trend === 'DOWN' ? 'text-neon-red' : 'text-slate-400';
+            const bosCount = events.filter(e => e.event === 'BOS_UP' || e.event === 'BOS_DOWN').length;
+            const chochCount = events.filter(e => e.event === 'CHOCH_UP' || e.event === 'CHOCH_DOWN').length;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="flex justify-between font-mono text-[11px] mb-1">
+                        <span class="text-slate-400">Jelenlegi struktúra:</span>
+                        <span class="${trendColor} font-extrabold">${trendText}</span>
+                    </div>
+                    ${lastEvent ? `<div class="flex justify-between font-mono text-[10.5px]"><span class="text-slate-400">Utolsó esemény:</span><span class="${EVENT_META[lastEvent.event].color} font-semibold">${EVENT_META[lastEvent.event].text} (#${lastEvent.s.idx})</span></div>` : ''}
+                    <div class="flex justify-between font-mono text-[10.5px]"><span class="text-slate-400">BOS / CHoCH események száma:</span><span class="text-white">${bosCount} / ${chochCount}</span></div>
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3 max-h-64 overflow-y-auto">
+                    ${rows}
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${chochCount === 0 ? 'A teljes sorozatban egyetlen CHoCH sem történt — a kezdeti irány a mai napig nem tört meg.' : `A ${chochCount} CHoCH esemény mindegyike azt jelzi, hogy az addigi trend ELLEN történt törés — ez önmagában csak figyelmeztetés, a megerősítést a rákövetkező, azonos irányú BOS adja.`}</p>
+            `;
+        }
+
         function calcLadderBreakaway() {
             const candlesEl = document.getElementById('ladderbreak-candles');
             const out = document.getElementById('ladderbreak-result');
@@ -38571,6 +38748,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             367: { tool: 'gridopt-modal', cta: 'Futtasd le élesben a Grid Search Overfitting Demonstrátort' },
             180: { tool: 'pitchfork-modal', cta: 'Számold ki élesben az Andrews Pitchfork vonalait' },
             260: { tool: 'eqhl-modal', cta: 'Keresd meg élesben az Equal Highs/Lows szinteket' },
+            161: { tool: 'structure-modal', cta: 'Elemezd élesben, mikor BOS és mikor CHoCH egy swing-sorozat' },
+            162: { tool: 'structure-modal', cta: 'Próbáld ki élesben, hogyan jelez egy CHoCH karakterváltást' },
+            63: { tool: 'structure-modal', cta: 'Nézd meg élesben, hogyan jelzi a BOS/CHoCH a struktúra-eseményeket az Order Block köré' },
+            164: { tool: 'structure-modal', cta: 'Teszteld élesben, hogyan követi a CHoCH a Liquidity Grab utáni fordulatot' },
             193: { tool: 'vp-modal', cta: 'Nézd meg élesben a Value Area High/Low számítását' },
             321: { tool: 'ladderbreak-modal', cta: 'Próbáld ki élesben a Ladder Bottom felismerést' },
             464: { tool: 'ladderbreak-modal', cta: 'Próbáld ki élesben a Ladder Top felismerést' },
@@ -38857,7 +39038,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
