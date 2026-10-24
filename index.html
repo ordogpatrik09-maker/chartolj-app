@@ -7487,6 +7487,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-circle-dot mr-1"></i> Kerekszám-Közelség Elemző
                 </button>
                 <div id="backtest-roundnum-result" class="mt-3"></div>
+                <button onclick="calcBacktestEdgeSignificance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-flask mr-1"></i> Statisztikai Szignifikancia Teszt (t-teszt)
+                </button>
+                <div id="backtest-ttest-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7586,6 +7590,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-circle-dot mr-1"></i> Kerekszám-Közelség Elemző
                 </button>
                 <div id="sb-roundnum-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderEdgeSignificance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-flask mr-1"></i> Statisztikai Szignifikancia Teszt (t-teszt)
+                </button>
+                <div id="sb-ttest-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -16562,6 +16570,150 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
                 const stats = runPerformanceDecayDetector(tradeReturns, windowSize);
                 out.innerHTML = renderPerformanceDecayHtml(stats, windowSize);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= STRATÉGIA STATISZTIKAI SZIGNIFIKANCIA TESZT (t-TESZT) ("BRUTÁL" FEJLESZTÉS) =================
+        // Alapvető kvant-pénzügyi kérdés: a stratégia pozitív átlagos hozama VALÓS EDGE,
+        // vagy csak VÉLETLEN INGADOZÁS egy kis mintán? Ez az eszköz egy klasszikus egy-mintás
+        // t-tesztet futtat (H0: az átlagos hozam = 0), és megadja a t-statisztikát és a
+        // p-értéket (a Student-t eloszlás kumulatív eloszlásfüggvényét az inkomplett béta-
+        // függvényen keresztül, numerikusan, Lanczos-approximációval). Csak a meglévő
+        // tradeReturns tömböt olvassa, nem módosít semmilyen core motort.
+        function ptfLogGamma(x) {
+            const g = 7;
+            const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+                771.32342877765313, -176.61502916214059, 12.507343278686905,
+                -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+            if (x < 0.5) {
+                return Math.log(Math.PI / Math.sin(Math.PI * x)) - ptfLogGamma(1 - x);
+            }
+            x -= 1;
+            let a = c[0];
+            const t = x + g + 0.5;
+            for (let i = 1; i < g + 2; i++) a += c[i] / (x + i);
+            return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+        }
+
+        function ptfBetacf(a, b, x) {
+            const MAXIT = 200;
+            const EPS = 3e-16;
+            const FPMIN = 1e-300;
+            const qab = a + b;
+            const qap = a + 1;
+            const qam = a - 1;
+            let c = 1.0;
+            let d = 1 - qab * x / qap;
+            if (Math.abs(d) < FPMIN) d = FPMIN;
+            d = 1 / d;
+            let h = d;
+            for (let m = 1; m <= MAXIT; m++) {
+                const m2 = 2 * m;
+                let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+                d = 1 + aa * d;
+                if (Math.abs(d) < FPMIN) d = FPMIN;
+                c = 1 + aa / c;
+                if (Math.abs(c) < FPMIN) c = FPMIN;
+                d = 1 / d;
+                h *= d * c;
+                aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+                d = 1 + aa * d;
+                if (Math.abs(d) < FPMIN) d = FPMIN;
+                c = 1 + aa / c;
+                if (Math.abs(c) < FPMIN) c = FPMIN;
+                d = 1 / d;
+                const de = d * c;
+                h *= de;
+                if (Math.abs(de - 1) < EPS) break;
+            }
+            return h;
+        }
+
+        function ptfBetainc(x, a, b) {
+            if (x <= 0) return 0.0;
+            if (x >= 1) return 1.0;
+            const bt = Math.exp(ptfLogGamma(a + b) - ptfLogGamma(a) - ptfLogGamma(b) +
+                a * Math.log(x) + b * Math.log(1 - x));
+            if (x < (a + 1) / (a + b + 2)) {
+                return bt * ptfBetacf(a, b, x) / a;
+            } else {
+                return 1 - bt * ptfBetacf(b, a, 1 - x) / b;
+            }
+        }
+
+        function ptfTTwoTailedPValue(tStat, dof) {
+            const tAbs = Math.abs(tStat);
+            const x = dof / (dof + tAbs * tAbs);
+            return ptfBetainc(x, dof / 2, 0.5);
+        }
+
+        function runEdgeSignificanceTTest(tradeReturns) {
+            const n = tradeReturns.length;
+            if (n < 5) throw new Error('Legalább 5 trade szükséges a szignifikancia-teszthez.');
+            const meanReturn = tradeReturns.reduce((a, b) => a + b, 0) / n;
+            const variance = tradeReturns.reduce((a, r) => a + (r - meanReturn) ** 2, 0) / (n - 1);
+            const stdDev = Math.sqrt(variance);
+            const stdErr = stdDev / Math.sqrt(n);
+            const tStat = stdErr !== 0 ? (meanReturn / stdErr) : 0;
+            const dof = n - 1;
+            const pValue = stdErr !== 0 ? ptfTTwoTailedPValue(tStat, dof) : 1.0;
+            const significantAt05 = pValue < 0.05;
+            return {
+                n, meanReturnPct: meanReturn * 100, stdDevPct: stdDev * 100,
+                stdErrPct: stdErr * 100, tStat, dof, pValue, significantAt05
+            };
+        }
+
+        function renderEdgeSignificanceHtml(stats) {
+            const fmt = (v, d = 4) => Number(v).toFixed(d);
+            let verdict, verdictClass;
+            if (stats.significantAt05 && stats.meanReturnPct > 0) { verdict = 'STATISZTIKAILAG SZIGNIFIKÁNS POZITÍV EDGE (p < 0.05)'; verdictClass = 'text-neon-green'; }
+            else if (stats.significantAt05 && stats.meanReturnPct < 0) { verdict = 'STATISZTIKAILAG SZIGNIFIKÁNS NEGATÍV EDGE (p < 0.05)'; verdictClass = 'text-neon-red'; }
+            else { verdict = 'NEM SZIGNIFIKÁNS — A POZITÍV/NEGATÍV ÁTLAG LEHET VÉLETLEN'; verdictClass = 'text-neon-amber'; }
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Statisztikai Szignifikancia Teszt (egy-mintás t-teszt)</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos hozam / trade</div><div class="font-bold text-white">${fmt(stats.meanReturnPct, 3)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Szórás</div><div class="font-bold text-white">${fmt(stats.stdDevPct, 3)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">t-statisztika (df=${stats.dof})</div><div class="font-bold text-white">${fmt(stats.tStat, 3)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">p-érték (kétoldali)</div><div class="font-bold text-white">${fmt(stats.pValue, 4)}</div></div>
+                    </div>
+                    <div class="text-xs font-bold ${verdictClass} mt-1">${verdict}</div>
+                    <div class="text-xs text-gray-500 mt-1">A nullhipotézis: a stratégia valódi átlagos hozama 0 (nincs edge). Ha a p-érték 0.05 alatt van, statisztikailag indokolt elvetni ezt a feltevést — de FIGYELEM: kevés trade esetén ez a teszt nem megbízható, és a múltbeli szignifikancia sem garancia a jövőbeli teljesítményre.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestEdgeSignificance() {
+            const out = document.getElementById('backtest-ttest-result');
+            if (!out) return;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.trades || window.lastBacktestResult.trades.length < 5) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 5 trade szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = window.lastBacktestResult.trades.map(t => t.returnPct);
+                const stats = runEdgeSignificanceTTest(tradeReturns);
+                out.innerHTML = renderEdgeSignificanceHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderEdgeSignificance() {
+            const out = document.getElementById('sb-ttest-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 5) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 5 trade szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
+                const stats = runEdgeSignificanceTTest(tradeReturns);
+                out.innerHTML = renderEdgeSignificanceHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
