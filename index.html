@@ -8598,7 +8598,7 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                 </h3>
                 <button onclick="closeToolModal('candlepattern-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-3 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Hammer, Engulfing, Harami, Morning/Evening Star, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Three Inside Up/Down, Three Outside Up/Down, Tweezer Top/Bottom) az utolsó gyertyá(k)on, 3 gyertyás minták elsőbbségével, majd 2 gyertyásakkal, végül 1 gyertyásakkal.</p>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az utolsó 1-3 gyertya adatait (Nyitó,Magas,Alacsony,Záró, soronként egyet, időrendben). A kalkulátor determinisztikus szabályok alapján felismeri a klasszikus gyertyamintákat (Doji, Hammer, Engulfing, Harami, Morning/Evening Star, Marubozu, Piercing Line, Dark Cloud Cover, Kicking, Tri-Star, Spinning Top, Three White Soldiers, Three Black Crows, Three Inside Up/Down, Three Outside Up/Down, Tweezer Top/Bottom, Belt Hold) az utolsó gyertyá(k)on, 3 gyertyás minták elsőbbségével, majd 2 gyertyásakkal, végül 1 gyertyásakkal.</p>
 
             <label class="text-[11px] font-semibold text-slate-400">Gyertyák: Nyitó,Magas,Alacsony,Záró (soronként egy, 1-3 sor)</label>
             <textarea id="candlepattern-candles" rows="4" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-500/50">110,111,95,96
@@ -21439,6 +21439,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 TWEEZER_BOTTOM: { name: 'Tweezer Bottom (Csipesz Alj)', bias: 'bullish', desc: 'A Tweezer Top tükörképe: két egymást követő gyertya, amelyeknek a mélypontja szinte pontosan egyforma — az árfolyam kétszer egymás után ugyanott talált támaszt. Csökkenő trend végén, fontos támasznál megjelenve bullish fordulós jelzés; megbízhatóbb, ha a két gyertya színe ellentétes.' },
                 MARUBOZU_BULLISH: { name: 'Marubozu (Bullish)', bias: 'bullish', desc: 'Gyakorlatilag nincs kanóc — a gyertya a nyitástól a csúcsig egyenesen felment. Erőteljes, egyoldalú vételi nyomást jelez, folytatódó trend mellett szól.' },
                 MARUBOZU_BEARISH: { name: 'Marubozu (Bearish)', bias: 'bearish', desc: 'Gyakorlatilag nincs kanóc — a gyertya a nyitástól a mélypontig egyenesen lement. Erőteljes, egyoldalú eladási nyomást jelez, folytatódó letörést sugall.' },
+                BELT_HOLD_BULLISH: { name: 'Bullish Belt Hold', bias: 'bullish', desc: 'A gyertya a periódus legalacsonyabb pontján nyit (nincs vagy elenyésző az alsó kanóc), majd hosszú testtel, erőteljesen felfelé zár — a vevők már a nyitás pillanatától kezdve átvették az irányítást. Megbízhatóbb letesztelt támasznál vagy downtrend után, magas volumennel és következő gyertyás megerősítéssel.' },
+                BELT_HOLD_BEARISH: { name: 'Bearish Belt Hold', bias: 'bearish', desc: 'A Bullish Belt Hold tükörképe: a gyertya a periódus legmagasabb pontján nyit (nincs vagy elenyésző a felső kanóc), majd hosszú testtel, erőteljesen lefelé zár — az eladók már a nyitás pillanatától uralták a periódust. Megbízhatóbb ellenállásnál vagy uptrend után, megerősítéssel.' },
                 HAMMER_OR_HANGINGMAN: { name: 'Hammer / Hanging Man', bias: 'context-dependent', desc: 'Kis test a tartomány felső részén, hosszú alsó kanóccal, minimális felső kanóccal. Downtrend után Hammer (bullish fordulás), uptrend után Hanging Man (bearish figyelmeztetés) — az irány a megelőző trendtől függ, ezért mindig nézd meg a kontextust.' },
                 SHOOTINGSTAR_OR_INVHAMMER: { name: 'Shooting Star / Inverted Hammer', bias: 'context-dependent', desc: 'Kis test a tartomány alsó részén, hosszú felső kanóccal, minimális alsó kanóccal. Uptrend után Shooting Star (bearish fordulás), downtrend után Inverted Hammer (bullish jelzés, megerősítést igényel).' },
                 DOJI: { name: 'Doji', bias: 'neutral', desc: 'A nyitó és záró ár gyakorlatilag azonos — a test elenyészően kicsi a tartományhoz képest. Bizonytalanságot, a vevők és eladók egyensúlyát jelzi; jelentősége a trendkontextustól és a következő gyertyától függ.' },
@@ -21517,6 +21519,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (pattern === 'NONE') {
                 if (isMarubozu(c3)) {
                     pattern = c3.bullish ? 'MARUBOZU_BULLISH' : 'MARUBOZU_BEARISH';
+                } else if (c3.bullish && c3.lowerPct <= 5 && c3.bodyPct >= 65) {
+                    pattern = 'BELT_HOLD_BULLISH';
+                } else if (!c3.bullish && c3.upperPct <= 5 && c3.bodyPct >= 65) {
+                    pattern = 'BELT_HOLD_BEARISH';
                 } else if (c3.bodyPct < 35 && c3.lowerPct >= 60 && c3.upperPct <= 15) {
                     pattern = 'HAMMER_OR_HANGINGMAN';
                 } else if (c3.bodyPct < 35 && c3.upperPct >= 60 && c3.lowerPct <= 15) {
@@ -33958,6 +33964,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             437: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Three Outside Up felismerését' },
             449: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Three Outside Down felismerését' },
             140: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Tweezer Top/Bottom felismerését' },
+            212: { tool: 'candlepattern-modal', cta: 'Próbáld ki élesben a Belt Hold felismerését' },
             244: { tool: 'kelly-modal', cta: 'Számold ki élesben a Kelly-arányt' },
             240: { tool: 'heat-modal', cta: 'Nézd meg élesben a portfólió-hőtérképet' },
             316: { tool: 'riskbudget-modal', cta: 'Oszd el élesben a közös kockázati büdzsét a stratégiáid közt' },
