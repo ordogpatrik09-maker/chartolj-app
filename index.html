@@ -7403,6 +7403,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-link-slash mr-1"></i> Trade-Függetlenségi Teszt
                 </button>
                 <div id="backtest-indeptest-result" class="mt-3"></div>
+                <button onclick="calcBacktestBlockBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-layer-group mr-1"></i> Blokk-Bootstrap MC (soros korreláció)
+                </button>
+                <div id="backtest-blockbootstrap-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7466,6 +7470,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-link-slash mr-1"></i> Trade-Függetlenségi Teszt
                 </button>
                 <div id="sb-indeptest-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderBlockBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-layer-group mr-1"></i> Blokk-Bootstrap MC (soros korreláció)
+                </button>
+                <div id="sb-blockbootstrap-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -15762,6 +15770,137 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             try {
                 const stats = runTradeIndependenceTest(sbLastRunResult.trades.map(t => t.returnPct));
                 out.innerHTML = renderIndependenceTestHtml(stats, sbLastRunResult.trades.length);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= BLOKK-BOOTSTRAP MONTE CARLO (SOROS KORRELÁCIÓ FIGYELEMBEVÉTELÉVEL) =================
+        // A fenti sima Bootstrap MC (runBootstrapMC) FÜGGETLEN (i.i.d.) trade-
+        // hozamokat tételez fel: minden újramintavételezett elemet külön-külön,
+        // egymástól függetlenül húz. A Trade-Függetlenségi Teszt viszont pont
+        // azt mutathatja ki, hogy a trade-ek GYAKRAN NEM függetlenek (pl. piaci
+        // rezsim-tartósság miatt egy nyertes trade-et hajlamos egy másik
+        // nyertes követni). Ha ez a feltevés sérül, az i.i.d. bootstrap
+        // ALÁBECSÜLHETI a valódi szekvencia-kockázatot (összekeveri azokat a
+        // nyerő/vesztő "sorozatokat", amik a valóságban összetartoznak).
+        // A blokk-bootstrap ezt kezeli: nem egyenként húz, hanem ÖSSZEFÜGGŐ,
+        // "blockSize" hosszú darabokat (wraparound-dal, hogy mindig pontosan
+        // annyi elemet kapjunk, mint az eredeti sorozat hossza) — ezzel a
+        // blokkon BELÜLI sorrend/korreláció megmarad, csak a blokkok egymáshoz
+        // viszonyított sorrendje és kezdőpontja véletlen. blockSize=1 esetén
+        // pontosan visszaesik a sima i.i.d. bootstrap-ra. Kizárólag olvassa a
+        // már kiszámolt trades tömböt, a runBootstrapMC-t és a core motorokat
+        // NEM módosítja.
+        function runBlockBootstrapMC(tradeReturns, startEquity, numSims, ddThresholdPct, blockSize) {
+            const n = tradeReturns.length;
+            if (n < 2) throw new Error('Legalább 2 trade szükséges a blokk-bootstrap szimulációhoz.');
+            if (!blockSize || blockSize < 1 || blockSize > n) throw new Error('A blokkhossznak 1 és a trade-ek száma közé kell esnie.');
+
+            const finals = [];
+            const maxDDs = [];
+            let breaches = 0;
+
+            for (let s = 0; s < numSims; s++) {
+                const seq = [];
+                while (seq.length < n) {
+                    const start = Math.floor(Math.random() * n);
+                    const remaining = n - seq.length;
+                    const take = Math.min(blockSize, remaining);
+                    for (let k = 0; k < take; k++) {
+                        seq.push(tradeReturns[(start + k) % n]);
+                    }
+                }
+
+                let equity = startEquity;
+                let peak = startEquity;
+                let maxDD = 0;
+                for (let i = 0; i < seq.length; i++) {
+                    equity *= (1 + seq[i]);
+                    if (equity > peak) peak = equity;
+                    const dd = peak > 0 ? (peak - equity) / peak * 100 : 0;
+                    if (dd > maxDD) maxDD = dd;
+                }
+                finals.push(equity);
+                maxDDs.push(maxDD);
+                if (maxDD >= ddThresholdPct) breaches++;
+            }
+
+            finals.sort((a, b) => a - b);
+            maxDDs.sort((a, b) => a - b);
+            function percentile(arr, p) {
+                const idx = Math.floor(p / 100 * (arr.length - 1));
+                return arr[idx];
+            }
+
+            const p5 = percentile(finals, 5), p50 = percentile(finals, 50), p95 = percentile(finals, 95);
+            const ddP50 = percentile(maxDDs, 50), ddP95 = percentile(maxDDs, 95);
+            const breachProbPct = breaches / numSims * 100;
+            const originalFinal = startEquity * tradeReturns.reduce((acc, r) => acc * (1 + r), 1);
+
+            return {
+                retP5: (p5 - startEquity) / startEquity * 100,
+                retP50: (p50 - startEquity) / startEquity * 100,
+                retP95: (p95 - startEquity) / startEquity * 100,
+                ddP50, ddP95, breachProbPct,
+                originalReturnPct: (originalFinal - startEquity) / startEquity * 100
+            };
+        }
+
+        function renderBlockBootstrapMCHtml(stats, iidStats, tradeCount, numSims, ddThresholdPct, blockSize) {
+            const ddGap = stats.ddP95 - iidStats.ddP95;
+            const meaningfulGap = Math.abs(ddGap) > 2;
+            return `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Eredeti (egyszeri) sorrend hozama:</span><span class="text-white">${stats.originalReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${numSims} blokk-bootstrap (blokkhossz=${blockSize}), hozam P5/P50/P95:</span><span class="text-white">${stats.retP5.toFixed(1)}% / ${stats.retP50.toFixed(1)}% / ${stats.retP95.toFixed(1)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown P50/P95 (blokk):</span><span class="text-amber-400">${stats.ddP50.toFixed(2)}% / ${stats.ddP95.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">P(max. drawdown ≥ ${ddThresholdPct}%) (blokk):</span><span class="${stats.breachProbPct > 20 ? 'text-neon-red' : 'text-neon-green'}">${stats.breachProbPct.toFixed(1)}%</span></div>
+                </div>
+                <div class="glass-card rounded-xl border ${meaningfulGap ? 'border-amber-400/30 bg-amber-400/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
+                    <div class="flex justify-between"><span class="text-slate-400">Összehasonlításhoz: i.i.d. bootstrap P95 drawdown:</span><span class="text-white">${iidStats.ddP95.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Eltérés (blokk − i.i.d.):</span><span class="${meaningfulGap ? 'text-amber-400 font-bold' : 'text-white'}">${ddGap >= 0 ? '+' : ''}${ddGap.toFixed(2)}pp</span></div>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${meaningfulGap ?
+                    `A blokk-bootstrap (ami megőrzi a trade-ek közti SOROS korrelációt, pl. a nyerő/vesztő "sorozatokat") érdemben MÁS P95 drawdown-becslést ad, mint a sima, független (i.i.d.) bootstrap. Ha ez MAGASABB, az azt jelenti: a trade-ek közti valós függés miatt a sima bootstrap ALÁBECSÜLTE a valódi kockázatot — érdemes megnézni a Trade-Függetlenségi Tesztet is, hogy ez a függés statisztikailag kimutatható-e.`
+                    : `Ezen az adaton a blokk-bootstrap és a sima i.i.d. bootstrap P95 drawdown-becslése GYAKORLATILAG MEGEGYEZIK — ez arra utal, hogy a trade-ek sorrendjében nincs erős, kockázatbecslést torzító soros korreláció (összhangban a Trade-Függetlenségi Teszt eredményével, ha az is "nem szignifikáns"-at mutat).`}</p>
+            `;
+        }
+
+        function calcBacktestBlockBootstrap() {
+            const out = document.getElementById('backtest-blockbootstrap-result');
+            if (!out) return;
+            const last = window.lastBacktestResult;
+            if (!last || !last.trades || last.trades.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges a blokk-bootstrap szimulációhoz — futtasd le újra a backtestet!</div>`;
+                return;
+            }
+            const tradeReturns = last.trades.map(t => t.returnPct);
+            const numSims = 2000, ddThresholdPct = 20;
+            const blockSize = Math.max(1, Math.min(tradeReturns.length, Math.round(tradeReturns.length / 5)));
+            try {
+                const stats = runBlockBootstrapMC(tradeReturns, last.startEquity, numSims, ddThresholdPct, blockSize);
+                const iidStats = runBootstrapMC(tradeReturns, last.startEquity, numSims, ddThresholdPct);
+                out.innerHTML = renderBlockBootstrapMCHtml(stats, iidStats, tradeReturns.length, numSims, ddThresholdPct, blockSize);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderBlockBootstrap() {
+            const out = document.getElementById('sb-blockbootstrap-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 2 || !sbLastRunConfig) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges a blokk-bootstrap szimulációhoz — futtasd le újra a stratégiát!</div>`;
+                return;
+            }
+            const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
+            const numSims = 2000, ddThresholdPct = 20;
+            const blockSize = Math.max(1, Math.min(tradeReturns.length, Math.round(tradeReturns.length / 5)));
+            try {
+                const stats = runBlockBootstrapMC(tradeReturns, sbLastRunConfig.startEquity, numSims, ddThresholdPct, blockSize);
+                const iidStats = runBootstrapMC(tradeReturns, sbLastRunConfig.startEquity, numSims, ddThresholdPct);
+                out.innerHTML = renderBlockBootstrapMCHtml(stats, iidStats, tradeReturns.length, numSims, ddThresholdPct, blockSize);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
