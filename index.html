@@ -7595,6 +7595,14 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-chart-line mr-1"></i> Benchmark Korreláció és Béta Elemző
                 </button>
                 <div id="backtest-benchmark-result" class="mt-3"></div>
+                <div class="mt-2">
+                    <label class="text-[10px] font-semibold text-slate-400">Kelly-szorzó (0.5 = "fél-Kelly", konzervatívabb)</label>
+                    <input type="number" id="backtest-kelly-multiplier" value="0.5" step="0.1" min="0" max="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-amber/50">
+                </div>
+                <button onclick="calcBacktestKellySizing()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-scale-balanced mr-1"></i> Kelly-Alapú Pozícióméretezés Backtest
+                </button>
+                <div id="backtest-kellysizing-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7722,6 +7730,14 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-chart-line mr-1"></i> Benchmark Korreláció és Béta Elemző
                 </button>
                 <div id="sb-benchmark-result" class="mt-3"></div>
+                <div class="mt-2">
+                    <label class="text-[10px] font-semibold text-slate-400">Kelly-szorzó (0.5 = "fél-Kelly", konzervatívabb)</label>
+                    <input type="number" id="sb-kelly-multiplier" value="0.5" step="0.1" min="0" max="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-amber/50">
+                </div>
+                <button onclick="calcStrategyBuilderKellySizing()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-scale-balanced mr-1"></i> Kelly-Alapú Pozícióméretezés Backtest
+                </button>
+                <div id="sb-kellysizing-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -16798,6 +16814,132 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
                 const stats = runPerformanceDecayDetector(tradeReturns, windowSize);
                 out.innerHTML = renderPerformanceDecayHtml(stats, windowSize);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= KELLY-ALAPÚ POZÍCIÓMÉRETEZÉS BACKTEST ("BRUTÁL" FEJLESZTÉS) =================
+        // Ugyanazt a mintát követi, mint a Tőkeáttétel-Érzékenységi Backtest: a MÁR
+        // VERIFIKÁLT, változatlan trade-sorozatot (a VALÓDI entry/exit árfolyam-
+        // elmozdulásokat) "lejátssza újra", de nem fix 100%-os tőkeráfordítással, hanem
+        // dinamikus, GÖRGETETT (előretekintés/lookahead NÉLKÜLI) Kelly-kritérium alapú
+        // pozícióméretezéssel: minden trade-nél csak a KORÁBBI trade-ek találati arányát/
+        // átlagos nyereményét/veszteségét ismeri, abból számolja a Kelly-frakciót, és azt
+        // (egy felhasználó-beállítható szorzóval, pl. 0.5 = "fél-Kelly") alkalmazza a
+        // következő trade-re. Megmutatja, hogy ez a dinamikus méretezés jobb/rosszabb
+        // végeredményt és drawdown-t ad-e, mint a sima, fix méretezésű backtest.
+        function runKellySizedBacktest(trades, startEquity, kellyMultiplier, maxFraction, baseFraction, warmupMinTrades) {
+            const n = trades.length;
+            if (n < warmupMinTrades + 1) throw new Error(`Legalább ${warmupMinTrades + 1} trade szükséges a Kelly-alapú méretezéshez.`);
+
+            let equity = startEquity;
+            let peakEquity = startEquity;
+            let maxDrawdownPct = 0;
+            let liquidated = false;
+            const perTrade = [];
+
+            for (let i = 0; i < n; i++) {
+                const prior = trades.slice(0, i);
+                let appliedFraction;
+                if (prior.length >= warmupMinTrades) {
+                    const wins = prior.filter(t => t.returnPct > 0).map(t => t.returnPct);
+                    const losses = prior.filter(t => t.returnPct < 0).map(t => t.returnPct);
+                    if (wins.length > 0 && losses.length > 0) {
+                        const p = wins.length / prior.length;
+                        const avgWin = wins.reduce((a, b) => a + b, 0) / wins.length;
+                        const avgLoss = Math.abs(losses.reduce((a, b) => a + b, 0) / losses.length);
+                        const b = avgLoss !== 0 ? (avgWin / avgLoss) : 0;
+                        const kelly = b > 0 ? (p - (1 - p) / b) : 0;
+                        appliedFraction = Math.max(0, Math.min(kelly * kellyMultiplier, maxFraction));
+                    } else {
+                        appliedFraction = baseFraction;
+                    }
+                } else {
+                    appliedFraction = baseFraction;
+                }
+
+                const retPct = trades[i].returnPct;
+                const leveragedR = appliedFraction * retPct;
+
+                if (!liquidated) {
+                    if (leveragedR <= -1) {
+                        equity = 0;
+                        liquidated = true;
+                    } else {
+                        equity = equity * (1 + leveragedR);
+                    }
+                }
+
+                if (equity > peakEquity) peakEquity = equity;
+                const dd = peakEquity > 0 ? ((peakEquity - equity) / peakEquity * 100) : 0;
+                if (dd > maxDrawdownPct) maxDrawdownPct = dd;
+
+                perTrade.push({ tradeIndex: i, appliedFraction, leveragedR });
+            }
+
+            const totalReturnPct = (equity - startEquity) / startEquity * 100;
+            const avgAppliedFraction = perTrade.reduce((a, pt) => a + pt.appliedFraction, 0) / perTrade.length;
+
+            return { finalEquity: equity, totalReturnPct, maxDrawdownPct, liquidated, avgAppliedFraction, tradeCount: n };
+        }
+
+        function renderKellySizedHtml(kellyStats, baseline, kellyMultiplier) {
+            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            const better = kellyStats.totalReturnPct > baseline.totalReturnPct && kellyStats.maxDrawdownPct <= baseline.maxDrawdownPct;
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Kelly-Alapú Pozícióméretezés (szorzó: ${fmt(kellyMultiplier, 2)}×, görgetett, lookahead nélkül)</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2 border border-gray-700/30">
+                            <div class="text-gray-400 font-semibold">Fix méretezés (eredeti)</div>
+                            <div class="text-white">${fmt(baseline.totalReturnPct)}% hozam · -${fmt(baseline.maxDrawdownPct)}% max DD</div>
+                        </div>
+                        <div class="bg-dark-900/50 rounded p-2 border border-gray-700/30">
+                            <div class="text-gray-400 font-semibold">Kelly-méretezés</div>
+                            <div class="text-white">${fmt(kellyStats.totalReturnPct)}% hozam · -${fmt(kellyStats.maxDrawdownPct)}% max DD</div>
+                        </div>
+                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">Átlagosan alkalmazott tőke-arány</div><div class="font-bold text-white">${fmt(kellyStats.avgAppliedFraction * 100, 1)}%</div></div>
+                    </div>
+                    ${kellyStats.liquidated ? `<div class="text-xs font-bold text-neon-red mt-1">⚠️ A Kelly-méretezésű szimuláció likvidálódott (teljes tőkevesztés) egy trade során!</div>` : `<div class="text-xs font-bold ${better ? 'text-neon-green' : 'text-neon-amber'} mt-1">${better ? '➜ A Kelly-méretezés ebben a mintában JOBB hozamot ÉS alacsonyabb/egyenlő drawdown-t adott.' : '➜ A Kelly-méretezés ebben a mintában NEM adott egyértelműen jobb eredményt a fix méretezéshez képest.'}</div>`}
+                    <div class="text-xs text-gray-500 mt-1">A Kelly-frakciót minden trade-nél CSAK a korábbi trade-ek adatai alapján számoljuk (nincs előretekintés) — ezért az elején (bemelegítő szakasz) egy alapértelmezett, konzervatív tőke-arányt használ. FIGYELEM: a korai Kelly-becslés kevés mintán nagyon zajos és instabil lehet, ez oktatási demonstráció, nem élő kereskedési ajánlás.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestKellySizing() {
+            const out = document.getElementById('backtest-kellysizing-result');
+            if (!out) return;
+            const multiplierEl = document.getElementById('backtest-kelly-multiplier');
+            const kellyMultiplier = multiplierEl ? parseFloat(multiplierEl.value) : 0.5;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.trades || window.lastBacktestResult.trades.length < 6) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 6 trade szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const startEquity = window.lastBacktestResult.startEquity || 10000;
+                const kellyStats = runKellySizedBacktest(window.lastBacktestResult.trades, startEquity, kellyMultiplier, 1.0, 0.1, 5);
+                const baseline = { totalReturnPct: window.lastBacktestResult.totalReturnPct, maxDrawdownPct: window.lastBacktestResult.maxDrawdownPct };
+                out.innerHTML = renderKellySizedHtml(kellyStats, baseline, kellyMultiplier);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderKellySizing() {
+            const out = document.getElementById('sb-kellysizing-result');
+            if (!out) return;
+            const multiplierEl = document.getElementById('sb-kelly-multiplier');
+            const kellyMultiplier = multiplierEl ? parseFloat(multiplierEl.value) : 0.5;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 6) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 6 trade szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const startEquity = (sbLastRunConfig && sbLastRunConfig.startEquity) || 10000;
+                const kellyStats = runKellySizedBacktest(sbLastRunResult.trades, startEquity, kellyMultiplier, 1.0, 0.1, 5);
+                const baseline = { totalReturnPct: sbLastRunResult.totalReturnPct, maxDrawdownPct: sbLastRunResult.maxDrawdownPct };
+                out.innerHTML = renderKellySizedHtml(kellyStats, baseline, kellyMultiplier);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
