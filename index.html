@@ -2137,6 +2137,13 @@
                                 <div class="text-[10px] text-slate-400">Szélsőséges ár-sokk forgatókönyvek hatása a pozíciódra</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('elliottwave-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Elliott Hullám Projekciós Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Fibonacci-arányos hullám-célárak és a 3 alapszabály ellenőrzése</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -10270,6 +10277,38 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <div id="elliottwave-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-water text-sky-400"></i> Elliott Hullám Projekciós Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('elliottwave-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az 1. hullám kezdő- és végpontját (kötelező), majd a további fordulópontokat (2., 3., 4., 5. hullám vége) — amennyit tudsz belőlük. A kalkulátor minden lépésnél Fibonacci-arányos célárakat projektál a következő hullámra, és ellenőrzi a 3 Elliott-féle alapszabályt: (1) a 2. hullám sosem húzódik vissza 100%-nál többet az 1. hullámból, (2) a 3. hullám sosem a legrövidebb az 1./3./5. hullám közül, (3) a 4. hullám sosem nyúlik be az 1. hullám ártartományába (impulzusnál).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">1. hullám kezdete (P0)</label>
+            <input type="number" id="ew-p0" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">1. hullám vége (P1)</label>
+            <input type="number" id="ew-p1" value="120" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">2. hullám vége (P2) — opcionális</label>
+            <input type="number" id="ew-p2" value="110" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">3. hullám vége (P3) — opcionális</label>
+            <input type="number" id="ew-p3" value="145" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">4. hullám vége (P4) — opcionális</label>
+            <input type="number" id="ew-p4" value="130" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+            <label class="text-[11px] font-semibold text-slate-400">5. hullám vége (P5) — opcionális, csak a teljes szerkezet-ellenőrzéshez</label>
+            <input type="number" id="ew-p5" value="155" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
+
+            <button onclick="calcElliottWave()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-sky-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="elliottwave-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A hullámszámolás a valóságban rendkívül szubjektív — ez a kalkulátor a klasszikus Elliott-arányokat (0.618/1.618/2.618) és a 3 alapszabályt alkalmazza a MEGADOTT fordulópontokra, nem helyettesíti a saját chart-elemzést.</p>
+        </div>
+    </div>
+
     <div id="heikinashi-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -11872,6 +11911,13 @@ Mean-reversion,2.5</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Stressz-teszt Kalkulátor</div>
                     <div class="text-[10px] text-slate-400">Szélsőséges ár-sokk forgatókönyvek hatása a pozíciódra</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('elliottwave-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-sky-400/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-water"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Elliott Hullám Projekciós Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Fibonacci-arányos hullám-célárak és a 3 alapszabály ellenőrzése</div>
                 </div>
             </button>
         </div>
@@ -27033,6 +27079,139 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        function calcElliottWave() {
+            const ids = ['ew-p0', 'ew-p1', 'ew-p2', 'ew-p3', 'ew-p4', 'ew-p5'];
+            const els = ids.map(id => document.getElementById(id));
+            const out = document.getElementById('elliottwave-result');
+            if (els.some(e => !e) || !out) return;
+
+            const p0 = parseFloat(els[0].value);
+            const p1 = parseFloat(els[1].value);
+            const parseOpt = (el) => { const raw = el.value.trim(); if (raw === '') return null; const v = parseFloat(raw); return isNaN(v) ? null : v; };
+            const p2 = parseOpt(els[2]);
+            const p3 = parseOpt(els[3]);
+            const p4 = parseOpt(els[4]);
+            const p5 = parseOpt(els[5]);
+
+            if (isNaN(p0) || isNaN(p1) || p0 === p1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Add meg érvényesen az 1. hullám kezdő- és végpontját (P0, P1) — a kettőnek különbözőnek kell lennie!</div>`;
+                return;
+            }
+
+            const hasP2 = p2 !== null;
+            const hasP3 = p3 !== null;
+            const hasP4 = p4 !== null;
+            const hasP5 = p5 !== null;
+
+            const dir = p1 > p0 ? 1 : -1;
+            const dirLabel = dir === 1 ? 'Bullish (emelkedő) impulzus' : 'Bearish (csökkenő) impulzus';
+            const len1 = Math.abs(p1 - p0);
+
+            const fmt = (v) => v.toLocaleString('hu-HU', { maximumFractionDigits: 4 });
+            const row = (label, val, cls) => `
+                <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
+                    <span class="text-slate-400">${label}:</span>
+                    <span class="font-extrabold ${cls || 'text-white'} text-sm">${val}</span>
+                </div>
+            `;
+
+            const violations = [];
+            let html = `<div class="glass-card rounded-xl p-3 mb-3">`;
+            html += row('Irány', dirLabel, dir === 1 ? 'text-neon-green' : 'text-neon-red');
+            html += row('1. hullám hossza', fmt(len1));
+            html += `</div>`;
+
+            let len3 = null;
+
+            if (hasP2) {
+                const len2 = Math.abs(p2 - p1);
+                const retrace2 = len2 / len1 * 100;
+                const rule1Bad = dir === 1 ? (p2 < p0) : (p2 > p0);
+                if (rule1Bad) violations.push('a 2. hullám 100%-nál jobban visszahúzta az 1. hullámot');
+
+                html += `<div class="glass-card rounded-xl p-3 mb-3">`;
+                html += `<p class="text-[10px] font-bold text-sky-400 mb-1">2. hullám elemzés</p>`;
+                html += row('Visszahúzódás az 1. hullámból', retrace2.toFixed(1) + '%', rule1Bad ? 'text-neon-red' : ((retrace2 >= 38.2 && retrace2 <= 78.6) ? 'text-neon-green' : 'text-amber-400'));
+                html += `</div>`;
+
+                const mults3 = [1.0, 1.618, 2.618, 4.236];
+                html += `<div class="glass-card rounded-xl p-3 mb-3">`;
+                html += `<p class="text-[10px] font-bold text-sky-400 mb-1">3. hullám cél-projekció (a 2. hullám végétől)</p>`;
+                mults3.forEach(m => {
+                    const target = p2 + dir * len1 * m;
+                    html += row(`× ${m} (1. hullám)`, fmt(target));
+                });
+                html += `</div>`;
+            }
+
+            if (hasP2 && hasP3) {
+                len3 = Math.abs(p3 - p2);
+                const ratio3to1 = len3 / len1;
+
+                html += `<div class="glass-card rounded-xl p-3 mb-3">`;
+                html += `<p class="text-[10px] font-bold text-sky-400 mb-1">3. hullám elemzés</p>`;
+                html += row('3. hullám hossza', fmt(len3));
+                html += row('Arány az 1. hullámhoz', '×' + ratio3to1.toFixed(2));
+                html += `</div>`;
+
+                const fracs4 = [0.236, 0.382, 0.5];
+                html += `<div class="glass-card rounded-xl p-3 mb-3">`;
+                html += `<p class="text-[10px] font-bold text-sky-400 mb-1">4. hullám visszahúzódási zóna (a 3. hullám végétől)</p>`;
+                fracs4.forEach(f => {
+                    const target = p3 - dir * len3 * f;
+                    html += row(`${(f * 100).toFixed(1)}% retrace`, fmt(target));
+                });
+                html += row('Átfedési határ (1. hullám vége)', fmt(p1), 'text-amber-400');
+                html += `</div>`;
+            }
+
+            if (hasP2 && hasP3 && hasP4) {
+                const len4 = Math.abs(p4 - p3);
+                const retrace4 = len3 ? (len4 / len3 * 100) : null;
+                const overlapBad = dir === 1 ? (p4 < p1) : (p4 > p1);
+                if (overlapBad) violations.push('a 4. hullám belenyúlt az 1. hullám ártartományába (átfedés)');
+
+                html += `<div class="glass-card rounded-xl p-3 mb-3">`;
+                html += `<p class="text-[10px] font-bold text-sky-400 mb-1">4. hullám elemzés</p>`;
+                html += row('Visszahúzódás a 3. hullámból', retrace4 !== null ? retrace4.toFixed(1) + '%' : '—', overlapBad ? 'text-neon-red' : 'text-white');
+                html += row('Átfedés az 1. hullámmal?', overlapBad ? 'IGEN — szabálysértés' : 'Nincs átfedés', overlapBad ? 'text-neon-red' : 'text-neon-green');
+                html += `</div>`;
+
+                const net13 = Math.abs(p3 - p0);
+                html += `<div class="glass-card rounded-xl p-3 mb-3">`;
+                html += `<p class="text-[10px] font-bold text-sky-400 mb-1">5. hullám cél-projekció (a 4. hullám végétől)</p>`;
+                html += row('Egyenlőség (= 1. hullám)', fmt(p4 + dir * len1));
+                html += row('× 0.618 (1-3. hullám nettó)', fmt(p4 + dir * 0.618 * net13));
+                html += row('× 1.618 (1. hullám)', fmt(p4 + dir * 1.618 * len1));
+                html += `</div>`;
+            }
+
+            if (hasP2 && hasP3 && hasP4 && hasP5 && len3 !== null) {
+                const len5 = Math.abs(p5 - p4);
+                const rule2Bad = (len3 < len1) && (len3 < len5);
+                if (rule2Bad) violations.push('a 3. hullám a legrövidebb az 1./3./5. hullám közül');
+
+                html += `<div class="glass-card rounded-xl p-3 mb-3">`;
+                html += `<p class="text-[10px] font-bold text-sky-400 mb-1">Teljes szerkezet — hullámhosszak</p>`;
+                html += row('1. hullám', fmt(len1));
+                html += row('3. hullám', fmt(len3));
+                html += row('5. hullám', fmt(len5));
+                html += `</div>`;
+            }
+
+            let verdict;
+            if (!hasP2) {
+                verdict = `<p class="text-[10px] font-semibold text-slate-400">Add meg a további fordulópontokat is a részletesebb projekcióhoz és szabály-ellenőrzéshez.</p>`;
+            } else if (violations.length > 0) {
+                verdict = `<p class="text-[10px] font-semibold text-neon-red">Szabálysértés: ${violations.join('; ')}.</p>`;
+            } else {
+                verdict = `<p class="text-[10px] font-semibold text-neon-green">A megadott fordulópontok nem sértik a vizsgált Elliott alapszabályokat.</p>`;
+            }
+            html += verdict;
+
+            out.innerHTML = html;
+        }
+
         function calcHeikinAshi() {
             const candlesEl = document.getElementById('heikinashi-candles');
             const out = document.getElementById('heikinashi-result');
@@ -38744,6 +38923,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            138: { tool: 'elliottwave-modal', cta: 'Próbáld ki élesben az Elliott hullám Fibonacci-projekciót saját fordulópontjaidon' },
             510: { tool: 'seasonality-modal', cta: 'Teszteld élesben, hogy egy "szezonális mintázat" statisztikailag valóban kiugró-e' },
             367: { tool: 'gridopt-modal', cta: 'Futtasd le élesben a Grid Search Overfitting Demonstrátort' },
             180: { tool: 'pitchfork-modal', cta: 'Számold ki élesben az Andrews Pitchfork vonalait' },
@@ -39047,7 +39227,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
