@@ -7587,6 +7587,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-water mr-1"></i> Automatikus Drawdown-Duration Elemző
                 </button>
                 <div id="backtest-ddduration-result" class="mt-3"></div>
+                <button onclick="calcBacktestTradingFrequency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-check mr-1"></i> Kereskedési Gyakoriság és Aktivitás Elemző
+                </button>
+                <div id="backtest-frequency-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7706,6 +7710,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-water mr-1"></i> Automatikus Drawdown-Duration Elemző
                 </button>
                 <div id="sb-ddduration-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderTradingFrequency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-check mr-1"></i> Kereskedési Gyakoriság és Aktivitás Elemző
+                </button>
+                <div id="sb-frequency-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -16782,6 +16790,115 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
                 const stats = runPerformanceDecayDetector(tradeReturns, windowSize);
                 out.innerHTML = renderPerformanceDecayHtml(stats, windowSize);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= KERESKEDÉSI GYAKORISÁG ÉS AKTIVITÁS ELEMZŐ ("BRUTÁL" FEJLESZTÉS) =================
+        // Megmutatja, hogy egy stratégia mennyire "aktív" a naptári időben: hány NAPON volt
+        // egyáltalán trade (aktív nap), átlagosan hány trade esett egy aktív napra, mi volt a
+        // leghosszabb "csendes" (trade nélküli) időszak két aktív nap között, és melyik volt a
+        // legaktívabb egyetlen nap. Eltér a Napi PnL Bontástól (ami a HOZAMOT nézi naponta) és a
+        // Kereskedési Idősáv Elemzőtől (ami az ÓRÁT nézi) — ez a GYAKORISÁGOT/AKTIVITÁST méri.
+        // Csak meglévő candle.time és trade.entryIndex mezőket olvas.
+        function ptfDayKeyToEpochDay(dayKey) {
+            const [y, m, d] = dayKey.split('-').map(Number);
+            return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+        }
+
+        function runTradingFrequencyAnalysis(trades, candles) {
+            const n = candles ? candles.length : 0;
+            if (!trades || trades.length === 0) throw new Error('Legalább 1 trade szükséges a gyakoriság-elemzéshez.');
+            if (n < 1) throw new Error('Legalább 1 gyertya szükséges a gyakoriság-elemzéshez.');
+
+            const dayCounts = {};
+            let skipped = 0;
+            for (const t of trades) {
+                const entry = t.entryIndex;
+                if (entry === undefined || entry === null || entry < 0 || entry >= n) {
+                    skipped++;
+                    continue;
+                }
+                const ms = candles[entry].time;
+                const dayKey = new Date(ms).toISOString().slice(0, 10);
+                dayCounts[dayKey] = (dayCounts[dayKey] || 0) + 1;
+            }
+
+            const activeDays = Object.keys(dayCounts).sort();
+            if (activeDays.length === 0) throw new Error('Nincs érvényes trade a gyakoriság-elemzéshez.');
+            const activeDaysCount = activeDays.length;
+
+            const firstEpochDay = ptfDayKeyToEpochDay(activeDays[0]);
+            const lastEpochDay = ptfDayKeyToEpochDay(activeDays[activeDays.length - 1]);
+            const totalSpanDays = (lastEpochDay - firstEpochDay) + 1;
+
+            const totalTradeCount = Object.values(dayCounts).reduce((a, b) => a + b, 0);
+            const avgTradesPerActiveDay = totalTradeCount / activeDaysCount;
+            const avgTradesPerDay = totalSpanDays > 0 ? (totalTradeCount / totalSpanDays) : totalTradeCount;
+            const inactiveDaysCount = totalSpanDays - activeDaysCount;
+
+            let longestGapDays = 0;
+            for (let i = 1; i < activeDaysCount; i++) {
+                const gap = ptfDayKeyToEpochDay(activeDays[i]) - ptfDayKeyToEpochDay(activeDays[i - 1]);
+                if (gap > longestGapDays) longestGapDays = gap;
+            }
+
+            let busiestDayDate = activeDays[0], busiestDayTradeCount = dayCounts[activeDays[0]];
+            for (const d of activeDays) {
+                if (dayCounts[d] > busiestDayTradeCount) { busiestDayTradeCount = dayCounts[d]; busiestDayDate = d; }
+            }
+
+            return {
+                totalTradeCount, activeDaysCount, totalSpanDays, inactiveDaysCount,
+                avgTradesPerActiveDay, avgTradesPerDay, longestGapDays,
+                busiestDayDate, busiestDayTradeCount, skippedCount: skipped
+            };
+        }
+
+        function renderTradingFrequencyHtml(stats) {
+            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Kereskedési Gyakoriság és Aktivitás (${stats.totalSpanDays} napos időszak)</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Aktív / inaktív napok</div><div class="font-bold text-white">${stats.activeDaysCount} / ${stats.inactiveDaysCount}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Leghosszabb "csendes" időszak</div><div class="font-bold text-neon-amber">${stats.longestGapDays} nap</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlag trade / aktív nap</div><div class="font-bold text-white">${fmt(stats.avgTradesPerActiveDay)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlag trade / naptári nap</div><div class="font-bold text-white">${fmt(stats.avgTradesPerDay)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">Legaktívabb nap</div><div class="font-bold text-neon-green">${stats.busiestDayTradeCount} trade <span class="text-gray-500">(${stats.busiestDayDate})</span></div></div>
+                    </div>
+                    ${stats.skippedCount > 0 ? `<div class="text-xs text-gray-500">${stats.skippedCount} trade kihagyva érvénytelen index miatt.</div>` : ''}
+                    <div class="text-xs text-gray-500 mt-1">A hosszú "csendes" időszakok nem feltétlenül jelentenek problémát — egy trend-követő stratégia természetéből adódóan ritkábban kereskedik, mint egy skalpoló. Fontos azonban tudni, mennyire egyenletes vagy "görcsös" a stratégia aktivitása, mert ez befolyásolja a türelmet és a felügyeleti igényt.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestTradingFrequency() {
+            const out = document.getElementById('backtest-frequency-result');
+            if (!out) return;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.trades || window.lastBacktestResult.trades.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 trade szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const stats = runTradingFrequencyAnalysis(window.lastBacktestResult.trades, candleData);
+                out.innerHTML = renderTradingFrequencyHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderTradingFrequency() {
+            const out = document.getElementById('sb-frequency-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 trade szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const stats = runTradingFrequencyAnalysis(sbLastRunResult.trades, candleData);
+                out.innerHTML = renderTradingFrequencyHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
