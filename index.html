@@ -7607,6 +7607,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-scale mr-1"></i> Szükséges (Breakeven) Nyerési Arány
                 </button>
                 <div id="backtest-breakeven-result" class="mt-3"></div>
+                <button onclick="calcBacktestConsecutiveStreak()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-fire mr-1"></i> Nyerő/Vesztő Sorozat (Streak) Elemző
+                </button>
+                <div id="backtest-streak-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7746,6 +7750,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-scale mr-1"></i> Szükséges (Breakeven) Nyerési Arány
                 </button>
                 <div id="sb-breakeven-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderConsecutiveStreak()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-fire mr-1"></i> Nyerő/Vesztő Sorozat (Streak) Elemző
+                </button>
+                <div id="sb-streak-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -16907,6 +16915,115 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
                 const stats = runBreakevenWinrateAnalysis(tradeReturns);
                 out.innerHTML = renderBreakevenWinrateHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= NYERŐ/VESZTŐ SOROZAT (STREAK) ELEMZŐ ("BRUTÁL" FEJLESZTÉS) =================
+        // A win rate egyedül nem mutatja meg, hogy a trade-ek EGYMÁSUTÁNISÁGÁBAN milyen
+        // hosszú vesztő- vagy nyerő-sorozatok fordultak elő — ez pedig kritikus a
+        // psychológiai kitartáshoz és a pozícióméretezéshez: egy 50%-os win rate-nél is
+        // előfordulhat 6-8 egymás utáni vesztes trade, amit sok kereskedő érzelmileg nem
+        // bír ki (feladja a stratégiát pont a visszapattanás előtt). Csak a MÁR LEFUTOTT
+        // trade-sorozatot (tradeReturns) olvassa, nem módosít core motort.
+        function runConsecutiveStreakAnalysis(tradeReturns) {
+            const n = tradeReturns.length;
+            if (n < 2) throw new Error('Legalább 2 trade szükséges a sorozat-elemzéshez.');
+
+            const outcomes = tradeReturns.map(r => r > 0 ? 'W' : (r < 0 ? 'L' : 'E'));
+
+            let maxWinStreak = 0, maxLossStreak = 0;
+            let curWinStreak = 0, curLossStreak = 0;
+            const winStreaks = [], lossStreaks = [];
+
+            for (const o of outcomes) {
+                if (o === 'W') {
+                    curWinStreak++;
+                    if (curLossStreak > 0) lossStreaks.push(curLossStreak);
+                    curLossStreak = 0;
+                    maxWinStreak = Math.max(maxWinStreak, curWinStreak);
+                } else if (o === 'L') {
+                    curLossStreak++;
+                    if (curWinStreak > 0) winStreaks.push(curWinStreak);
+                    curWinStreak = 0;
+                    maxLossStreak = Math.max(maxLossStreak, curLossStreak);
+                } else {
+                    if (curWinStreak > 0) winStreaks.push(curWinStreak);
+                    if (curLossStreak > 0) lossStreaks.push(curLossStreak);
+                    curWinStreak = 0;
+                    curLossStreak = 0;
+                }
+            }
+            if (curWinStreak > 0) winStreaks.push(curWinStreak);
+            if (curLossStreak > 0) lossStreaks.push(curLossStreak);
+
+            const lastOutcome = outcomes[outcomes.length - 1];
+            let currentStreakLen = 0, currentStreakType = null;
+            if (lastOutcome === 'W' || lastOutcome === 'L') {
+                currentStreakType = lastOutcome;
+                for (let i = outcomes.length - 1; i >= 0; i--) {
+                    if (outcomes[i] === lastOutcome) currentStreakLen++;
+                    else break;
+                }
+            }
+
+            const avgWinStreak = winStreaks.length ? (winStreaks.reduce((a, b) => a + b, 0) / winStreaks.length) : 0;
+            const avgLossStreak = lossStreaks.length ? (lossStreaks.reduce((a, b) => a + b, 0) / lossStreaks.length) : 0;
+
+            return {
+                tradeCount: n, maxWinStreak, maxLossStreak, avgWinStreak, avgLossStreak,
+                winStreakCount: winStreaks.length, lossStreakCount: lossStreaks.length,
+                currentStreakLen, currentStreakType
+            };
+        }
+
+        function renderConsecutiveStreakHtml(stats) {
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            const curLabel = stats.currentStreakType === 'W' ? 'nyerő' : (stats.currentStreakType === 'L' ? 'vesztő' : 'nincs (döntetlen az utolsó trade)');
+            const curClass = stats.currentStreakType === 'W' ? 'text-neon-green' : (stats.currentStreakType === 'L' ? 'text-neon-red' : 'text-slate-400');
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Nyerő/Vesztő Sorozat (Streak) Elemzés</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Leghosszabb nyerő sorozat</div><div class="font-bold text-neon-green">${stats.maxWinStreak} trade</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Leghosszabb vesztő sorozat</div><div class="font-bold text-neon-red">${stats.maxLossStreak} trade</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos nyerő sorozat hossza</div><div class="font-bold text-white">${fmt(stats.avgWinStreak, 1)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos vesztő sorozat hossza</div><div class="font-bold text-white">${fmt(stats.avgLossStreak, 1)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">Jelenlegi (legutóbbi) sorozat</div><div class="font-bold ${curClass}">${stats.currentStreakLen > 0 ? `${stats.currentStreakLen} egymás utáni ${curLabel}` : curLabel}</div></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">A leghosszabb vesztő sorozat mutatja, mennyi egymás utáni veszteséget kell(ett) a stratégiának "kibírnia" — ez segít felkészülni mentálisan és méretezni a pozíciókat úgy, hogy egy ilyen sorozat ne okozzon likvidációt vagy feladást. Fontos: ez a MÚLTBAN megfigyelt maximum, a jövőben akár ennél hosszabb sorozat is előfordulhat.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestConsecutiveStreak() {
+            const out = document.getElementById('backtest-streak-result');
+            if (!out) return;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.trades || window.lastBacktestResult.trades.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = window.lastBacktestResult.trades.map(t => t.returnPct);
+                const stats = runConsecutiveStreakAnalysis(tradeReturns);
+                out.innerHTML = renderConsecutiveStreakHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderConsecutiveStreak() {
+            const out = document.getElementById('sb-streak-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
+                const stats = runConsecutiveStreakAnalysis(tradeReturns);
+                out.innerHTML = renderConsecutiveStreakHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
