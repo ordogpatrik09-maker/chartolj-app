@@ -7623,6 +7623,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-star mr-1"></i> Kiugró Érték (Outlier) Függőség
                 </button>
                 <div id="backtest-outlier-result" class="mt-3"></div>
+                <button onclick="calcBacktestAutoSkewKurtosis()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-wave-square mr-1"></i> Automatikus Skewness & Kurtosis
+                </button>
+                <div id="backtest-skewkurt-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7778,6 +7782,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-star mr-1"></i> Kiugró Érték (Outlier) Függőség
                 </button>
                 <div id="sb-outlier-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderAutoSkewKurtosis()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-wave-square mr-1"></i> Automatikus Skewness & Kurtosis
+                </button>
+                <div id="sb-skewkurt-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -17322,6 +17330,98 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
                 const stats = runOutlierDependencyAnalysis(tradeReturns, 3);
                 out.innerHTML = renderOutlierDependencyHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= AUTOMATIKUS SKEWNESS & KURTOSIS (VALÓDI TRADE-EKEN) ("BRUTÁL" FEJLESZTÉS) =================
+        // A meglévő Skewness & Kurtosis Kalkulátor kézi, vesszővel
+        // elválasztott hozam-bevitelt vár. Ez az eszköz UGYANAZT a
+        // momentum-alapú matematikát futtatja le AUTOMATIKUSAN a MÁR
+        // LEFUTOTT backtest/stratégia valódi trade-hozamain (%-ban) —
+        // nincs szükség kézi adatbevitelre. Ugyanazt a populációs (n-
+        // osztós) momentum-konvenciót követi, mint az eredeti kalkulátor
+        // (Skewness = m3/m2^1.5, Excess Kurtosis = m4/m2² − 3). Csak a
+        // meglévő tradeReturns tömböt olvassa, nem módosít core motort.
+        function runAutoSkewKurtosis(returns) {
+            const n = returns.length;
+            if (n < 3) throw new Error('Legalább 3 trade szükséges a ferdeség és csúcsosság becsléséhez.');
+
+            const mean = returns.reduce((a, b) => a + b, 0) / n;
+            let m2 = 0, m3 = 0, m4 = 0;
+            for (const r of returns) {
+                const d = r - mean;
+                m2 += d * d;
+                m3 += d * d * d;
+                m4 += d * d * d * d;
+            }
+            m2 /= n; m3 /= n; m4 /= n;
+
+            if (m2 === 0) throw new Error('Minden trade hozama azonos — a szórás 0, így a ferdeség és csúcsosság nem számítható.');
+
+            const skewness = m3 / Math.pow(m2, 1.5);
+            const excessKurtosis = m4 / (m2 * m2) - 3;
+
+            return { tradeCount: n, skewness, excessKurtosis };
+        }
+
+        function renderAutoSkewKurtosisHtml(stats) {
+            let skewVerdict, skewColorClass;
+            if (stats.skewness < -0.5) { skewColorClass = 'text-neon-red'; skewVerdict = '🚨 Erősen negatív ferdeség: ritka, de SÚLYOS negatív kiugró trade-ek fordulnak elő — a tipikus trade gyakran kicsi pozitív, de a "farok" a veszteség oldalán hosszú.'; }
+            else if (stats.skewness < 0) { skewColorClass = 'text-amber-400'; skewVerdict = '⚠️ Enyhén negatív ferdeség: kissé nagyobb a ritka, nagy veszteségek súlya, mint a ritka, nagy nyereségeké.'; }
+            else if (stats.skewness < 0.5) { skewColorClass = 'text-white'; skewVerdict = 'Közel szimmetrikus trade-eloszlás — nincs kifejezett irányú kiugrás-torzítás.'; }
+            else { skewColorClass = 'text-neon-green'; skewVerdict = '✅ Pozitív ferdeség: ritka, nagy POZITÍV kiugró trade-ek fordulnak elő — ez jellemzően a kedvezőbb irány (pl. trendkövető stratégiáknál gyakori mintázat).'; }
+
+            let kurtVerdict, kurtColorClass;
+            if (stats.excessKurtosis > 3) { kurtColorClass = 'text-neon-red'; kurtVerdict = '🚨 Nagyon magas többlet-csúcsosság: az extrém trade-eredmények (akár nyereség, akár veszteség) sokkal gyakoribbak, mint egy normális eloszlásnál — "kövér farkú" eloszlás.'; }
+            else if (stats.excessKurtosis > 1) { kurtColorClass = 'text-amber-400'; kurtVerdict = '⚠️ Közepesen magas többlet-csúcsosság: az extrém trade-eredmények valamivel gyakoribbak a normálisnál.'; }
+            else if (stats.excessKurtosis > -1) { kurtColorClass = 'text-white'; kurtVerdict = 'A csúcsosság közel van a normális eloszláséhoz — nincs kifejezett "kövér farok" hatás.'; }
+            else { kurtColorClass = 'text-neon-cyan'; kurtVerdict = 'Alacsony csúcsosság: az extrém trade-eredmények RITKÁBBAK, mint egy normális eloszlásnál — kiszámíthatóbb trade-sorozat.'; }
+
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Automatikus Skewness & Kurtosis (Valódi Trade-eken)</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Trade-ek száma</div><div class="font-bold text-white">${stats.tradeCount}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Skewness (ferdeség)</div><div class="font-extrabold ${skewColorClass}">${stats.skewness >= 0 ? '+' : ''}${stats.skewness.toFixed(3)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Excess Kurtosis (csúcsosság)</div><div class="font-extrabold ${kurtColorClass}">${stats.excessKurtosis >= 0 ? '+' : ''}${stats.excessKurtosis.toFixed(3)}</div></div>
+                    </div>
+                    <div class="text-xs font-semibold ${skewColorClass}">${skewVerdict}</div>
+                    <div class="text-xs font-semibold ${kurtColorClass}">${kurtVerdict}</div>
+                    <div class="text-xs text-gray-500 mt-1">Normális eloszlásnál a Skewness ≈ 0 és az excess Kurtosis ≈ 0. Egy stratégia, amely gyakran kis nyereséget, de ritkán nagy veszteséget produkál, jellemzően negatív ferdeséget mutat — ez könnyen "jobbnak tűnhet" a Sharpe-ráta alapján, mint amilyen a valóságban.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestAutoSkewKurtosis() {
+            const out = document.getElementById('backtest-skewkurt-result');
+            if (!out) return;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.trades || window.lastBacktestResult.trades.length < 3) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 3 trade szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = window.lastBacktestResult.trades.map(t => t.returnPct * 100);
+                const stats = runAutoSkewKurtosis(tradeReturns);
+                out.innerHTML = renderAutoSkewKurtosisHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderAutoSkewKurtosis() {
+            const out = document.getElementById('sb-skewkurt-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 3) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 3 trade szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct * 100);
+                const stats = runAutoSkewKurtosis(tradeReturns);
+                out.innerHTML = renderAutoSkewKurtosisHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
