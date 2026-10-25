@@ -7627,6 +7627,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-wave-square mr-1"></i> Automatikus Skewness & Kurtosis
                 </button>
                 <div id="backtest-skewkurt-result" class="mt-3"></div>
+                <button onclick="calcBacktestWeekdayPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-week mr-1"></i> Hét Napja Szerinti Teljesítmény
+                </button>
+                <div id="backtest-weekday-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7786,6 +7790,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-wave-square mr-1"></i> Automatikus Skewness & Kurtosis
                 </button>
                 <div id="sb-skewkurt-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderWeekdayPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-week mr-1"></i> Hét Napja Szerinti Teljesítmény
+                </button>
+                <div id="sb-weekday-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -17422,6 +17430,99 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct * 100);
                 const stats = runAutoSkewKurtosis(tradeReturns);
                 out.innerHTML = renderAutoSkewKurtosisHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= HÉT NAPJA SZERINTI TELJESÍTMÉNY ELEMZŐ ("BRUTÁL" FEJLESZTÉS) =================
+        // Megmutatja, hogy a MÁR LEFUTOTT backtest trade-jei melyik napon
+        // beütött BELÉPÉSSEL teljesítettek a legjobban/legrosszabbul —
+        // UTC naptári nap alapján bucketezve (ugyanaz az epoch-day
+        // konvenció, mint a Napi PnL Bontás eszközben). FONTOS: kevés
+        // trade esetén a napi szórás véletlenszerű is lehet — ez NEM egy
+        // statisztikai szignifikancia-teszt, csak leíró (deskriptív)
+        // elemzés. Csak olvas a már meglévő trades/candles tömbökből,
+        // nem módosít core motort.
+        const PTF_WEEKDAY_NAMES = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat', 'Vasárnap'];
+
+        function runWeekdayPerformanceAnalysis(trades, candles) {
+            const n = trades.length;
+            if (n < 2) throw new Error('Legalább 2 trade szükséges a hét napja szerinti elemzéshez.');
+
+            const buckets = Array.from({ length: 7 }, () => []);
+            for (const t of trades) {
+                const entryIdx = t.entryIndex;
+                if (entryIdx === undefined || entryIdx < 0 || entryIdx >= candles.length) continue;
+                const ms = candles[entryIdx].time;
+                const epochDay = Math.floor(ms / 86400000);
+                // 1970-01-01 (epochDay=0) csütörtök volt -> Hét=0,Ke=1,Sze=2,Csüt=3,Pé=4,Szo=5,Vas=6
+                const weekday = ((epochDay + 3) % 7 + 7) % 7;
+                buckets[weekday].push(t.returnPct);
+            }
+
+            const byDay = buckets.map((rets, i) => {
+                if (rets.length === 0) return { day: PTF_WEEKDAY_NAMES[i], tradeCount: 0, avgReturnPct: null, winRatePct: null, totalReturnPct: 0 };
+                const totalReturnPct = rets.reduce((a, b) => a + b, 0) * 100;
+                const avgReturnPct = (rets.reduce((a, b) => a + b, 0) / rets.length) * 100;
+                const wins = rets.filter(r => r > 0).length;
+                const winRatePct = (wins / rets.length) * 100;
+                return { day: PTF_WEEKDAY_NAMES[i], tradeCount: rets.length, avgReturnPct, winRatePct, totalReturnPct };
+            });
+
+            const active = byDay.filter(d => d.tradeCount > 0);
+            let bestDay = null, worstDay = null;
+            if (active.length > 0) {
+                bestDay = active.reduce((a, b) => (b.avgReturnPct > a.avgReturnPct ? b : a)).day;
+                worstDay = active.reduce((a, b) => (b.avgReturnPct < a.avgReturnPct ? b : a)).day;
+            }
+
+            return { tradeCount: n, byDay, bestDay, worstDay };
+        }
+
+        function renderWeekdayPerformanceHtml(stats) {
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            const rows = stats.byDay.map(d => `
+                <div class="flex justify-between text-[11px] ${d.tradeCount === 0 ? 'text-slate-600' : ''}">
+                    <span class="text-slate-400">${d.day}${d.day === stats.bestDay ? ' 🏆' : ''}${d.day === stats.worstDay ? ' ⚠️' : ''}:</span>
+                    <span class="${d.tradeCount === 0 ? 'text-slate-600' : (d.avgReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red')}">${d.tradeCount === 0 ? 'nincs trade' : `${d.tradeCount} trade · átlag ${d.avgReturnPct >= 0 ? '+' : ''}${fmt(d.avgReturnPct)}% · ${fmt(d.winRatePct, 0)}% győzelmi`}</span>
+                </div>
+            `).join('');
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Hét Napja Szerinti Teljesítmény (Belépés Napja)</div>
+                    <div class="space-y-1">${rows}</div>
+                    <div class="text-xs text-gray-500 mt-1">A 🏆 a legjobb, a ⚠️ a leggyengébb átlagos napot jelöli — FONTOS: kevés trade esetén (pl. &lt;10/nap) ez a különbség könnyen puszta véletlen is lehet, nem feltétlenül valós, kihasználható mintázat. Minél egyenletesebb az eloszlás a napok között, annál kevésbé valószínű, hogy a nap maga a teljesítmény oka.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestWeekdayPerformance() {
+            const out = document.getElementById('backtest-weekday-result');
+            if (!out) return;
+            const last = window.lastBacktestResult;
+            if (!last || !last.trades || last.trades.length < 2 || typeof candleData === 'undefined' || !candleData || candleData.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade és betöltött gyertyaadat szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const stats = runWeekdayPerformanceAnalysis(last.trades, candleData);
+                out.innerHTML = renderWeekdayPerformanceHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderWeekdayPerformance() {
+            const out = document.getElementById('sb-weekday-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 2 || typeof candleData === 'undefined' || !candleData || candleData.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade és betöltött gyertyaadat szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const stats = runWeekdayPerformanceAnalysis(sbLastRunResult.trades, candleData);
+                out.innerHTML = renderWeekdayPerformanceHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
