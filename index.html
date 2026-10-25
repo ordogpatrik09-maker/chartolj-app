@@ -16983,7 +16983,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
             try {
-                const stats = runAutoDrawdownDurationAnalysis(window.lastBacktestResult.equityCurve);
+                // Az equityCurve {index, equity} objektumok tömbje, nem puszta számoké —
+                // ki kell nyerni az equity mezőt, mielőtt a core elemzőnek átadnánk.
+                const equityValues = window.lastBacktestResult.equityCurve.map(e => (typeof e === 'number' ? e : e.equity));
+                const stats = runAutoDrawdownDurationAnalysis(equityValues);
                 out.innerHTML = renderAutoDrawdownDurationHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
@@ -16998,7 +17001,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
             try {
-                const stats = runAutoDrawdownDurationAnalysis(sbLastRunResult.equityCurve);
+                const equityValues = sbLastRunResult.equityCurve.map(e => (typeof e === 'number' ? e : e.equity));
+                const stats = runAutoDrawdownDurationAnalysis(equityValues);
                 out.innerHTML = renderAutoDrawdownDurationHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
@@ -17724,7 +17728,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
             try {
-                const stats = runEquityCurveConsistencyAnalysis(window.lastBacktestResult.equityCurve);
+                // Az equityCurve {index, equity} objektumok tömbje, nem puszta számoké —
+                // ki kell nyerni az equity mezőt, mielőtt a core elemzőnek átadnánk.
+                const equityValues = window.lastBacktestResult.equityCurve.map(e => (typeof e === 'number' ? e : e.equity));
+                const stats = runEquityCurveConsistencyAnalysis(equityValues);
                 out.innerHTML = renderEquityCurveConsistencyHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
@@ -17739,7 +17746,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
             try {
-                const stats = runEquityCurveConsistencyAnalysis(sbLastRunResult.equityCurve);
+                const equityValues = sbLastRunResult.equityCurve.map(e => (typeof e === 'number' ? e : e.equity));
+                const stats = runEquityCurveConsistencyAnalysis(equityValues);
                 out.innerHTML = renderEquityCurveConsistencyHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
