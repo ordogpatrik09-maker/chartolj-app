@@ -7603,6 +7603,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-scale-balanced mr-1"></i> Kelly-Alapú Pozícióméretezés Backtest
                 </button>
                 <div id="backtest-kellysizing-result" class="mt-3"></div>
+                <button onclick="calcBacktestBreakevenWinrate()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-scale mr-1"></i> Szükséges (Breakeven) Nyerési Arány
+                </button>
+                <div id="backtest-breakeven-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7738,6 +7742,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-scale-balanced mr-1"></i> Kelly-Alapú Pozícióméretezés Backtest
                 </button>
                 <div id="sb-kellysizing-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderBreakevenWinrate()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-scale mr-1"></i> Szükséges (Breakeven) Nyerési Arány
+                </button>
+                <div id="sb-breakeven-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -16814,6 +16822,91 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
                 const stats = runPerformanceDecayDetector(tradeReturns, windowSize);
                 out.innerHTML = renderPerformanceDecayHtml(stats, windowSize);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= SZÜKSÉGES (BREAKEVEN) NYERÉSI ARÁNY ELEMZŐ ("BRUTÁL" FEJLESZTÉS) =================
+        // Alapvető kérdés, amit sok kezdő elront: "elég jó-e" egy 45%-os nyerési arány?
+        // A válasz FÜGGETLEN a nyerési aránytól önmagában — attól függ, hogy az átlagos
+        // nyereség mekkora az átlagos veszteséghez képest (payoff ratio). Ez az eszköz
+        // kiszámolja a MÁR LEFUTOTT backtest trade-jeiből az átlagos nyereményt/veszteséget,
+        // ebből a BREAKEVEN (nullszaldós) nyerési arányt — azaz hány %-os win rate mellett
+        // "fedezi" épp a stratégia a saját költségét —, és megmutatja a "biztonsági
+        // ráhagyást" (a tényleges és a breakeven win rate közötti különbséget). Csak
+        // meglévő tradeReturns tömböt olvas, nem módosít core motort.
+        function runBreakevenWinrateAnalysis(tradeReturns) {
+            const n = tradeReturns.length;
+            if (n < 2) throw new Error('Legalább 2 trade szükséges a breakeven nyerési arány elemzéshez.');
+
+            const wins = tradeReturns.filter(r => r > 0);
+            const losses = tradeReturns.filter(r => r < 0);
+            if (wins.length === 0 || losses.length === 0) throw new Error('A breakeven-elemzéshez legalább 1 nyertes ÉS 1 vesztes trade is szükséges.');
+
+            const avgWinPct = (wins.reduce((a, b) => a + b, 0) / wins.length) * 100;
+            const avgLossPct = Math.abs(losses.reduce((a, b) => a + b, 0) / losses.length) * 100;
+            const payoffRatio = avgLossPct !== 0 ? (avgWinPct / avgLossPct) : null;
+
+            const breakevenWinratePct = (avgWinPct + avgLossPct) !== 0 ? (avgLossPct / (avgWinPct + avgLossPct) * 100) : null;
+            const actualWinratePct = (wins.length / n) * 100;
+            const marginOfSafetyPct = breakevenWinratePct !== null ? (actualWinratePct - breakevenWinratePct) : null;
+
+            return {
+                tradeCount: n, winCount: wins.length, lossCount: losses.length,
+                avgWinPct, avgLossPct, payoffRatio, breakevenWinratePct, actualWinratePct, marginOfSafetyPct
+            };
+        }
+
+        function renderBreakevenWinrateHtml(stats) {
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            let verdict, verdictClass;
+            if (stats.marginOfSafetyPct !== null && stats.marginOfSafetyPct > 5) { verdict = 'EGÉSZSÉGES BIZTONSÁGI RÁHAGYÁS A BREAKEVEN FELETT'; verdictClass = 'text-neon-green'; }
+            else if (stats.marginOfSafetyPct !== null && stats.marginOfSafetyPct > 0) { verdict = 'SZŰK BIZTONSÁGI RÁHAGYÁS — ÉRZÉKENY LEHET KIS INGADOZÁSRA'; verdictClass = 'text-neon-amber'; }
+            else { verdict = 'A TÉNYLEGES NYERÉSI ARÁNY A BREAKEVEN ALATT VAN'; verdictClass = 'text-neon-red'; }
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Szükséges (Breakeven) Nyerési Arány Elemzés</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos nyeremény / veszteség</div><div class="font-bold text-white">+${fmt(stats.avgWinPct)}% / -${fmt(stats.avgLossPct)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Payoff arány</div><div class="font-bold text-white">${fmt(stats.payoffRatio)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Szükséges (breakeven) win rate</div><div class="font-bold text-neon-amber">${fmt(stats.breakevenWinratePct, 1)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Tényleges win rate</div><div class="font-bold text-white">${fmt(stats.actualWinratePct, 1)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">Biztonsági ráhagyás (tényleges − breakeven)</div><div class="font-bold ${stats.marginOfSafetyPct > 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.marginOfSafetyPct >= 0 ? '+' : ''}${fmt(stats.marginOfSafetyPct, 1)} pp</div></div>
+                    </div>
+                    <div class="text-xs font-bold ${verdictClass} mt-1">${verdict}</div>
+                    <div class="text-xs text-gray-500 mt-1">Egy alacsony (pl. 35%) win rate is lehet nagyon profitábilis, ha a payoff arány elég magas (nagy nyeremények, kis veszteségek) — és fordítva, egy magas (pl. 65%) win rate is veszíthet, ha a veszteségek rendszeresen jóval nagyobbak a nyereségeknél. A biztonsági ráhagyás azt mutatja, mennyi "puffer" van, mire a stratégia épp nullszaldósra csúszna vissza.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestBreakevenWinrate() {
+            const out = document.getElementById('backtest-breakeven-result');
+            if (!out) return;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.trades || window.lastBacktestResult.trades.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = window.lastBacktestResult.trades.map(t => t.returnPct);
+                const stats = runBreakevenWinrateAnalysis(tradeReturns);
+                out.innerHTML = renderBreakevenWinrateHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderBreakevenWinrate() {
+            const out = document.getElementById('sb-breakeven-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
+                const stats = runBreakevenWinrateAnalysis(tradeReturns);
+                out.innerHTML = renderBreakevenWinrateHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
