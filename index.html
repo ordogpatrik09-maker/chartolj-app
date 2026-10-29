@@ -2654,14 +2654,21 @@
             <!-- Bottom Panel: Trade Log & Positions -->
             <div class="h-44 bg-dark-950/90 border-t border-dark-750/60 flex flex-col shrink-0 z-20">
                 <!-- Tabs Header -->
-                <div class="h-8 bg-dark-900 border-b border-dark-750/40 px-4 flex items-center gap-4 text-xs font-semibold">
-                    <button onclick="switchBottomTab('positions')" id="tab-btn-positions" class="text-neon-cyan border-b-2 border-neon-cyan py-1 transition">
-                        Nyitott Pozíciók (<span id="open-positions-count">0</span>)<span id="positions-unrealized-total" class="text-[10px] font-mono ml-1"></span>
+                <!-- JAVÍTÁS: a teljes "Nyitott Pozíciók (0)" / "Kereskedési
+                     Előzmények" feliratok mobilon (375px) 2 sorba törtek a
+                     fix h-8 (32px) magasságú fejlécben, és 8-10px-kel
+                     túllógtak alulra, a táblázat fejlécébe. Megoldás: mobilon
+                     (lg: alatt) rövidített feliratok (lg:hidden / hidden
+                     lg:inline pár), amik egy sorban kiférnek — desktopon a
+                     teljes szöveg változatlan marad. -->
+                <div id="bottom-tabs-header" class="h-8 bg-dark-900 border-b border-dark-750/40 px-4 flex items-center gap-4 text-xs font-semibold">
+                    <button onclick="switchBottomTab('positions')" id="tab-btn-positions" class="text-neon-cyan border-b-2 border-neon-cyan py-1 transition whitespace-nowrap">
+                        <span class="hidden lg:inline">Nyitott Pozíciók</span><span class="lg:hidden">Pozíciók</span> (<span id="open-positions-count">0</span>)<span id="positions-unrealized-total" class="text-[10px] font-mono ml-1"></span>
                     </button>
-                    <button onclick="switchBottomTab('history')" id="tab-btn-history" class="text-slate-400 hover:text-slate-200 py-1 transition">
-                        Kereskedési Előzmények
+                    <button onclick="switchBottomTab('history')" id="tab-btn-history" class="text-slate-400 hover:text-slate-200 py-1 transition whitespace-nowrap">
+                        <span class="hidden lg:inline">Kereskedési Előzmények</span><span class="lg:hidden">Előzmények</span>
                     </button>
-                    <button onclick="switchBottomTab('logs')" id="tab-btn-logs" class="text-slate-400 hover:text-slate-200 py-1 transition">
+                    <button onclick="switchBottomTab('logs')" id="tab-btn-logs" class="text-slate-400 hover:text-slate-200 py-1 transition whitespace-nowrap">
                         Tevékenység
                     </button>
                 </div>
@@ -40932,9 +40939,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const searchEl = document.getElementById('mobile-tools-search');
             if (searchEl) searchEl.value = '';
             if (typeof filterMobileToolsList === 'function') filterMobileToolsList();
+            // JAVÍTÁS: a #mobile-trade-fab-row ("Eszközök"/"Kereskedés" gombsor)
+            // z-[93]-as, a #mobile-tools-modal pedig csak z-[85] — emiatt a
+            // teljes képernyős kalkulátor-lista FÖLÉ lógott be a gombsor,
+            // eltakarva az utolsó kategóriá(ka)t. A modal nyitva léte alatt
+            // elrejtjük a gombsort, zárásnál visszaállítjuk.
+            const fabRow = document.getElementById('mobile-trade-fab-row');
+            if (fabRow) fabRow.style.display = 'none';
+            setMobileChatLauncherHidden(true);
         }
         function closeMobileToolsModal() {
             document.getElementById('mobile-tools-modal').classList.add('hidden');
+            const fabRow = document.getElementById('mobile-trade-fab-row');
+            if (fabRow && window.innerWidth < 1024 && typeof currentMobileTab !== 'undefined' && currentMobileTab === 'trade') {
+                fabRow.style.display = '';
+            }
+            if (typeof refreshMobileChatLauncherVisibility === 'function') refreshMobileChatLauncherVisibility();
         }
         function toggleTradingPlanSetup(label) {
             const el = document.querySelector(`[data-plan-setup="${label}"]`);
