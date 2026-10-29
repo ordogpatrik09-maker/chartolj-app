@@ -521,10 +521,21 @@
             #academy-body-gallery > section:first-child,
             #academy-body-whatif > section:first-child {
                 width: 100% !important;
-                max-height: 40vh;
+                max-height: 68vh;
                 border-right: none !important;
                 border-bottom: 1px solid rgba(51, 65, 85, 0.4);
             }
+            /* JAVÍTÁS (2026-10-30): a Chart Alakzatok / Mi lenne, ha... lista
+               panelje a fejléc + 2 szűrő-legördülő + keresőmező miatt a
+               korábbi 40vh-ból szinte semmit nem hagyott magának az
+               alakzat-/szcenárió-kártyáknak (csak kb. 1 fért ki teljesen)
+               — ugyanaz a "nem lehet semmit látni" minta, mint a
+               Leckéknél. Mivel a lista EGYSZER kiválasztás után úgyis
+               teljesen összecsukódik (lásd .academy-collapsed-list
+               fentebb, ami ezt a szekciót display:none-ra állítja), a
+               kezdeti (még semmi ki nem választva) állapotban nyugodtan
+               sokkal többet kaphat a lista — a lenti üres-állapot
+               placeholder nem veszít funkciót egy kisebb sávon sem. */
             #academy-body-lessons > section:last-child,
             #academy-body-gallery > section:last-child,
             #academy-body-whatif > section:last-child {
