@@ -7638,18 +7638,12 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="backtest-result" class="mt-4"></div>
             <div id="backtest-bootstrap-section" class="hidden mt-3">
-                <button onclick="calcBacktestBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition">
-                    <i class="fa-solid fa-dice mr-1"></i> Bootstrap Monte Carlo (szekvencia-kockázat)
-                </button>
-                <div id="backtest-bootstrap-result" class="mt-3"></div>
-                <button onclick="calcBacktestIndependenceTest()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-amber-400/30 text-amber-400 hover:bg-amber-400/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-link-slash mr-1"></i> Trade-Függetlenségi Teszt
-                </button>
-                <div id="backtest-indeptest-result" class="mt-3"></div>
-                <button onclick="calcBacktestBlockBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-layer-group mr-1"></i> Blokk-Bootstrap MC (soros korreláció)
-                </button>
-                <div id="backtest-blockbootstrap-result" class="mt-3"></div>
+                <div class="mt-3 rounded-xl border border-dark-750 overflow-hidden">
+                    <button type="button" onclick="toggleAnalyzerCategory('backtest-cat-risk')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
+                        <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-shield-halved text-neon-amber w-4 text-center"></i> Kockázat & Pénzkezelés</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="backtest-cat-risk-chevron"></i>
+                    </button>
+                    <div id="backtest-cat-risk" class="hidden p-3 pt-2 space-y-2 bg-dark-900/30 border-t border-dark-800">
                 <div class="grid grid-cols-2 gap-2 mt-2">
                     <div><label class="text-[10px] font-semibold text-slate-400">Díj/oldal (%)</label><input type="number" id="backtest-costdrag-fee" value="0.04" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-green/50"></div>
                     <div><label class="text-[10px] font-semibold text-slate-400">Csúszás/oldal (%)</label><input type="number" id="backtest-costdrag-slippage" value="0.05" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-green/50"></div>
@@ -7658,58 +7652,6 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-coins mr-1"></i> Reális Költség-Szimuláció (díj + csúszás)
                 </button>
                 <div id="backtest-costdrag-result" class="mt-3"></div>
-                <button onclick="calcBacktestSessionPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-earth-americas mr-1"></i> Kereskedési Idősáv Elemző
-                </button>
-                <div id="backtest-sessionperf-result" class="mt-3"></div>
-                <button onclick="calcBacktestPerformanceDecay()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-red/30 text-neon-red hover:bg-neon-red/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-chart-line mr-1"></i> Teljesítmény-Degradáció Detektor
-                </button>
-                <div id="backtest-decay-result" class="mt-3"></div>
-                <button onclick="calcBacktestTradeDurationExposure()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-hourglass-half mr-1"></i> Trade Futamidő és Kitettség Elemző
-                </button>
-                <div id="backtest-duration-result" class="mt-3"></div>
-                <button onclick="calcBacktestEquityCurveConsistency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-chart-area mr-1"></i> Egyenleg-görbe Konzisztencia (K-Ratio)
-                </button>
-                <div id="backtest-kratio-result" class="mt-3"></div>
-                <button onclick="calcBacktestGapRisk()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-arrow-trend-up mr-1"></i> Hétvégi/Éjszakai Gap-Kockázat Elemző
-                </button>
-                <div id="backtest-gaprisk-result" class="mt-3"></div>
-                <button onclick="calcBacktestRoundNumberProximity()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-circle-dot mr-1"></i> Kerekszám-Közelség Elemző
-                </button>
-                <div id="backtest-roundnum-result" class="mt-3"></div>
-                <button onclick="calcBacktestEdgeSignificance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-flask mr-1"></i> Statisztikai Szignifikancia Teszt (t-teszt)
-                </button>
-                <div id="backtest-ttest-result" class="mt-3"></div>
-                <button onclick="calcBacktestDailyPnL()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-calendar-day mr-1"></i> Napi PnL Bontás
-                </button>
-                <div id="backtest-dailypnl-result" class="mt-3"></div>
-                <button onclick="calcBacktestMfeMae()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-arrows-up-down mr-1"></i> MFE/MAE Elemző
-                </button>
-                <div id="backtest-mfemae-result" class="mt-3"></div>
-                <button onclick="calcBacktestAutoRiskAdjusted()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-gauge-high mr-1"></i> Automatikus Kockázattal Korrigált Mutatók
-                </button>
-                <div id="backtest-autorisk-result" class="mt-3"></div>
-                <button onclick="calcBacktestAutoDrawdownDuration()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-red/30 text-neon-red hover:bg-neon-red/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-water mr-1"></i> Automatikus Drawdown-Duration Elemző
-                </button>
-                <div id="backtest-ddduration-result" class="mt-3"></div>
-                <button onclick="calcBacktestTradingFrequency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-calendar-check mr-1"></i> Kereskedési Gyakoriság és Aktivitás Elemző
-                </button>
-                <div id="backtest-frequency-result" class="mt-3"></div>
-                <button onclick="calcBacktestBenchmarkCorrelation()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-chart-line mr-1"></i> Benchmark Korreláció és Béta Elemző
-                </button>
-                <div id="backtest-benchmark-result" class="mt-3"></div>
                 <div class="mt-2">
                     <label class="text-[10px] font-semibold text-slate-400">Kelly-szorzó (0.5 = "fél-Kelly", konzervatívabb)</label>
                     <input type="number" id="backtest-kelly-multiplier" value="0.5" step="0.1" min="0" max="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-amber/50">
@@ -7722,34 +7664,6 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-scale mr-1"></i> Szükséges (Breakeven) Nyerési Arány
                 </button>
                 <div id="backtest-breakeven-result" class="mt-3"></div>
-                <button onclick="calcBacktestConsecutiveStreak()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-fire mr-1"></i> Nyerő/Vesztő Sorozat (Streak) Elemző
-                </button>
-                <div id="backtest-streak-result" class="mt-3"></div>
-                <button onclick="calcBacktestAutoUlcerIndex()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-heart-crack mr-1"></i> Automatikus Ulcer Index
-                </button>
-                <div id="backtest-autoulcer-result" class="mt-3"></div>
-                <button onclick="calcBacktestAutoExpectancy()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-calculator mr-1"></i> Automatikus Trade Expectancy
-                </button>
-                <div id="backtest-autoexpect-result" class="mt-3"></div>
-                <button onclick="calcBacktestOutlierDependency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-star mr-1"></i> Kiugró Érték (Outlier) Függőség
-                </button>
-                <div id="backtest-outlier-result" class="mt-3"></div>
-                <button onclick="calcBacktestAutoSkewKurtosis()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-wave-square mr-1"></i> Automatikus Skewness & Kurtosis
-                </button>
-                <div id="backtest-skewkurt-result" class="mt-3"></div>
-                <button onclick="calcBacktestWeekdayPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-calendar-week mr-1"></i> Hét Napja Szerinti Teljesítmény
-                </button>
-                <div id="backtest-weekday-result" class="mt-3"></div>
-                <button onclick="calcBacktestWinrateConfidenceInterval()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-percent mr-1"></i> Nyerési Arány Konfidencia-Intervallum
-                </button>
-                <div id="backtest-winrateci-result" class="mt-3"></div>
                 <div class="mt-2">
                     <label class="text-[10px] font-semibold text-slate-400">Kockázat/trade % (a csőd-kockázat becsléséhez)</label>
                     <input type="number" id="backtest-autoror-riskpct" value="2" step="0.5" min="0.1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-amber/50">
@@ -7758,10 +7672,128 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-skull mr-1"></i> Automatikus Csőd-kockázat
                 </button>
                 <div id="backtest-autoror-result" class="mt-3"></div>
+                <button onclick="calcBacktestAutoRiskAdjusted()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-gauge-high mr-1"></i> Automatikus Kockázattal Korrigált Mutatók
+                </button>
+                <div id="backtest-autorisk-result" class="mt-3"></div>
+                <button onclick="calcBacktestAutoUlcerIndex()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-heart-crack mr-1"></i> Automatikus Ulcer Index
+                </button>
+                <div id="backtest-autoulcer-result" class="mt-3"></div>
+                <button onclick="calcBacktestAutoDrawdownDuration()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-red/30 text-neon-red hover:bg-neon-red/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-water mr-1"></i> Automatikus Drawdown-Duration Elemző
+                </button>
+                <div id="backtest-ddduration-result" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-xl border border-dark-750 overflow-hidden">
+                    <button type="button" onclick="toggleAnalyzerCategory('backtest-cat-stats')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
+                        <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-magnifying-glass-chart text-neon-amber w-4 text-center"></i> Statisztikai Megbízhatóság</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="backtest-cat-stats-chevron"></i>
+                    </button>
+                    <div id="backtest-cat-stats" class="hidden p-3 pt-2 space-y-2 bg-dark-900/30 border-t border-dark-800">
+                <button onclick="calcBacktestBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition">
+                    <i class="fa-solid fa-dice mr-1"></i> Bootstrap Monte Carlo (szekvencia-kockázat)
+                </button>
+                <div id="backtest-bootstrap-result" class="mt-3"></div>
+                <button onclick="calcBacktestBlockBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-layer-group mr-1"></i> Blokk-Bootstrap MC (soros korreláció)
+                </button>
+                <div id="backtest-blockbootstrap-result" class="mt-3"></div>
+                <button onclick="calcBacktestIndependenceTest()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-amber-400/30 text-amber-400 hover:bg-amber-400/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-link-slash mr-1"></i> Trade-Függetlenségi Teszt
+                </button>
+                <div id="backtest-indeptest-result" class="mt-3"></div>
+                <button onclick="calcBacktestEdgeSignificance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-flask mr-1"></i> Statisztikai Szignifikancia Teszt (t-teszt)
+                </button>
+                <div id="backtest-ttest-result" class="mt-3"></div>
+                <button onclick="calcBacktestWinrateConfidenceInterval()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-percent mr-1"></i> Nyerési Arány Konfidencia-Intervallum
+                </button>
+                <div id="backtest-winrateci-result" class="mt-3"></div>
+                <button onclick="calcBacktestAutoSkewKurtosis()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-wave-square mr-1"></i> Automatikus Skewness & Kurtosis
+                </button>
+                <div id="backtest-skewkurt-result" class="mt-3"></div>
+                <button onclick="calcBacktestOutlierDependency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-star mr-1"></i> Kiugró Érték (Outlier) Függőség
+                </button>
+                <div id="backtest-outlier-result" class="mt-3"></div>
+                <button onclick="calcBacktestPerformanceDecay()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-red/30 text-neon-red hover:bg-neon-red/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-chart-line mr-1"></i> Teljesítmény-Degradáció Detektor
+                </button>
+                <div id="backtest-decay-result" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-xl border border-dark-750 overflow-hidden">
+                    <button type="button" onclick="toggleAnalyzerCategory('backtest-cat-timing')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
+                        <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-clock text-neon-amber w-4 text-center"></i> Idő & Piaci Mintázatok</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="backtest-cat-timing-chevron"></i>
+                    </button>
+                    <div id="backtest-cat-timing" class="hidden p-3 pt-2 space-y-2 bg-dark-900/30 border-t border-dark-800">
+                <button onclick="calcBacktestSessionPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-earth-americas mr-1"></i> Kereskedési Idősáv Elemző
+                </button>
+                <div id="backtest-sessionperf-result" class="mt-3"></div>
+                <button onclick="calcBacktestGapRisk()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-arrow-trend-up mr-1"></i> Hétvégi/Éjszakai Gap-Kockázat Elemző
+                </button>
+                <div id="backtest-gaprisk-result" class="mt-3"></div>
+                <button onclick="calcBacktestWeekdayPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-week mr-1"></i> Hét Napja Szerinti Teljesítmény
+                </button>
+                <div id="backtest-weekday-result" class="mt-3"></div>
+                <button onclick="calcBacktestTradingFrequency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-check mr-1"></i> Kereskedési Gyakoriság és Aktivitás Elemző
+                </button>
+                <div id="backtest-frequency-result" class="mt-3"></div>
                 <button onclick="calcBacktestVolatilityEntryPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
                     <i class="fa-solid fa-bolt mr-1"></i> Belépéskori Volatilitás vs. Teljesítmény
                 </button>
                 <div id="backtest-volperf-result" class="mt-3"></div>
+                <button onclick="calcBacktestRoundNumberProximity()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-circle-dot mr-1"></i> Kerekszám-Közelség Elemző
+                </button>
+                <div id="backtest-roundnum-result" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-xl border border-dark-750 overflow-hidden">
+                    <button type="button" onclick="toggleAnalyzerCategory('backtest-cat-trade')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
+                        <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-simple text-neon-amber w-4 text-center"></i> Trade-szintű Elemzés</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="backtest-cat-trade-chevron"></i>
+                    </button>
+                    <div id="backtest-cat-trade" class="hidden p-3 pt-2 space-y-2 bg-dark-900/30 border-t border-dark-800">
+                <button onclick="calcBacktestTradeDurationExposure()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-hourglass-half mr-1"></i> Trade Futamidő és Kitettség Elemző
+                </button>
+                <div id="backtest-duration-result" class="mt-3"></div>
+                <button onclick="calcBacktestMfeMae()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-arrows-up-down mr-1"></i> MFE/MAE Elemző
+                </button>
+                <div id="backtest-mfemae-result" class="mt-3"></div>
+                <button onclick="calcBacktestEquityCurveConsistency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-chart-area mr-1"></i> Egyenleg-görbe Konzisztencia (K-Ratio)
+                </button>
+                <div id="backtest-kratio-result" class="mt-3"></div>
+                <button onclick="calcBacktestBenchmarkCorrelation()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-chart-line mr-1"></i> Benchmark Korreláció és Béta Elemző
+                </button>
+                <div id="backtest-benchmark-result" class="mt-3"></div>
+                <button onclick="calcBacktestConsecutiveStreak()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-fire mr-1"></i> Nyerő/Vesztő Sorozat (Streak) Elemző
+                </button>
+                <div id="backtest-streak-result" class="mt-3"></div>
+                <button onclick="calcBacktestAutoExpectancy()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calculator mr-1"></i> Automatikus Trade Expectancy
+                </button>
+                <div id="backtest-autoexpect-result" class="mt-3"></div>
+                <button onclick="calcBacktestDailyPnL()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-day mr-1"></i> Napi PnL Bontás
+                </button>
+                <div id="backtest-dailypnl-result" class="mt-3"></div>
+                    </div>
+                </div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7817,18 +7849,12 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="sb-result" class="mt-4"></div>
             <div id="sb-bootstrap-section" class="hidden mt-3">
-                <button onclick="calcStrategyBuilderBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-amber-400/30 text-amber-400 hover:bg-amber-400/10 active:scale-[0.98] transition">
-                    <i class="fa-solid fa-dice mr-1"></i> Bootstrap Monte Carlo (szekvencia-kockázat)
-                </button>
-                <div id="sb-bootstrap-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderIndependenceTest()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-link-slash mr-1"></i> Trade-Függetlenségi Teszt
-                </button>
-                <div id="sb-indeptest-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderBlockBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-layer-group mr-1"></i> Blokk-Bootstrap MC (soros korreláció)
-                </button>
-                <div id="sb-blockbootstrap-result" class="mt-3"></div>
+                <div class="mt-3 rounded-xl border border-dark-750 overflow-hidden">
+                    <button type="button" onclick="toggleAnalyzerCategory('sb-cat-risk')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
+                        <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-shield-halved text-neon-amber w-4 text-center"></i> Kockázat & Pénzkezelés</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="sb-cat-risk-chevron"></i>
+                    </button>
+                    <div id="sb-cat-risk" class="hidden p-3 pt-2 space-y-2 bg-dark-900/30 border-t border-dark-800">
                 <div class="grid grid-cols-2 gap-2 mt-2">
                     <div><label class="text-[10px] font-semibold text-slate-400">Díj/oldal (%)</label><input type="number" id="sb-costdrag-fee" value="0.04" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-green/50"></div>
                     <div><label class="text-[10px] font-semibold text-slate-400">Csúszás/oldal (%)</label><input type="number" id="sb-costdrag-slippage" value="0.05" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-green/50"></div>
@@ -7837,58 +7863,6 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-coins mr-1"></i> Reális Költség-Szimuláció (díj + csúszás)
                 </button>
                 <div id="sb-costdrag-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderSessionPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-earth-americas mr-1"></i> Kereskedési Idősáv Elemző
-                </button>
-                <div id="sb-sessionperf-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderPerformanceDecay()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-red/30 text-neon-red hover:bg-neon-red/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-chart-line mr-1"></i> Teljesítmény-Degradáció Detektor
-                </button>
-                <div id="sb-decay-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderTradeDurationExposure()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-hourglass-half mr-1"></i> Trade Futamidő és Kitettség Elemző
-                </button>
-                <div id="sb-duration-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderEquityCurveConsistency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-chart-area mr-1"></i> Egyenleg-görbe Konzisztencia (K-Ratio)
-                </button>
-                <div id="sb-kratio-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderGapRisk()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-arrow-trend-up mr-1"></i> Hétvégi/Éjszakai Gap-Kockázat Elemző
-                </button>
-                <div id="sb-gaprisk-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderRoundNumberProximity()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-circle-dot mr-1"></i> Kerekszám-Közelség Elemző
-                </button>
-                <div id="sb-roundnum-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderEdgeSignificance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-flask mr-1"></i> Statisztikai Szignifikancia Teszt (t-teszt)
-                </button>
-                <div id="sb-ttest-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderDailyPnL()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-calendar-day mr-1"></i> Napi PnL Bontás
-                </button>
-                <div id="sb-dailypnl-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderMfeMae()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-arrows-up-down mr-1"></i> MFE/MAE Elemző
-                </button>
-                <div id="sb-mfemae-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderAutoRiskAdjusted()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-gauge-high mr-1"></i> Automatikus Kockázattal Korrigált Mutatók
-                </button>
-                <div id="sb-autorisk-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderAutoDrawdownDuration()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-red/30 text-neon-red hover:bg-neon-red/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-water mr-1"></i> Automatikus Drawdown-Duration Elemző
-                </button>
-                <div id="sb-ddduration-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderTradingFrequency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-calendar-check mr-1"></i> Kereskedési Gyakoriság és Aktivitás Elemző
-                </button>
-                <div id="sb-frequency-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderBenchmarkCorrelation()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-chart-line mr-1"></i> Benchmark Korreláció és Béta Elemző
-                </button>
-                <div id="sb-benchmark-result" class="mt-3"></div>
                 <div class="mt-2">
                     <label class="text-[10px] font-semibold text-slate-400">Kelly-szorzó (0.5 = "fél-Kelly", konzervatívabb)</label>
                     <input type="number" id="sb-kelly-multiplier" value="0.5" step="0.1" min="0" max="2" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-amber/50">
@@ -7901,34 +7875,6 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-scale mr-1"></i> Szükséges (Breakeven) Nyerési Arány
                 </button>
                 <div id="sb-breakeven-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderConsecutiveStreak()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-fire mr-1"></i> Nyerő/Vesztő Sorozat (Streak) Elemző
-                </button>
-                <div id="sb-streak-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderAutoUlcerIndex()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-heart-crack mr-1"></i> Automatikus Ulcer Index
-                </button>
-                <div id="sb-autoulcer-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderAutoExpectancy()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-calculator mr-1"></i> Automatikus Trade Expectancy
-                </button>
-                <div id="sb-autoexpect-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderOutlierDependency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-star mr-1"></i> Kiugró Érték (Outlier) Függőség
-                </button>
-                <div id="sb-outlier-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderAutoSkewKurtosis()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-wave-square mr-1"></i> Automatikus Skewness & Kurtosis
-                </button>
-                <div id="sb-skewkurt-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderWeekdayPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-calendar-week mr-1"></i> Hét Napja Szerinti Teljesítmény
-                </button>
-                <div id="sb-weekday-result" class="mt-3"></div>
-                <button onclick="calcStrategyBuilderWinrateConfidenceInterval()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
-                    <i class="fa-solid fa-percent mr-1"></i> Nyerési Arány Konfidencia-Intervallum
-                </button>
-                <div id="sb-winrateci-result" class="mt-3"></div>
                 <div class="mt-2">
                     <label class="text-[10px] font-semibold text-slate-400">Kockázat/trade % (a csőd-kockázat becsléséhez)</label>
                     <input type="number" id="sb-autoror-riskpct" value="2" step="0.5" min="0.1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 font-mono text-[11px] text-white focus:outline-none focus:border-neon-amber/50">
@@ -7937,10 +7883,128 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-skull mr-1"></i> Automatikus Csőd-kockázat
                 </button>
                 <div id="sb-autoror-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderAutoRiskAdjusted()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-gauge-high mr-1"></i> Automatikus Kockázattal Korrigált Mutatók
+                </button>
+                <div id="sb-autorisk-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderAutoUlcerIndex()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-heart-crack mr-1"></i> Automatikus Ulcer Index
+                </button>
+                <div id="sb-autoulcer-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderAutoDrawdownDuration()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-red/30 text-neon-red hover:bg-neon-red/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-water mr-1"></i> Automatikus Drawdown-Duration Elemző
+                </button>
+                <div id="sb-ddduration-result" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-xl border border-dark-750 overflow-hidden">
+                    <button type="button" onclick="toggleAnalyzerCategory('sb-cat-stats')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
+                        <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-magnifying-glass-chart text-neon-amber w-4 text-center"></i> Statisztikai Megbízhatóság</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="sb-cat-stats-chevron"></i>
+                    </button>
+                    <div id="sb-cat-stats" class="hidden p-3 pt-2 space-y-2 bg-dark-900/30 border-t border-dark-800">
+                <button onclick="calcStrategyBuilderBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-amber-400/30 text-amber-400 hover:bg-amber-400/10 active:scale-[0.98] transition">
+                    <i class="fa-solid fa-dice mr-1"></i> Bootstrap Monte Carlo (szekvencia-kockázat)
+                </button>
+                <div id="sb-bootstrap-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderBlockBootstrap()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-layer-group mr-1"></i> Blokk-Bootstrap MC (soros korreláció)
+                </button>
+                <div id="sb-blockbootstrap-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderIndependenceTest()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-sky-400/30 text-sky-400 hover:bg-sky-400/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-link-slash mr-1"></i> Trade-Függetlenségi Teszt
+                </button>
+                <div id="sb-indeptest-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderEdgeSignificance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-flask mr-1"></i> Statisztikai Szignifikancia Teszt (t-teszt)
+                </button>
+                <div id="sb-ttest-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderWinrateConfidenceInterval()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-percent mr-1"></i> Nyerési Arány Konfidencia-Intervallum
+                </button>
+                <div id="sb-winrateci-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderAutoSkewKurtosis()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-wave-square mr-1"></i> Automatikus Skewness & Kurtosis
+                </button>
+                <div id="sb-skewkurt-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderOutlierDependency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-star mr-1"></i> Kiugró Érték (Outlier) Függőség
+                </button>
+                <div id="sb-outlier-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderPerformanceDecay()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-red/30 text-neon-red hover:bg-neon-red/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-chart-line mr-1"></i> Teljesítmény-Degradáció Detektor
+                </button>
+                <div id="sb-decay-result" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-xl border border-dark-750 overflow-hidden">
+                    <button type="button" onclick="toggleAnalyzerCategory('sb-cat-timing')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
+                        <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-clock text-neon-amber w-4 text-center"></i> Idő & Piaci Mintázatok</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="sb-cat-timing-chevron"></i>
+                    </button>
+                    <div id="sb-cat-timing" class="hidden p-3 pt-2 space-y-2 bg-dark-900/30 border-t border-dark-800">
+                <button onclick="calcStrategyBuilderSessionPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-earth-americas mr-1"></i> Kereskedési Idősáv Elemző
+                </button>
+                <div id="sb-sessionperf-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderGapRisk()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-arrow-trend-up mr-1"></i> Hétvégi/Éjszakai Gap-Kockázat Elemző
+                </button>
+                <div id="sb-gaprisk-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderWeekdayPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-week mr-1"></i> Hét Napja Szerinti Teljesítmény
+                </button>
+                <div id="sb-weekday-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderTradingFrequency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-check mr-1"></i> Kereskedési Gyakoriság és Aktivitás Elemző
+                </button>
+                <div id="sb-frequency-result" class="mt-3"></div>
                 <button onclick="calcStrategyBuilderVolatilityEntryPerformance()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
                     <i class="fa-solid fa-bolt mr-1"></i> Belépéskori Volatilitás vs. Teljesítmény
                 </button>
                 <div id="sb-volperf-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderRoundNumberProximity()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-purple/30 text-neon-purple hover:bg-neon-purple/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-circle-dot mr-1"></i> Kerekszám-Közelség Elemző
+                </button>
+                <div id="sb-roundnum-result" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-xl border border-dark-750 overflow-hidden">
+                    <button type="button" onclick="toggleAnalyzerCategory('sb-cat-trade')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
+                        <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-simple text-neon-amber w-4 text-center"></i> Trade-szintű Elemzés</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="sb-cat-trade-chevron"></i>
+                    </button>
+                    <div id="sb-cat-trade" class="hidden p-3 pt-2 space-y-2 bg-dark-900/30 border-t border-dark-800">
+                <button onclick="calcStrategyBuilderTradeDurationExposure()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-hourglass-half mr-1"></i> Trade Futamidő és Kitettség Elemző
+                </button>
+                <div id="sb-duration-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderMfeMae()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-arrows-up-down mr-1"></i> MFE/MAE Elemző
+                </button>
+                <div id="sb-mfemae-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderEquityCurveConsistency()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-green/30 text-neon-green hover:bg-neon-green/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-chart-area mr-1"></i> Egyenleg-görbe Konzisztencia (K-Ratio)
+                </button>
+                <div id="sb-kratio-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderBenchmarkCorrelation()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-chart-line mr-1"></i> Benchmark Korreláció és Béta Elemző
+                </button>
+                <div id="sb-benchmark-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderConsecutiveStreak()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-fire mr-1"></i> Nyerő/Vesztő Sorozat (Streak) Elemző
+                </button>
+                <div id="sb-streak-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderAutoExpectancy()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calculator mr-1"></i> Automatikus Trade Expectancy
+                </button>
+                <div id="sb-autoexpect-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderDailyPnL()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-calendar-day mr-1"></i> Napi PnL Bontás
+                </button>
+                <div id="sb-dailypnl-result" class="mt-3"></div>
+                    </div>
+                </div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -43593,6 +43657,19 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
         // halvány, pulzáló nyilat, ha VAN még el nem ért, jobbra görgethető
         // tartalom — asztali nézeten (>=1024px) sosem jelenik meg. Nem
         // módosítja az alatta lévő adatlogikát, csak egy vizuális jelzés.
+        // Összecsukható kategória-panelek a Backtest / Stratégia-Építő
+        // modalok elemző-gombjaihoz. Cél: ne legyen zsúfolt, egyben
+        // átlátható, könnyen kezelhető legyen 28 elemző csoportosítva.
+        // Csak a megjelenést vezérli, a kalkulátor-logikát nem érinti.
+        function toggleAnalyzerCategory(catId) {
+            const panel = document.getElementById(catId);
+            const chevron = document.getElementById(catId + '-chevron');
+            if (!panel) return;
+            const willOpen = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !willOpen);
+            if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
         function setupMobileScrollHints() {
             const containers = [
                 document.querySelector('header.h-14'),
