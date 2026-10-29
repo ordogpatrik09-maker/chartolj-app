@@ -450,6 +450,34 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-10-30, mobil UX audit — "Chart Drill" cím
+               takarásban/levágva): az Akadémia több alfülének tartalom-
+               nézete (#academy-viewer, #chart-strategy-viewer,
+               #whatif-viewer, #drill-viewer, #replay-viewer,
+               #mistake-bank-viewer) "flex items-center justify-center"-rel
+               FÜGGŐLEGESEN KÖZÉPRE igazítja a tartalmát — ez az üres
+               kezdőállapotnál (rövid szöveg) jól néz ki, DE amint a
+               tényleges tartalom (pl. a Chart Drill bevezető szövege)
+               magasabb, mint a látható terület, a középre igazítás a
+               tartalom TETEJÉT a konténer fölé tolja — és mivel
+               overflow-y:auto-nál a scrollTop alapból 0-ról indul, ez a
+               fölé tolt rész GÖRGETÉSSEL SEM érhető el (a böngésző csak
+               lefelé enged görgetni, fölé nem) — így a cím/szöveg eleje
+               a fölötte lévő fejléc/legördülő sáv alá csúszva, levágva
+               jelent meg. A megoldás: mobilon a tartalom a konténer
+               TETEJÉHEZ igazodjon (nem középre), hogy magas tartalomnál
+               minden sor a normál görgetési tartományon belül, teljesen
+               elérhető maradjon — rövid (üres-állapot) tartalomnál ez
+               vizuálisan alig észrevehető különbség. */
+            #academy-viewer,
+            #chart-strategy-viewer,
+            #whatif-viewer,
+            #drill-viewer,
+            #replay-viewer,
+            #mistake-bank-viewer {
+                align-items: flex-start !important;
+            }
+
             /* JAVÍTÁS (mobil UX audit): a "Stratégiai Kalkulátorok" lista
                (#mobile-tools-modal) alján lévő kártyák (pl. "Inflációs
                Hatás Kalkulátor", "Funding Rate Kalkulátor") a lebegő
