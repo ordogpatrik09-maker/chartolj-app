@@ -2137,6 +2137,13 @@
                                 <div class="text-[10px] text-slate-400">Melyik díjazási modell olcsóbb a te tételméreteden?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('makertaker-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Maker/Taker Díj Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mennyit spórolsz limit (maker) megbízásokkal a market (taker) helyett?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('stresstest-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-red-400/10 text-red-400 border border-red-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-radiation"></i></span>
                             <div>
@@ -7355,6 +7362,58 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= MAKER/TAKER DÍJ KALKULÁTOR (KITERJESZTÉS) =================
+         A "Maker és Taker Díjak" és a "Kereskedési Díjkedvezmények (VIP szintek)"
+         Akadémia-leckék eddig csak elméletben magyarázták el, miért olcsóbb
+         (vagy visszatérítéses) a likviditást adó limit (maker) megbízás a
+         likviditást elvevő market (taker) megbízáshoz képest, és hogy a
+         bróker/tőzsde VIP díjszintjei a havi volumen alapján miért
+         csökkenthetik ezeket a rátákat — eszköz nélkül. Ez pótolja: a
+         felhasználó megadja a havi volumenét, a maker/taker arányát és a két
+         díjrátát (a maker ráta lehet negatív is = visszatérítés), a kalkulátor
+         pedig konkrét dollárösszegben megmutatja a vegyes (blended) díjat, a
+         tisztán taker esethez képesti megtakarítást, és a maker-arány
+         további növelésében rejlő extra megtakarítási potenciált — ezzel
+         szemléltetve, miért érdemes a VIP szint elérésekor (vagy limit
+         megbízások tudatos használatával) figyelni a maker/taker mixre.
+         Formula: blended% = makerArány × makerDíj% + (1-makerArány) × takerDíj%;
+         blendedKöltség = volumen × blended% / 100. -->
+    <div id="makertaker-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-neon-cyan"></i> Maker/Taker Díj Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('makertaker-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Mennyit számít, ha limit (maker) megbízással likviditást adsz a piachoz, vagy market (taker) megbízással veszed el azt? Add meg a havi volumened, a maker/taker mixet és a két rátát — a kalkulátor pontos dollárösszegben mutatja a vegyes díjadat, és azt is, mennyit spórolhatnál még. Ez az alapja annak is, hogy a bróker/tőzsde VIP díjszintjei miért csökkennek a volumen növekedésével.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Havi kereskedési volumen ($)</label>
+            <input type="number" id="makertaker-volume" value="50000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Maker arány a volumenből (%)</label>
+            <input type="number" id="makertaker-ratio" value="40" step="1" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Maker díj (%)</label>
+                    <input type="number" id="makertaker-makerfee" value="-0.01" step="0.001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Taker díj (%)</label>
+                    <input type="number" id="makertaker-takerfee" value="0.06" step="0.001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <button onclick="calcMakerTakerFee()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="makertaker-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A maker díj negatív érték esetén visszatérítést (rebate) jelent, nem költséget. A vegyes (blended) ráta: maker-arány × maker díj + (1 - maker-arány) × taker díj. A VIP/volumen-szintek jellemzően mindkét rátát csökkentik, ahogy a havi volumened nő — próbáld ki a mezőkben a saját, magasabb szintű rátáidat is, hogy lásd a különbséget. Oktatási közelítés: nem veszi figyelembe a brókerspecifikus kedvezményeket vagy a devizaváltási költségeket.</p>
+        </div>
+    </div>
+
     <!-- ================= STRESSZ-TESZT KALKULÁTOR (OKTATÁSI) =================
          A backtest VALÓS, múltbeli adatokat teszt; a Monte Carlo a MEGLÉVŐ
          trade-eloszlásból húz véletlen mintákat. A stressz-teszt ezekkel
@@ -12073,6 +12132,13 @@ Mean-reversion,2.5</textarea>
                 <div>
                     <div class="text-xs font-bold text-white">Fix vs Százalékos Jutalék Összehasonlító</div>
                     <div class="text-[10px] text-slate-400">Melyik díjazási modell olcsóbb a te tételméreteden?</div>
+                </div>
+            </button>
+            <button onclick="closeMobileToolsModal(); openToolModal('makertaker-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-balanced"></i></span>
+                <div>
+                    <div class="text-xs font-bold text-white">Maker/Taker Díj Kalkulátor</div>
+                    <div class="text-[10px] text-slate-400">Mennyit spórolsz limit (maker) megbízásokkal a market (taker) helyett?</div>
                 </div>
             </button>
             <button onclick="closeMobileToolsModal(); openToolModal('stresstest-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-red-400/30 transition text-left">
@@ -30015,6 +30081,91 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= MAKER/TAKER DÍJ KALKULÁTOR (KITERJESZTÉS) =================
+        // blended% = makerArány × makerDíj% + (1 - makerArány) × takerDíj%
+        // blendedKöltség = volumen × blended% / 100. A maker díj lehet negatív
+        // (visszatérítés/rebate). allTaker/allMaker a két szélső eset volumenre
+        // vonatkoztatva, ezekhez képest mutatjuk a már realizált és a még
+        // kihasználható megtakarítást.
+        function calcMakerTakerFee() {
+            const ids = ['makertaker-volume', 'makertaker-ratio', 'makertaker-makerfee', 'makertaker-takerfee'];
+            const els = ids.map(id => document.getElementById(id));
+            const out = document.getElementById('makertaker-result');
+            if (els.some(el => !el) || !out) return;
+
+            const [volume, makerRatioRaw, makerFeePct, takerFeePct] = els.map(el => parseFloat(el.value));
+
+            if (!volume || volume <= 0 ||
+                isNaN(makerRatioRaw) || makerRatioRaw < 0 || makerRatioRaw > 100 ||
+                isNaN(makerFeePct) || isNaN(takerFeePct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb havi volument, egy 0 és 100 közötti maker arányt, és érvényes maker/taker díjakat!</div>`;
+                return;
+            }
+
+            const makerRatio = makerRatioRaw / 100;
+            const takerRatio = 1 - makerRatio;
+            const blendedRatePct = makerRatio * makerFeePct + takerRatio * takerFeePct;
+            const blendedCost = volume * (blendedRatePct / 100);
+            const allTakerCost = volume * (takerFeePct / 100);
+            const allMakerCost = volume * (makerFeePct / 100);
+            const savingsVsAllTaker = allTakerCost - blendedCost;
+
+            const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            const fmtBps = (pct) => `${(pct * 100).toFixed(2)} bps`;
+
+            let extraSavingsNote;
+            if (makerFeePct < takerFeePct) {
+                const extra = blendedCost - allMakerCost;
+                extraSavingsNote = `Ha a teljes havi volument makerként (limit megbízással) hajtanád végre, további ${fmtMoney(extra)}-t spórolhatnál (effektív ráta: ${fmtBps(makerFeePct)}).`;
+            } else if (makerFeePct > takerFeePct) {
+                extraSavingsNote = `A megadott adatok szerint a maker díjad MAGASABB, mint a taker díjad — ez a legtöbb tőzsdén/brókernél nem jellemző, de ha nálad ez a helyzet, a maker-arány növelése NEM csökkentené, hanem NÖVELNÉ a költségeidet.`;
+            } else {
+                extraSavingsNote = `A maker és a taker díjad jelenleg megegyezik, így a kettő közötti arány nem változtatja a teljes díjköltséget.`;
+            }
+
+            let verdictColor, verdictText;
+            if (blendedCost < 0) {
+                verdictColor = 'text-neon-green';
+                verdictText = `✅ A vegyes díjad összességében NEGATÍV — a jelenlegi mix nettó visszatérítést (rebate-et), nem költséget jelent.`;
+            } else if (savingsVsAllTaker > 1e-9) {
+                verdictColor = 'text-neon-green';
+                verdictText = `✅ A ${makerRatioRaw}%-os maker arányod már most ${fmtMoney(savingsVsAllTaker)}-t spórol a 100% taker (csak market megbízás) esethez képest.`;
+            } else if (savingsVsAllTaker < -1e-9) {
+                verdictColor = 'text-neon-red';
+                verdictText = `⚠️ A jelenlegi mix ${fmtMoney(Math.abs(savingsVsAllTaker))}-tal TÖBBET visz el, mint a 100% taker eset — ez a megadott díjak mellett (maker díj > taker díj) fordulhat elő.`;
+            } else {
+                verdictColor = 'text-amber-400';
+                verdictText = `⚖️ A jelenlegi mixnél nincs érdemi különbség a 100% taker esethez képest.`;
+            }
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Vegyes (blended) havi díj</div>
+                        <div class="text-sm font-extrabold ${blendedCost < 0 ? 'text-neon-green' : 'text-white'}">${fmtMoney(blendedCost)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${fmtBps(blendedRatePct)} effektív ráta</div>
+                    </div>
+                    <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">100% Taker esetén lenne</div>
+                        <div class="text-sm font-extrabold text-white">${fmtMoney(allTakerCost)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${fmtBps(takerFeePct)} ráta</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Megtakarítás a 100% taker esethez képest:</span>
+                    <span class="font-bold ${savingsVsAllTaker >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(savingsVsAllTaker)}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">100% Maker esetén a díj lenne:</span>
+                    <span class="font-bold text-white">${fmtMoney(allMakerCost)}</span>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750 mb-2">
+                    <span class="text-xs font-bold ${verdictColor}">${verdictText}</span>
+                </div>
+                <div class="text-[10.5px] text-slate-400 leading-relaxed">${extraSavingsNote}</div>
+            `;
+        }
+
         // ================= STRESSZ-TESZT KALKULÁTOR (OKTATÁSI) =================
         // Minden shock%-ra: újÁr = max(0, belépés × (1 + shock/100)).
         // P&L = irányszorzó × (újÁr - belépés) × méret. P&L% = P&L / tőke × 100.
@@ -40425,6 +40576,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             19: { tool: 'rr-modal', cta: 'Vizualizáld élesben a Risk/Reward arányodat' },
             117: { tool: 'confluence-modal', cta: 'Futtasd le élesben a Confluence szkennert' },
             365: { tool: 'feeimpact-modal', cta: 'Számold ki élesben a kereskedési díjak hatását' },
+            70: { tool: 'makertaker-modal', cta: 'Számold ki élesben a maker/taker díj-mixed hatását' },
+            199: { tool: 'makertaker-modal', cta: 'Számold ki élesben, mennyit spórolhatsz egy kedvezőbb VIP díjszinttel' },
             521: { tool: 'feeimpact-modal', cta: 'Számold ki élesben a round-trip díjak hatását' },
             511: { tool: 'greeks-modal', cta: 'Számold ki élesben az opció Greeks mutatóit' },
             519: { tool: 'recovery-modal', cta: 'Számold ki élesben a szükséges visszanyerési nyereséget' },
@@ -40615,7 +40768,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
