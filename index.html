@@ -617,6 +617,46 @@
             .academy-collapsed-list .academy-list-collapse-bar {
                 display: flex;
             }
+
+            /* JAVÍTÁS (2026-10-30, felhasználói visszajelzés: "nem lehet
+               semmit látni a leckék kiválasztásánál, minden takarásban
+               van"): a fenti #academy-module-rail / #academy-lesson-list-panel
+               szabály MINDKETTŐT egyszerre, fejenként max. 20vh-ra (kb.
+               130px) szorította mobilon — de mivel az Akadémia mindig
+               rendelkezik egy AKTÍV modullal (academyModule, alapból a
+               0. indexű), ez a két lista EGYSZERRE jelent meg, egymás
+               alatt, úgy, hogy mindegyikből csak 1-2 elem fért ki a kis
+               helyen, a többi csak apró belső görgetéssel volt elérhető
+               — ez okozta a "takarásban van / nem lehet semmit látni"
+               élményt. A javítás: mivel úgyis MINDIG van kiválasztott
+               modul, a modul-sínt (bal oldali rail) ALAPÉRTELMEZETTEN
+               elrejtjük egy vékony "Modul váltása" sávra, a lecke-lista
+               pedig a TELJES rendelkezésre álló magasságot megkapja —
+               így azonnal sokkal több lecke látszik egyszerre, görgetés
+               nélkül is. A modul-sín egy koppintással visszahozható. */
+            #academy-body-lessons.academy-module-chosen #academy-module-rail {
+                display: none !important;
+            }
+            #academy-body-lessons.academy-module-chosen #academy-lesson-list-panel {
+                max-height: none !important;
+                flex-grow: 1;
+            }
+            .academy-module-collapse-bar {
+                display: none;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 14px;
+                background: rgba(15, 23, 42, 0.92);
+                border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+                font-size: 11px;
+                font-weight: 700;
+                color: #fbbf24;
+                flex-shrink: 0;
+                cursor: pointer;
+            }
+            .academy-module-chosen .academy-module-collapse-bar {
+                display: flex;
+            }
         }
 
         /* A globális touch-action:none ne blokkolja a belső listák görgetését */
@@ -13063,6 +13103,7 @@ Mean-reversion,2.5</textarea>
 
             <!-- Lesson List -->
             <section id="academy-lesson-list-panel" class="w-80 border-r border-dark-750/50 flex flex-col shrink-0 overflow-hidden">
+                <button type="button" class="academy-module-collapse-bar" onclick="setAcademyModuleChosen(false)"><i class="fa-solid fa-chevron-left"></i> Modul váltása</button>
                 <div class="px-4 py-3 border-b border-dark-750/40 shrink-0">
                     <h2 id="academy-module-title" class="text-sm font-bold text-white flex items-center gap-2"></h2>
                     <p id="academy-module-subtitle" class="text-[10px] text-slate-400 mt-0.5"></p>
@@ -13077,7 +13118,7 @@ Mean-reversion,2.5</textarea>
                 <div id="academy-viewer" ontouchstart="handleLessonTouchStart(event)" ontouchend="handleLessonTouchEnd(event)" class="flex-grow overflow-y-auto p-8 flex items-center justify-center">
                     <div data-academy-empty="1" class="text-center text-slate-500 max-w-sm">
                         <i class="fa-solid fa-book-open-reader text-4xl text-dark-700 mb-4"></i>
-                        <p class="text-sm font-semibold text-slate-400">Válassz egy leckét a bal oldali listából</p>
+                        <p class="text-sm font-semibold text-slate-400">Válassz egy leckét a listából</p>
                         <p class="text-xs text-slate-600 mt-2"><span id="academy-total-modules">0</span> modul, <span id="academy-total-lessons">0</span> lecke vár rád — a piacok nyelvétől a kockázatkezelésig.</p>
                     </div>
                 </div>
@@ -13105,7 +13146,7 @@ Mean-reversion,2.5</textarea>
                 <div id="chart-strategy-viewer" class="flex-grow overflow-y-auto p-8 flex items-center justify-center">
                     <div data-academy-empty="1" class="text-center text-slate-500 max-w-sm">
                         <i class="fa-solid fa-chart-area text-4xl text-dark-700 mb-4"></i>
-                        <p class="text-sm font-semibold text-slate-400">Válassz egy alakzatot a bal oldali listából</p>
+                        <p class="text-sm font-semibold text-slate-400">Válassz egy alakzatot a listából</p>
                         <p class="text-xs text-slate-600 mt-2">12 klasszikus chart-mintázat, valós belépési/kilépési logikával elmagyarázva.</p>
                     </div>
                 </div>
@@ -13131,7 +13172,7 @@ Mean-reversion,2.5</textarea>
                 <div id="whatif-viewer" class="flex-grow overflow-y-auto p-8 flex items-center justify-center">
                     <div data-academy-empty="1" class="text-center text-slate-500 max-w-sm">
                         <i class="fa-solid fa-clock-rotate-left text-4xl text-dark-700 mb-4"></i>
-                        <p class="text-sm font-semibold text-slate-400">Válassz egy day trading szituációt a bal oldali listából</p>
+                        <p class="text-sm font-semibold text-slate-400">Válassz egy day trading szituációt a listából</p>
                         <p class="text-xs text-slate-600 mt-2">Percről percre, óráról órára döntesz a napon belül, majd a végén összeveted a saját eredményed azzal, mintha végig kimaradtál volna a piacból.</p>
                     </div>
                 </div>
@@ -39105,6 +39146,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const body = document.getElementById(bodyId);
             if (body) body.classList.toggle('academy-collapsed-list', collapsed);
         }
+        // JAVÍTÁS (2026-10-30): a modul-sín (#academy-module-rail) és a
+        // lecke-lista (#academy-lesson-list-panel) mobilon korábban MINDIG
+        // egyszerre jelent meg, fejenként 20vh-ra szorítva — mivel viszont
+        // mindig van egy aktív modul, ez felesleges volt és szinte semmit
+        // nem lehetett látni egyik listából sem. Ehelyett mobilon
+        // alapértelmezetten elrejtjük a modul-sínt (lásd a CSS
+        // ".academy-module-chosen" szabályt), a lecke-lista kapja a teljes
+        // magasságot, és a "Modul váltása" sávval lehet visszahozni a sínt.
+        function setAcademyModuleChosen(chosen) {
+            const body = document.getElementById('academy-body-lessons');
+            if (body) body.classList.toggle('academy-module-chosen', chosen);
+        }
         function academyViewerHasContent(viewerEl) {
             if (!viewerEl || !viewerEl.firstElementChild) return false;
             return !viewerEl.firstElementChild.hasAttribute('data-academy-empty');
@@ -40722,6 +40775,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             updateAcademyXPDisplay();
             updateCoinDisplay();
             renderAcademyHeartsDisplay();
+            // Lásd a setAcademyModuleChosen() JAVÍTÁS-kommentjét: mivel
+            // mindig van egy aktív modul (academyModule), rögtön ebben az
+            // állapotban nyitunk, hogy a lecke-lista induláskor is a
+            // teljes magasságot kapja mobilon.
+            setAcademyModuleChosen(true);
             addSystemLog('Belépés a Chartolj Akadémiába.');
         }
 
@@ -40765,6 +40823,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('academy-search').value = '';
             renderAcademyModules();
             renderAcademyLessonList();
+            // Modul kiválasztása után (pl. a "Modul váltása" sávval
+            // visszahozott sínről tapintva) mobilon ismét a lecke-listáé
+            // legyen a teljes hely — lásd setAcademyModuleChosen() fent.
+            setAcademyModuleChosen(true);
         }
 
         function renderAcademyLessonList() {
@@ -41609,7 +41671,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('academy-viewer').innerHTML = `
                 <div data-academy-empty="1" class="text-center text-slate-500 max-w-sm">
                     <i class="fa-solid fa-book-open-reader text-4xl text-dark-700 mb-4"></i>
-                    <p class="text-sm font-semibold text-slate-400">Válassz egy leckét a bal oldali listából</p>
+                    <p class="text-sm font-semibold text-slate-400">Válassz egy leckét a listából</p>
                     <p class="text-xs text-slate-600 mt-2"><span>${ACADEMY_MODULES.length}</span> modul, <span>${LESSONS_DATA.length}</span> lecke vár rád — a piacok nyelvétől a kockázatkezelésig.</p>
                 </div>
             `;
