@@ -450,6 +450,18 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (mobil UX audit): a "Stratégiai Kalkulátorok" lista
+               (#mobile-tools-modal) alján lévő kártyák (pl. "Inflációs
+               Hatás Kalkulátor", "Funding Rate Kalkulátor") a lebegő
+               #mobile-trade-fab-row ("Eszközök"/"Kereskedés" gombsor,
+               fixed, bottom:80px) ÉS az alsó navigáció alá csúsztak —
+               a lista görgethető tartalmának nem volt elég alsó térköze
+               ahhoz, hogy az utolsó néhány elem a lebegő gombsor fölött,
+               szabadon elérhető maradjon. */
+            #mobile-tools-list {
+                padding-bottom: 150px !important;
+            }
+
             /* JAVÍTÁS: a lebegő AI-chat gomb (#ai-chat-launcher) a Kereskedés fülön
                jobbra, a táblázatok fölé lóg (lásd lejjebb a #ai-chat-launcher
                szabályt) — a "Nyitott Pozíciók" / "Kereskedési Előzmények" táblák
@@ -11153,7 +11165,7 @@ Mean-reversion,2.5</textarea>
             <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-calculator text-amber-400 mr-1.5"></i>Stratégiai Kalkulátorok</h2>
             <button onclick="closeMobileToolsModal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="flex-grow overflow-y-auto px-4 py-4 space-y-2">
+        <div id="mobile-tools-list" class="flex-grow overflow-y-auto px-4 py-4 space-y-2">
             <button onclick="closeMobileToolsModal(); openToolModal('poscalc-modal')" class="w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-red/30 transition text-left">
                 <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-calculator"></i></span>
                 <div>
