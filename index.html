@@ -39118,7 +39118,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             // Bevezető képernyő
             if (WI.step === 0 && WI.decisions.length === 0) {
-                el.innerHTML = `${wiProgressBar}
+                el.innerHTML = `<div class="w-full">
+                    ${wiProgressBar}
                     <div class="text-center max-w-md mx-auto">
                         <i class="fa-solid fa-clock-rotate-left text-4xl text-neon-purple mb-4"></i>
                         <h3 class="text-lg font-extrabold text-white mb-3">${sc.name}</h3>
@@ -39126,6 +39127,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <button onclick="whatIfState.step = 1; renderWhatIf();" class="px-6 py-3 rounded-xl text-sm font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                             Kezdés <i class="fa-solid fa-arrow-right ml-1"></i>
                         </button>
+                    </div>
                     </div>
                 `;
                 return;
@@ -39167,7 +39169,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }
                 const cashBaseline = 0; // day tradingnél a semleges alapérték: nem vagy pozícióban, 0%
 
-                el.innerHTML = `${wiProgressBar}
+                el.innerHTML = `<div class="w-full">
+                    ${wiProgressBar}
                     <div class="w-full max-w-2xl mx-auto">
                         <div class="glass-card rounded-2xl border border-dark-750 overflow-hidden">
                             <div class="px-4 py-2.5 border-b border-dark-750/60">
@@ -39196,11 +39199,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             Másik forgatókönyv <i class="fa-solid fa-arrow-right ml-1"></i>
                         </button>
                     </div>
+                    </div>
                 `;
                 return;
             }
 
-            el.innerHTML = `${wiProgressBar}
+            el.innerHTML = `<div class="w-full">
+                ${wiProgressBar}
                 <div class="w-full max-w-2xl mx-auto">
                     <div class="glass-card rounded-2xl border border-dark-750 overflow-hidden">
                         <div class="flex items-center justify-between px-4 py-2.5 border-b border-dark-750/60">
@@ -39244,6 +39249,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             </button>
                         `}
                     </div>
+                </div>
                 </div>
             `;
         }
