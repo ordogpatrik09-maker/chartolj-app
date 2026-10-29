@@ -7690,6 +7690,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-calendar-week mr-1"></i> Hét Napja Szerinti Teljesítmény
                 </button>
                 <div id="backtest-weekday-result" class="mt-3"></div>
+                <button onclick="calcBacktestWinrateConfidenceInterval()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-percent mr-1"></i> Nyerési Arány Konfidencia-Intervallum
+                </button>
+                <div id="backtest-winrateci-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy MÚLTBELI, szimulált/demó adaton futó, oktatási célú teszt — a jövőbeli piaci viselkedés eltérhet. Egy stratégia múltbeli teljesítménye sosem garancia a jövőre (ez a "backtest overfitting" klasszikus csapdája).</p>
         </div>
@@ -7853,6 +7857,10 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <i class="fa-solid fa-calendar-week mr-1"></i> Hét Napja Szerinti Teljesítmény
                 </button>
                 <div id="sb-weekday-result" class="mt-3"></div>
+                <button onclick="calcStrategyBuilderWinrateConfidenceInterval()" class="w-full py-2 rounded-xl text-[11px] font-bold uppercase bg-dark-800 border border-neon-amber/30 text-neon-amber hover:bg-neon-amber/10 active:scale-[0.98] transition mt-2">
+                    <i class="fa-solid fa-percent mr-1"></i> Nyerési Arány Konfidencia-Intervallum
+                </button>
+                <div id="sb-winrateci-result" class="mt-3"></div>
             </div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ugyanaz a figyelmeztetés érvényes, mint a Stratégia Backtesternél: múltbeli, szimulált adaton futó, oktatási célú teszt — nem garancia a jövőbeli teljesítményre. A Stop-Loss/Take-Profit kilépés a gyertya ZÁRÓÁRÁHOZ viszonyítva értékelődik ki (nem napon belüli, intraday pontossággal), ami egyszerűsítés a valósághoz képest.</p>
 
@@ -17589,6 +17597,87 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             try {
                 const stats = runWeekdayPerformanceAnalysis(sbLastRunResult.trades, candleData);
                 out.innerHTML = renderWeekdayPerformanceHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        // ================= NYERÉSI ARÁNY KONFIDENCIA-INTERVALLUM (WILSON SCORE) ("BRUTÁL" FEJLESZTÉS) =================
+        // Alapvető statisztikai csapda: egy 58%-os win rate 12 trade-en
+        // EGÉSZEN MÁST jelent, mint egy 58%-os win rate 500 trade-en —
+        // a kis minta esetén az IGAZI (hosszú távú) win rate akár 30-80%
+        // között is lehet. Ez az eszköz a MÁR LEFUTOTT backtest trade-
+        // jeiből Wilson score intervallummal (robusztusabb kis mintán,
+        // mint a naiv normális közelítés) kiszámolja a 95%-os konfidencia-
+        // intervallumot a valódi win rate körül. Csak olvas, nem módosít
+        // core motort.
+        function runWinrateConfidenceInterval(tradeReturns, z = 1.96) {
+            const n = tradeReturns.length;
+            if (n < 2) throw new Error('Legalább 2 trade szükséges a nyerési arány konfidencia-intervallum számításához.');
+
+            const wins = tradeReturns.filter(r => r > 0).length;
+            const pHat = wins / n;
+
+            const denom = 1 + (z * z) / n;
+            const center = (pHat + (z * z) / (2 * n)) / denom;
+            const halfWidth = (z / denom) * Math.sqrt((pHat * (1 - pHat) / n) + (z * z) / (4 * n * n));
+
+            const lowerBoundPct = Math.max(0, center - halfWidth) * 100;
+            const upperBoundPct = Math.min(1, center + halfWidth) * 100;
+            const pointEstimatePct = pHat * 100;
+            const intervalWidthPct = upperBoundPct - lowerBoundPct;
+
+            return { tradeCount: n, winCount: wins, pointEstimatePct, lowerBoundPct, upperBoundPct, intervalWidthPct, confidenceLevelPct: 95.0 };
+        }
+
+        function renderWinrateConfidenceIntervalHtml(stats) {
+            const fmt = (v, d = 1) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            let verdict, verdictClass;
+            if (stats.intervalWidthPct > 40) { verdict = '🚨 NAGYON SZÉLES intervallum — ennyi trade-ből a valódi win rate lényegében NEM becsülhető meg megbízhatóan. Legalább 50-100+ trade szükséges a szűkebb, megbízhatóbb becsléshez.'; verdictClass = 'text-neon-red'; }
+            else if (stats.intervalWidthPct > 20) { verdict = '⚠️ SZÉLES intervallum — a minta még mindig viszonylag kicsi, a valódi win rate jelentősen eltérhet a pontbecsléstől.'; verdictClass = 'text-neon-amber'; }
+            else { verdict = '✅ Viszonylag SZŰK intervallum — a mintaméret elég nagy ahhoz, hogy a win rate becslése megbízhatóbb legyen (bár sosem 100% biztos).'; verdictClass = 'text-neon-green'; }
+            return `
+                <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
+                    <div class="text-xs font-bold text-neon-blue">Nyerési Arány Konfidencia-Intervallum (Wilson Score, 95%)</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Trade-ek / Nyertesek</div><div class="font-bold text-white">${stats.tradeCount} / ${stats.winCount}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Pontbecslés (megfigyelt win rate)</div><div class="font-bold text-white">${fmt(stats.pointEstimatePct)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">95%-os konfidencia-intervallum</div><div class="font-extrabold text-neon-amber">[${fmt(stats.lowerBoundPct)}% — ${fmt(stats.upperBoundPct)}%]</div></div>
+                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">Intervallum szélessége</div><div class="font-bold ${verdictClass}">${fmt(stats.intervalWidthPct)} pp</div></div>
+                    </div>
+                    <div class="text-xs font-semibold ${verdictClass} mt-1">${verdict}</div>
+                    <div class="text-xs text-gray-500 mt-1">95%-os biztonsággal állítható, hogy a stratégia IGAZI, hosszú távú win rate-je ezen a tartományon belül van (a jelen mintából kiindulva). Minél kevesebb a trade, annál szélesebb ez a sáv — ezért félrevezető egy 20-30 trade-es backteszt alapján "pontos" win rate-et hirdetni.</div>
+                </div>
+            `;
+        }
+
+        function calcBacktestWinrateConfidenceInterval() {
+            const out = document.getElementById('backtest-winrateci-result');
+            if (!out) return;
+            if (!window.lastBacktestResult || !window.lastBacktestResult.trades || window.lastBacktestResult.trades.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges — futtasd le előbb a backtestet!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = window.lastBacktestResult.trades.map(t => t.returnPct);
+                const stats = runWinrateConfidenceInterval(tradeReturns);
+                out.innerHTML = renderWinrateConfidenceIntervalHtml(stats);
+            } catch (e) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
+            }
+        }
+
+        function calcStrategyBuilderWinrateConfidenceInterval() {
+            const out = document.getElementById('sb-winrateci-result');
+            if (!out) return;
+            if (!sbLastRunResult || !sbLastRunResult.trades || sbLastRunResult.trades.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 trade szükséges — futtasd le előbb a stratégiát!</div>`;
+                return;
+            }
+            try {
+                const tradeReturns = sbLastRunResult.trades.map(t => t.returnPct);
+                const stats = runWinrateConfidenceInterval(tradeReturns);
+                out.innerHTML = renderWinrateConfidenceIntervalHtml(stats);
             } catch (e) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${e.message}</div>`;
             }
