@@ -28897,13 +28897,29 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const slow = parseInt(document.getElementById('ls-slow').value, 10);
             const startEquity = parseFloat(document.getElementById('ls-equity').value);
             const levelsRaw = document.getElementById('ls-levels').value;
-            const leverageLevels = levelsRaw.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
 
             if ([fast, slow, startEquity].some(v => isNaN(v)) || fast < 2 || slow <= fast || startEquity <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — a gyors EMA legyen kisebb a lassúnál, a tőke pozitív!</div>`;
                 return;
             }
-            if (leverageLevels.length < 1 || leverageLevels.some(l => l <= 0)) {
+
+            // Szándékosan SZIGORÚ elutasítás minden egyes tőkeáttétel-tokenre,
+            // NEM csendes kiszűrés: ezek önálló, névvel megjelenő sorok a
+            // kimeneti táblázatban (pl. "1×, 2×, 5×, 10×") — ha egy elgépelt
+            // token némán kiesne, a felhasználó KEVESEBB szintet látna
+            // eredményként, mint amennyit megadott, hibaüzenet nélkül, és
+            // könnyen összetéveszthetné a maradék szintek sorrendjét/számát.
+            const levelTokens = levelsRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            const leverageLevels = [];
+            for (const tok of levelTokens) {
+                const v = parseFloat(tok);
+                if (!Number.isFinite(v) || v <= 0) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${tok}" nem érvényes, nullánál nagyobb tőkeáttétel-szint — vesszővel elválasztva csak pozitív számokat adj meg (pl. 1, 2, 5, 10)!</div>`;
+                    return;
+                }
+                leverageLevels.push(v);
+            }
+            if (leverageLevels.length < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább egy pozitív tőkeáttétel-szintet, vesszővel elválasztva (pl. 1, 2, 5, 10)!</div>`;
                 return;
             }
