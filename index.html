@@ -2223,6 +2223,13 @@
                                 <div class="text-[10px] text-slate-400">Hol állsz a 210k-blokkos halving-cikluson belül?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('pdt-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-amber/10 text-neon-amber border border-neon-amber/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gavel"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">PDT (Pattern Day Trader) Szabály Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">4 day trade / 5 nap + 6%-os arány + $25k minimum tőke</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
                             <div>
@@ -7746,6 +7753,54 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= PDT (PATTERN DAY TRADER) SZABÁLY KALKULÁTOR =================
+         A 114-es lecke (Margin Account és Cash Account) röviden említi a
+         "PDT-szerű szabályokat", de eddig NEM volt hozzá eszköz. Ez a FINRA
+         Pattern Day Trader szabály (Rule 4210) teljes, KÉT-feltételes
+         logikáját számolja ki:
+         1) SZÁM-feltétel: 4 vagy több day trade az utolsó 5 kereskedési napban
+         2) ARÁNY-feltétel: ez a 4+ day trade TÖBB mint 6%-a ugyanezen
+            időszak ÖSSZES ügyletének
+         Csak ha MINDKÉT feltétel teljesül, a számla hivatalosan PDT-nek
+         minősül — és ha a tőke 25 000$ alatt van, a margin számla
+         korlátozás alá esik (nem nyithat új day trade-et, amíg a tőke
+         vissza nem áll 25 000$ fölé). A kalkulátor emellett megmutatja,
+         hány további day trade tehető meg biztonságosan (a SZÁM-feltétel
+         alapján), és egy hipotetikus "+1 day trade" forgatókönyvet is. -->
+    <div id="pdt-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-gavel text-neon-amber"></i> PDT (Pattern Day Trader) Szabály Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('pdt-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Az amerikai FINRA Pattern Day Trader (PDT) szabály (4210-es szabály) KÉT feltétele: (1) 4 vagy több day trade az utolsó 5 kereskedési napban, ÉS (2) ez TÖBB mint 6%-a ugyanezen időszak ÖSSZES ügyletének. Csak ha MINDKÉT feltétel teljesül, minősülsz PDT-nek — és 25 000$ alatti tőkénél a margin számlád day trading-korlátozás alá esik.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Számlaegyenleg ($)</label>
+            <input type="number" id="pdt-equity" value="15000" step="100" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-amber/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-1">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Day trade-ek az utolsó 5 napban</label>
+                    <input type="number" id="pdt-daytrades" value="3" step="1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-amber/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Összes ügylet ugyanezen 5 napban</label>
+                    <input type="number" id="pdt-totaltrades" value="10" step="1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-amber/50">
+                </div>
+            </div>
+            <p class="text-[10px] text-slate-500 mb-3">"Day trade" = ugyanazon eszköz nyitása ÉS zárása ugyanazon a kereskedési napon. "Összes ügylet" minden végrehajtott tranzakció (day trade-ek + minden más) ugyanabban az 5 napos ablakban — legalább annyi, mint a day trade-ek száma.</p>
+
+            <button onclick="calcPdtRule()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-amber text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="pdt-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Csak amerikai, FINRA-szabályozott margin számlákra vonatkozik (Rule 4210) — cash számlán, vagy nem amerikai/nem FINRA-brókernél más (vagy nincs) ilyen szabály él. A gyakorlatban sok bróker a 6%-os arány-feltétellel NEM foglalkozik, és egyszerűen a 4. day trade-nél azonnal korlátoz — mindig ellenőrizd a saját brókered pontos gyakorlatát; ez a kalkulátor a HIVATALOS, szigorú, két-feltételes FINRA-definíciót számolja.</p>
+        </div>
+    </div>
+
     <!-- ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
          Egyszerűsített, várható-érték alapú modell (NEM Monte Carlo, NEM
          compoundolt útfüggő szimuláció) a tail risk hedging (pl. távoli
@@ -12953,6 +13008,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Bitcoin Halving Visszaszámláló & Ciklus Fázis</div>
                             <div class="text-[10px] text-slate-400">Hol állsz a 210k-blokkos halving-cikluson belül?</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('pdt-modal')" data-tool-title="pdt (pattern day trader) szabály kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gavel"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">PDT (Pattern Day Trader) Szabály Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">4 day trade / 5 nap + 6%-os arány + $25k minimum tőke</div>
                         </div>
                     </button>
                 </div>
@@ -31255,6 +31317,130 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= PDT (PATTERN DAY TRADER) SZABÁLY KALKULÁTOR =================
+        // FINRA Rule 4210 — KÉT feltétel, MINDKETTŐNEK teljesülnie kell:
+        //   1) SZÁM:  dayTrades >= 4 (az utolsó 5 kereskedési napban)
+        //   2) ARÁNY: dayTrades / totalTrades > 6% (ugyanazon 5 napos ablakban)
+        // isPDT = countTriggered && pctTriggered
+        // isRestricted = isPDT && equity < 25000  (margin call / day trading korlátozás)
+        // safeDayTradesLeft = max(0, 3 - dayTrades)  — hány trade tehető meg úgy,
+        //   hogy a SZÁM-feltétel (≥4) garantáltan NE teljesüljön, a jövőbeli
+        //   totalTrades értékétől függetlenül.
+        // hypo* = "mi lenne, ha pontosan 1 továbbit day trade-elnél MOST" —
+        //   feltételezve, hogy az az 1 új day trade a totalTrades-t is növeli 1-gyel.
+        function calcPdtRule() {
+            const equityEl = document.getElementById('pdt-equity');
+            const dayTradesEl = document.getElementById('pdt-daytrades');
+            const totalTradesEl = document.getElementById('pdt-totaltrades');
+            const out = document.getElementById('pdt-result');
+            if (!equityEl || !dayTradesEl || !totalTradesEl || !out) return;
+
+            const equity = parseFloat(equityEl.value);
+            const dayTradesRaw = parseFloat(dayTradesEl.value);
+            const totalTradesRaw = parseFloat(totalTradesEl.value);
+            const dayTrades = Math.round(dayTradesRaw);
+            const totalTrades = Math.round(totalTradesRaw);
+
+            if (!Number.isFinite(equity) || equity < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nem kisebb számlaegyenleget!</div>`;
+                return;
+            }
+            if (!Number.isFinite(dayTradesRaw) || dayTradesRaw < 0 || dayTrades !== dayTradesRaw) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A day trade-ek száma egy nullánál nem kisebb EGÉSZ szám kell legyen!</div>`;
+                return;
+            }
+            if (!Number.isFinite(totalTradesRaw) || totalTradesRaw < 0 || totalTrades !== totalTradesRaw) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az összes ügylet száma egy nullánál nem kisebb EGÉSZ szám kell legyen!</div>`;
+                return;
+            }
+            if (totalTrades < dayTrades) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az összes ügylet száma nem lehet kisebb, mint a day trade-ek száma (minden day trade egyben ügylet is)!</div>`;
+                return;
+            }
+
+            const COUNT_THRESHOLD = 4;
+            const PCT_THRESHOLD = 6;
+            const MIN_EQUITY = 25000;
+
+            const pct = totalTrades > 0 ? (dayTrades / totalTrades) * 100 : 0;
+            const countTriggered = dayTrades >= COUNT_THRESHOLD;
+            const pctTriggered = pct > PCT_THRESHOLD;
+            const isPDT = countTriggered && pctTriggered;
+            const isRestricted = isPDT && equity < MIN_EQUITY;
+            const equityShortfall = Math.max(0, MIN_EQUITY - equity);
+            const safeDayTradesLeft = Math.max(0, (COUNT_THRESHOLD - 1) - dayTrades);
+
+            const hypoDayTrades = dayTrades + 1;
+            const hypoTotal = totalTrades + 1;
+            const hypoPct = (hypoDayTrades / hypoTotal) * 100;
+            const hypoCountTriggered = hypoDayTrades >= COUNT_THRESHOLD;
+            const hypoWouldBePDT = hypoCountTriggered && hypoPct > PCT_THRESHOLD;
+
+            const fmtUSD = (n) => '$' + Math.round(n).toLocaleString('en-US');
+
+            let statusLabel, statusColorClass, statusBg;
+            if (isRestricted) {
+                statusLabel = '🚫 PDT + KORLÁTOZVA (tőke a $25 000 minimum alatt)';
+                statusColorClass = 'text-neon-red';
+                statusBg = 'bg-neon-red/5 border border-neon-red/30';
+            } else if (isPDT) {
+                statusLabel = '✅ PDT-nek minősülsz, de a tőke megfelel a $25 000 minimumnak — nincs korlátozás';
+                statusColorClass = 'text-neon-green';
+                statusBg = 'bg-neon-green/5 border border-neon-green/30';
+            } else if (countTriggered) {
+                statusLabel = '⚠️ A SZÁM-feltétel (≥4) teljesül, de az ARÁNY-feltétel (>6%) NEM — a szigorú FINRA-definíció szerint (még) NEM PDT';
+                statusColorClass = 'text-amber-400';
+                statusBg = 'bg-amber-400/5 border border-amber-400/30';
+            } else {
+                statusLabel = '🟢 Nem PDT — a számlád jelenleg nem esik a Pattern Day Trader szabály alá';
+                statusColorClass = 'text-neon-cyan';
+                statusBg = 'bg-neon-cyan/5 border border-neon-cyan/30';
+            }
+
+            out.innerHTML = `
+                <div class="rounded-xl p-3 text-center mb-3 ${statusBg}">
+                    <div class="text-[10px] uppercase font-bold mb-1 text-slate-400">PDT státusz</div>
+                    <div class="text-xs font-extrabold ${statusColorClass} leading-snug">${statusLabel}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="rounded-xl ${countTriggered ? 'bg-neon-amber/10 border border-neon-amber/40' : 'bg-dark-850/60 border border-dark-750'} p-2 text-center">
+                        <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Szám-feltétel</div>
+                        <div class="text-xs font-extrabold text-white font-mono">${dayTrades} / ${COUNT_THRESHOLD}+</div>
+                    </div>
+                    <div class="rounded-xl ${pctTriggered ? 'bg-neon-amber/10 border border-neon-amber/40' : 'bg-dark-850/60 border border-dark-750'} p-2 text-center">
+                        <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Arány-feltétel</div>
+                        <div class="text-xs font-extrabold text-white font-mono">${pct.toFixed(2)}% / &gt;${PCT_THRESHOLD}%</div>
+                    </div>
+                </div>
+                ${isPDT ? `
+                <div class="flex justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Minimum tőke-követelmény:</span>
+                    <span class="font-bold text-white">${fmtUSD(MIN_EQUITY)}</span>
+                </div>
+                <div class="flex justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">Hiányzó tőke a korlátozás feloldásához:</span>
+                    <span class="font-bold ${equityShortfall > 0 ? 'text-neon-red' : 'text-neon-green'}">${equityShortfall > 0 ? fmtUSD(equityShortfall) : 'Nincs — a tőke megfelel'}</span>
+                </div>
+                ${isRestricted ? `
+                <div class="text-center py-2 rounded-xl bg-neon-red/5 border border-neon-red/30 mb-3">
+                    <span class="text-[11px] text-neon-red font-bold">Új day trade nem nyitható, amíg a tőke vissza nem áll ${fmtUSD(MIN_EQUITY)} fölé — a legtöbb bróker ezt automatikusan, azonnal érvényesíti (jóhiszeműségi / készpénz-rendelkezésre állási szabályok mellett).</span>
+                </div>
+                ` : ''}
+                ` : `
+                <div class="flex justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Biztonságosan megtehető további day trade (szám-feltétel alapján):</span>
+                    <span class="font-bold text-neon-cyan">${safeDayTradesLeft}</span>
+                </div>
+                <div class="text-center py-2 rounded-xl ${hypoWouldBePDT ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-dark-850/60 border border-dark-750'} mb-3">
+                    <span class="text-[11px] ${hypoWouldBePDT ? 'text-neon-red' : 'text-slate-300'} font-bold">+1 day trade esetén (${hypoDayTrades} / ${hypoTotal} ügylet, ${hypoPct.toFixed(2)}%): ${hypoWouldBePDT ? 'EZ MÁR PDT-vé tenne a számládat!' : 'ez még NEM tenné PDT-vé a számládat.'}</span>
+                </div>
+                `}
+                ${countTriggered && !pctTriggered ? `
+                <p class="text-[10px] text-amber-400 leading-relaxed">Figyelem: sok bróker a gyakorlatban a 6%-os arány-feltétellel nem foglalkozik, és a 4. day trade-nél automatikusan korlátoz — a fenti "még nem PDT" státusz a HIVATALOS, szigorú FINRA-definíció szerint igaz, de a te brókered ettől eltérhet.</p>
+                ` : ''}
+            `;
+        }
+
         // ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
         // totalCostDragFrac = 1 - (1-c/100)^n  (kumulált, compoundolt "drag" a
         // portfólión a horizont alatt a rendszeres fedezési díj miatt)
@@ -42221,6 +42407,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const LESSON_TOOL_MAP = {
             111: { tool: 'gsl-modal', cta: 'Számold ki élesben, várható értékben megéri-e a Garantált Stop-Loss (GSL) felára a gap-kockázat ellen' },
             515: { tool: 'halving-modal', cta: 'Számold ki élesben a jelenlegi blokkmagasság alapján, hol állsz a 210k-blokkos halving-cikluson belül, és mikor várható a következő halving' },
+            114: { tool: 'pdt-modal', cta: 'Számold ki élesben, PDT-nek minősülne-e a számlád a 4 day trade / 5 nap + 6%-os arány szabály szerint, és mennyi tőke hiányzik a $25 000 minimumhoz' },
             24: { tool: 'shortsqueeze-modal', cta: 'Számold ki élesben a Short Squeeze Kockázat Kalkulátort a short interest % és a days to cover alapján' },
             86: { tool: 'tickvalue-modal', cta: 'Számold ki élesben egy határidős kontraktus tick-értékét és a valós dollár P&L-t' },
             137: { tool: 'tickvalue-modal', cta: 'Hasonlítsd össze élesben egy Mikro/Mini kontraktus tick-értékét a standard kontraktuséval' },
@@ -42593,7 +42780,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
