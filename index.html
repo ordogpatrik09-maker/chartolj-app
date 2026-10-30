@@ -298,7 +298,26 @@
             #app-scale-wrapper { padding-bottom: 68px; }
 
             /* JAVÍTÁS (teljes mobil UI újratervezés, felhasználói kérésre):
-               az alsó navigáció eddig csak szövegszín-váltással jelezte az
+               a .glass-card (szinte MINDEN kártya az appban: Home, Profil,
+               Fejlődés, Akadémia listák stb.) desktopon és mobilon ugyanazt
+               a nagyon visszafogott stílust kapta — szinte láthatatlan
+               1px-es fehér 5%-os keret, árnyék nélkül. Egy kis kijelzőn,
+               ahol a kártyák közvetlenül egymás alatt, szorosan követik
+               egymást, ez összemosódó, "lapos" hatást kelt: nehéz
+               érzékelni, hol végződik az egyik kártya és kezdődik a másik.
+               Mobilon (csak itt — a .glass-card szabály maga, ami
+               desktopon is számít, változatlan marad) egy kicsit
+               erősebb, de még mindig visszafogott mélységet adunk: enyhe
+               árnyék, valamivel láthatóbb keret. Ez a MINDEN .glass-card
+               elemre ható, egyetlen közös szabály nagyobb, egységes
+               vizuális különbséget ad, mint bármennyi egyedi képernyő-
+               hangolás. */
+            .glass-card {
+                border-color: rgba(255, 255, 255, 0.08);
+                box-shadow: 0 2px 10px -4px rgba(0, 0, 0, 0.5);
+            }
+
+            /* JAVÍTÁS: az alsó navigáció eddig csak szövegszín-váltással jelezte az
                aktív fület (cián vs szürke) — vizuálisan lapos, "default
                Tailwind" hatást keltett, semmilyen kiemelés/mélység nem volt.
                Most az aktív gomb mögé egy halvány cián "pirula" kerül, az
