@@ -33577,14 +33577,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const resultEl = document.getElementById('feeimpact-result');
             if (!positionEl || !pctEl || !tradesEl || !resultEl) return;
 
-            const position = Math.max(0, parseFloat(positionEl.value) || 0);
-            const feePctPerSide = Math.max(0, parseFloat(pctEl.value) || 0);
+            const positionRaw = parseFloat(positionEl.value);
+            const feePctRaw = parseFloat(pctEl.value);
             const trades = Math.max(1, Math.round(parseFloat(tradesEl.value) || 0));
 
-            if (position <= 0) {
-                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret legyen nullánál nagyobb!</div>`;
+            // JAVÍTÁS: korábban a feePctPerSide Math.max(0, parseFloat(...) || 0)-dal
+            // volt olvasva — egy törölt/nem-numerikus vagy negatív díj% mező csendben
+            // 0%-ra esett, és egy valósnak kinéző "Díj / round-trip: $0.00,
+            // Break-even mozgás: 0.000%" eredményt jelenített meg hibaüzenet nélkül,
+            // mintha a felhasználó egy valódi 0%-os (díjmentes) brókert adott volna meg.
+            // Most explicit, piros hibaüzenetet kap, konzisztensen a fájl többi
+            // kalkulátorának validációs mintájával (pl. calcOptionPayoff).
+            if (!Number.isFinite(positionRaw) || positionRaw <= 0 || !Number.isFinite(feePctRaw) || feePctRaw < 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret legyen nullánál nagyobb, a díj% pedig ne legyen negatív!</div>`;
                 return;
             }
+            const position = positionRaw;
+            const feePctPerSide = feePctRaw;
 
             const feePerSide = position * (feePctPerSide / 100);
             const roundTripFee = feePerSide * 2;
