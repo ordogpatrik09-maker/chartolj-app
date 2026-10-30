@@ -13902,16 +13902,24 @@ Mean-reversion,2.5</textarea>
              ami ugyanazokat az adatokat jeleníti meg (külön "-m" végű id-kkal,
              amiket a meglévő updateAcademyXPDisplay()/updateCoinDisplay()/
              updateAcademyProgress() függvények is frissítenek). -->
-        <div class="lg:hidden h-8 bg-dark-950/80 border-b border-dark-750/40 px-4 flex items-center justify-center gap-4 shrink-0 font-mono text-[11px]">
-            <div class="flex items-center gap-1.5">
+        <!-- JAVÍTÁS (teljes mobil újratervezés): ez a sáv eddig puszta
+             szöveg volt a fekete háttéren, teljesen vizuális kezelés
+             nélkül — miközben a képernyő MINDEN MÁS eleme (fejléc,
+             modul-dropdown, kártyák) kapott valamiféle kártya-/pill-
+             stílust. Emiatt egy "befejezetlennek" ható, lebegő
+             szövegsorként hatott a fejléc és a dropdown közt. Most három
+             kompakt pill-be van rendezve, enyhe háttérrel — vizuálisan
+             összhangban a kártya-elrendezés többi részével. -->
+        <div class="lg:hidden bg-dark-950/80 border-b border-dark-750/40 px-4 py-2 flex items-center justify-center gap-2 shrink-0 font-mono text-[11px]">
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-dark-900 border border-dark-750/60">
                 <i class="fa-solid fa-bolt text-neon-cyan"></i>
                 <span id="academy-xp-label-m" class="font-bold text-white">0 XP</span>
             </div>
-            <div class="flex items-center gap-1" title="Coin">
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-dark-900 border border-dark-750/60" title="Coin">
                 <i class="fa-solid fa-coins text-amber-400"></i>
                 <span id="academy-coin-label-m" class="font-bold text-white">0</span>
             </div>
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-dark-900 border border-dark-750/60">
                 <i class="fa-solid fa-award text-amber-400"></i>
                 <span id="academy-progress-label-m" class="font-bold text-white">0 / 0</span>
             </div>
