@@ -297,6 +297,45 @@
             #mobile-bottom-nav { display: flex; }
             #app-scale-wrapper { padding-bottom: 68px; }
 
+            /* JAVÍTÁS (teljes mobil UI újratervezés, felhasználói kérésre):
+               az alsó navigáció eddig csak szövegszín-váltással jelezte az
+               aktív fület (cián vs szürke) — vizuálisan lapos, "default
+               Tailwind" hatást keltett, semmilyen kiemelés/mélység nem volt.
+               Most az aktív gomb mögé egy halvány cián "pirula" kerül, az
+               ikonok kicsit nagyobbak, az érintési célterület legalább
+               56px magas (ajánlott minimum ~44px fölött, kényelmesebb
+               hüvelykujjal). Csak mobilon — a nav desktopon eleve nem
+               látszik (display:none a @media-n kívül). */
+            #mobile-bottom-nav button {
+                position: relative;
+                min-height: 56px;
+            }
+            #mobile-bottom-nav button i {
+                font-size: 16px;
+                transition: transform 0.15s ease;
+            }
+            #mobile-bottom-nav button.text-neon-cyan i {
+                transform: translateY(-1px);
+            }
+            #mobile-bottom-nav button.text-neon-cyan::before {
+                content: '';
+                position: absolute;
+                top: 5px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 44px;
+                height: 30px;
+                background: rgba(0, 209, 255, 0.12);
+                border: 1px solid rgba(0, 209, 255, 0.18);
+                border-radius: 12px;
+                z-index: 0;
+            }
+            #mobile-bottom-nav button i,
+            #mobile-bottom-nav button span {
+                position: relative;
+                z-index: 1;
+            }
+
             /* JAVÍTÁS: a felső fejléc (logó+márkanév+eszközválasztó bal
                oldalon; Demó Egyenleg + Bejelentkezés + Akadémia-gyorsgomb +
                felhő-szinkron + teljes képernyő gombok jobb oldalon)
@@ -13282,22 +13321,32 @@ Mean-reversion,2.5</textarea>
                 <div id="home-adaptive-cta" style="display:none" class="mt-1"><button onclick="startAdaptiveDrill()" class="text-[11px] font-bold text-amber-400 hover:text-amber-300 transition"><i class="fa-solid fa-bullseye mr-1"></i>Célzott drill: gyenge alakzatok</button></div>
             </div>
 
-            <div class="glass-card rounded-xl p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-bold text-slate-300" data-i18n="home_progress_label">Fejlődésed</span>
-                    <span id="home-xp-label" class="text-xs font-mono text-neon-cyan">0 XP</span>
-                </div>
-                <div class="flex items-center gap-3 text-[11px] text-slate-400">
-                    <span><i class="fa-solid fa-graduation-cap mr-1"></i><span id="home-lessons-label">0</span> <span data-i18n="home_lessons_suffix">lecke</span></span>
-                    <span><i class="fa-solid fa-coins mr-1 text-amber-400"></i><span id="home-coins-label">0</span> <span data-i18n="progress_coins">coin</span></span>
-                    <span id="home-premium-pill" class="ml-auto px-2 py-0.5 rounded-full bg-dark-800 border border-dark-700 text-[10px]"></span>
-                </div>
+            <!-- JAVÍTÁS (teljes mobil UI újratervezés): ez a sáv korábban
+                 ugyanolyan súlyú glass-card volt, mint minden más kártya a
+                 képernyőn (ugyanaz a háttér/keret/padding) — vizuálisan
+                 semmi nem jelezte, hogy ez csak másodlagos stat-infó, a
+                 ténylegesen fontos elem (lent, "mit csináljak most") pedig
+                 alig különbözött tőle. Most keret nélküli, tömör sáv —
+                 kevesebb vizuális súly, de az infó megmarad. -->
+            <div class="flex items-center gap-3 px-1 text-[11px] text-slate-400">
+                <span class="font-bold text-slate-300" data-i18n="home_progress_label">Fejlődésed</span>
+                <span class="text-neon-cyan font-mono" id="home-xp-label">0 XP</span>
+                <span class="text-dark-700">·</span>
+                <span><i class="fa-solid fa-graduation-cap mr-1"></i><span id="home-lessons-label">0</span> <span data-i18n="home_lessons_suffix">lecke</span></span>
+                <span id="home-premium-pill" class="ml-auto px-2 py-0.5 rounded-full bg-dark-800 border border-dark-700 text-[10px]"></span>
             </div>
+            <span class="hidden" id="home-coins-label">0</span>
 
             <!-- Dinamikus "Mit csináljak most?" kártya — ez a legfontosabb elem a
                  Home képernyőn: mindig a legrelevánsabb következő lépést mutatja,
-                 nem egy statikus funkció-katalógust. -->
-            <div id="home-continue-card" class="glass-card rounded-2xl p-4 border border-neon-cyan/30 bg-gradient-to-br from-neon-cyan/[0.04] to-transparent"></div>
+                 nem egy statikus funkció-katalógust. JAVÍTÁS: az eredeti
+                 kiemelés (4%-os cián gradiens) a többi kártya mellett alig
+                 látszott — most erősebb gradiens, felső cián csík és enyhe
+                 glow jelzi egyértelműen, hogy ez a fő, cselekvésre hívó elem
+                 a képernyőn, nem csak még egy kártya a sok közül. -->
+            <div id="home-continue-card" class="glass-card rounded-2xl p-4 border border-neon-cyan/40 bg-gradient-to-br from-neon-cyan/[0.09] via-neon-cyan/[0.02] to-transparent relative overflow-hidden" style="box-shadow: 0 0 24px -8px rgba(0,209,255,0.25);">
+                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-neon-cyan/80 via-neon-cyan/30 to-transparent"></div>
+            </div>
 
             <div>
                 <h3 class="text-xs font-bold text-slate-400 uppercase mb-2" data-i18n="home_quick_actions">Gyors elérés</h3>
