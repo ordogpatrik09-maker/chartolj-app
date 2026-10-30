@@ -2195,6 +2195,13 @@
                                 <div class="text-[10px] text-slate-400">Perpetual futures finanszírozási díja</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('rollover-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrows-rotate"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Rollover Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Kontraktus-görgetés kontangó/backwardation hatása</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
                             <div>
@@ -7168,6 +7175,51 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="funding-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Egyszerűsített, oktatási közelítés: fix, egyenletes funding rátát feltételez a teljes időszakra (a valóságban a ráta 8 óránként változik, a piaci hangulattól függően) — a tényleges, elszámolt összeg eltérhet ettől.</p>
+        </div>
+    </div>
+
+    <!-- ================= ROLLOVER (KONTRAKTUS-GÖRGETÉS) KALKULÁTOR (KITERJESZTÉS) =================
+         A lejáratos (nem perpetual) határidős kontraktusoknál a pozíció
+         fenntartásához rendszeresen "görgetni" (rollover) kell: el kell adni
+         a lejáró (közeli) kontraktust és venni a következő (távoli) kontraktust.
+         Ha a piac kontangóban van (távoli ár > közeli ár), ez FOLYAMATOS,
+         könnyen alábecsült költséget jelent long pozíciónál (és fordítva
+         backwardationnál a short pozíciónál) — eddig semelyik eszköz nem
+         számolta ezt ki konkrét dollárösszegben és évesített %-ban. -->
+    <div id="rollover-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-rotate text-amber-400"></i> Rollover (Kontraktus-Görgetés) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('rollover-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Egy lejáratos határidős kontraktus pozíciójának fenntartásához lejárat előtt át kell "görgetni" (rollover) a következő kontraktusba: el kell adni a lejáró, és venni a következő kontraktust. Ha a két ár eltér (kontangó/backwardation), ez konkrét nyereséget vagy veszteséget jelent — add meg a két kontraktus árát, és a kalkulátor kiszámolja a görgetés hatását.</p>
+
+            <div class="flex items-center gap-2 mb-3">
+                <button id="rollover-side-long" onclick="setRolloverSide('long')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition">Long</button>
+                <button id="rollover-side-short" onclick="setRolloverSide('short')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Short</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div><label class="text-[10px] text-slate-500">Lejáró (közeli) kontraktus ára</label><input type="number" id="rollover-near" value="65000" step="1" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Következő (távoli) kontraktus ára</label><input type="number" id="rollover-far" value="65300" step="1" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div><label class="text-[10px] text-slate-500">Kontraktusok száma (db)</label><input type="number" id="rollover-contracts" value="1" step="1" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Szorzó ($/pont, kriptónál 1)</label><input type="number" id="rollover-multiplier" value="1" step="0.01" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Napok a lejáratok között (kontraktusciklus hossza)</label>
+            <input type="number" id="rollover-days" value="90" step="1" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcRolloverCost()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="rollover-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Long pozíciónál a görgetés nettó cash flow-ja a közeli ár MÍNUSZ a távoli ár (eladod a közelit, megveszed a távolit) — kontangóban (távoli > közeli) ez veszteség. Short pozíciónál pont fordítva: a távoli ár MÍNUSZ a közeli ár — kontangóban ez nyereség. Az évesített % a jelenlegi görgetési ciklust feltételezi minden lejáratkor ismétlődve, ami csak közelítés — a valódi kontangó/backwardation mértéke lejáratonként változhat.</p>
         </div>
     </div>
 
@@ -12562,6 +12614,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Funding Rate Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Perpetual futures finanszírozási díja</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('rollover-modal')" data-tool-title="rollover kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrows-rotate"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Rollover Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Kontraktus-görgetés kontangó/backwardation hatása</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('dca-modal')" data-tool-title="dca szimulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -32541,6 +32600,84 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= ROLLOVER (KONTRAKTUS-GÖRGETÉS) KALKULÁTOR (KITERJESZTÉS) =================
+        let currentRolloverSide = 'long';
+        function setRolloverSide(side) {
+            currentRolloverSide = side;
+            const longBtn = document.getElementById('rollover-side-long');
+            const shortBtn = document.getElementById('rollover-side-short');
+            if (side === 'long') {
+                longBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                shortBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            } else {
+                shortBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                longBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+            }
+        }
+
+        function calcRolloverCost() {
+            const nearEl = document.getElementById('rollover-near');
+            const farEl = document.getElementById('rollover-far');
+            const contractsEl = document.getElementById('rollover-contracts');
+            const multiplierEl = document.getElementById('rollover-multiplier');
+            const daysEl = document.getElementById('rollover-days');
+            const resultEl = document.getElementById('rollover-result');
+            if (!nearEl || !farEl || !contractsEl || !multiplierEl || !daysEl || !resultEl) return;
+
+            const near = parseFloat(nearEl.value);
+            const far = parseFloat(farEl.value);
+            const contracts = parseFloat(contractsEl.value);
+            const multiplier = parseFloat(multiplierEl.value);
+            const days = parseFloat(daysEl.value);
+
+            if (!Number.isFinite(near) || near <= 0 || !Number.isFinite(far) || far <= 0 ||
+                !Number.isFinite(contracts) || contracts <= 0 || !Number.isFinite(multiplier) || multiplier <= 0 ||
+                !Number.isFinite(days) || days <= 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív árakat, kontraktusszámot, szorzót és lejáratok közti napok számát!</div>`;
+                return;
+            }
+
+            const priceDiff = far - near; // > 0: kontangó, < 0: backwardation, 0: flat
+            const notional = contracts * multiplier * near;
+            // Long: eladod a közelit (+near), megveszed a távolit (-far) -> nettó = near - far = -priceDiff
+            // Short: megveszed vissza a közelit (-near), eladod a távolit (+far) -> nettó = far - near = +priceDiff
+            const netCashFlow = (currentRolloverSide === 'long' ? -priceDiff : priceDiff) * contracts * multiplier;
+            const rollYieldPct = (netCashFlow / notional) * 100;
+            const annualizedRollYieldPct = rollYieldPct * (365 / days);
+
+            const marketState = priceDiff > 0 ? 'Kontangó (távoli > közeli)' : (priceDiff < 0 ? 'Backwardation (távoli < közeli)' : 'Flat (nincs eltérés)');
+            const isCost = netCashFlow < 0;
+            const fmt = (n) => (n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+
+            resultEl.innerHTML = `
+                <div class="rounded-xl ${isCost ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-neon-green/5 border border-neon-green/30'} p-3 mb-3">
+                    <div class="text-[10px] ${isCost ? 'text-neon-red' : 'text-neon-green'} uppercase font-bold mb-1">${isCost ? 'Görgetési veszteség' : 'Görgetési nyereség'} (1 görgetés)</div>
+                    <div class="text-xl font-extrabold text-white">${fmt(Math.abs(netCashFlow))}</div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Piaci állapot:</span>
+                    <span class="font-bold text-white">${marketState}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Ár-különbség (távoli − közeli):</span>
+                    <span class="font-bold ${priceDiff < 0 ? 'text-neon-green' : (priceDiff > 0 ? 'text-neon-red' : 'text-slate-300')}">${priceDiff >= 0 ? '+' : ''}${priceDiff.toLocaleString('en-US', { maximumFractionDigits: 8 })}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Görgetési hozam (1 ciklus, a névérték %-ában):</span>
+                    <span class="font-bold ${rollYieldPct < 0 ? 'text-neon-red' : 'text-neon-green'}">${rollYieldPct >= 0 ? '+' : ''}${rollYieldPct.toFixed(4)}%</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">Évesített görgetési hozam (${days} naponkénti ciklussal):</span>
+                    <span class="font-bold ${annualizedRollYieldPct < 0 ? 'text-neon-red' : 'text-neon-green'}">${annualizedRollYieldPct >= 0 ? '+' : ''}${annualizedRollYieldPct.toFixed(2)}%</span>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <span class="text-[11px] text-slate-300 font-bold">${isCost
+                        ? '⚠️ Ez egy FOLYAMATOS, minden görgetésnél visszatérő költség — minél hosszabb ideig tartod a pozíciót lejáraton át, annál jobban összeadódik, függetlenül a chart irányától.'
+                        : '✅ Ebben a forgatókönyvben a piaci szerkezet (kontangó/backwardation) kedvez a pozíciódnak — a görgetés magától hoz nyereséget, amíg ez a szerkezet fennáll.'}</span>
+                </div>
+            `;
+        }
+
         // ================= OPCIÓS ÁRAZÓ ÉS GREEKS KALKULÁTOR MOTORJA (BLACK-SCHOLES, NAGY KITERJESZTÉS) =================
         // Standard normál eloszlás sűrűségfüggvénye (PDF) és kumulatív
         // eloszlásfüggvénye (CDF) — a CDF-et az Abramowitz & Stegun 7.1.26
@@ -41623,6 +41760,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             517: { tool: 'backtest-modal', backtestStrategy: 'bollinger', cta: 'Hasonlítsd össze: backteszteld a mean-reversion stratégiát' },
             268: { tool: 'montecarlo-modal', cta: 'Futtasd le élesben a Monte Carlo Szimulátort' },
             145: { tool: 'funding-modal', cta: 'Számold ki, mennyi funding díjat fizetnél/kapnál' },
+            189: { tool: 'rollover-modal', cta: 'Számold ki élesben egy kontraktus-görgetés (rollover) hatását kontangó/backwardation mellett' },
             434: { tool: 'var-modal', cta: 'Számold ki élesben a VaR, CVaR és LVaR értékeket' },
             208: { tool: 'liquiditysize-modal', cta: 'Számold ki a likviditás-alapú max. pozícióméretet' },
             338: { tool: 'massindex-modal', cta: 'Számold ki élesben a Mass Indexet' },
