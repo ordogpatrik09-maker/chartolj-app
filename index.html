@@ -2230,6 +2230,13 @@
                                 <div class="text-[10px] text-slate-400">4 day trade / 5 nap + 6%-os arány + $25k minimum tőke</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('discount-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-hourglass-half"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Időbeli Diszkontálás Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Implikált türelmetlenségi ráta + preferencia-fordulás</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
                             <div>
@@ -7801,6 +7808,48 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= IDŐBELI DISZKONTÁLÁS (HIPERBOLIKUS VS EXPONENCIÁLIS) KALKULÁTOR (OKTATÁSI) =================
+         A felhasználó megad egy "azonnal elfogadnál X-et" vs "N nap múlva Y-t"
+         közömbösségi pontot (X < Y). Ebből implikált napi diszkontrátát számol
+         KÉT modell szerint: exponenciális (időben konzisztens) és hiperbolikus
+         (a viselkedési pénzügyekben megfigyelt, nem-konzisztens) modell.
+         A két modellt ÚGY kalibráljuk, hogy mindkettő PONTOSAN ugyanazt a
+         közömbösségi pontot adja vissza N napnál — a különbség abban mutatkozik
+         meg, mi történik, ha MINDKÉT opciót ugyanannyi idővel (N nappal)
+         kitoljuk a jövőbe: az exponenciális modell szerint a közömbösség
+         megmarad (időben konzisztens), a hiperbolikus modell szerint viszont
+         a nagyobb-későbbi opció relatíve vonzóbbá válik — ez a klasszikus
+         "preferencia-fordulás" (preference reversal), amit a viselkedési
+         pénzügyek a present bias és a hyperbolic discounting bizonyítékaként
+         tart. -->
+    <div id="discount-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-hourglass-half text-neon-purple"></i> Időbeli Diszkontálás Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('discount-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg: mekkora összeget fogadnál el MOST, egy nagyobb, de N nap múlva járó összeg helyett — azon a ponton, ahol a kettő számodra egyenértékű. A kalkulátor kiszámolja, ennek milyen implikált (napi, majd évesített) türelmetlenségi rátát jelent, ÉS megmutatja a hiperbolikus diszkontálás klasszikus "preferencia-fordulás" jelenségét.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Azonnali összeg, amit MOST elfogadnál ($)</label>
+            <input type="number" id="discount-now" value="90" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Jövőbeli összeg, N nap múlva ($)</label>
+            <input type="number" id="discount-future" value="100" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">N (napok száma a jövőbeli összegig)</label>
+            <input type="number" id="discount-days" value="30" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcTemporalDiscounting()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="discount-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Mindkét modell PONTOSAN ugyanazt a közömbösségi pontot adja vissza N napnál — a valódi különbség abban mutatkozik meg, mi történne, ha MINDKÉT opciót ugyanannyi idővel előrébb tolnád. Ez nem jövőbeli árfolyam-előrejelzés, hanem egy elméleti, a viselkedési pénzügyekben (Thaler, Laibson és mások munkáiban) jól dokumentált modell a saját türelmetlenséged számszerűsítésére.</p>
+        </div>
+    </div>
+
     <!-- ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
          Egyszerűsített, várható-érték alapú modell (NEM Monte Carlo, NEM
          compoundolt útfüggő szimuláció) a tail risk hedging (pl. távoli
@@ -13015,6 +13064,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">PDT (Pattern Day Trader) Szabály Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">4 day trade / 5 nap + 6%-os arány + $25k minimum tőke</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('discount-modal')" data-tool-title="időbeli diszkontálás kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-hourglass-half"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Időbeli Diszkontálás Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Implikált türelmetlenségi ráta + preferencia-fordulás</div>
                         </div>
                     </button>
                 </div>
@@ -31441,6 +31497,122 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= IDŐBELI DISZKONTÁLÁS (HIPERBOLIKUS VS EXPONENCIÁLIS) KALKULÁTOR (OKTATÁSI) =================
+        // Bemenet: A1 (azonnali, elfogadható összeg), A2 (jövőbeli összeg, A2 > A1),
+        // days (napok száma A2-ig). A kettő egy KÖZÖMBÖSSÉGI pontot ír le.
+        //
+        // Exponenciális (időben konzisztens) modell: A1 = A2 / (1+r)^days
+        //   => rDaily = (A2/A1)^(1/days) - 1 ;  rAnnual = (1+rDaily)^365 - 1
+        //
+        // Hiperbolikus modell: A1 = A2 / (1 + k*days)
+        //   => k = (A2/A1 - 1) / days   (k mértékegysége: 1/nap)
+        //
+        // Preferencia-fordulás teszt: mindkét opciót "days" nappal kitoljuk.
+        //   S' = A1 a t=days időpontban ; L' = A2 a t=2*days időpontban.
+        //   Jelenértékek (t=0-ból nézve, a MEGFELELŐ modell szerint diszkontálva):
+        //     PV_exp(S') = A1 / (1+rDaily)^days ;  PV_exp(L') = A2 / (1+rDaily)^(2*days)
+        //     PV_hyp(S') = A1 / (1+k*days)      ;  PV_hyp(L') = A2 / (1+k*2*days)
+        //   Matematikailag igazolható, hogy PV_exp(S') === PV_exp(L') MINDIG (időben
+        //   konzisztens — a kalibrált egyenlőség days-nél bármely közös eltolásra
+        //   megmarad), míg PV_hyp(L') > PV_hyp(S') MINDIG, ha A2 > A1 és days,k > 0
+        //   (a nagyobb-későbbi opció relatíve vonzóbbá válik, ha mindkettőt kitoljuk —
+        //   ez a hiperbolikus diszkontálás klasszikus preferencia-fordulása).
+        function calcTemporalDiscounting() {
+            const nowEl = document.getElementById('discount-now');
+            const futureEl = document.getElementById('discount-future');
+            const daysEl = document.getElementById('discount-days');
+            const out = document.getElementById('discount-result');
+            if (!nowEl || !futureEl || !daysEl || !out) return;
+
+            const A1 = parseFloat(nowEl.value);
+            const A2 = parseFloat(futureEl.value);
+            const daysRaw = parseFloat(daysEl.value);
+            const days = Math.round(daysRaw);
+
+            if (!Number.isFinite(A1) || A1 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb azonnali összeget!</div>`;
+                return;
+            }
+            if (!Number.isFinite(A2) || A2 <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb jövőbeli összeget!</div>`;
+                return;
+            }
+            if (!Number.isFinite(daysRaw) || daysRaw < 1 || days !== daysRaw) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A napok száma egy 1-nél nem kisebb EGÉSZ szám kell legyen!</div>`;
+                return;
+            }
+            if (A2 <= A1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A jövőbeli összegnek NAGYOBBNAK kell lennie az azonnalinál — különben nincs valódi "várj vagy fogadd el most" dilemma, amit diszkontálni lehetne!</div>`;
+                return;
+            }
+
+            const ratio = A2 / A1;
+            const rDaily = Math.pow(ratio, 1 / days) - 1;
+            const rAnnual = Math.pow(1 + rDaily, 365) - 1;
+            const k = (ratio - 1) / days;
+
+            const pvExpS = A1 / Math.pow(1 + rDaily, days);
+            const pvExpL = A2 / Math.pow(1 + rDaily, 2 * days);
+            const pvHypS = A1 / (1 + k * days);
+            const pvHypL = A2 / (1 + k * 2 * days);
+
+            const hypDiffPct = pvHypS !== 0 ? ((pvHypL - pvHypS) / pvHypS) * 100 : 0;
+            const expDiffPct = pvExpS !== 0 ? ((pvExpL - pvExpS) / pvExpS) * 100 : 0;
+            const reversalOccurs = hypDiffPct > 0.01;
+
+            const fmtUSD = (n) => '$' + n.toFixed(2);
+            const annualPct = rAnnual * 100;
+            const annualDisplay = Number.isFinite(annualPct)
+                ? (annualPct > 1e7 ? '>10 000 000%' : annualPct.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%')
+                : 'matematikailag kiszámíthatatlanul magas';
+
+            let verdictColor, verdict;
+            if (!Number.isFinite(annualPct) || annualPct > 1000) {
+                verdictColor = 'text-neon-red';
+                verdict = '🚨 Irracionálisan magas implikált türelmetlenségi ráta: ha ezt tényleges éves hozamelvárásnak tekintenéd, semmilyen fenntartható kereskedési stratégia nem tudná ezt teljesíteni — ez azt jelzi, hogy a döntésedet a present bias / hyperbolic discounting hajtja, nem egy reális hozam-összevetés.';
+            } else if (annualPct > 100) {
+                verdictColor = 'text-amber-400';
+                verdict = '⚠️ Nagyon magas implikált türelmetlenségi ráta — jóval meghaladja bármely reális, hosszú távon fenntartható kereskedési hozamot, ami arra utal, hogy a jelen pillanat eltúlzott súlyt kap a döntésedben.';
+            } else if (annualPct > 20) {
+                verdictColor = 'text-amber-400';
+                verdict = '⚠️ Magas implikált türelmetlenségi ráta — érdemes megkérdezni magadtól, valóban ennyivel kockázatosabb/bizonytalanabb a várakozás, vagy csak a jelen pillanat csábítása dominál.';
+            } else {
+                verdictColor = 'text-neon-green';
+                verdict = '✅ Viszonylag mérsékelt implikált türelmetlenségi ráta — közel áll egy reális, kockázattal korrigált hozamelváráshoz.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs mb-3">
+                    <div class="flex justify-between"><span class="text-slate-400">Arány (A2 / A1):</span><span class="text-white">${ratio.toFixed(4)}×</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Implikált napi ráta (exponenciális):</span><span class="text-white">${(rDaily * 100).toFixed(4)}%/nap</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Implikált hiperbolikus k:</span><span class="text-white">${(k * 100).toFixed(4)}%/nap</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Évesített türelmetlenségi ráta:</span><span class="font-extrabold ${verdictColor} text-sm">${annualDisplay}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mb-3 ${verdictColor}">${verdict}</p>
+                <div class="rounded-xl p-3 bg-dark-850/60 border border-dark-750">
+                    <div class="text-[10px] uppercase font-bold mb-2 text-slate-400">Preferencia-fordulás teszt: mindkét opció +${days} nappal kitolva</div>
+                    <div class="text-[10px] text-slate-500 mb-2">("${fmtUSD(A1)} ${days} nap múlva" vs "${fmtUSD(A2)} ${2 * days} nap múlva" — eredetileg (t=0-nál) pontosan közömbös voltál ${fmtUSD(A1)} most és ${fmtUSD(A2)} ${days} nap múlva között)</div>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <div class="rounded-lg bg-dark-900/60 border border-dark-750 p-2 text-center">
+                            <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Exponenciális modell</div>
+                            <div class="text-[10px] text-slate-300">PV(kicsi): ${fmtUSD(pvExpS)}</div>
+                            <div class="text-[10px] text-slate-300">PV(nagy): ${fmtUSD(pvExpL)}</div>
+                            <div class="text-[9px] font-bold text-neon-cyan mt-1">${Math.abs(expDiffPct) < 0.01 ? 'Nincs fordulás' : (expDiffPct > 0 ? '+' + expDiffPct.toFixed(3) + '%' : expDiffPct.toFixed(3) + '%')} (időben konzisztens)</div>
+                        </div>
+                        <div class="rounded-lg ${reversalOccurs ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-dark-900/60 border border-dark-750'} p-2 text-center">
+                            <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Hiperbolikus modell</div>
+                            <div class="text-[10px] text-slate-300">PV(kicsi): ${fmtUSD(pvHypS)}</div>
+                            <div class="text-[10px] text-slate-300">PV(nagy): ${fmtUSD(pvHypL)}</div>
+                            <div class="text-[9px] font-bold ${reversalOccurs ? 'text-neon-red' : 'text-neon-cyan'} mt-1">${reversalOccurs ? '+' + hypDiffPct.toFixed(3) + '% — FORDULÁS!' : 'Nincs fordulás'}</div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] ${reversalOccurs ? 'text-neon-red' : 'text-slate-400'} leading-relaxed">${reversalOccurs
+                        ? 'A hiperbolikus modell szerint, ha MINDKÉT opciót kitolod a jövőbe, a nagyobb-későbbi opció lesz a jelenértékben vonzóbb — pontosan ez a mechanizmus magyarázza, miért tűnik "most" ellenállhatatlannak egy azonnali, kisebb nyereség, miközben ugyanazt a választást egy héttel később, mindkettőt egyformán kitolva, már simán a türelmesebb opcióra döntenéd.'
+                        : 'Ebben a konkrét esetben a hiperbolikus modell szerinti eltolás nem (vagy csak elenyészően) változtatja meg a sorrendet — ez önmagában nem zárja ki a present bias jelenlétét, csak azt jelzi, hogy ezzel a konkrét paraméterezéssel nem mutatható ki számszerű fordulás.'}</p>
+                </div>
+            `;
+        }
+
         // ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
         // totalCostDragFrac = 1 - (1-c/100)^n  (kumulált, compoundolt "drag" a
         // portfólión a horizont alatt a rendszeres fedezési díj miatt)
@@ -42761,6 +42933,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             308: { tool: 'dailylimit-modal', cta: 'Nézd meg élesben, hogyan állította volna meg a napi veszteséglimit Roland tilt-napját' },
             520: { tool: 'dailylimit-modal', cta: 'Állítsd be élesben a napi veszteséglimitedet — a lecke által javasolt védelmi mechanizmust revenge trading ellen' },
             544: { tool: 'szjatax-modal', cta: 'Számold ki élesben a nettó SZJA-kötelezettséged a saját kriptó-ügyleteidre' },
+            310: { tool: 'discount-modal', cta: 'Számold ki élesben, milyen implikált napi/évesített türelmetlenségi rátát jelent, ha egy azonnali összeget egy nagyobb, jövőbeli összeg helyett választanál' },
+            340: { tool: 'discount-modal', cta: 'Nézd meg élesben a hiperbolikus diszkontálás preferencia-fordulás demonstrációját — mi történne, ha a döntésedet nem éppen most, hanem egy héttel később kellene meghoznod' },
+            403: { tool: 'discount-modal', cta: 'Számold ki élesben a hiperbolikus vs exponenciális diszkontálás közti különbséget a saját "most vagy később" döntésed implikált rátáján' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -42780,7 +42955,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
