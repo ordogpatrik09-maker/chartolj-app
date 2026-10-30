@@ -297,6 +297,30 @@
             #mobile-bottom-nav { display: flex; }
             #app-scale-wrapper { padding-bottom: 68px; }
 
+            /* JAVÍTÁS (felhasználói visszajelzés: "nem férnek el a szövegek
+               egy sorba meg semmi nem fér el"): a Leckék lista minden sorának
+               címe (pl. "Kereskedési Jelenlét Egyensúlya — Élet a...") és
+               alcíme a .truncate Tailwind-osztályt kapta (egysoros,
+               "…"-ra vágott szöveg). A magyar lecke-címek gyakran hosszabbak,
+               mint amennyi egy ~310-330px széles sorba belefér — a cím
+               KÖZEPÉN vágódott le, a felhasználó nem tudta elolvasni, miről
+               szól a lecke anélkül, hogy rákattintott volna. Mobilon (csak
+               itt — a megosztott .truncate osztály maga, amit a desktop
+               panel ÉS más képernyők (eszközválasztó stb.) is használnak,
+               NEM változik) a Leckék lista címei/alcímei most 2 sorig
+               tördelve jelennek meg ("…"-tal, ha még úgy sem férne ki),
+               nem egy sorban levágva. */
+            #academy-lesson-list .truncate,
+            #srs-review-list .truncate {
+                white-space: normal;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                line-height: 1.3;
+            }
+
             /* JAVÍTÁS (teljes mobil UI újratervezés, felhasználói kérésre):
                a .glass-card (szinte MINDEN kártya az appban: Home, Profil,
                Fejlődés, Akadémia listák stb.) desktopon és mobilon ugyanazt
