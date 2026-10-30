@@ -297,6 +297,81 @@
             #mobile-bottom-nav { display: flex; }
             #app-scale-wrapper { padding-bottom: 68px; }
 
+            /* JAVÍTÁS (felhasználói visszajelzés: "a gombok egymáson, az
+               eszköz chatbot és a kereskedés" — konkrét, megerősített
+               strukturális hiba): a #left-toolbar-aside egy DESKTOPRA
+               tervezett, 56px széles, FÜGGŐLEGES ikon-sáv (13 rajzeszköz-
+               gomb, mindegyik csak egy ikon, a felirat egy :hover-re
+               megjelenő lebegő tooltip — ami touch-eszközön GYAKORLATILAG
+               SOHA nem jelenik meg). Mobilon ezt eddig csak egy
+               "flex-direction: row !important" tette VÍZSZINTESSÉ — 13
+               egyforma, felirat nélküli, apró (38px) ikon egy görgethető
+               sorban, megkülönböztethetetlenül egymás mellett (ez volt az
+               "oldalra lapozós dolog, ami egy szar" panasz). Mobilon most
+               rácsba tördelve (flex-wrap), minden gomb nagyobb, és a
+               korábban csak hover-re látszó .micro-tooltip szöveg itt
+               állandóan látható, kis felirat az ikon ALATT — nem kell
+               kitalálni, melyik ikon mit csinál. */
+            #left-toolbar-aside.mobile-sheet-open {
+                flex-wrap: wrap;
+                align-content: flex-start;
+                overflow-y: auto;
+                overflow-x: hidden;
+                max-height: 46vh;
+                gap: 8px;
+                padding: 14px 10px;
+            }
+            #left-toolbar-aside.mobile-sheet-open .micro-icon-btn {
+                width: 74px;
+                height: 58px;
+                flex-direction: column;
+                gap: 4px;
+                border-radius: 12px;
+                flex-shrink: 0;
+            }
+            #left-toolbar-aside.mobile-sheet-open .micro-icon-btn i {
+                font-size: 15px;
+            }
+            #left-toolbar-aside.mobile-sheet-open .micro-tooltip {
+                position: static;
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                background: none;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                font-size: 9px;
+                font-weight: 700;
+                color: #94a3b8;
+                white-space: normal;
+                text-align: center;
+                line-height: 1.15;
+                max-width: 68px;
+            }
+            #left-toolbar-aside.mobile-sheet-open .micro-icon-btn.active .micro-tooltip,
+            #left-toolbar-aside.mobile-sheet-open .micro-icon-btn:hover .micro-tooltip {
+                color: inherit;
+            }
+            #left-toolbar-aside.mobile-sheet-open .micro-icon-btn.active::after {
+                display: none; /* a bal-oldali "aktív" sáv-jelző csak a függőleges rail-ben értelmes */
+            }
+            #left-toolbar-aside.mobile-sheet-open .w-6.h-px.bg-dark-750 {
+                width: 100%;
+                height: 1px;
+                margin: 2px 0;
+            }
+            #left-toolbar-aside.mobile-sheet-open .mt-auto {
+                margin-top: 0;
+                display: contents; /* a "Törlés/Képernyőkép" wrapper divje beolvad a rácsba, nem külön sorba tolódik */
+            }
+            #left-toolbar-aside.mobile-sheet-open > button[onclick="closeMobileSheets()"] {
+                width: 100%;
+                height: 36px;
+                flex-direction: row;
+                order: -1; /* a bezáró gomb mindig a rács tetején, teljes szélességben */
+            }
+
             /* JAVÍTÁS (felhasználói visszajelzés: "nem férnek el a szövegek
                egy sorba meg semmi nem fér el"): a Leckék lista minden sorának
                címe (pl. "Kereskedési Jelenlét Egyensúlya — Élet a...") és
@@ -41384,11 +41459,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // Additív mechanizmus: csak egy CSS osztályt kapcsol, a meglévő
         // desktop toggleLeftToolbar()/toggleOrderDesk() függvényeket és
         // azok inline stílus-kezelését nem érinti.
+        // JAVÍTÁS (felhasználói visszajelzés: "a gombok egymáson, az eszköz
+        // chatbot és a kereskedés" — konkrét, megerősített hiba): az
+        // "Eszközök"/"Kereskedés" alulról felcsúszó panelek megnyitásakor
+        // eddig csak a KÜLÖNÁLLÓ lebegő AI-chat gomb (#ai-chat-launcher)
+        // tűnt el — a #mobile-trade-fab-row HÁROM gombos sor (chat/
+        // Eszközök/Kereskedés) viszont fix pozícióban, z-[93]-mal
+        // VÁLTOZATLANUL a panel FÖLÖTT lebegett, pontosan rálógva annak
+        // tartalmára (mérve: a sáv és a panel bounding rect-je ténylegesen
+        // átfedett). Most mindkét nyitó függvény elrejti a teljes
+        // gombsort is, a záró függvény pedig csak akkor hozza vissza, ha
+        // még mindig a Kereskedés fülön vagyunk.
         function openToolsSheetMobile() {
             document.getElementById('left-toolbar-aside').classList.add('mobile-sheet-open');
             document.getElementById('orderdesk-aside').classList.remove('mobile-sheet-open');
             document.getElementById('mobile-sheet-backdrop').classList.add('visible');
             setMobileChatLauncherHidden(true);
+            const fabRow = document.getElementById('mobile-trade-fab-row');
+            if (fabRow) fabRow.style.display = 'none';
         }
 
         function openOrderSheetMobile() {
@@ -41396,6 +41484,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('left-toolbar-aside').classList.remove('mobile-sheet-open');
             document.getElementById('mobile-sheet-backdrop').classList.add('visible');
             setMobileChatLauncherHidden(true);
+            const fabRow = document.getElementById('mobile-trade-fab-row');
+            if (fabRow) fabRow.style.display = 'none';
         }
 
         function closeMobileSheets() {
@@ -41403,6 +41493,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('orderdesk-aside').classList.remove('mobile-sheet-open');
             document.getElementById('mobile-sheet-backdrop').classList.remove('visible');
             setMobileChatLauncherHidden(false);
+            const fabRow = document.getElementById('mobile-trade-fab-row');
+            if (fabRow && window.innerWidth < 1024 && typeof currentMobileTab !== 'undefined' && currentMobileTab === 'trade') {
+                fabRow.style.display = '';
+            }
         }
 
         // JAVÍTÁS: a lebegő AI-chat gomb (#ai-chat-launcher) fixen a jobb alsó
