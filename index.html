@@ -2408,6 +2408,13 @@
                                 <div class="text-[10px] text-slate-400">OLS-illesztés (R²) + törés/érintés-zóna a megadott küszöb alapján</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('corrshift-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-link-slash"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Korrelációs Rezsim-Váltás Monitor</div>
+                                <div class="text-[10px] text-slate-400">Gördülő korreláció — mikor szorulnak hirtelen együvé a szét-mozgó eszközök</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
                             <div>
@@ -8161,6 +8168,58 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= KORRELÁCIÓS REZSIM-VÁLTÁS MONITOR (OKTATÁSI) =================
+         A statikus Korrelációs Mátrix kalkulátor egyetlen, TELJES mintás
+         Pearson-korrelációt ad vissza — ez a lecke szerint (Correlation
+         Breakdown Monitoring / Correlation Regime Shift Felismerése) hamis
+         biztonságot adhat, mert a korreláció IDŐBEN VÁLTOZIK, és pont
+         piaci stressz idején szokott hirtelen megugrani ("minden korrelál
+         egyhez"). Ez az eszköz GÖRDÜLŐ (rolling) ablakos Pearson-korrelációt
+         számol lépésenként 1-gyel csúsztatva: corr_i = pearson(A[i..i+W-1],
+         B[i..i+W-1]), ahol W a megadott ablakméret. A legnagyobb egylépéses
+         |corr_i - corr_(i-1)| változást a megadott küszöbhöz viszonyítva
+         STABIL / MÉRSÉKELT VÁLTOZÁS / JELENTŐS REZSIM-VÁLTÁS kategóriába
+         sorolja, és KÜLÖN jelzi, ha a klasszikus válság-mintázat áll fenn:
+         egy korábbi, gyengén korreláló (<0.3) ablakot egy későbbi, erősen
+         korreláló (>0.7) ablak követ. A bemeneti sorozatokat SZIGORÚAN
+         validáljuk (nem csendben szűrjük ki az érvénytelen tokeneket, mint
+         a Korrelációs Mátrix teszi) — ez időfüggő, sorrendfüggő adat, egy
+         néma kiszűrés elcsúsztatná a két sorozat indexelését egymáshoz
+         képest. -->
+    <div id="corrshift-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-link-slash text-neon-red"></i> Korrelációs Rezsim-Váltás Monitor
+                </h3>
+                <button onclick="closeToolModal('corrshift-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A statikus korrelációs mátrix EGY számot ad — ez a lecke szerint félrevezető, mert a korreláció időben változik, és válság idején pont akkor ugorhat meg hirtelen, amikor a diverzifikációra a legnagyobb szükség lenne. Add meg KÉT eszköz időrendi hozamsorozatát (Név: érték,érték,... formátumban, pontosan 2 sorban, azonos hosszúsággal) — a kalkulátor GÖRDÜLŐ ablakos korrelációt számol, és megjelöli, hol történt jelentős rezsim-váltás.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">2 eszköz hozamsorozata: Név: érték,érték,... (időrendben, azonos hosszúsággal)</label>
+            <textarea id="corrshift-assets" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-red/50">Tech részvény: 1.2,-0.8,0.5,-1.5,0.9,-0.3,1.1,-0.6,-2.0,-2.5,-1.8,-3.0,-2.2,-2.8,-1.5,-3.2
+Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3.0</textarea>
+
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Gördülő ablak mérete (≥4)</label>
+                    <input type="number" id="corrshift-window" value="4" step="1" min="4" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Rezsim-váltás küszöb (Δkorreláció)</label>
+                    <input type="number" id="corrshift-threshold" value="0.4" step="0.05" min="0.05" max="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+                </div>
+            </div>
+
+            <button onclick="calcCorrelationRegimeShift()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Rezsim-Váltás Elemzése
+            </button>
+
+            <div id="corrshift-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy OKTATÁSI, determinisztikus eszköz: a gördülő ablak egy egyszerűsített, lépésenként 1-gyel csúsztatott Pearson-korreláció, NEM egy exponenciálisan súlyozott (EWMA) vagy GARCH-alapú korrelációs modell. A korreláció vs okozati összefüggés (correlation vs causation) lecke szerint a számított érték önmagában nem magyarázza meg a MIÉRT-et — egy közös makrogazdasági tényező (pl. piaci pánik) állhat a hirtelen együttmozgás mögött, ezt a kalkulátor nem azonosítja, csak a jelenséget méri.</p>
+        </div>
+    </div>
+
     <!-- ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
          Egyszerűsített, várható-érték alapú modell (NEM Monte Carlo, NEM
          compoundolt útfüggő szimuláció) a tail risk hedging (pl. távoli
@@ -13396,6 +13455,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Trendvonal Törés-Validitás & Lejtés Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">OLS-illesztés (R²) + törés/érintés-zóna a megadott küszöb alapján</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('corrshift-modal')" data-tool-title="korrelációs rezsim-váltás monitor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-link-slash"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Korrelációs Rezsim-Váltás Monitor</div>
+                            <div class="text-[10px] text-slate-400">Gördülő korreláció — mikor szorulnak hirtelen együvé a szét-mozgó eszközök</div>
                         </div>
                     </button>
                 </div>
@@ -32317,6 +32383,189 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // Korrelációs Rezsim-Váltás Monitor: lásd a modal fölötti HTML-kommentet
+        // a pontos gördülő-ablakos korreláció és rezsim-váltás-osztályozási
+        // algoritmusért.
+        function calcCorrelationRegimeShift() {
+            const assetsEl = document.getElementById('corrshift-assets');
+            const windowEl = document.getElementById('corrshift-window');
+            const threshEl = document.getElementById('corrshift-threshold');
+            const out = document.getElementById('corrshift-result');
+            if (!assetsEl || !windowEl || !threshEl || !out) return;
+
+            const lines = assetsEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length !== 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Pontosan 2 eszköz hozamsorozatát add meg, "Név: érték,érték,..." formátumban, soronként egyet!</div>`;
+                return;
+            }
+
+            const assets = [];
+            for (const line of lines) {
+                const colonIdx = line.indexOf(':');
+                if (colonIdx === -1) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hiányzik a ":" elválasztó a "${line}" sorban! Használd a "Név: érték,érték,..." formátumot.</div>`;
+                    return;
+                }
+                const name = line.slice(0, colonIdx).trim();
+                if (!name) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden sornak kell legyen eszköznév a ":" előtt!</div>`;
+                    return;
+                }
+                const tokens = line.slice(colonIdx + 1).split(',').map(s => s.trim()).filter(s => s.length > 0);
+                if (tokens.length < 2) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${name}" sorozatnak legalább 2 értéket kell tartalmaznia!</div>`;
+                    return;
+                }
+                const values = [];
+                for (const tok of tokens) {
+                    const v = parseFloat(tok);
+                    // Szándékosan SZIGORÚ elutasítás, nem csendes kiszűrés: ez
+                    // időrendi adat, egy érvénytelen token néma eldobása
+                    // elcsúsztatná a két sorozat indexelését egymáshoz képest.
+                    if (tok === '' || !Number.isFinite(v)) {
+                        out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${tok}" nem érvényes szám a "${name}" sorozatban — csak számokat adj meg, vesszővel elválasztva!</div>`;
+                        return;
+                    }
+                    values.push(v);
+                }
+                assets.push({ name, values });
+            }
+
+            if (assets[0].values.length !== assets[1].values.length) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A két sorozat hossza nem egyezik! (${assets[0].name}: ${assets[0].values.length} érték, ${assets[1].name}: ${assets[1].values.length} érték)</div>`;
+                return;
+            }
+
+            const n = assets[0].values.length;
+            const windowSize = parseInt(windowEl.value, 10);
+            const threshold = parseFloat(threshEl.value);
+
+            if (!Number.isInteger(windowSize) || windowSize < 4) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A gördülő ablak mérete egész szám, legalább 4 kell legyen! (3 vagy kevesebb ponton a korreláció matematikailag torz/megbízhatatlan — hasonlóan ahhoz, mint amikor 2 pont mindig pontosan egy egyenesre esik egy trendvonalnál.)</div>`;
+                return;
+            }
+            if (!Number.isFinite(threshold) || threshold <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A rezsim-váltás küszöb pozitív szám kell legyen!</div>`;
+                return;
+            }
+            if (n < windowSize * 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A sorozat túl rövid: legalább 2× ablakméret (jelenleg ${windowSize}, azaz legalább ${windowSize * 2} adatpont) szükséges ahhoz, hogy legalább KÉT gördülő ablakot összehasonlíthassunk! (Jelenlegi hossz: ${n})</div>`;
+                return;
+            }
+
+            function pearsonCorrelation(x, y) {
+                const m = x.length;
+                const meanX = x.reduce((a, b) => a + b, 0) / m;
+                const meanY = y.reduce((a, b) => a + b, 0) / m;
+                let covariance = 0, varX = 0, varY = 0;
+                for (let i = 0; i < m; i++) {
+                    covariance += (x[i] - meanX) * (y[i] - meanY);
+                    varX += (x[i] - meanX) ** 2;
+                    varY += (y[i] - meanY) ** 2;
+                }
+                covariance /= m;
+                varX /= m;
+                varY /= m;
+                if (varX === 0 || varY === 0) return null;
+                return covariance / (Math.sqrt(varX) * Math.sqrt(varY));
+            }
+
+            const fullCorr = pearsonCorrelation(assets[0].values, assets[1].values);
+
+            const rollingCorrs = [];
+            for (let start = 0; start + windowSize <= n; start++) {
+                const segA = assets[0].values.slice(start, start + windowSize);
+                const segB = assets[1].values.slice(start, start + windowSize);
+                rollingCorrs.push({ startIdx: start, endIdx: start + windowSize - 1, corr: pearsonCorrelation(segA, segB) });
+            }
+
+            let maxJump = { delta: -1, fromIdx: null, toIdx: null, fromCorr: null, toCorr: null };
+            for (let i = 1; i < rollingCorrs.length; i++) {
+                const prev = rollingCorrs[i - 1], cur = rollingCorrs[i];
+                if (prev.corr === null || cur.corr === null) continue;
+                const d = Math.abs(cur.corr - prev.corr);
+                if (d > maxJump.delta) {
+                    maxJump = { delta: d, fromIdx: i - 1, toIdx: i, fromCorr: prev.corr, toCorr: cur.corr };
+                }
+            }
+
+            const validCorrs = rollingCorrs.filter(w => w.corr !== null);
+
+            // Klasszikus válság-mintázat ("minden korrelál egyhez"): van-e egy
+            // KORÁBBI, gyengén/nem korreláló (<0.3) ablak, amit egy KÉSŐBBI,
+            // erősen korreláló (>0.7) ablak követ?
+            let crisisPattern = false;
+            for (let i = 0; i < rollingCorrs.length && !crisisPattern; i++) {
+                if (rollingCorrs[i].corr === null || rollingCorrs[i].corr >= 0.3) continue;
+                for (let j = i + 1; j < rollingCorrs.length; j++) {
+                    if (rollingCorrs[j].corr !== null && rollingCorrs[j].corr > 0.7) { crisisPattern = true; break; }
+                }
+            }
+
+            function corrColorClass(c) {
+                if (c === null) return 'text-slate-500';
+                const abs = Math.abs(c);
+                if (abs >= 0.7) return c > 0 ? 'text-neon-red' : 'text-neon-green';
+                if (abs >= 0.3) return 'text-amber-400';
+                return 'text-neon-cyan';
+            }
+            function corrDisplay(c) {
+                return c === null ? 'N/A' : (c >= 0 ? '+' : '') + c.toFixed(2);
+            }
+
+            let classLabel, classColor, classNote;
+            if (validCorrs.length === 0) {
+                classLabel = 'NEM ÉRTÉKELHETŐ';
+                classColor = 'text-slate-500';
+                classNote = 'Minden gördülő ablakban az egyik (vagy mindkét) sorozat szórása nulla volt (állandó érték) — korreláció matematikailag nem definiálható ezekre az ablakokra.';
+            } else if (maxJump.fromIdx === null) {
+                classLabel = 'NINCS ÖSSZEHASONLÍTÁSI ALAP';
+                classColor = 'text-slate-500';
+                classNote = 'Csak 1 értékelhető gördülő ablak van (a többi állandó sorozat miatt N/A) — nincs mihez viszonyítani a rezsim-váltás kereséséhez.';
+            } else if (maxJump.delta >= threshold * 2) {
+                classLabel = 'JELENTŐS REZSIM-VÁLTÁS';
+                classColor = 'text-neon-red';
+                classNote = `A korreláció egyetlen ablaklépés alatt ${maxJump.delta.toFixed(2)}-et változott (a küszöb 2×-énél is nagyobb) — a korábbi korrelációs feltételezésed erre a két eszközre már NEM érvényes, a diverzifikációs hatás jelentősen megváltozott.`;
+            } else if (maxJump.delta >= threshold) {
+                classLabel = 'MÉRSÉKELT VÁLTOZÁS';
+                classColor = 'text-amber-400';
+                classNote = `A korreláció egyetlen ablaklépés alatt ${maxJump.delta.toFixed(2)}-et változott — ez átlépi a küszöböt, érdemes figyelni, de még nem minősül drámai rezsim-váltásnak.`;
+            } else {
+                classLabel = 'STABIL KAPCSOLAT';
+                classColor = 'text-neon-green';
+                classNote = `A legnagyobb egylépéses korreláció-változás is csak ${maxJump.delta.toFixed(2)} volt, a küszöb (${threshold.toFixed(2)}) alatt — ebben a mintában a két eszköz kapcsolata a vizsgált ablakméret mellett nem mutat hirtelen törést.`;
+            }
+
+            let rowsHtml = '';
+            rollingCorrs.forEach((w, i) => {
+                const isJumpFrom = i === maxJump.fromIdx;
+                const isJumpTo = i === maxJump.toIdx;
+                const marker = (isJumpFrom || isJumpTo) ? '<i class="fa-solid fa-triangle-exclamation text-amber-400 ml-1"></i>' : '';
+                rowsHtml += `<div class="flex justify-between ${(isJumpFrom || isJumpTo) ? 'bg-dark-800/60 rounded px-1' : ''}"><span class="text-slate-400">Ablak ${i + 1} [bar ${w.startIdx}-${w.endIdx}]:</span><span class="font-bold ${corrColorClass(w.corr)}">${corrDisplay(w.corr)}${marker}</span></div>`;
+            });
+
+            const crisisHtml = crisisPattern
+                ? `<div class="glass-card rounded-xl p-3 mb-3 border border-neon-red/40"><div class="text-xs font-extrabold uppercase text-neon-red mb-1"><i class="fa-solid fa-triangle-exclamation"></i> Klasszikus válság-mintázat észlelve</div><p class="text-[10px] text-slate-400 leading-relaxed">Van egy korábbi ablak, ahol a két eszköz gyengén/nem korrelált (&lt;0.3), majd egy KÉSŐBBI ablakban szorosan együtt kezdett mozogni (&gt;0.7) — ez a tankönyvi "minden korrelál egyhez" jelenség piaci stressz idején, pont akkor rontva a diverzifikáció hatását, amikor a legnagyobb szükség lenne rá.</p></div>`
+                : '';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-xs mb-3">
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes mintás (statikus) korreláció:</span><span class="font-bold ${corrColorClass(fullCorr)}">${corrDisplay(fullCorr)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Gördülő ablakok száma:</span><span class="text-white">${rollingCorrs.length} (méret: ${windowSize})</span></div>
+                    ${validCorrs.length > 0 ? `<div class="flex justify-between"><span class="text-slate-400">Min / Max gördülő korreláció:</span><span class="text-white">${corrDisplay(Math.min(...validCorrs.map(w => w.corr)))} / ${corrDisplay(Math.max(...validCorrs.map(w => w.corr)))}</span></div>` : ''}
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="text-xs font-extrabold uppercase ${classColor} mb-1">${classLabel}</div>
+                    <p class="text-[10px] text-slate-400 leading-relaxed mb-2">${classNote}</p>
+                    ${maxJump.fromIdx !== null ? `<p class="text-[10px] font-mono text-slate-300">Legnagyobb egylépéses változás: Ablak ${maxJump.fromIdx + 1} (${corrDisplay(maxJump.fromCorr)}) → Ablak ${maxJump.toIdx + 1} (${corrDisplay(maxJump.toCorr)}), Δ=${maxJump.delta.toFixed(2)}</p>` : ''}
+                </div>
+                ${crisisHtml}
+                <div class="glass-card rounded-xl p-3 font-mono text-[10px] space-y-0.5 max-h-40 overflow-y-auto">
+                    ${rowsHtml}
+                </div>
+            `;
+        }
+
         // ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
         // totalCostDragFrac = 1 - (1-c/100)^n  (kumulált, compoundolt "drag" a
         // portfólión a horizont alatt a rendszeres fedezési díj miatt)
@@ -43565,7 +43814,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             187: { tool: 'riskparity-modal', cta: 'Számold ki élesben a risk parity súlyokat a stratégiáid közt' },
             512: { tool: 'depeg-modal', cta: 'Ellenőrizd élesben egy stablecoin de-peg kockázatát' },
             513: { tool: 'exchflow-modal', cta: 'Számold ki élesben, mennyire kiugró egy napi tőzsdei be-/kiáramlás a megszokotthoz képest (Z-score)' },
-            416: { tool: 'corrmatrix-modal', cta: 'Számold ki élesben a korrelációs mátrixot' },
             231: { tool: 'corrmatrix-modal', cta: 'Nézd meg élesben az eszközök korrelációját' },
             336: { tool: 'volscale-modal', cta: 'Számold ki élesben a volatilitás-alapú pozícióméretezést' },
             216: { tool: 'scaling-modal', cta: 'Tervezd meg élesben a pozíció skálázását' },
@@ -43639,8 +43887,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             37: { tool: 'ddduration-modal', cta: 'Vizsgáld meg élesben egy drawdown mélységét és időtartamát' },
             269: { tool: 'rmultiple-modal', cta: 'Számold ki élesben a trade-jeid R-multiple statisztikáit' },
             350: { tool: 'expectancy-modal', cta: 'Számold ki élesben a stratégiád Expectancy-ját' },
-            285: { tool: 'corrmatrix-modal', cta: 'Építsd fel élesben a korrelációs mátrixot a figyeléshez' },
-            396: { tool: 'corrmatrix-modal', cta: 'Nézd meg élesben, mennyire közelednek most a korrelációk' },
             267: { tool: 'martingale-modal', cta: 'Futtasd le élesben a Martingale vs Anti-Martingale szimulátort' },
             79: { tool: 'pivot-modal', cta: 'Számold ki élesben a mai pivot pontokat' },
             315: { tool: 'cmf-modal', cta: 'Számold ki élesben a Chaikin Money Flow-t' },
@@ -43857,6 +44103,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             340: { tool: 'discount-modal', cta: 'Nézd meg élesben a hiperbolikus diszkontálás preferencia-fordulás demonstrációját — mi történne, ha a döntésedet nem éppen most, hanem egy héttel később kellene meghoznod' },
             403: { tool: 'discount-modal', cta: 'Számold ki élesben a hiperbolikus vs exponenciális diszkontálás közti különbséget a saját "most vagy később" döntésed implikált rátáján' },
             91: { tool: 'trendline-modal', cta: 'Teszteld élesben a saját trendvonaladat: hány érintési pont erősíti meg (R²), és az aktuális ár érintési zónában van, megerősített törést jelez, vagy a vonal tart' },
+            285: { tool: 'corrshift-modal', cta: 'Futtasd le élesben a Korrelációs Rezsim-Váltás Monitort, hogy számokban lásd, mennyit változott a korreláció az idő során' },
+            396: { tool: 'corrshift-modal', cta: 'Számold ki élesben a gördülő korrelációt, és nézd meg, hol lépte át a küszöböt — ez a "minden korrelál egyhez" jelenség számszerűsítve' },
+            416: { tool: 'corrshift-modal', cta: 'Próbáld ki élesben Bence esetét: futtasd a Korrelációs Rezsim-Váltás Monitort egy korábban alacsony korrelációjú, majd stressz idején összeszorult eszközpáron' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -43876,7 +44125,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
