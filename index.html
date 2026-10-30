@@ -33330,9 +33330,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
             const total = totalRaw;
 
-            const assets = [1, 2, 3].map(i => ({
+            // JAVÍTÁS: korábban a weightPct mező Math.max(0, parseFloat(...) || 0)-dal
+            // volt olvasva — egy törölt, nem-numerikus vagy negatív súly-mező csendben
+            // 0%-ra esett, a felhasználó pedig csak egy közvetett, könnyen átnézhető
+            // "a súlyok összege nem 100%" figyelmeztetést látott, nem egy explicit
+            // hibát arról, hogy melyik mező az érvénytelen. Most mindhárom súly-mezőt
+            // előre ellenőrizzük, és egy törölt/negatív/nem-numerikus érték esetén
+            // explicit piros hibaüzenetet kap, konzisztensen az app többi
+            // kalkulátorának validációs mintájával. A legitim "0" súly (eszköz
+            // kizárása a portfólióból) változatlanul érvényes bemenet marad.
+            const weightRaws = [1, 2, 3].map(i => parseFloat(document.getElementById(`port-a${i}-weight`).value));
+            if (weightRaws.some(w => !Number.isFinite(w) || w < 0)) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Mindhárom súly mező érvényes, nullánál nem kisebb szám legyen!</div>`;
+                if (warningEl) warningEl.classList.add('hidden');
+                return;
+            }
+
+            const assets = [1, 2, 3].map((i, idx) => ({
                 name: (document.getElementById(`port-a${i}-name`).value || `Eszköz ${i}`).trim(),
-                weightPct: Math.max(0, parseFloat(document.getElementById(`port-a${i}-weight`).value) || 0),
+                weightPct: weightRaws[idx],
                 returnPct: parseFloat(document.getElementById(`port-a${i}-return`).value) || 0
             }));
 
