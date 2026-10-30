@@ -27367,6 +27367,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A belépési árnak és a tőkeáttételnek nagyobbnak kell lennie nullánál!</div>`;
                 return;
             }
+            // JAVÍTÁS: a maintenance margin ráta (mmrPct) egy kockázati
+            // SZÁZALÉK, sosem lehet negatív (ugyanaz a hibakategória, mint a
+            // calcModiglianiM2 sigmaM javítása). Egy negatív érték a hosszú
+            // pozíció likvidációs árát a valódinál ALACSONYABBRA (nagyobb
+            // biztonsági távolságra) tenné, és a kockázati jelző téves
+            // "alacsony kockázat" (zöld) besorolást adna egy valójában
+            // veszélyesen tőkeáttételes pozícióra.
+            if (mmrPct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben! (a maintenance margin ráta nem lehet negatív)</div>`;
+                return;
+            }
 
             const mmr = mmrPct / 100;
             const isLong = direction === 'long';
@@ -33406,9 +33417,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const resultEl = document.getElementById('optionpayoff-result');
             if (!strikeEl || !premiumEl || !expiryEl || !resultEl) return;
 
-            const strike = Math.max(0, parseFloat(strikeEl.value) || 0);
-            const premium = Math.max(0, parseFloat(premiumEl.value) || 0);
-            const expiryPrice = Math.max(0, parseFloat(expiryEl.value) || 0);
+            const strikeRaw = parseFloat(strikeEl.value);
+            const premiumRaw = parseFloat(premiumEl.value);
+            const expiryRaw = parseFloat(expiryEl.value);
+
+            // JAVÍTÁS: korábban a Math.max(0, ... || 0) csendben 0-ra "javította"
+            // az üres/érvénytelen mezőket (pl. törölt kötési ár), és egy
+            // valósnak kinéző, de félrevezető eredményt (break-even = prémium)
+            // jelenített meg hibaüzenet nélkül. A fájl többi kalkulátorával
+            // (pl. calcPipValue) konzisztens módon most explicit, piros
+            // hibaüzenetet kap a felhasználó érvénytelen bemenet esetén.
+            if (!Number.isFinite(strikeRaw) || strikeRaw < 0 || !Number.isFinite(premiumRaw) || premiumRaw < 0 || !Number.isFinite(expiryRaw) || expiryRaw < 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nem kisebb kötési árat, prémiumot és lejárati árat!</div>`;
+                return;
+            }
+
+            const strike = strikeRaw;
+            const premium = premiumRaw;
+            const expiryPrice = expiryRaw;
 
             let intrinsicValue, breakEven;
             if (currentOptionType === 'call') {
@@ -34396,7 +34422,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // hoz képest átlagosan fél spreadet veszítünk egy irányú
             // ügyleten. A spread NEM skálázódik az idővel (ez egy
             // egyszeri végrehajtási költség, nem egy folyamatos kockázat).
-            const spreadPct = parseFloat(document.getElementById('var-spread').value) || 0;
+            const spreadRaw = document.getElementById('var-spread').value;
+            const spreadPct = spreadRaw === '' ? 0 : parseFloat(spreadRaw);
+            // JAVÍTÁS: a bid-ask spread % sosem lehet negatív (lásd calcSpreadCost
+            // és calcTickValue, ahol ez már ki van kényszerítve) — korábban egy
+            // negatív/elgépelt spread% csendben NEGATÍV likviditási költséget adott,
+            // ami a LVaR-t a sima VaR ALÁ csökkentette, pedig a "VaR + likviditási
+            // költség" elnevezés mindig magasabb vagy egyenlő értéket ígér.
+            if (isNaN(spreadPct) || spreadPct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A bid-ask spread % nem lehet negatív!</div>`;
+                return;
+            }
             const liquidityCostAmount = portfolio * (spreadPct / 100) * 0.5;
             const lvarAmount = varAmount + liquidityCostAmount;
             const lvarPct = varPct + (spreadPct * 0.5);
@@ -39999,9 +40035,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const resultEl = document.getElementById('map-result');
             if (!principalEl || !mapYieldEl || !depositYieldEl || !resultEl) return;
 
-            const principal = Math.max(0, parseFloat(principalEl.value) || 0);
-            const mapReturn = Math.max(0, parseFloat(mapYieldEl.value) || 0) / 100;
-            const depositReturn = Math.max(0, parseFloat(depositYieldEl.value) || 0) / 100;
+            const principalRaw = parseFloat(principalEl.value);
+            const mapYieldRaw = parseFloat(mapYieldEl.value);
+            const depositYieldRaw = parseFloat(depositYieldEl.value);
+
+            // JAVÍTÁS: korábban a Math.max(0, ... || 0) miatt egy törölt/
+            // érvénytelen tőke mező csendben 0 Ft-ra esett, és a két oldal
+            // "0 Ft vs 0 Ft" eredménye úgy nézett ki, mint egy valódi,
+            // kiszámolt döntetlen — hibaüzenet nélkül. Most explicit, piros
+            // hibát kap a felhasználó, a fájl többi élő-input kalkulátorával
+            // konzisztens módon.
+            if (!Number.isFinite(principalRaw) || principalRaw < 0 || !Number.isFinite(mapYieldRaw) || mapYieldRaw < 0 || !Number.isFinite(depositYieldRaw) || depositYieldRaw < 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nem kisebb tőkét és hozam-százalékokat!</div>`;
+                return;
+            }
+
+            const principal = principalRaw;
+            const mapReturn = mapYieldRaw / 100;
+            const depositReturn = depositYieldRaw / 100;
             const years = mapHorizonYears;
 
             const DEPOSIT_TAX_RATE = 0.15; // bankbetét kamatadó (SZJA)
@@ -40059,8 +40110,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const resultEl = document.getElementById('tbsz-result');
             if (!principalEl || !returnEl || !resultEl) return;
 
-            const principal = Math.max(0, parseFloat(principalEl.value) || 0);
-            const annualReturn = Math.max(0, parseFloat(returnEl.value) || 0) / 100;
+            const principalRaw = parseFloat(principalEl.value);
+            const annualReturnRaw = parseFloat(returnEl.value);
+
+            // JAVÍTÁS: lásd a fenti calculateMapComparison megjegyzését — ugyanaz
+            // a Math.max(0, ... || 0) csendes 0-ra-esés hiba volt itt is.
+            if (!Number.isFinite(principalRaw) || principalRaw < 0 || !Number.isFinite(annualReturnRaw) || annualReturnRaw < 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nem kisebb tőkét és éves hozam-százalékot!</div>`;
+                return;
+            }
+
+            const principal = principalRaw;
+            const annualReturn = annualReturnRaw / 100;
             const years = tbszHorizonYears;
 
             const futureValue = principal * Math.pow(1 + annualReturn, years);
