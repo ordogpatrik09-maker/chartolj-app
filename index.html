@@ -15560,10 +15560,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // A legutóbbi renderelés metrikái - a rajzoló eszközök és a mágnes ebből számolnak vissza árat
         let chartMetrics = null;
 
+        // CSS-pixel (logikai) méretek — minden rajzoló-/egérkoordináta-számítás
+        // EBBEN a térben dolgozik, a tényleges canvas backing-store felbontása
+        // (canvas.width/height) ennek devicePixelRatio-szorosa, hogy retina/HiDPI
+        // mobil kijelzőkön ne legyen életlen a chart.
+        let canvasCssW = 0, canvasCssH = 0;
+        let rsiCanvasCssW = 0, rsiCanvasCssH = 0;
+
         function resizeCanvas() {
             const container = document.getElementById('chart-container');
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+            canvasCssW = container.clientWidth;
+            canvasCssH = container.clientHeight;
+            canvas.width = Math.round(canvasCssW * dpr);
+            canvas.height = Math.round(canvasCssH * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             resizeRSICanvas();
             drawChart();
         }
@@ -15572,8 +15583,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!rsiCanvas) return;
             const panel = document.getElementById('rsi-panel');
             if (!panel || panel.classList.contains('hidden')) return;
-            rsiCanvas.width = panel.clientWidth;
-            rsiCanvas.height = panel.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+            rsiCanvasCssW = panel.clientWidth;
+            rsiCanvasCssH = panel.clientHeight;
+            rsiCanvas.width = Math.round(rsiCanvasCssW * dpr);
+            rsiCanvas.height = Math.round(rsiCanvasCssH * dpr);
+            if (rsiCtx) rsiCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
         window.addEventListener('resize', resizeCanvas);
@@ -20684,8 +20699,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!ctx || candleData.length === 0) return;
 
             const visible = getVisibleCandles();
-            const w = canvas.width;
-            const h = canvas.height;
+            const w = canvasCssW || canvas.width;
+            const h = canvasCssH || canvas.height;
             const paddingRight = 65;
             const paddingBottom = 30;
 
@@ -21209,8 +21224,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const panel = document.getElementById('rsi-panel');
             if (!panel || panel.classList.contains('hidden')) return;
 
-            const w = rsiCanvas.width;
-            const h = rsiCanvas.height;
+            const w = rsiCanvasCssW || rsiCanvas.width;
+            const h = rsiCanvasCssH || rsiCanvas.height;
             rsiCtx.clearRect(0, 0, w, h);
             if (!closes || closes.length < 15) return;
 
