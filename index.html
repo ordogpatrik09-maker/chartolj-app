@@ -13937,20 +13937,44 @@ Mean-reversion,2.5</textarea>
              tartalom) — ez az, amit mobilon mindenki ismer és tud
              kezelni. Desktopon (>=1024px) a régi gombsor marad, ott
              bőven elfér egy sorban. -->
+        <!-- JAVÍTÁS (felhasználói visszajelzés: "szar a learn rész
+             felépítés" — strukturális, nem csak vizuális probléma): ez a
+             select 12 TELJESEN EGYENRANGÚ, csoportosítás nélküli opciót
+             sorolt fel alfabetikus/random sorrendben. Egy új felhasználó
+             számára semmi nem jelezte, mi a FŐ tanulási útvonal (Kezdő
+             Tanterv → Leckék), mi a gyakorló-eszköz (Drill/Mi lenne ha/
+             Replay/Alakzatok/AI Elemző), mi az ismétlő-rendszer
+             (Ismétlés + Hibás kérdések — ezek szorosan összetartoznak,
+             de a listában távol voltak egymástól), és mi a referencia-
+             anyag (Szószedet, Makronaptár, Magyar Piac). Natív <optgroup>
+             címkékkel 4 egyértelmű csoportba rendezve — ezt minden
+             mobil böngésző/OS saját, jól ismert picker-UI-ja megjeleníti,
+             semmi egyedi JS/CSS kockázat nincs benne. A csoporton belüli
+             sorrend is logikus lett: a Kezdő Tanterv (ajánlott kiinduló
+             pont) és a Leckék elöl, a Makronaptár/Szószedet/Magyar Piac
+             (tisztán referencia, nem "feladat") leghátul. -->
         <div class="lg:hidden h-11 bg-dark-950/80 border-b border-dark-750/40 px-4 flex items-center shrink-0">
             <select id="academy-mode-select-mobile" onchange="setAcademyMode(this.value)" class="w-full bg-dark-900 border border-dark-750 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:ring-1 focus:ring-neon-cyan/50">
-                <option value="lessons">📖 Leckék</option>
-                <option value="gallery">📈 Chart Alakzatok</option>
-                <option value="whatif">🕐 Mi lenne, ha...</option>
-                <option value="drill">⚡ Chart Drill</option>
-                <option value="replay">🎬 Replay Szimulátor</option>
-                <option value="mistakes">↩️ Hibás kérdések</option>
-                <option value="ai-analyzer">📷 AI Chart Elemző (Új)</option>
-                <option value="hungarian">🏳️ Magyar Piac</option>
-                <option value="calendar">📅 Makronaptár</option>
-                <option value="glossary">📚 Szószedet</option>
-                <option value="curriculum">🧭 Kezdő Tanterv</option>
-                <option value="review">🔄 Ismétlés</option>
+                <optgroup label="▸ Tanulás">
+                    <option value="curriculum">🧭 Kezdő Tanterv (ajánlott)</option>
+                    <option value="lessons">📖 Leckék</option>
+                </optgroup>
+                <optgroup label="▸ Gyakorlás">
+                    <option value="drill">⚡ Chart Drill</option>
+                    <option value="whatif">🕐 Mi lenne, ha...</option>
+                    <option value="gallery">📈 Chart Alakzatok</option>
+                    <option value="replay">🎬 Replay Szimulátor</option>
+                    <option value="ai-analyzer">📷 AI Chart Elemző (Új)</option>
+                </optgroup>
+                <optgroup label="▸ Ismétlés & áttekintés">
+                    <option value="review">🔄 Ismétlés (SRS)</option>
+                    <option value="mistakes">↩️ Hibás kérdések</option>
+                </optgroup>
+                <optgroup label="▸ Referencia">
+                    <option value="glossary">📚 Szószedet</option>
+                    <option value="hungarian">🏳️ Magyar Piac</option>
+                    <option value="calendar">📅 Makronaptár</option>
+                </optgroup>
             </select>
         </div>
 
