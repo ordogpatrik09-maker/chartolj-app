@@ -11724,7 +11724,7 @@ Mean-reversion,2.5</textarea>
                             <div class="text-[10px] text-slate-400">Call/put nyereség-veszteség lejáratkor</div>
                         </div>
                     </button>
-                    <button onclick="closeMobileToolsModal(); openToolModal('option-strategy-modal')" data-tool-title="opciós stratégia-vizualizáló" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                    <button onclick="closeMobileToolsModal(); openToolModal('option-strategy-modal'); renderOptionStrategyInputs()" data-tool-title="opciós stratégia-vizualizáló" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
                         <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-area"></i></span>
                         <div>
                             <div class="text-xs font-bold text-white">Opciós Stratégia-vizualizáló</div>
@@ -12415,14 +12415,14 @@ Mean-reversion,2.5</textarea>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="tools-cat-backtest-chevron"></i>
                 </button>
                 <div id="tools-cat-backtest" class="hidden p-2 pt-2 space-y-1.5 bg-dark-900/30 border-t border-dark-800">
-                    <button onclick="closeMobileToolsModal(); openToolModal('backtest-modal')" data-tool-title="stratégia backtester" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                    <button onclick="closeMobileToolsModal(); openToolModal('backtest-modal'); renderBacktestAssetLabel()" data-tool-title="stratégia backtester" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
                         <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-flask"></i></span>
                         <div>
                             <div class="text-xs font-bold text-white">Stratégia Backtester</div>
                             <div class="text-[10px] text-slate-400">EMA-keresztezés teszt a múltbeli adaton</div>
                         </div>
                     </button>
-                    <button onclick="closeMobileToolsModal(); openToolModal('strategy-builder-modal')" data-tool-title="vizuális stratégia-építő" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                    <button onclick="closeMobileToolsModal(); openToolModal('strategy-builder-modal'); renderStrategyBuilderAssetLabel()" data-tool-title="vizuális stratégia-építő" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
                         <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-puzzle-piece"></i></span>
                         <div>
                             <div class="text-xs font-bold text-white">Vizuális Stratégia-építő</div>
@@ -32366,6 +32366,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const position = Math.max(0, parseFloat(positionEl.value) || 0);
             const feePctPerSide = Math.max(0, parseFloat(pctEl.value) || 0);
             const trades = Math.max(1, Math.round(parseFloat(tradesEl.value) || 0));
+
+            if (position <= 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret legyen nullánál nagyobb!</div>`;
+                return;
+            }
 
             const feePerSide = position * (feePctPerSide / 100);
             const roundTripFee = feePerSide * 2;
