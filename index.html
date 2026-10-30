@@ -1768,6 +1768,13 @@
                                 <div class="text-[10px] text-slate-400">Wilder-féle RSI lépésről lépésre, túlvett/túladott zónával</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('macdcalc-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">MACD Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Klasszikus MACD: gyors/lassú EMA, jelvonal, hisztogram</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('rsifailure-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
                             <div>
@@ -5859,6 +5866,80 @@ Kripto: 15000, 20</textarea>
 
             <div id="rsicalc-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A Wilder-simítás miatt az RSI nem egyszerű mozgóátlag: minden korábbi árváltozás (csökkenő súllyal) örökre beleszámít az aktuális értékbe, ezért hosszabb árfolyamsoron az első néhány RSI-érték kevésbé pontos, mint a sorozat végén.</p>
+        </div>
+    </div>
+
+    <!-- ================= MACD KALKULÁTOR (OKTATÁSI) ================= -->
+    <div id="macdcalc-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-neon-purple"></i> MACD Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('macdcalc-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A klasszikus MACD (Moving Average Convergence Divergence) a gyors és a lassú exponenciális mozgóátlag (EMA) különbsége: MACD = EMA(gyors) − EMA(lassú), hagyományosan 12 és 26 periódussal. A jelvonal a MACD vonal EMA-ja (hagyományosan 9 periódussal), a hisztogram pedig a MACD és a jelvonal közti különbség. Add meg a záróárakat soronként egyet, időrendben (legrégebbi elől).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy, időrendben)</label>
+            <textarea id="macdcalc-closes" rows="8" placeholder="459.2&#10;460.5&#10;458.9" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-purple/50">459.2
+460.5
+458.9
+461.3
+463.0
+462.1
+464.8
+466.2
+465.5
+467.9
+469.3
+468.1
+470.6
+472.0
+471.2
+473.5
+475.1
+474.3
+476.8
+478.2
+477.0
+479.5
+481.1
+480.3
+482.6
+484.0
+483.2
+485.7
+487.3
+486.1
+488.9
+490.2
+489.4
+491.8
+493.5
+492.7
+495.0</textarea>
+
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <div>
+                    <label class="text-[10px] font-semibold text-slate-400">Gyors EMA</label>
+                    <input type="number" id="macdcalc-fast" value="12" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-slate-400">Lassú EMA</label>
+                    <input type="number" id="macdcalc-slow" value="26" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-slate-400">Jelvonal</label>
+                    <input type="number" id="macdcalc-signal" value="9" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                </div>
+            </div>
+
+            <button onclick="calcMACD()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="macdcalc-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A MACD trendkövető momentum-indikátor: oldalazó, tartományban mozgó piacon gyakran ad hamis keresztezési jelzést, erős, kitartó trendben viszont megbízhatóbb. A hisztogram iránya és nagysága — nem csak a nyers vonal-keresztezés — segít felmérni a momentum erejét.</p>
         </div>
     </div>
 
@@ -11873,6 +11954,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">RSI Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Wilder-féle RSI lépésről lépésre, túlvett/túladott zónával</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('macdcalc-modal')" data-tool-title="macd kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">MACD Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Klasszikus MACD: gyors/lassú EMA, jelvonal, hisztogram</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('rsifailure-modal')" data-tool-title="rsi failure swing detektor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -26360,6 +26448,103 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">VWMACD vonal:</span><span class="text-white">${lastVwmacd.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (SMA9):</span><span class="text-white">${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Histogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${histogram.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcMACD() {
+            const closesEl = document.getElementById('macdcalc-closes');
+            const fastEl = document.getElementById('macdcalc-fast');
+            const slowEl = document.getElementById('macdcalc-slow');
+            const signalEl = document.getElementById('macdcalc-signal');
+            const out = document.getElementById('macdcalc-result');
+            if (!closesEl || !fastEl || !slowEl || !signalEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(s => parseFloat(s)).filter(v => !isNaN(v));
+
+            const fastPeriod = parseInt(fastEl.value);
+            const slowPeriod = parseInt(slowEl.value);
+            const signalPeriod = parseInt(signalEl.value);
+
+            if (!fastPeriod || fastPeriod < 1 || !slowPeriod || slowPeriod < 2 || !signalPeriod || signalPeriod < 1 || fastPeriod >= slowPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A gyors EMA periódusnak kisebbnek kell lennie a lassú EMA periódusnál (mindkettő legalább 1, a lassú legalább 2), és a jelvonal periódusnak is legalább 1-nek kell lennie!</div>`;
+                return;
+            }
+
+            const minNeeded = slowPeriod + signalPeriod;
+            if (closes.length < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} érvényes záróár szükséges (lassú EMA periódus + jelvonal periódus) — jelenleg ${closes.length} van megadva!</div>`;
+                return;
+            }
+
+            function emaFull(values, period) {
+                const k = 2 / (period + 1);
+                const result = new Array(values.length).fill(null);
+                let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                result[period - 1] = ema;
+                for (let i = period; i < values.length; i++) {
+                    ema = values[i] * k + ema * (1 - k);
+                    result[i] = ema;
+                }
+                return result;
+            }
+
+            const n = closes.length;
+            const emaFast = emaFull(closes, fastPeriod);
+            const emaSlow = emaFull(closes, slowPeriod);
+
+            const macdLine = new Array(n).fill(null);
+            for (let i = 0; i < n; i++) {
+                if (emaFast[i] === null || emaSlow[i] === null) continue;
+                macdLine[i] = emaFast[i] - emaSlow[i];
+            }
+            const macdValues = macdLine.filter(v => v !== null);
+
+            if (macdValues.length < signalPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég MACD-érték a jelvonal (EMA${signalPeriod}) kiszámításához — adj meg több záróárat!</div>`;
+                return;
+            }
+
+            const signalSeries = emaFull(macdValues, signalPeriod);
+            const lastMacd = macdValues[macdValues.length - 1];
+            const lastSignal = signalSeries[signalSeries.length - 1];
+            const prevMacd = macdValues.length >= 2 ? macdValues[macdValues.length - 2] : null;
+            const prevSignal = signalSeries.length >= 2 ? signalSeries[signalSeries.length - 2] : null;
+
+            if (lastSignal === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni a jelvonalat — adj meg több záróárat!</div>`;
+                return;
+            }
+
+            const histogram = lastMacd - lastSignal;
+            const prevHistogram = (prevMacd !== null && prevSignal !== null) ? prevMacd - prevSignal : null;
+
+            const bullish = histogram > 0;
+            const freshCross = prevHistogram !== null && ((bullish && prevHistogram <= 0) || (!bullish && prevHistogram >= 0));
+
+            const colorClass = bullish ? 'text-neon-green' : 'text-neon-red';
+            let verdict;
+            if (freshCross) {
+                verdict = bullish
+                    ? '🔄 Friss felfelé keresztezés — a MACD vonal most emelkedett a jelvonal fölé, bullish momentumjelzés.'
+                    : '🔄 Friss lefelé keresztezés — a MACD vonal most esett a jelvonal alá, bearish momentumjelzés.';
+            } else {
+                verdict = bullish
+                    ? 'A MACD vonal a jelvonal FÖLÖTT van — folytatódó bullish momentum, nem friss keresztezés.'
+                    : 'A MACD vonal a jelvonal ALATT van — folytatódó bearish momentum, nem friss keresztezés.';
+            }
+            if (prevHistogram !== null) {
+                const strengthening = Math.abs(histogram) > Math.abs(prevHistogram);
+                verdict += strengthening ? ' A hisztogram tágul, a momentum erősödik.' : ' A hisztogram szűkül, a momentum gyengül.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-neon-purple/30 bg-neon-purple/[0.05] p-3 mb-3 font-mono text-xs space-y-2">
+                    <div class="flex justify-between"><span class="text-slate-400">MACD (${fastPeriod},${slowPeriod}) vonal:</span><span class="text-white">${lastMacd.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (EMA${signalPeriod}):</span><span class="text-white">${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Hisztogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${histogram.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
