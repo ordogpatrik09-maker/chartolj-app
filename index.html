@@ -2209,6 +2209,13 @@
                                 <div class="text-[10px] text-slate-400">Piaci szintű leállási szintek + egyedi részvény LULD sáv</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('gsl-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-shield-halved"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Garantált Stop-Loss (GSL) Díj vs. Megtakarítás</div>
+                                <div class="text-[10px] text-slate-400">Megéri-e a GSL felár várható értékben?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
                             <div>
@@ -7631,6 +7638,81 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= GARANTÁLT STOP-LOSS (GSL) DÍJ VS. MEGTAKARÍTÁS KALKULÁTOR (OKTATÁSI) =================
+         A 111. lecke (Garantált Stop-Loss) eddig csak fogalmi szinten
+         magyarázta, hogy a GSL extra díjat kér a brókertől, cserébe garantált
+         végrehajtást ad gap/slippage esetén — de nem adott konkrét számot
+         arra, mikor ÉRI MEG ez a "biztosítás" várható értékben. Ez a kalkulátor
+         a tailhedge-modal mintájára egyszerű EV-összehasonlítást ad:
+
+         feeFrac       = gslFeePct / 100          (a GSL felár a pozíció névleges
+                                                     értékének %-ában, trade-enként —
+                                                     tipikusan szélesebb spreadként
+                                                     vagy fix díjként jelenik meg)
+         probFrac      = gapProbPct / 100         (esély, hogy EGY adott trade-nél
+                                                     a stop idején gap/extrém
+                                                     slippage történik)
+         slipFrac      = avgSlippagePct / 100     (átlagos TÖBBLET-csúszás mértéke
+                                                     egy gap-esemény esetén, a
+                                                     névleges érték %-ában, a
+                                                     hagyományos stop áránál túl)
+
+         costPerTradeGSL          = notional × feeFrac
+         expectedSlippagePerTrade = notional × probFrac × slipFrac
+         netPerTrade              = expectedSlippagePerTrade − costPerTradeGSL
+         (×trades a teljes időszakra összesítve)
+
+         breakEvenProbPct   = feeFrac / slipFrac × 100   (slipFrac > 0 esetén)
+         breakEvenSlipPct   = feeFrac / probFrac × 100   (probFrac > 0 esetén)
+         (az a gap-esély / átlagos csúszás-mérték, ahol a GSL díja PONTOSAN
+         megtérül várható értékben — ez NEM jelenti, hogy a GSL "rossz döntés"
+         alatta, csak hogy a biztosítás ára meghaladja az átlagos várható
+         megtakarítást; a GSL egyedi, katasztrofális gap-ek elleni védelmet ad,
+         amit egy sima EV-számítás nem fog át teljesen — lásd lecke 111). -->
+    <div id="gsl-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-neon-cyan"></i> Garantált Stop-Loss (GSL) Díj vs. Megtakarítás
+                </h3>
+                <button onclick="closeToolModal('gsl-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Garantált Stop-Loss (GSL) extra díj ellenében pontos végrehajtást ígér, függetlenül a piaci gap-ektől vagy extrém slippage-től. Add meg a feltevéseidet, és a kalkulátor várható értékben (EV) összehasonlítja a GSL díját a hagyományos stopnál elszenvedett átlagos csúszási veszteséggel.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Pozíció névleges értéke ($)</label>
+            <input type="number" id="gsl-notional" value="10000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">GSL felár (%, a névleges érték %-ában, trade-enként)</label>
+                    <input type="number" id="gsl-fee" value="0.3" step="0.01" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Trade-ek száma (a vizsgált időszakon)</label>
+                    <input type="number" id="gsl-trades" value="20" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Gap/slippage esemény esélye (%/trade)</label>
+                    <input type="number" id="gsl-prob" value="5" step="0.1" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Átlagos többlet-csúszás (%, esemény esetén)</label>
+                    <input type="number" id="gsl-slippage" value="8" step="0.1" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <button onclick="calcGslCostBenefit()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="gsl-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy EGYSZERŰSÍTETT, várható-érték alapú közelítés (nem Monte Carlo, nem compoundolt gap-eloszlás) — a GSL díj/haszon LOGIKÁJÁNAK megértésére, nem pontos árazási modellként. A legtöbb "biztosítás" — a GSL is — tervezetten negatív várható értékű a bróker oldaláról nézve nyereséges; ha a breakeven alatt vagy, ez nem automatikusan hiba, hanem annak az ára, hogy egyedi katasztrofális gap-eknél is garantált árat kapj.</p>
+        </div>
+    </div>
+
     <!-- ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
          Egyszerűsített, várható-érték alapú modell (NEM Monte Carlo, NEM
          compoundolt útfüggő szimuláció) a tail risk hedging (pl. távoli
@@ -11505,7 +11587,7 @@ Mean-reversion,2.5</textarea>
         <div class="px-4 pt-3 pb-1 shrink-0">
             <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                <input type="text" id="mobile-tools-search" oninput="filterMobileToolsList()" placeholder="Keress a 174 kalkulátor között..." class="w-full bg-dark-850 border border-dark-750 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="text" id="mobile-tools-search" oninput="filterMobileToolsList()" placeholder="Keress a 178 kalkulátor között..." class="w-full bg-dark-850 border border-dark-750 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
             </div>
         </div>
         <div id="mobile-tools-list" class="flex-grow overflow-y-auto px-4 py-3 space-y-2">
@@ -12668,7 +12750,7 @@ Mean-reversion,2.5</textarea>
             </div>
             <div class="mobile-tools-category rounded-xl border border-dark-750 overflow-hidden" data-cat-id="tools-cat-costs">
                 <button type="button" onclick="toggleAnalyzerCategory('tools-cat-costs')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
-                    <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-receipt text-amber-400 w-4 text-center"></i> Költségek, Hozamok & Kripto-specifikus <span class="text-[9px] font-mono text-slate-500">(20)</span></span>
+                    <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-receipt text-amber-400 w-4 text-center"></i> Költségek, Hozamok & Kripto-specifikus <span class="text-[9px] font-mono text-slate-500">(23)</span></span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="tools-cat-costs-chevron"></i>
                 </button>
                 <div id="tools-cat-costs" class="hidden p-2 pt-2 space-y-1.5 bg-dark-900/30 border-t border-dark-800">
@@ -12705,6 +12787,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Circuit Breaker &amp; LULD Szint Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Piaci szintű leállási szintek + egyedi részvény LULD sáv</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('gsl-modal')" data-tool-title="garantált stop-loss (gsl) díj vs. megtakarítás kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-shield-halved"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Garantált Stop-Loss (GSL) Díj vs. Megtakarítás</div>
+                            <div class="text-[10px] text-slate-400">Megéri-e a GSL felár várható értékben?</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('dca-modal')" data-tool-title="dca szimulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -30979,6 +31068,79 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= GARANTÁLT STOP-LOSS (GSL) DÍJ VS. MEGTAKARÍTÁS KALKULÁTOR (OKTATÁSI) =================
+        // feeFrac  = gslFeePct / 100     (GSL felár a névleges érték %-ában, trade-enként)
+        // probFrac = gapProbPct / 100    (gap/slippage esemény esélye EGY trade-nél)
+        // slipFrac = avgSlippagePct / 100 (átlagos többlet-csúszás mértéke egy esemény esetén,
+        //            a névleges érték %-ában, a hagyományos stop áránál túl)
+        // costPerTradeGSL          = notional × feeFrac
+        // expectedSlippagePerTrade = notional × probFrac × slipFrac
+        // netPerTrade              = expectedSlippagePerTrade − costPerTradeGSL  (×trades összesítve)
+        // breakEvenProbPct = feeFrac / slipFrac × 100   (slipFrac > 0 esetén)
+        // breakEvenSlipPct = feeFrac / probFrac × 100   (probFrac > 0 esetén)
+        function calcGslCostBenefit() {
+            const ids = ['gsl-notional', 'gsl-fee', 'gsl-trades', 'gsl-prob', 'gsl-slippage'];
+            const els = ids.map(id => document.getElementById(id));
+            const out = document.getElementById('gsl-result');
+            if (els.some(el => !el) || !out) return;
+
+            const [notional, feePct, tradesRaw, probPct, slipPct] = els.map(el => parseFloat(el.value));
+            const trades = Math.max(1, Math.round(tradesRaw || 0));
+
+            if (!notional || notional <= 0 ||
+                isNaN(feePct) || feePct < 0 || feePct > 100 ||
+                !Number.isFinite(tradesRaw) || tradesRaw < 1 ||
+                isNaN(probPct) || probPct < 0 || probPct > 100 ||
+                isNaN(slipPct) || slipPct < 0 || slipPct > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb névleges értéket, legalább 1 trade-et, és 0-100 közötti felár / esély / csúszás %-okat!</div>`;
+                return;
+            }
+
+            const feeFrac = feePct / 100;
+            const probFrac = probPct / 100;
+            const slipFrac = slipPct / 100;
+
+            const costPerTradeGSL = notional * feeFrac;
+            const expectedSlippagePerTrade = notional * probFrac * slipFrac;
+            const netPerTrade = expectedSlippagePerTrade - costPerTradeGSL;
+
+            const totalGSLCost = costPerTradeGSL * trades;
+            const totalExpectedSlippage = expectedSlippagePerTrade * trades;
+            const netTotal = totalExpectedSlippage - totalGSLCost;
+
+            const breakEvenProbPct = slipFrac > 0 ? (feeFrac / slipFrac) * 100 : Infinity;
+            const breakEvenSlipPct = probFrac > 0 ? (feeFrac / probFrac) * 100 : Infinity;
+
+            const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            const fmtPctBE = (n) => isFinite(n) ? `${n.toFixed(2)}%` : 'nem érhető el (0 osztó)';
+
+            let colorClass, verdict;
+            if (netTotal > 0) {
+                colorClass = 'text-neon-green';
+                verdict = '✅ A megadott feltevések mellett a GSL várható értékben kifizetődik — az átlagos csúszási veszteség meghaladja a GSL felárat. Magas gap-esély vagy volatilis eszköz esetén ez előfordulhat, de a legtöbb "biztosítás" (a GSL is) jellemzően e felett árazza magát.';
+            } else if (totalGSLCost > 0 && netTotal >= -0.5 * totalGSLCost) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ A GSL díja a várható megtakarítás nagy részét fedezi, de nem teljesen — a maradék a biztosítás ára. Ez önmagában nem hiba: a kérdés az, mennyit ér neked a garantált végrehajtás egyetlen extrém gap ellen.';
+            } else {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 A GSL díja jelentősen meghaladja a várható megtakarítást ezekkel a feltevésekkel — ez a biztosítások TERVEZETT jellemzője, nem hiba. A GSL valódi értéke nem az átlagban van, hanem abban, hogy egyetlen katasztrofális gap se okozhat a tervezettnél nagyobb veszteséget.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">GSL díj / trade:</span><span class="text-white">${fmtMoney(costPerTradeGSL)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Várható csúszási veszteség / trade (sima stoppal):</span><span class="text-white">${fmtMoney(expectedSlippagePerTrade)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Nettó EV / trade (megtakarítás − díj):</span><span class="font-bold ${netPerTrade >= 0 ? 'text-neon-green' : 'text-neon-red'}">${netPerTrade >= 0 ? '+' : ''}${fmtMoney(netPerTrade)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Teljes GSL költség (${trades} trade):</span><span class="text-white">${fmtMoney(totalGSLCost)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes várható csúszási veszteség (${trades} trade):</span><span class="text-white">${fmtMoney(totalExpectedSlippage)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Nettó eredmény összesen:</span><span class="font-extrabold ${colorClass} text-sm">${netTotal >= 0 ? '+' : ''}${fmtMoney(netTotal)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Megtérüléshez szükséges min. gap-esély:</span><span class="text-white">${fmtPctBE(breakEvenProbPct)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Megtérüléshez szükséges min. átlag-csúszás:</span><span class="text-white">${fmtPctBE(breakEvenSlipPct)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
         // ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
         // totalCostDragFrac = 1 - (1-c/100)^n  (kumulált, compoundolt "drag" a
         // portfólión a horizont alatt a rendszeres fedezési díj miatt)
@@ -41943,6 +42105,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            111: { tool: 'gsl-modal', cta: 'Számold ki élesben, várható értékben megéri-e a Garantált Stop-Loss (GSL) felára a gap-kockázat ellen' },
             24: { tool: 'shortsqueeze-modal', cta: 'Számold ki élesben a Short Squeeze Kockázat Kalkulátort a short interest % és a days to cover alapján' },
             86: { tool: 'tickvalue-modal', cta: 'Számold ki élesben egy határidős kontraktus tick-értékét és a valós dollár P&L-t' },
             137: { tool: 'tickvalue-modal', cta: 'Hasonlítsd össze élesben egy Mikro/Mini kontraktus tick-értékét a standard kontraktuséval' },
@@ -42315,7 +42478,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
