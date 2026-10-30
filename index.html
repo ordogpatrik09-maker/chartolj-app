@@ -29080,8 +29080,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const triggerPct = parseFloat(triggerEl.value);
             const addPct = parseFloat(addpctEl.value);
 
-            if ([entry, initSize, numAddons, triggerPct, addPct].some(v => isNaN(v)) || entry <= 0 || initSize <= 0 || numAddons < 1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt érvényesen ki kell tölteni (pozitív belépő ár, méret, legalább 1 pótlás)!</div>`;
+            if ([entry, initSize, numAddons, triggerPct, addPct].some(v => isNaN(v)) || entry <= 0 || initSize <= 0 || numAddons < 1 || addPct <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt érvényesen ki kell tölteni (pozitív belépő ár, méret, legalább 1 pótlás, pozitív pótlás-méret %)!</div>`;
                 return;
             }
 
@@ -29650,8 +29650,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const Rf = parseFloat(riskfreeEl.value);
             const Rm = parseFloat(benchReturnEl.value);
 
-            if (isNaN(Rp) || isNaN(sigmaM) || isNaN(Rf) || !sigmaP || sigmaP <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes hozam/szórás/kockázatmentes ráta értékeket — a portfólió szórásának pozitívnak kell lennie!</div>`;
+            if (isNaN(Rp) || isNaN(sigmaM) || isNaN(Rf) || !sigmaP || sigmaP <= 0 || sigmaM < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes hozam/szórás/kockázatmentes ráta értékeket — a portfólió és a benchmark szórása sem lehet negatív, a portfólió szórásának pozitívnak kell lennie!</div>`;
                 return;
             }
 
@@ -34623,7 +34623,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const resultEl = document.getElementById('recovery-result');
             if (!lossEl || !resultEl) return;
 
-            const lossPct = Math.min(99.9, Math.max(0.1, parseFloat(lossEl.value) || 0));
+            const rawLoss = parseFloat(lossEl.value);
+            if (isNaN(rawLoss)) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg érvényes veszteség %-ot!</div>`;
+                return;
+            }
+
+            const lossPct = Math.min(99.9, Math.max(0.1, rawLoss));
             const lossFrac = lossPct / 100;
             const requiredGainFrac = lossFrac / (1 - lossFrac);
             const requiredGainPct = requiredGainFrac * 100;
