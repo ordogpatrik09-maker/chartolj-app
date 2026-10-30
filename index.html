@@ -13977,29 +13977,128 @@ Mean-reversion,2.5</textarea>
              sorrend is logikus lett: a Kezdő Tanterv (ajánlott kiinduló
              pont) és a Leckék elöl, a Makronaptár/Szószedet/Magyar Piac
              (tisztán referencia, nem "feladat") leghátul. -->
+        <!-- JAVÍTÁS (felhasználói visszajelzés: "nagyon kezeszkusza, nem
+             lehet eligazodni rajta" — a natív <select>+optgroup már
+             strukturáltabb volt, de a felhasználó szerint ettől még nem
+             lehetett rajta eligazodni, mert az OS saját picker-je
+             (ami minden telefonon máshogy néz ki, sokszor alig
+             látszik rajta a csoportosítás) rejtve maradt a tényleges
+             felületen — a lezárt gomb csak egy cím+nyílvessző volt,
+             semmi nem utalt a mögötte lévő RENDSZERre. Teljes
+             navigációs csere: a select helyett egy saját, mindig
+             ugyanúgy kinéző kártya-választó jelenik meg (lásd lejjebb
+             #academy-mode-sheet), ami nyitva explicit, vizuálisan
+             csoportosítva (4 fejléces szakasz, minden elem ikon +
+             cím + 1 soros magyarázat) mutatja mind a 12 opciót — nem
+             egy OS-picker mögé rejtve. A régi <select> megmarad, de
+             LÁTHATATLANUL (csak a setAcademyMode() meglévő szinkron-
+             logikájának kell, ami .value-t állít rajta — ehhez semmit
+             nem kellett a JS-ben módosítani, 0 kockázat). -->
         <div class="lg:hidden h-11 bg-dark-950/80 border-b border-dark-750/40 px-4 flex items-center shrink-0">
-            <select id="academy-mode-select-mobile" onchange="setAcademyMode(this.value)" class="w-full bg-dark-900 border border-dark-750 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:ring-1 focus:ring-neon-cyan/50">
-                <optgroup label="▸ Tanulás">
-                    <option value="curriculum">🧭 Kezdő Tanterv (ajánlott)</option>
-                    <option value="lessons">📖 Leckék</option>
-                </optgroup>
-                <optgroup label="▸ Gyakorlás">
-                    <option value="drill">⚡ Chart Drill</option>
-                    <option value="whatif">🕐 Mi lenne, ha...</option>
-                    <option value="gallery">📈 Chart Alakzatok</option>
-                    <option value="replay">🎬 Replay Szimulátor</option>
-                    <option value="ai-analyzer">📷 AI Chart Elemző (Új)</option>
-                </optgroup>
-                <optgroup label="▸ Ismétlés & áttekintés">
-                    <option value="review">🔄 Ismétlés (SRS)</option>
-                    <option value="mistakes">↩️ Hibás kérdések</option>
-                </optgroup>
-                <optgroup label="▸ Referencia">
-                    <option value="glossary">📚 Szószedet</option>
-                    <option value="hungarian">🏳️ Magyar Piac</option>
-                    <option value="calendar">📅 Makronaptár</option>
-                </optgroup>
+            <button onclick="openAcademyModeSheet()" id="academy-mode-bar-btn" class="w-full bg-dark-900 border border-dark-750 rounded-xl px-3 py-2 text-sm font-bold text-white flex items-center justify-between gap-2 active:border-neon-cyan/40 transition">
+                <span class="flex items-center gap-2 min-w-0">
+                    <span id="academy-mode-current-icon">📖</span>
+                    <span id="academy-mode-current-label" class="truncate">Leckék</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-[11px] text-slate-400 shrink-0"></i>
+            </button>
+            <select id="academy-mode-select-mobile" onchange="setAcademyMode(this.value)" class="sr-only" tabindex="-1" aria-hidden="true">
+                <option value="curriculum">Kezdő Tanterv</option>
+                <option value="lessons">Leckék</option>
+                <option value="drill">Chart Drill</option>
+                <option value="whatif">Mi lenne, ha...</option>
+                <option value="gallery">Chart Alakzatok</option>
+                <option value="replay">Replay Szimulátor</option>
+                <option value="ai-analyzer">AI Chart Elemző</option>
+                <option value="review">Ismétlés</option>
+                <option value="mistakes">Hibás kérdések</option>
+                <option value="glossary">Szószedet</option>
+                <option value="hungarian">Magyar Piac</option>
+                <option value="calendar">Makronaptár</option>
             </select>
+        </div>
+
+        <!-- Akadémia mód-választó teljes képernyős lap — a select helyett.
+             4 fejléces szakasz, minden elem saját kártya ikonnal, címmel
+             és egy rövid magyarázattal (nem csak egy szó), hogy ténylegesen
+             el lehessen igazodni, mi micsoda, anélkül hogy ki kellene
+             próbálni. Csak mobilon (lg:hidden a gyökéren is biztosítja,
+             hogy desktopon ez sosem látszik, a gombsor marad ott). -->
+        <div id="academy-mode-sheet" class="hidden lg:hidden fixed inset-0 z-[97] bg-dark-950 flex flex-col">
+            <header class="h-14 border-b border-dark-750/60 px-4 flex items-center justify-between shrink-0">
+                <h2 class="text-sm font-extrabold text-white">Válassz részt</h2>
+                <button onclick="closeAcademyModeSheet()" class="w-9 h-9 rounded-lg bg-dark-850 border border-dark-700 flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="flex-grow overflow-y-auto p-4 space-y-5 pb-10">
+                <div>
+                    <h3 class="text-[11px] font-extrabold text-neon-cyan uppercase tracking-wide mb-2">Tanulás</h3>
+                    <div class="space-y-2">
+                        <button onclick="selectAcademyModeFromSheet('curriculum')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-neon-cyan/10 border border-neon-cyan/30 flex items-center justify-center text-base">🧭</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Kezdő Tanterv <span class="text-[9px] font-bold text-neon-cyan uppercase ml-1">Ajánlott</span></div><div class="text-[11px] text-slate-400 mt-0.5">Lépésről lépésre, ajánlott sorrendben — itt kezdd, ha nem tudod, hol állj neki.</div></div>
+                        </button>
+                        <button onclick="selectAcademyModeFromSheet('lessons')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">📖</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Leckék</div><div class="text-[11px] text-slate-400 mt-0.5">Mind az 552 lecke szabadon böngészve, téma szerint csoportosítva.</div></div>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-[11px] font-extrabold text-neon-purple uppercase tracking-wide mb-2">Gyakorlás</h3>
+                    <div class="space-y-2">
+                        <button onclick="selectAcademyModeFromSheet('drill')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">⚡</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Chart Drill</div><div class="text-[11px] text-slate-400 mt-0.5">Gyors, időre menő gyertya-felismerős gyakorlás.</div></div>
+                        </button>
+                        <button onclick="selectAcademyModeFromSheet('whatif')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">🕐</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Mi lenne, ha...</div><div class="text-[11px] text-slate-400 mt-0.5">Valós piaci szituációk, lépésről lépésre eldöntve, mit tennél.</div></div>
+                        </button>
+                        <button onclick="selectAcademyModeFromSheet('gallery')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">📈</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Chart Alakzatok</div><div class="text-[11px] text-slate-400 mt-0.5">Bejelölt, megrajzolt alakzat-példák stratégiával.</div></div>
+                        </button>
+                        <button onclick="selectAcademyModeFromSheet('replay')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">🎬</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Replay Szimulátor</div><div class="text-[11px] text-slate-400 mt-0.5">Múltbeli piac gyertyánként lejátszva, mintha élőben kereskednél.</div></div>
+                        </button>
+                        <button onclick="selectAcademyModeFromSheet('ai-analyzer')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">📷</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">AI Chart Elemző <span class="text-[9px] font-extrabold uppercase text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r from-neon-purple to-neon-cyan ml-1">Új</span></div><div class="text-[11px] text-slate-400 mt-0.5">Töltsd fel a saját grafikonod képét, az AI felismeri az alakzatot.</div></div>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-[11px] font-extrabold text-amber-400 uppercase tracking-wide mb-2">Ismétlés &amp; áttekintés</h3>
+                    <div class="space-y-2">
+                        <button onclick="selectAcademyModeFromSheet('review')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">🔄</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Ismétlés (SRS)</div><div class="text-[11px] text-slate-400 mt-0.5">Az időben elosztott ismétlés automatikusan visszahozza, amit elfelejtenél.</div></div>
+                        </button>
+                        <button onclick="selectAcademyModeFromSheet('mistakes')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">↩️</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Hibás kérdések</div><div class="text-[11px] text-slate-400 mt-0.5">Amit egyszer elrontottál, az időközönként visszajön, amíg biztosan megy.</div></div>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wide mb-2">Referencia</h3>
+                    <div class="space-y-2">
+                        <button onclick="selectAcademyModeFromSheet('glossary')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">📚</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Szószedet</div><div class="text-[11px] text-slate-400 mt-0.5">Minden fontosabb kereskedési fogalom egy helyen, kereshetően.</div></div>
+                        </button>
+                        <button onclick="selectAcademyModeFromSheet('hungarian')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">🏳️</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Magyar Piac</div><div class="text-[11px] text-slate-400 mt-0.5">BÉT, TBSZ, MÁP+ — amit egy nemzetközi appban nem találsz meg.</div></div>
+                        </button>
+                        <button onclick="selectAcademyModeFromSheet('calendar')" class="w-full text-left p-3 rounded-xl glass-card flex items-start gap-3">
+                            <span class="w-9 h-9 shrink-0 rounded-lg bg-dark-800 border border-dark-700 flex items-center justify-center text-base">📅</span>
+                            <div class="min-w-0"><div class="text-sm font-bold text-white">Makronaptár</div><div class="text-[11px] text-slate-400 mt-0.5">A visszatérő piaci események, amik rendszeresen nagy mozgást okoznak.</div></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Akadémia Mód-választó sáv (külön sorban, hogy sose csússzon egymásra semmivel) — csak desktopon (lásd fent a mobil <select>-et) -->
@@ -38059,6 +38158,50 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         let academyMode = 'lessons'; // 'lessons' | 'gallery'
         let selectedChartStrategy = null;
 
+        // JAVÍTÁS (teljes mobil navigációs újratervezés — a natív <select>
+        // helyett egyedi kártya-választó lap, lásd #academy-mode-sheet a
+        // HTML-ben): ez a térkép adja az összefoglaló sáv (a lap zárt
+        // állapotában látható gomb) ikonját/címkéjét minden módhoz, és a
+        // sheet nyitó/záró/választó függvényei is ezt a 3 függvényt
+        // használják.
+        const ACADEMY_MODE_META = {
+            curriculum: { icon: '🧭', label: 'Kezdő Tanterv' },
+            lessons: { icon: '📖', label: 'Leckék' },
+            drill: { icon: '⚡', label: 'Chart Drill' },
+            whatif: { icon: '🕐', label: 'Mi lenne, ha...' },
+            gallery: { icon: '📈', label: 'Chart Alakzatok' },
+            replay: { icon: '🎬', label: 'Replay Szimulátor' },
+            'ai-analyzer': { icon: '📷', label: 'AI Chart Elemző' },
+            review: { icon: '🔄', label: 'Ismétlés' },
+            mistakes: { icon: '↩️', label: 'Hibás kérdések' },
+            glossary: { icon: '📚', label: 'Szószedet' },
+            hungarian: { icon: '🏳️', label: 'Magyar Piac' },
+            calendar: { icon: '📅', label: 'Makronaptár' },
+        };
+        function openAcademyModeSheet() {
+            const sheet = document.getElementById('academy-mode-sheet');
+            if (!sheet) return;
+            // JAVÍTÁS: a #academy-screen saját stacking contextet alkot
+            // (position:absolute + z-index:80), ami ALACSONYABB, mint az
+            // alsó navigáció (#mobile-bottom-nav, z-95) — emiatt a sheet
+            // bármilyen magas SAJÁT z-indexet is kapna, a szülő egész
+            // stacking contextje (és minden benne lévő elem) a nav MÖGÖTT
+            // marad. Ugyanaz a "teleportálás a body végére" minta, amit az
+            // eszközválasztó dropdown is használ (lásd ott a kommentet) —
+            // ez kiemeli a sheet-et az academy-screen stacking contextjéből,
+            // így a saját z-[97]-e már tényleg érvényesül a nav fölött.
+            if (sheet.parentElement !== document.body) document.body.appendChild(sheet);
+            sheet.classList.remove('hidden');
+        }
+        function closeAcademyModeSheet() {
+            const sheet = document.getElementById('academy-mode-sheet');
+            if (sheet) sheet.classList.add('hidden');
+        }
+        function selectAcademyModeFromSheet(mode) {
+            setAcademyMode(mode);
+            closeAcademyModeSheet();
+        }
+
         function setAcademyMode(mode) {
             academyMode = mode;
             const btns = {
@@ -38102,6 +38245,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // ne csak amikor maga a select kezdeményezi a váltást.
             const mobileSelect = document.getElementById('academy-mode-select-mobile');
             if (mobileSelect && mobileSelect.value !== mode) mobileSelect.value = mode;
+            // JAVÍTÁS (teljes mobil navigációs újratervezés): az új mobil
+            // "Válassz részt" kártya-lap (#academy-mode-sheet) lecserélte a
+            // natív <select>-et, de a fenti elrejtett <select> szinkronja
+            // megmaradt (hátha máshol még hivatkozik rá valami). A látható
+            // összefoglaló sávot (#academy-mode-current-icon/-label) itt
+            // tartjuk szinkronban — bárhonnan is vált a mód (kártyáról,
+            // badge-ről, kódból), a sáv mindig a tényleges aktuális módot
+            // mutatja.
+            if (typeof ACADEMY_MODE_META !== 'undefined' && ACADEMY_MODE_META[mode]) {
+                const iconEl = document.getElementById('academy-mode-current-icon');
+                const labelEl = document.getElementById('academy-mode-current-label');
+                if (iconEl) iconEl.textContent = ACADEMY_MODE_META[mode].icon;
+                if (labelEl) labelEl.textContent = ACADEMY_MODE_META[mode].label;
+            }
             updateMistakeBankBadge();
             // Memóriaszivárgás és "láthatatlan háttér-kudarc" elkerülése (193-195. pont):
             // ha a felhasználó Akadémián BELÜL vált másik fülre egy aktív Drill-kör
