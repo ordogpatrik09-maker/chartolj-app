@@ -19301,6 +19301,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function runKellySizedBacktest(trades, startEquity, kellyMultiplier, maxFraction, baseFraction, warmupMinTrades) {
             const n = trades.length;
             if (n < warmupMinTrades + 1) throw new Error(`Legalább ${warmupMinTrades + 1} trade szükséges a Kelly-alapú méretezéshez.`);
+            if (!Number.isFinite(kellyMultiplier) || kellyMultiplier < 0) throw new Error('Adj meg egy érvényes, nullánál nagyobb vagy egyenlő Kelly-szorzót!');
+            if (!Number.isFinite(startEquity) || startEquity <= 0) throw new Error('Érvénytelen kezdő tőke a backtest eredményében.');
 
             let equity = startEquity;
             let peakEquity = startEquity;
