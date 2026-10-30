@@ -2202,6 +2202,13 @@
                                 <div class="text-[10px] text-slate-400">Kontraktus-görgetés kontangó/backwardation hatása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('circuitbreaker-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-traffic-light"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Circuit Breaker &amp; LULD Szint Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Piaci szintű leállási szintek + egyedi részvény LULD sáv</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
                             <div>
@@ -7220,6 +7227,76 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="rollover-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Long pozíciónál a görgetés nettó cash flow-ja a közeli ár MÍNUSZ a távoli ár (eladod a közelit, megveszed a távolit) — kontangóban (távoli > közeli) ez veszteség. Short pozíciónál pont fordítva: a távoli ár MÍNUSZ a közeli ár — kontangóban ez nyereség. Az évesített % a jelenlegi görgetési ciklust feltételezi minden lejáratkor ismétlődve, ami csak közelítés — a valódi kontangó/backwardation mértéke lejáratonként változhat.</p>
+        </div>
+    </div>
+
+    <!-- ================= CIRCUIT BREAKER & LULD SZINT KALKULÁTOR (OKTATÁSI) =================
+         A piaci szintű circuit breaker (53. lecke) és az egyedi részvény
+         LULD (Limit Up-Limit Down, 273. lecke) leckék eddig csak fogalmi
+         szinten magyarázták a mechanizmust, konkrét, kiszámolható
+         küszöbértékek nélkül. Ez az eszköz a valós amerikai szabályozói
+         küszöbökkel (SEC Rule 4120 / LULD NMS Plan) konkrét számokat ad:
+         - Piaci szintű (MWCB): L1=-7%, L2=-13%, L3=-20% az előző napi
+           záróhoz képest; L1/L2 15:25 ET előtt 15 perces leállás, utána
+           nincs leállás; L3 bármikor a nap hátralévő részére leállít.
+         - LULD: ár-sáv % a tier (Tier 1 = S&P500/Russell1000/válogatott
+           ETP-k, Tier 2 = egyéb NMS részvények) és az árszint alapján,
+           az utolsó 25 percben (15:35-16:00 ET) megduplázva (Tier 2
+           >$3-nál nincs duplázás). -->
+    <div id="circuitbreaker-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-traffic-light text-neon-red"></i> Circuit Breaker &amp; LULD Szint Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('circuitbreaker-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Két külön amerikai szabályozói mechanizmus: a piaci szintű circuit breaker (MWCB) a TELJES tőzsdét állítja le, ha egy fő index (S&amp;P 500) nagyot esik; a LULD (Limit Up-Limit Down) csak egyetlen, extrém gyorsan mozgó részvényt. Válaszd ki, melyiket akarod kiszámolni.</p>
+
+            <div class="flex items-center gap-2 mb-3">
+                <button id="cb-mode-mwcb" onclick="setCbMode('mwcb')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition">Piaci szintű (MWCB)</button>
+                <button id="cb-mode-luld" onclick="setCbMode('luld')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Egyedi részvény (LULD)</button>
+            </div>
+
+            <div id="cb-section-mwcb">
+                <label class="text-[11px] font-semibold text-slate-400">Előző napi záróérték (pl. S&amp;P 500 index-szint)</label>
+                <input type="number" id="cb-prevclose" value="5800" step="0.01" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+                <label class="text-[11px] font-semibold text-slate-400">Jelenlegi index-szint (opcionális — hagyd 0-n, ha csak a küszöbértékeket akarod látni)</label>
+                <input type="number" id="cb-current" value="0" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+                <label class="text-[11px] font-semibold text-slate-400">Jelenlegi idő (New York-i / ET kereskedési idő, 09:30–16:00)</label>
+                <input type="time" id="cb-time" value="12:00" min="09:30" max="16:00" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
+
+                <button onclick="calcCircuitBreaker()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                    Kiszámolás
+                </button>
+                <div id="cb-mwcb-result" class="mt-4"></div>
+                <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Szabály (SEC Rule 4120 / NYSE): Level 1 = -7%, Level 2 = -13%, Level 3 = -20% az S&amp;P 500 előző napi záróértékéhez képest. Level 1 vagy 2 ET 15:25 ELŐTT: 15 perces piaci leállás. Level 1 vagy 2 ET 15:25-kor VAGY UTÁNA: nincs leállás. Level 3, a nap bármely szakában: a kereskedés leáll a nap hátralévő részére.</p>
+            </div>
+
+            <div id="cb-section-luld" class="hidden">
+                <label class="text-[11px] font-semibold text-slate-400">Tier</label>
+                <select id="cb-tier" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                    <option value="tier1">Tier 1 (S&amp;P 500 / Russell 1000 / válogatott ETP-k)</option>
+                    <option value="tier2">Tier 2 (egyéb NMS részvények)</option>
+                </select>
+
+                <label class="text-[11px] font-semibold text-slate-400">Referenciaár (az elmúlt 5 perc átlagára)</label>
+                <input type="number" id="cb-refprice" value="50" step="0.01" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+                <label class="text-[11px] font-semibold text-slate-400">Napszak</label>
+                <select id="cb-window" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                    <option value="regular">Rendes kereskedési idő (09:30–15:35 ET)</option>
+                    <option value="last25">Utolsó 25 perc (15:35–16:00 ET) — duplázott sáv</option>
+                </select>
+
+                <button onclick="calcLuldBand()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                    Kiszámolás
+                </button>
+                <div id="cb-luld-result" class="mt-4"></div>
+                <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Szabály (LULD NMS Plan): &gt;$3 árnál Tier 1 = 5% (utolsó 25 percben 10%), Tier 2 = 10% (nem duplázódik). $0.75–$3 között mindkét tier = 20% (utolsó 25 percben 40%). $0.75 alatt a sáv $0.15 vagy az ár 75%-a, amelyik kisebb (az utolsó 25 percben csak a FELSŐ sáv tágul $0.30 vagy 150%-ra, amelyik kisebb — az alsó sáv nem változik). Ha az NBO eléri az alsó sávot vagy az NBB a felsőt (anélkül, hogy átlépné), 15 másodperces "Limit State" áll be; ha ez alatt nem oldódik fel, 5 perces (max. 10 perces) kereskedési szünet következik.</p>
+            </div>
         </div>
     </div>
 
@@ -12621,6 +12698,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Rollover Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Kontraktus-görgetés kontangó/backwardation hatása</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('circuitbreaker-modal')" data-tool-title="circuit breaker &amp; luld szint kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-traffic-light"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Circuit Breaker &amp; LULD Szint Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Piaci szintű leállási szintek + egyedi részvény LULD sáv</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('dca-modal')" data-tool-title="dca szimulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -32678,6 +32762,193 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= CIRCUIT BREAKER & LULD SZINT KALKULÁTOR MOTORJA =================
+        let currentCbMode = 'mwcb';
+
+        function setCbMode(mode) {
+            currentCbMode = mode;
+            const mwcbBtn = document.getElementById('cb-mode-mwcb');
+            const luldBtn = document.getElementById('cb-mode-luld');
+            const mwcbSection = document.getElementById('cb-section-mwcb');
+            const luldSection = document.getElementById('cb-section-luld');
+            if (!mwcbBtn || !luldBtn || !mwcbSection || !luldSection) return;
+            if (mode === 'mwcb') {
+                mwcbBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                luldBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+                mwcbSection.classList.remove('hidden');
+                luldSection.classList.add('hidden');
+            } else {
+                luldBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
+                mwcbBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
+                luldSection.classList.remove('hidden');
+                mwcbSection.classList.add('hidden');
+            }
+        }
+
+        // Piaci szintű circuit breaker (MWCB) küszöbértékei — SEC Rule 4120 / NYSE szabály:
+        // Level 1 = -7%, Level 2 = -13%, Level 3 = -20% az előző napi záróhoz képest.
+        // Level 1/2: 15 perces leállás, ha ET 15:25 ELŐTT történik; 15:25-kor vagy utána nincs leállás.
+        // Level 3: a nap bármely szakában a kereskedés leáll a nap hátralévő részére.
+        function calcCircuitBreaker() {
+            const prevCloseEl = document.getElementById('cb-prevclose');
+            const currentEl = document.getElementById('cb-current');
+            const timeEl = document.getElementById('cb-time');
+            const resultEl = document.getElementById('cb-mwcb-result');
+            if (!prevCloseEl || !currentEl || !timeEl || !resultEl) return;
+
+            const prevClose = parseFloat(prevCloseEl.value);
+            const currentRaw = currentEl.value;
+            const currentLevel = currentRaw === '' ? 0 : parseFloat(currentRaw);
+            const timeStr = timeEl.value;
+
+            if (!Number.isFinite(prevClose) || prevClose <= 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, pozitív előző napi záróértéket!</div>`;
+                return;
+            }
+            if (!Number.isFinite(currentLevel) || currentLevel < 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A jelenlegi index-szint nem lehet negatív!</div>`;
+                return;
+            }
+
+            const timeMatch = /^(\d{1,2}):(\d{2})$/.exec(timeStr || '');
+            let timeMinutes = null;
+            if (timeMatch) {
+                const hh = parseInt(timeMatch[1], 10);
+                const mm = parseInt(timeMatch[2], 10);
+                if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) timeMinutes = hh * 60 + mm;
+            }
+            if (timeMinutes === null) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes időpontot (ÓÓ:PP formátumban)!</div>`;
+                return;
+            }
+
+            const level1Price = prevClose * 0.93;
+            const level2Price = prevClose * 0.87;
+            const level3Price = prevClose * 0.80;
+            const CUTOFF_MINUTES = 15 * 60 + 25; // 15:25 ET
+
+            const hasCurrentLevel = currentLevel > 0;
+            const declinePct = hasCurrentLevel ? ((prevClose - currentLevel) / prevClose) * 100 : null;
+            let triggeredLevel = 0;
+            if (hasCurrentLevel) {
+                if (declinePct >= 20) triggeredLevel = 3;
+                else if (declinePct >= 13) triggeredLevel = 2;
+                else if (declinePct >= 7) triggeredLevel = 1;
+            }
+
+            let haltText = 'Nincs aktív leállás ezen a szinten.';
+            let haltIsActive = false;
+            if (triggeredLevel === 3) {
+                haltText = '🛑 LEVEL 3 — a kereskedés leáll a NAP HÁTRALÉVŐ RÉSZÉRE, a bekövetkezés időpontjától függetlenül.';
+                haltIsActive = true;
+            } else if (triggeredLevel === 1 || triggeredLevel === 2) {
+                if (timeMinutes < CUTOFF_MINUTES) {
+                    haltText = `🛑 LEVEL ${triggeredLevel} — 15 perces piaci leállás (a bejelentett időpont 15:25 ET előtt van).`;
+                    haltIsActive = true;
+                } else {
+                    haltText = `⚠️ LEVEL ${triggeredLevel} küszöb átlépve, de 15:25 ET-kor vagy utána — ÉT esetben NINCS automatikus leállás.`;
+                }
+            }
+
+            const fmtPrice = (n) => n.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+
+            resultEl.innerHTML = `
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <div class="rounded-xl ${triggeredLevel === 1 ? 'bg-neon-amber/10 border border-neon-amber/40' : 'bg-dark-850/60 border border-dark-750'} p-2 text-center">
+                        <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Level 1 (-7%)</div>
+                        <div class="text-xs font-extrabold text-white">${fmtPrice(level1Price)}</div>
+                    </div>
+                    <div class="rounded-xl ${triggeredLevel === 2 ? 'bg-neon-amber/10 border border-neon-amber/40' : 'bg-dark-850/60 border border-dark-750'} p-2 text-center">
+                        <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Level 2 (-13%)</div>
+                        <div class="text-xs font-extrabold text-white">${fmtPrice(level2Price)}</div>
+                    </div>
+                    <div class="rounded-xl ${triggeredLevel === 3 ? 'bg-neon-red/10 border border-neon-red/40' : 'bg-dark-850/60 border border-dark-750'} p-2 text-center">
+                        <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Level 3 (-20%)</div>
+                        <div class="text-xs font-extrabold text-white">${fmtPrice(level3Price)}</div>
+                    </div>
+                </div>
+                ${hasCurrentLevel ? `
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">${declinePct >= 0 ? 'Jelenlegi esés' : 'Jelenlegi emelkedés'} az előző záróhoz képest:</span>
+                    <span class="font-bold ${declinePct >= 7 ? 'text-neon-red' : 'text-neon-green'}">${Math.abs(declinePct).toFixed(2)}%</span>
+                </div>
+                <div class="text-center py-2 rounded-xl ${haltIsActive ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-dark-850/60 border border-dark-750'}">
+                    <span class="text-[11px] ${haltIsActive ? 'text-neon-red' : 'text-slate-300'} font-bold">${haltText}</span>
+                </div>
+                ` : `
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <span class="text-[11px] text-slate-400">Add meg a jelenlegi index-szintet is a tényleges esés %-ának és a leállási státusznak a kiszámolásához.</span>
+                </div>
+                `}
+            `;
+        }
+
+        // LULD (Limit Up-Limit Down) ár-sáv — LULD NMS Plan szabályai szerint.
+        // >$3: Tier 1 = 5% (utolsó 25 percben 10%), Tier 2 = 10% (nem duplázódik).
+        // $0.75-$3: mindkét tier = 20% (utolsó 25 percben 40%).
+        // <$0.75: sáv = min($0.15, ár*0.75); utolsó 25 percben CSAK a felső sáv tágul min($0.30, ár*1.50)-re.
+        function calcLuldBand() {
+            const tierEl = document.getElementById('cb-tier');
+            const priceEl = document.getElementById('cb-refprice');
+            const windowEl = document.getElementById('cb-window');
+            const resultEl = document.getElementById('cb-luld-result');
+            if (!tierEl || !priceEl || !windowEl || !resultEl) return;
+
+            const tier = tierEl.value;
+            const refPrice = parseFloat(priceEl.value);
+            const isLast25 = windowEl.value === 'last25';
+
+            if (!Number.isFinite(refPrice) || refPrice <= 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, pozitív referenciaárat!</div>`;
+                return;
+            }
+
+            let lowerBand, upperBand, bandLabel;
+            if (refPrice < 0.75) {
+                const lowerAmt = Math.min(0.15, 0.75 * refPrice);
+                const upperAmt = isLast25 ? Math.min(0.30, 1.50 * refPrice) : lowerAmt;
+                lowerBand = refPrice - lowerAmt;
+                upperBand = refPrice + upperAmt;
+                bandLabel = `Dollár-alapú sáv (ár < $0.75): alsó ±$${lowerAmt.toFixed(4)}, felső ±$${upperAmt.toFixed(4)}`;
+            } else {
+                let pct;
+                if (refPrice <= 3.00) {
+                    pct = isLast25 ? 40 : 20;
+                } else {
+                    pct = tier === 'tier1' ? (isLast25 ? 10 : 5) : 10;
+                }
+                lowerBand = refPrice * (1 - pct / 100);
+                upperBand = refPrice * (1 + pct / 100);
+                bandLabel = `±${pct}% sáv`;
+            }
+
+            const fmtPrice = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 4, minimumFractionDigits: 2 });
+
+            resultEl.innerHTML = `
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="rounded-xl bg-neon-green/5 border border-neon-green/30 p-2 text-center">
+                        <div class="text-[9px] text-neon-green uppercase font-bold mb-1">Felső sáv (Limit Up)</div>
+                        <div class="text-sm font-extrabold text-white">${fmtPrice(upperBand)}</div>
+                    </div>
+                    <div class="rounded-xl bg-neon-red/5 border border-neon-red/30 p-2 text-center">
+                        <div class="text-[9px] text-neon-red uppercase font-bold mb-1">Alsó sáv (Limit Down)</div>
+                        <div class="text-sm font-extrabold text-white">${fmtPrice(lowerBand)}</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Alkalmazott sáv:</span>
+                    <span class="font-bold text-white">${bandLabel}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">Napszak:</span>
+                    <span class="font-bold ${isLast25 ? 'text-neon-amber' : 'text-slate-300'}">${isLast25 ? 'Utolsó 25 perc (duplázott sáv)' : 'Rendes kereskedési idő'}</span>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <span class="text-[11px] text-slate-300 font-bold">Ha a legjobb ajánlati ár (NBO) eléri az alsó sávot, vagy a legjobb vételi ár (NBB) eléri a felsőt — anélkül, hogy átlépné — "Limit State" áll be 15 másodpercre. Ha ez alatt a piac nem mozdul vissza a sávba, a tőzsde 5 perces (max. 10 perces) kereskedési szünetet jelent be.</span>
+                </div>
+            `;
+        }
+
         // ================= OPCIÓS ÁRAZÓ ÉS GREEKS KALKULÁTOR MOTORJA (BLACK-SCHOLES, NAGY KITERJESZTÉS) =================
         // Standard normál eloszlás sűrűségfüggvénye (PDF) és kumulatív
         // eloszlásfüggvénye (CDF) — a CDF-et az Abramowitz & Stegun 7.1.26
@@ -41761,6 +42032,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             268: { tool: 'montecarlo-modal', cta: 'Futtasd le élesben a Monte Carlo Szimulátort' },
             145: { tool: 'funding-modal', cta: 'Számold ki, mennyi funding díjat fizetnél/kapnál' },
             189: { tool: 'rollover-modal', cta: 'Számold ki élesben egy kontraktus-görgetés (rollover) hatását kontangó/backwardation mellett' },
+            53: { tool: 'circuitbreaker-modal', cta: 'Számold ki élesben a piaci szintű circuit breaker (MWCB) Level 1/2/3 küszöbértékeit' },
+            273: { tool: 'circuitbreaker-modal', cta: 'Számold ki élesben egy részvény LULD (Limit Up-Limit Down) ár-sávját' },
             434: { tool: 'var-modal', cta: 'Számold ki élesben a VaR, CVaR és LVaR értékeket' },
             208: { tool: 'liquiditysize-modal', cta: 'Számold ki a likviditás-alapú max. pozícióméretet' },
             338: { tool: 'massindex-modal', cta: 'Számold ki élesben a Mass Indexet' },
@@ -42032,7 +42305,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
