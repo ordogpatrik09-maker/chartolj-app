@@ -2244,6 +2244,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyit spórolsz Layer 2-n, és mikor térül meg a bridge-díj?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('trendline-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-blue/10 text-neon-blue border border-neon-blue/30 flex items-center justify-center text-sm"><i class="fa-solid fa-ruler"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Trendvonal Törés-Validitás & Lejtés Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">OLS-illesztés (R²) + törés/érintés-zóna a megadott küszöb alapján</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
                             <div>
@@ -7936,6 +7943,67 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= TRENDVONAL TÖRÉS-VALIDITÁS & LEJTÉS KALKULÁTOR (OKTATÁSI) =================
+         Legkisebb négyzetek (OLS) egyenes-illesztés a megadott (bar, ár)
+         érintési pontokra: slope m = Σ((x-x̄)(y-ȳ)) / Σ((x-x̄)²), intercept
+         b = ȳ - m·x̄. Az illesztés jóságát R² méri — ez teszi számszerűsíthetővé,
+         miért nem elég 2 érintési pont egy vonal hitelesítéséhez (2 pont
+         MINDIG pontosan egy egyenesre esik, R²≡1, függetlenül attól, hogy a
+         vonal valóban releváns-e). A projektált vonal-ár az aktuális
+         bar-indexen: proj = m·barAktuális + b. Eltérés% = (árAktuális - proj)
+         / |proj| × 100, ehhez viszonyítva 3 zóna: megerősített törés /
+         érintési (teszt) zóna / a vonal tart — a szerepnek (támasz/ellenállás)
+         megfelelően tükrözve. -->
+    <div id="trendline-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-ruler text-neon-blue"></i> Trendvonal Törés-Validitás & Lejtés Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('trendline-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a trendvonalat kijelölő érintési pontokat (Bar-index,Ár formátumban, soronként egyet, időrendben) — a kalkulátor egy legkisebb négyzetek (OLS) egyenest illeszt rájuk, megmondja, mennyire megbízható ez a vonal (R²), majd a megadott aktuális bar/ár/küszöb alapján eldönti, hogy az ár érintési (teszt/visszapattanási) zónában van, megerősített törést jelez, vagy a vonal egyszerűen tart.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Érintési pontok: Bar-index,Ár (soronként egy, min. 2)</label>
+            <textarea id="tlbreak-touches" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-blue/50">10,95
+25,101
+40,107.2
+58,113.5</textarea>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Vonal szerepe</label>
+                    <select id="tlbreak-role" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-blue/50">
+                        <option value="support">Támasz (emelkedő/support)</option>
+                        <option value="resistance">Ellenállás (csökkenő/resistance)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Törés-küszöb (%)</label>
+                    <input type="number" id="tlbreak-threshold" value="0.3" step="0.05" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-blue/50">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Aktuális bar-index</label>
+                    <input type="number" id="tlbreak-curbar" value="70" step="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-blue/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Aktuális ár</label>
+                    <input type="number" id="tlbreak-curprice" value="114" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-blue/50">
+                </div>
+            </div>
+
+            <button onclick="calcTrendlineBreak()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-blue text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Vonal Elemzése
+            </button>
+
+            <div id="tlbreak-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">FONTOS: a "meredekség" (ár/bar) értéke a chart idő- és ár-tengelyének skálázásától függ — NINCS egyetlen "helyes" trendvonal-szög fokban kifejezve, ez egy gyakori kezdő téveszme. A kalkulátor ezért kizárólag a projektált ÁR-SZINTET és az attól való eltérést méri, nem egy vizuális szöget. Ez egy OKTATÁSI, determinisztikus modell: a záróáras megerősítést (nem csak egy gyertya-bélés átszúrását) magadnak kell eldöntened, mielőtt a "törés" jelzésre cselekszel.</p>
+        </div>
+    </div>
+
     <!-- ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
          Egyszerűsített, várható-érték alapú modell (NEM Monte Carlo, NEM
          compoundolt útfüggő szimuláció) a tail risk hedging (pl. távoli
@@ -13164,6 +13232,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">L1 vs L2 Díj & Bridge-megtérülés Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Mennyit spórolsz Layer 2-n, és mikor térül meg a bridge-díj?</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('trendline-modal')" data-tool-title="trendvonal törés-validitás & lejtés kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-ruler"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Trendvonal Törés-Validitás & Lejtés Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">OLS-illesztés (R²) + törés/érintés-zóna a megadott küszöb alapján</div>
                         </div>
                     </button>
                 </div>
@@ -31799,6 +31874,123 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // Trendvonal Törés-Validitás & Lejtés Kalkulátor: lásd a modal fölötti
+        // HTML-kommentet a pontos OLS-illesztési és zóna-osztályozási
+        // algoritmusért.
+        function calcTrendlineBreak() {
+            const touchesEl = document.getElementById('tlbreak-touches');
+            const roleEl = document.getElementById('tlbreak-role');
+            const threshEl = document.getElementById('tlbreak-threshold');
+            const curBarEl = document.getElementById('tlbreak-curbar');
+            const curPriceEl = document.getElementById('tlbreak-curprice');
+            const out = document.getElementById('tlbreak-result');
+            if (!touchesEl || !roleEl || !threshEl || !curBarEl || !curPriceEl || !out) return;
+
+            const lines = touchesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const touches = lines.map(l => {
+                const parts = l.split(',').map(v => v.trim());
+                return { bar: parseFloat(parts[0]), price: parseFloat(parts[1]) };
+            }).filter(t => Number.isFinite(t.bar) && Number.isFinite(t.price));
+
+            const role = roleEl.value;
+            const thresholdPct = parseFloat(threshEl.value);
+            const curBar = parseFloat(curBarEl.value);
+            const curPrice = parseFloat(curPriceEl.value);
+
+            if (touches.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 érvényes érintési pont szükséges (Bar-index,Ár formátumban)!</div>`;
+                return;
+            }
+            if (!Number.isFinite(thresholdPct) || thresholdPct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A törés-küszöb nem lehet negatív!</div>`;
+                return;
+            }
+            if (!Number.isFinite(curBar) || !Number.isFinite(curPrice)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes aktuális bar-indexet és árat!</div>`;
+                return;
+            }
+
+            const n = touches.length;
+            const meanX = touches.reduce((s, t) => s + t.bar, 0) / n;
+            const meanY = touches.reduce((s, t) => s + t.price, 0) / n;
+            const varX = touches.reduce((s, t) => s + (t.bar - meanX) ** 2, 0);
+
+            if (varX === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A bar-indexek nem lehetnek MIND azonosak — egy trendvonalnak legalább két KÜLÖNBÖZŐ bar-indexen kell érintési pontja legyen!</div>`;
+                return;
+            }
+
+            const covXY = touches.reduce((s, t) => s + (t.bar - meanX) * (t.price - meanY), 0);
+            const slope = covXY / varX;
+            const intercept = meanY - slope * meanX;
+
+            const ssTot = touches.reduce((s, t) => s + (t.price - meanY) ** 2, 0);
+            const ssRes = touches.reduce((s, t) => {
+                const pred = slope * t.bar + intercept;
+                return s + (t.price - pred) ** 2;
+            }, 0);
+            const r2 = ssTot === 0 ? 1 : Math.max(0, 1 - ssRes / ssTot);
+
+            const projectedPrice = slope * curBar + intercept;
+            const deviation = curPrice - projectedPrice;
+            const deviationPct = projectedPrice !== 0 ? (deviation / Math.abs(projectedPrice)) * 100 : 0;
+
+            let reliabilityNote, reliabilityColor;
+            if (n < 3) {
+                reliabilityColor = 'text-amber-400';
+                reliabilityNote = `⚠️ Csak ${n} érintési pont — 2 pont MATEMATIKAILAG MINDIG pontosan egy egyenesre esik (R²=1), ez önmagában NEM bizonyítja, hogy a vonal valóban releváns. Legalább 3, lehetőleg 4+ érintés szükséges a megbízhatóság teszteléséhez.`;
+            } else if (r2 >= 0.95) {
+                reliabilityColor = 'text-neon-green';
+                reliabilityNote = `✅ Erős, konzisztens illeszkedés (${n} érintési ponttal, R²=${r2.toFixed(3)}) — ez egy statisztikailag jól alátámasztott trendvonal.`;
+            } else if (r2 >= 0.80) {
+                reliabilityColor = 'text-amber-400';
+                reliabilityNote = `⚠️ Közepes illeszkedés (${n} érintési ponttal, R²=${r2.toFixed(3)}) — a vonal irányadó lehet, de a pontok szórnak körülötte, óvatosan kezeld.`;
+            } else {
+                reliabilityColor = 'text-neon-red';
+                reliabilityNote = `🚨 Gyenge illeszkedés (${n} érintési ponttal, R²=${r2.toFixed(3)}) — ez a "trendvonal" valószínűleg csak utólagos mintázatlátás (lásd: Apophenia), nem egy valóban következetesen érintett szint.`;
+            }
+
+            const roleLabel = role === 'support' ? 'Támasz' : 'Ellenállás';
+            // support esetén a "jó" oldal az, ha az ár a vonal FELETT van (+1),
+            // resistance esetén az, ha az ár a vonal ALATT van (-1) — ezért
+            // tükrözzük az eltérés%-ot a szerep szerint, mielőtt a 3 zónát
+            // (törés / érintés / tart) kiértékelnénk.
+            const favorableSide = role === 'support' ? 1 : -1;
+            const signedDeviationPct = deviationPct * favorableSide;
+
+            let zoneLabel, zoneColor, zoneNote;
+            if (signedDeviationPct <= -thresholdPct) {
+                zoneColor = 'text-neon-red';
+                zoneLabel = role === 'support' ? 'MEGERŐSÍTETT TÖRÉS LEFELÉ' : 'MEGERŐSÍTETT TÖRÉS FELFELÉ';
+                zoneNote = role === 'support'
+                    ? 'Az ár a küszöbnél nagyobb mértékben a projektált vonal ALATT van — ez a lecke szerinti kilépési jel, a támasz elbukott.'
+                    : 'Az ár a küszöbnél nagyobb mértékben a projektált vonal FELETT van — az ellenállás elbukott, ez trendváltássá fordulhat.';
+            } else if (signedDeviationPct < thresholdPct) {
+                zoneColor = 'text-amber-400';
+                zoneLabel = 'ÉRINTÉSI (TESZT) ZÓNA';
+                zoneNote = 'Az ár a küszöbön belül van a vonalhoz képest — ez a tipikus visszapattanásos BELÉPÉSI zóna, HA az ár itt megfordul; de ha a KÖVETKEZŐ záróár is a küszöbön túl marad ugyanebbe az (kedvezőtlen) irányba, az már a törés megerősítése. A kalkulátor egyetlen pillanatfelvétel, nem helyettesíti a záróáras megerősítést.';
+            } else {
+                zoneColor = 'text-neon-green';
+                zoneLabel = role === 'support' ? 'TÁMASZ TART' : 'ELLENÁLLÁS TART';
+                zoneNote = 'Az ár a küszöbnél nagyobb mértékben a vonal "kedvező" oldalán van — a vonal jelenleg nincs veszélyben.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs mb-3">
+                    <div class="flex justify-between"><span class="text-slate-400">Lejtés (ár/bar):</span><span class="text-white">${slope >= 0 ? '+' : ''}${slope.toFixed(5)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Illeszkedés (R²):</span><span class="text-white">${r2.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Projektált vonal-ár @ bar ${curBar}:</span><span class="text-white">${projectedPrice.toLocaleString(undefined, { maximumFractionDigits: 6 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Eltérés a vonaltól:</span><span class="font-extrabold ${deviation >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${deviation >= 0 ? '+' : ''}${deviation.toLocaleString(undefined, { maximumFractionDigits: 6 })} (${deviationPct >= 0 ? '+' : ''}${deviationPct.toFixed(3)}%)</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Vonal szerepe:</span><span class="text-white">${roleLabel}</span></div>
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="text-xs font-extrabold uppercase ${zoneColor} mb-1">${zoneLabel}</div>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">${zoneNote}</p>
+                </div>
+                <p class="text-[10px] font-semibold ${reliabilityColor}">${reliabilityNote}</p>
+            `;
+        }
+
         // ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
         // totalCostDragFrac = 1 - (1-c/100)^n  (kumulált, compoundolt "drag" a
         // portfólión a horizont alatt a rendszeres fedezési díj miatt)
@@ -43142,6 +43334,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             310: { tool: 'discount-modal', cta: 'Számold ki élesben, milyen implikált napi/évesített türelmetlenségi rátát jelent, ha egy azonnali összeget egy nagyobb, jövőbeli összeg helyett választanál' },
             340: { tool: 'discount-modal', cta: 'Nézd meg élesben a hiperbolikus diszkontálás preferencia-fordulás demonstrációját — mi történne, ha a döntésedet nem éppen most, hanem egy héttel később kellene meghoznod' },
             403: { tool: 'discount-modal', cta: 'Számold ki élesben a hiperbolikus vs exponenciális diszkontálás közti különbséget a saját "most vagy később" döntésed implikált rátáján' },
+            91: { tool: 'trendline-modal', cta: 'Teszteld élesben a saját trendvonaladat: hány érintési pont erősíti meg (R²), és az aktuális ár érintési zónában van, megerősített törést jelez, vagy a vonal tart' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -43161,7 +43354,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
