@@ -32991,8 +32991,27 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const resultEl = document.getElementById('pipvalue-result');
             if (!unitsEl || !countEl || !resultEl) return;
 
-            const units = Math.max(0, parseFloat(unitsEl.value) || 0);
-            const pipCount = Math.max(0, parseFloat(countEl.value) || 0);
+            const unitsRaw = parseFloat(unitsEl.value);
+            const pipCountRaw = parseFloat(countEl.value);
+
+            // JAVÍTÁS: korábban érvénytelen/negatív bemenetnél a Math.max(0, ... || 0)
+            // csendben 0-ra "javította" az értéket, és simán $0.00-t mutatott —
+            // ez megtévesztő volt, mert úgy nézett ki, mintha a kalkuláció sikeres
+            // lenne egy valójában hibás bemenettel. A többi kalkulátorral (pl. a
+            // közvetlenül alább lévő Tick-érték kalkulátorral) konzisztens módon
+            // most explicit, piros hibaüzenetet kap a felhasználó érvénytelen
+            // bemenet esetén, a Kiszámolás gomb pedig nem ad hamis "sikeres" eredményt.
+            if (!Number.isFinite(unitsRaw) || unitsRaw <= 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméretnek egy nullánál nagyobb szám kell legyen!</div>`;
+                return;
+            }
+            if (!Number.isFinite(pipCountRaw) || pipCountRaw < 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pip-ek száma nem lehet negatív!</div>`;
+                return;
+            }
+
+            const units = unitsRaw;
+            const pipCount = pipCountRaw;
 
             const PIP_SIZE = 0.0001; // standard USD-kvótált pároknál (pl. EUR/USD)
             const pipValueUsd = units * PIP_SIZE;
