@@ -2237,6 +2237,13 @@
                                 <div class="text-[10px] text-slate-400">Implikált türelmetlenségi ráta + preferencia-fordulás</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('l2fee-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">L1 vs L2 Díj & Bridge-megtérülés Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mennyit spórolsz Layer 2-n, és mikor térül meg a bridge-díj?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('greeks-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-square-root-variable"></i></span>
                             <div>
@@ -7850,6 +7857,85 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= L1 vs L2 TRANZAKCIÓS DÍJ & BRIDGE-MEGTÉRÜLÉS KALKULÁTOR (OKTATÁSI) =================
+         Az 541-es lecke (Layer 2 Megoldások) elmagyarázza, hogy a rollup-alapú
+         L2-k miért olcsóbbak az L1-nél, de eddig NEM volt hozzá eszköz, ami
+         ezt SZÁMOKBAN is megmutatná. A kalkulátor:
+         1) összehasonlítja egy tranzakció becsült díját L1-en és L2-n
+            (végrehajtási gas-díj + L2 esetén az L1-re amortizáltan
+            elküldött "adatközlési" (jellemzően post-EIP-4844 blob) díj),
+         2) kiszámolja, hány L2-tranzakció után térül meg az egyszeri
+            bridge-elési díj a tranzakciónkénti megtakarításból,
+         3) megmutatja a kumulált, bridge-díjjal korrigált nettó megtakarítást
+            N tervezett tranzakcióra.
+         FORMULA:
+           l1Fee         = l1GasLimit × l1GasPriceGwei × 1e-9 × ethPriceUSD
+           l2ExecFee     = l2GasLimit × l2GasPriceGwei × 1e-9 × ethPriceUSD
+           l2Fee         = l2ExecFee + l1DataFeeUSD
+           savingsPerTx  = l1Fee − l2Fee
+           breakevenTxs  = ceil(bridgeFeeUSD / savingsPerTx)   (csak ha savingsPerTx > 0)
+           totalSavingsN = savingsPerTx × N − bridgeFeeUSD
+    -->
+    <div id="l2fee-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-neon-cyan"></i> L1 vs L2 Díj & Bridge-megtérülés Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('l2fee-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Layer 2 (rollup) megoldások a tranzakciók nagy részét olcsóbban dolgozzák fel, majd a végeredményt összesítve rögzítik az L1-en. Add meg a becsült gas-paramétereket, és a kalkulátor kiszámolja a díjmegtakarítást tranzakciónként, ÉS hány tranzakció után térül meg az eszközök L1→L2 "áthidalásának" (bridge) egyszeri díja.</p>
+
+            <div class="text-[10px] uppercase font-bold text-slate-500 mb-1 mt-1">Layer 1 (alapréteg)</div>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">L1 gas limit (gas egység)</label>
+                    <input type="number" id="l2fee-l1-gaslimit" value="150000" step="1000" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">L1 gas ár (gwei)</label>
+                    <input type="number" id="l2fee-l1-gasprice" value="30" step="1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <div class="text-[10px] uppercase font-bold text-slate-500 mb-1 mt-1">Layer 2 (rollup)</div>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">L2 gas limit (gas egység)</label>
+                    <input type="number" id="l2fee-l2-gaslimit" value="150000" step="1000" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">L2 végrehajtási gas ár (gwei)</label>
+                    <input type="number" id="l2fee-l2-gasprice" value="0.05" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">L1-re amortizált adatközlési ("blob") díj / L2-tranzakció ($)</label>
+            <input type="number" id="l2fee-l1dataposting" value="0.02" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">ETH/natív token árfolyam ($)</label>
+                    <input type="number" id="l2fee-ethprice" value="3000" step="10" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400">Bridge-elés egyszeri díja ($)</label>
+                    <input type="number" id="l2fee-bridgefee" value="5" step="0.5" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Tervezett tranzakciók száma az L2-n</label>
+            <input type="number" id="l2fee-numtx" value="50" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcL2FeeSavings()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="l2fee-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy EGYSZERŰSÍTETT, a tanulás célját szolgáló modell — a valós L2 díjak ingadoznak az aktuális L1-torlódással (ami az amortizált adatközlési díjat is mozgatja) és a rollup-specifikus díjmechanizmussal. A bridge-elés NEM csak díjat jelent: a lecke is kiemeli, hogy a bridge-protokollok korábban már hackertámadások célpontjai voltak — a megtérülési pont kiszámolása önmagában nem jelenti azt, hogy a bridge-kockázat elhanyagolható.</p>
+        </div>
+    </div>
+
     <!-- ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
          Egyszerűsített, várható-érték alapú modell (NEM Monte Carlo, NEM
          compoundolt útfüggő szimuláció) a tail risk hedging (pl. távoli
@@ -13071,6 +13157,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Időbeli Diszkontálás Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Implikált türelmetlenségi ráta + preferencia-fordulás</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('l2fee-modal')" data-tool-title="l1 vs l2 díj & bridge-megtérülés kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">L1 vs L2 Díj & Bridge-megtérülés Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Mennyit spórolsz Layer 2-n, és mikor térül meg a bridge-díj?</div>
                         </div>
                     </button>
                 </div>
@@ -31613,6 +31706,99 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= L1 vs L2 TRANZAKCIÓS DÍJ & BRIDGE-MEGTÉRÜLÉS KALKULÁTOR =================
+        // l1Fee         = l1GasLimit × l1GasPriceGwei × 1e-9 × ethPriceUSD
+        // l2ExecFee     = l2GasLimit × l2GasPriceGwei × 1e-9 × ethPriceUSD
+        // l2Fee         = l2ExecFee + l1DataFeeUSD
+        // savingsPerTx  = l1Fee − l2Fee
+        // breakevenTxs  = ceil(bridgeFeeUSD / savingsPerTx)   (csak ha savingsPerTx > 0)
+        // totalSavingsN = savingsPerTx × N − bridgeFeeUSD
+        function calcL2FeeSavings() {
+            const ids = ['l2fee-l1-gaslimit', 'l2fee-l1-gasprice', 'l2fee-l2-gaslimit', 'l2fee-l2-gasprice',
+                         'l2fee-l1dataposting', 'l2fee-ethprice', 'l2fee-bridgefee', 'l2fee-numtx'];
+            const els = ids.map(id => document.getElementById(id));
+            const out = document.getElementById('l2fee-result');
+            if (els.some(el => !el) || !out) return;
+
+            const [l1GasLimitRaw, l1GasPrice, l2GasLimitRaw, l2GasPrice, l1DataFee, ethPrice, bridgeFee, numTxRaw] =
+                els.map(el => parseFloat(el.value));
+
+            const l1GasLimit = Math.round(l1GasLimitRaw);
+            const l2GasLimit = Math.round(l2GasLimitRaw);
+            const numTx = Math.round(numTxRaw);
+
+            if (!Number.isFinite(l1GasLimitRaw) || l1GasLimit <= 0 || l1GasLimit !== l1GasLimitRaw) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az L1 gas limit egy nullánál nagyobb EGÉSZ szám kell legyen!</div>`;
+                return;
+            }
+            if (!Number.isFinite(l2GasLimitRaw) || l2GasLimit <= 0 || l2GasLimit !== l2GasLimitRaw) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az L2 gas limit egy nullánál nagyobb EGÉSZ szám kell legyen!</div>`;
+                return;
+            }
+            if (!Number.isFinite(l1GasPrice) || l1GasPrice < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az L1 gas ár nem lehet negatív!</div>`;
+                return;
+            }
+            if (!Number.isFinite(l2GasPrice) || l2GasPrice < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az L2 végrehajtási gas ár nem lehet negatív!</div>`;
+                return;
+            }
+            if (!Number.isFinite(l1DataFee) || l1DataFee < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az adatközlési díj nem lehet negatív!</div>`;
+                return;
+            }
+            if (!Number.isFinite(ethPrice) || ethPrice <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb ETH/token árfolyamot!</div>`;
+                return;
+            }
+            if (!Number.isFinite(bridgeFee) || bridgeFee < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A bridge-díj nem lehet negatív!</div>`;
+                return;
+            }
+            if (!Number.isFinite(numTxRaw) || numTx < 1 || numTx !== numTxRaw) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A tranzakciók száma egy 1-nél nem kisebb EGÉSZ szám kell legyen!</div>`;
+                return;
+            }
+
+            const l1Fee = l1GasLimit * l1GasPrice * 1e-9 * ethPrice;
+            const l2ExecFee = l2GasLimit * l2GasPrice * 1e-9 * ethPrice;
+            const l2Fee = l2ExecFee + l1DataFee;
+            const savingsPerTx = l1Fee - l2Fee;
+            const savingsPct = l1Fee !== 0 ? (savingsPerTx / l1Fee) * 100 : 0;
+            const breakevenTxs = savingsPerTx > 0 ? Math.ceil(bridgeFee / savingsPerTx) : null;
+            const totalSavingsN = savingsPerTx * numTx - bridgeFee;
+
+            const fmtUSD = (n) => {
+                const abs = Math.abs(n);
+                const decimals = abs < 0.01 ? 6 : (abs < 1 ? 4 : 2);
+                const sign = n < 0 ? '-' : '';
+                return `${sign}$${abs.toFixed(decimals)}`;
+            };
+
+            let verdictColor, verdict;
+            if (savingsPerTx <= 0) {
+                verdictColor = 'text-neon-red';
+                verdict = '🚨 Ezzel a paraméterezéssel az L2 NEM olcsóbb (vagy pontosan ugyanannyi), mint az L1 — ilyenkor a bridge-díj sosem térül meg, és a bridge-kockázatot is feleslegesen vállalnád.';
+            } else if (breakevenTxs !== null && breakevenTxs <= numTx) {
+                verdictColor = 'text-neon-green';
+                verdict = `✅ A bridge-díj a tervezett ${numTx} tranzakción belül megtérül — már a ${breakevenTxs}. tranzakció után nettó nyereséges az L2-re váltás.`;
+            } else {
+                verdictColor = 'text-amber-400';
+                verdict = `⚠️ A bridge-díj CSAK a tervezett ${numTx} tranzakció után térülne meg (a megtérüléshez ${breakevenTxs} tranzakció kellene) — ha ennél kevesebbet terveztél, érdemes átgondolni, megéri-e a bridge-elés.`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs mb-3">
+                    <div class="flex justify-between"><span class="text-slate-400">L1 díj / tranzakció:</span><span class="text-white">${fmtUSD(l1Fee)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">L2 díj / tranzakció (végrehajtás + adatközlés):</span><span class="text-white">${fmtUSD(l2Fee)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Megtakarítás / tranzakció:</span><span class="font-extrabold ${savingsPerTx > 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtUSD(savingsPerTx)} (${savingsPct.toFixed(1)}%)</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Bridge-megtérülési pont:</span><span class="text-white">${breakevenTxs !== null ? breakevenTxs + ' tranzakció után' : 'soha (L2 nem olcsóbb)'}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Nettó megtakarítás ${numTx} tranzakción:</span><span class="font-extrabold ${totalSavingsN >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtUSD(totalSavingsN)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${verdictColor}">${verdict}</p>
+            `;
+        }
+
         // ================= TAIL HEDGE KÖLTSÉG-HASZON KALKULÁTOR (OKTATÁSI) =================
         // totalCostDragFrac = 1 - (1-c/100)^n  (kumulált, compoundolt "drag" a
         // portfólión a horizont alatt a rendszeres fedezési díj miatt)
@@ -42578,6 +42764,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
             111: { tool: 'gsl-modal', cta: 'Számold ki élesben, várható értékben megéri-e a Garantált Stop-Loss (GSL) felára a gap-kockázat ellen' },
+            541: { tool: 'l2fee-modal', cta: 'Számold ki élesben, mennyit spórolnál egy Layer 2-n, és hány tranzakció után térülne meg a bridge-díj' },
             515: { tool: 'halving-modal', cta: 'Számold ki élesben a jelenlegi blokkmagasság alapján, hol állsz a 210k-blokkos halving-cikluson belül, és mikor várható a következő halving' },
             114: { tool: 'pdt-modal', cta: 'Számold ki élesben, PDT-nek minősülne-e a számlád a 4 day trade / 5 nap + 6%-os arány szabály szerint, és mennyi tőke hiányzik a $25 000 minimumhoz' },
             24: { tool: 'shortsqueeze-modal', cta: 'Számold ki élesben a Short Squeeze Kockázat Kalkulátort a short interest % és a days to cover alapján' },
@@ -42955,7 +43142,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
