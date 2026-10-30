@@ -34851,15 +34851,39 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const resultEl = document.getElementById('dca-result');
             if (!monthlyEl || !monthsEl || !startPriceEl || !endPriceEl || !resultEl) return;
 
-            const monthly = Math.max(0, parseFloat(monthlyEl.value) || 0);
-            const months = Math.max(1, Math.round(parseFloat(monthsEl.value) || 0));
-            const startPrice = Math.max(0.0001, parseFloat(startPriceEl.value) || 0);
-            const endPrice = Math.max(0.0001, parseFloat(endPriceEl.value) || 0);
+            const monthlyRaw = parseFloat(monthlyEl.value);
+            const monthsRaw = parseFloat(monthsEl.value);
+            const startPriceRaw = parseFloat(startPriceEl.value);
+            const endPriceRaw = parseFloat(endPriceEl.value);
 
-            if (monthly <= 0) {
-                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg érvényes havi összeget.</div>`;
+            // JAVÍTÁS: korábban a startPrice/endPrice mező Math.max(0.0001, parseFloat(...) || 0)-dal
+            // volt olvasva — egy törölt, nem-numerikus vagy negatív/nulla árfolyam-mező csendben
+            // 0.0001-re esett (nem 0-ra, mert a padló maga 0.0001 volt), ami extrém, valósághűtlen
+            // vásárolt-egységszámot (price → 0.0001 mellett totalUnits = monthly / 0.0001) és egy
+            // abszurd, de hibaüzenet nélküli "eredményt" produkált, mintha valódi számítás lenne.
+            // A monthly mező hasonlóan Math.max(0, ... || 0)-dal csendben 0-ra esett, és csak egy
+            // UTÁNA lefutó `if (monthly <= 0)` ág fogta ki — ez működött, de nem volt konzisztens
+            // a többi mezővel. A months mező törölt/érvénytelen értéke is csendben 1 hónapra esett.
+            // Most mind a négy mezőt explicit, előzetes Number.isFinite + tartomány-ellenőrzéssel
+            // validáljuk; érvénytelen bemenet esetén piros hibaüzenetet kap, konzisztensen az app
+            // többi kalkulátorának validációs mintájával.
+            if (!Number.isFinite(monthlyRaw) || monthlyRaw <= 0) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg érvényes, nullánál nagyobb havi összeget!</div>`;
                 return;
             }
+            if (!Number.isFinite(monthsRaw) || monthsRaw < 1) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Az időszak hossza legyen legalább 1 hónap!</div>`;
+                return;
+            }
+            if (!Number.isFinite(startPriceRaw) || startPriceRaw <= 0 || !Number.isFinite(endPriceRaw) || endPriceRaw <= 0) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Mindkét árfolyam mező legyen nullánál nagyobb szám!</div>`;
+                return;
+            }
+
+            const monthly = monthlyRaw;
+            const months = Math.max(1, Math.round(monthsRaw));
+            const startPrice = startPriceRaw;
+            const endPrice = endPriceRaw;
 
             let totalUnits = 0;
             let totalInvested = 0;
