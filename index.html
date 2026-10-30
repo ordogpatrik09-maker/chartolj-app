@@ -33301,9 +33301,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const warningEl = document.getElementById('port-weight-warning');
             if (!totalEl || !yearsEl || !rebalanceEl || !resultEl) return;
 
-            const total = Math.max(0, parseFloat(totalEl.value) || 0);
+            const totalRaw = parseFloat(totalEl.value);
             const years = Math.max(1, Math.round(parseFloat(yearsEl.value) || 0));
             const rebalance = rebalanceEl.checked;
+
+            // JAVÍTÁS: korábban a Math.max(0, parseFloat(...) || 0) minta érvénytelen/
+            // nulla/negatív kezdő összeg esetén csendben 0-ra "javította" az összeget,
+            // ami a totalReturnPct = (totalReturn / total) * 100 sornál 0/0 osztást
+            // okozott — a felhasználó egy valódi, látható "NaN%" renderelési hibát
+            // kapott a Teljes hozam mezőben, nem csak egy megtévesztő hamis sikert.
+            // Most explicit piros hibaüzenetet kap, konzisztensen az app többi
+            // kalkulátorának validációs mintájával.
+            if (!Number.isFinite(totalRaw) || totalRaw <= 0) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg egy nullánál nagyobb kezdő portfólió-összeget!</div>`;
+                if (warningEl) warningEl.classList.add('hidden');
+                return;
+            }
+            const total = totalRaw;
 
             const assets = [1, 2, 3].map(i => ({
                 name: (document.getElementById(`port-a${i}-name`).value || `Eszköz ${i}`).trim(),
