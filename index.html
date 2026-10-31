@@ -22335,6 +22335,41 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // elemző gombok, nem az elsődleges "Kiszámolás" gomb). Ha nulla vagy
         // egynél több ilyen gomb található (egyértelműtlen eset), semmit nem
         // csinál — biztonságos, nem-cselekvő alapállás.
+        //
+        // JAVÍTÁS (láthatóság-szűrés): a korábbi verzió a modalon belül MINDEN
+        // calc/run gombot számba vett, függetlenül attól, hogy épp látható-e.
+        // Ez feleslegesen "egyértelműtlennek" (0 vagy 2+ találat) minősített
+        // 3 modalt: circuitbreaker-modal (2 gomb — "MWCB" vs "LULD" mód,
+        // mode-váltáskor a nem aktív szekció class="hidden"), valamint
+        // backtest-modal és strategy-builder-modal (29 gomb — 1 elsődleges
+        // "Backtest futtatása" + 28 utólagos elemző gomb, amik a futtatás
+        // előtt egy alapból összecsukott <div class="hidden"> szekcióban
+        // (#backtest-bootstrap-section) vannak — lásd toggleAnalyzerCategory()).
+        // Most minden jelölt gombnál végigjárjuk az ősöket a modal gyökeréig,
+        // és kizárjuk, ha közben BÁRMELYIK ősön "hidden" osztály van, vagy a
+        // gombnak nincs offsetParent-je (nem renderelt/látható). Mivel ez
+        // csak SZŰKÍTI a jelölt-listát (sosem bővíti), a korábban már
+        // egyértelmű 186 modalnál nem változik semmi (lásd
+        // test_enter_visibility.js regresszió-ellenőrzését). A 3 korábban
+        // kihagyott modalnál: a circuitbreaker-modal MOSTANTÓL teljesen
+        // működik (mindkét módban pontosan 1 látható gomb marad); a
+        // backtest-modal / strategy-builder-modal a futtatás ELŐTTI
+        // alapállapotban (a 28 elemző gomb még a rejtett szekcióban van)
+        // MOSTANTÓL is működik az elsődleges futtató gombra. Ha a
+        // felhasználó a futtatás UTÁN kinyit egy elemző-kategóriát, az
+        // TOVÁBBRA IS több calc-gombot tartalmaz egyszerre (a kategóriák
+        // több eszközt csoportosítanak, nem 1:1-ben) — ott a szűrés utána
+        // is 2+ látható jelöltet talál, és helyesen, biztonságosan no-op
+        // marad (nem rosszabb, mint korábban: addig ez az eset is teljes
+        // egészében no-op volt).
+        function _isElementVisible(el, rootEl) {
+            let node = el;
+            while (node && node !== rootEl) {
+                if (node.classList && node.classList.contains('hidden')) return false;
+                node = node.parentElement;
+            }
+            return el.offsetParent !== null;
+        }
         document.addEventListener('keydown', function(e) {
             if (e.key !== 'Enter') return;
             if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
@@ -22350,7 +22385,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candidates = Array.from(modalEl.querySelectorAll('button[onclick]')).filter(btn => {
                 const onclick = btn.getAttribute('onclick') || '';
                 if (!/^(calc|run)[A-Za-z0-9_]*\(\)$/.test(onclick.trim())) return false;
-                return !btn.closest('[id$="-result"]');
+                if (btn.closest('[id$="-result"]')) return false;
+                return _isElementVisible(btn, modalEl);
             });
             if (candidates.length === 1) {
                 e.preventDefault();
