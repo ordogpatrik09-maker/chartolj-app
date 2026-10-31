@@ -639,6 +639,18 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-10-31, mobil UX audit — valódi, blokkoló hiba):
+               a Kereskedési Napló (#journal-screen) naptár alatt megnyíló
+               napi bejegyzés-szerkesztő ("Mentés" gomb) a fix alsó
+               navigáció alá futott, amint a felhasználó egy napra
+               kattintva kinyitotta — a scrollIntoView("nearest") hívás nem
+               tudott a fixen pozícionált navigációról, így a gomb alja
+               takarásban maradt. Ugyanaz a minta, mint a Kereskedési
+               Terv mentés-gombjánál. */
+            #journal-screen-body {
+                padding-bottom: 76px !important;
+            }
+
             /* JAVÍTÁS (2026-10-31, mobil UX audit): a lecke-kártyák
                Előző/Következő gombsora induláskor (scrollTop:0-nál) a
                tartalom legvégén, a görgethető terület alján jelent meg —
@@ -14303,7 +14315,7 @@ Mean-reversion,2.5</textarea>
                 <button onclick="closeTradingJournal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </div>
-        <div class="flex-grow overflow-y-auto px-4 pb-10">
+        <div id="journal-screen-body" class="flex-grow overflow-y-auto px-4 pb-10">
             <!-- Hónapváltó -->
             <div class="flex items-center justify-between mt-4 mb-3">
                 <button onclick="journalShiftMonth(-1)" class="w-9 h-9 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
