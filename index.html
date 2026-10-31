@@ -27141,12 +27141,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let parseError = null;
             for (const line of lines) {
                 const m = line.match(/^(.+?):\s*([\-0-9.,]+)\s*,\s*([\-0-9.]+)\s*$/);
-                if (!m) { parseError = `Nem sikerült feldolgozni ezt a sort: "${line}" — a formátum "Név: Jelenlegi Érték, Cél-Súly%" legyen.`; break; }
+                if (!m) { parseError = `Nem sikerült feldolgozni ezt a sort: "${escapeHtml(line)}" — a formátum "Név: Jelenlegi Érték, Cél-Súly%" legyen.`; break; }
                 const name = m[1].trim();
                 const value = parseFloat(m[2].replace(/,/g, ''));
                 const targetPct = parseFloat(m[3]);
-                if (!isFinite(value) || value < 0) { parseError = `"${name}": a Jelenlegi Érték nem lehet negatív vagy érvénytelen szám.`; break; }
-                if (!isFinite(targetPct) || targetPct < 0) { parseError = `"${name}": a Cél-Súly% nem lehet negatív vagy érvénytelen szám.`; break; }
+                if (!isFinite(value) || value < 0) { parseError = `"${escapeHtml(name)}": a Jelenlegi Érték nem lehet negatív vagy érvénytelen szám.`; break; }
+                if (!isFinite(targetPct) || targetPct < 0) { parseError = `"${escapeHtml(name)}": a Cél-Súly% nem lehet negatív vagy érvénytelen szám.`; break; }
                 assets.push({ name, value, targetPct });
             }
 
@@ -27194,7 +27194,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return `
                     <div class="border-t border-dark-750 pt-2 first:border-t-0 first:pt-0">
                         <div class="flex items-center justify-between font-mono text-xs mb-1">
-                            <span class="text-white font-bold">${r.name}</span>
+                            <span class="text-white font-bold">${escapeHtml(r.name)}</span>
                             <span class="${tradeColor} font-extrabold">${tradeLabel}</span>
                         </div>
                         <div class="flex items-center justify-between font-mono text-[10px] text-slate-400">
@@ -27212,9 +27212,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (Math.abs(maxDriftRow.drift) < 1) {
                 verdict = 'A portfólió jelenlegi súlyozása nagyon közel van a cél-súlyokhoz — jelen pillanatban nincs érdemi rebalancing-szükséglet.';
             } else if (Math.abs(maxDriftRow.drift) < 5) {
-                verdict = `Mérsékelt eltolódás: a "${maxDriftRow.name}" súlya ${maxDriftRow.drift > 0 ? 'túlsúlyba került' : 'alulsúlyba csúszott'} (${maxDriftRow.drift > 0 ? '+' : ''}${maxDriftRow.drift.toFixed(2)} pp) — érdemes megfontolni a rebalancingot, de nem kritikus.`;
+                verdict = `Mérsékelt eltolódás: a "${escapeHtml(maxDriftRow.name)}" súlya ${maxDriftRow.drift > 0 ? 'túlsúlyba került' : 'alulsúlyba csúszott'} (${maxDriftRow.drift > 0 ? '+' : ''}${maxDriftRow.drift.toFixed(2)} pp) — érdemes megfontolni a rebalancingot, de nem kritikus.`;
             } else {
-                verdict = `🔸 Jelentős eltolódás: a "${maxDriftRow.name}" súlya ${maxDriftRow.drift > 0 ? 'jelentősen túlsúlyba került' : 'jelentősen alulsúlyba csúszott'} (${maxDriftRow.drift > 0 ? '+' : ''}${maxDriftRow.drift.toFixed(2)} pp) — a kockázati profilod érdemben eltért a kitűzött céltól, a rebalancing most indokolt lehet.`;
+                verdict = `🔸 Jelentős eltolódás: a "${escapeHtml(maxDriftRow.name)}" súlya ${maxDriftRow.drift > 0 ? 'jelentősen túlsúlyba került' : 'jelentősen alulsúlyba csúszott'} (${maxDriftRow.drift > 0 ? '+' : ''}${maxDriftRow.drift.toFixed(2)} pp) — a kockázati profilod érdemben eltért a kitűzött céltól, a rebalancing most indokolt lehet.`;
             }
 
             out.innerHTML = `
@@ -30019,7 +30019,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             for (const tok of levelTokens) {
                 const v = parseFloat(tok);
                 if (!Number.isFinite(v) || v <= 0) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${tok}" nem érvényes, nullánál nagyobb tőkeáttétel-szint — vesszővel elválasztva csak pozitív számokat adj meg (pl. 1, 2, 5, 10)!</div>`;
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${escapeHtml(tok)}" nem érvényes, nullánál nagyobb tőkeáttétel-szint — vesszővel elválasztva csak pozitív számokat adj meg (pl. 1, 2, 5, 10)!</div>`;
                     return;
                 }
                 leverageLevels.push(v);
@@ -32468,11 +32468,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             let tableHtml = '<table class="w-full text-[10px] font-mono"><tr><td></td>';
             for (const a of assets) {
-                tableHtml += `<td class="text-center text-slate-400 font-bold px-1">${a.name.length > 6 ? a.name.slice(0, 6) : a.name}</td>`;
+                tableHtml += `<td class="text-center text-slate-400 font-bold px-1">${escapeHtml(a.name.length > 6 ? a.name.slice(0, 6) : a.name)}</td>`;
             }
             tableHtml += '</tr>';
             for (let i = 0; i < k; i++) {
-                tableHtml += `<tr><td class="text-slate-400 font-bold pr-1">${assets[i].name.length > 6 ? assets[i].name.slice(0, 6) : assets[i].name}</td>`;
+                tableHtml += `<tr><td class="text-slate-400 font-bold pr-1">${escapeHtml(assets[i].name.length > 6 ? assets[i].name.slice(0, 6) : assets[i].name)}</td>`;
                 for (let j = 0; j < k; j++) {
                     const c = matrix[i][j];
                     const display = c === null ? 'N/A' : (c >= 0 ? '+' : '') + c.toFixed(2);
@@ -32496,7 +32496,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             let verdict = '';
             if (maxOffDiagPair) {
-                const [n1, n2, c] = maxOffDiagPair;
+                const [n1Raw, n2Raw, c] = maxOffDiagPair;
+                const n1 = escapeHtml(n1Raw), n2 = escapeHtml(n2Raw);
                 if (Math.abs(c) >= 0.7) {
                     verdict = `🚨 A ${n1} és a ${n2} erősen korrelál (${c >= 0 ? '+' : ''}${c.toFixed(2)}) — ha mindkettőben pozíciód van, a valós, összesített kockázatod jóval magasabb lehet, mint az egyedi kockázatok puszta összege. Érdemes megfontolni, hogy csak az egyikben tarts pozíciót, vagy kisebb mérettel mindkettőben.`;
                 } else if (Math.abs(c) >= 0.3) {
@@ -33539,7 +33540,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             for (const line of lines) {
                 const colonIdx = line.indexOf(':');
                 if (colonIdx === -1) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hiányzik a ":" elválasztó a "${line}" sorban! Használd a "Név: érték,érték,..." formátumot.</div>`;
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hiányzik a ":" elválasztó a "${escapeHtml(line)}" sorban! Használd a "Név: érték,érték,..." formátumot.</div>`;
                     return;
                 }
                 const name = line.slice(0, colonIdx).trim();
@@ -33549,7 +33550,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }
                 const tokens = line.slice(colonIdx + 1).split(',').map(s => s.trim()).filter(s => s.length > 0);
                 if (tokens.length < 2) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${name}" sorozatnak legalább 2 értéket kell tartalmaznia!</div>`;
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${escapeHtml(name)}" sorozatnak legalább 2 értéket kell tartalmaznia!</div>`;
                     return;
                 }
                 const values = [];
@@ -33559,7 +33560,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     // időrendi adat, egy érvénytelen token néma eldobása
                     // elcsúsztatná a két sorozat indexelését egymáshoz képest.
                     if (tok === '' || !Number.isFinite(v)) {
-                        out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${tok}" nem érvényes szám a "${name}" sorozatban — csak számokat adj meg, vesszővel elválasztva!</div>`;
+                        out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "${escapeHtml(tok)}" nem érvényes szám a "${escapeHtml(name)}" sorozatban — csak számokat adj meg, vesszővel elválasztva!</div>`;
                         return;
                     }
                     values.push(v);
@@ -33568,7 +33569,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             if (assets[0].values.length !== assets[1].values.length) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A két sorozat hossza nem egyezik! (${assets[0].name}: ${assets[0].values.length} érték, ${assets[1].name}: ${assets[1].values.length} érték)</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A két sorozat hossza nem egyezik! (${escapeHtml(assets[0].name)}: ${assets[0].values.length} érték, ${escapeHtml(assets[1].name)}: ${assets[1].values.length} érték)</div>`;
                 return;
             }
 
@@ -34178,7 +34179,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             for (const line of lines) {
                 const parts = line.split(',').map(p => parseFloat(p.trim()));
                 if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hibás sor: "${line}" — a formátum "in-sample%,out-of-sample%" legyen, két számmal!</div>`;
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hibás sor: "${escapeHtml(line)}" — a formátum "in-sample%,out-of-sample%" legyen, két számmal!</div>`;
                     return;
                 }
                 windows.push({ is: parts[0], oos: parts[1] });
@@ -34294,7 +34295,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             for (const line of lines) {
                 const parts = line.split(',').map(p => parseFloat(p.trim()));
                 if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1]) || parts[1] <= 0) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hibás sor: "${line}" — a formátum "eredmény,kockázat" legyen, a kockázat pozitív szám!</div>`;
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hibás sor: "${escapeHtml(line)}" — a formátum "eredmény,kockázat" legyen, a kockázat pozitív szám!</div>`;
                     return;
                 }
                 rValues.push(parts[0] / parts[1]);
@@ -37209,7 +37210,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${rows.map(r => `
                         <div class="bg-dark-900 rounded-lg p-2.5 text-[11px] font-mono">
                             <div class="flex items-center justify-between mb-1">
-                                <span class="font-bold text-white">${r.name}</span>
+                                <span class="font-bold text-white">${escapeHtml(r.name)}</span>
                                 <span class="font-extrabold ${r.colorClass}">${r.status}</span>
                             </div>
                             <div class="flex justify-between text-slate-400"><span>Allokált (súly ${r.weight}):</span><span class="text-slate-200">${r.allocatedPct.toFixed(2)}% (${r.allocatedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })} $)</span></div>
@@ -37415,7 +37416,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             let verdict;
             if (maxEdContrib - idealEqualPct > 5) {
-                verdict = `✅ Risk parity súlyozással mind a ${n} elem kockázati hozzájárulása kiegyenlített (~${idealEqualPct.toFixed(1)}% mindegyiknél) — ezzel szemben egyenlő DOLLÁR-elosztásnál a "${dominant.name}" dominálná a kockázatot (${maxEdContrib.toFixed(1)}%), a magasabb volatilitása miatt.`;
+                verdict = `✅ Risk parity súlyozással mind a ${n} elem kockázati hozzájárulása kiegyenlített (~${idealEqualPct.toFixed(1)}% mindegyiknél) — ezzel szemben egyenlő DOLLÁR-elosztásnál a "${escapeHtml(dominant.name)}" dominálná a kockázatot (${maxEdContrib.toFixed(1)}%), a magasabb volatilitása miatt.`;
             } else {
                 verdict = `✅ Risk parity súlyozással mind a ${n} elem kockázati hozzájárulása kiegyenlített (~${idealEqualPct.toFixed(1)}% mindegyiknél) — a megadott volatilitások elég közeliek, így az egyenlő dollár-elosztás sem torzítana nagyon, de a risk parity itt is garantáltan pontosan egyenlő hozzájárulást ad.`;
             }
@@ -37426,7 +37427,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${rows.map(r => `
                         <div class="bg-dark-900 rounded-lg p-2.5 text-[11px] font-mono mb-1.5">
                             <div class="flex items-center justify-between mb-1">
-                                <span class="font-bold text-white">${r.name}</span>
+                                <span class="font-bold text-white">${escapeHtml(r.name)}</span>
                                 <span class="text-slate-500">vol ${r.vol}%</span>
                             </div>
                             <div class="flex justify-between text-slate-400"><span>Risk parity súly:</span><span class="text-neon-purple font-bold">${r.rpWeightPct.toFixed(1)}% (${r.rpAllocUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })} $)</span></div>
@@ -37436,7 +37437,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <div class="glass-card rounded-xl p-3 mb-3 border border-amber-400/20">
                     <div class="text-[10px] text-slate-500 uppercase font-bold mb-1.5">Összehasonlítás: egyenlő DOLLÁR-elosztás esetén (${equalAllocUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })} $ / elem)</div>
-                    ${edRows.map(r => `<div class="flex justify-between font-mono text-[10.5px] ${r.riskContribPct === maxEdContrib ? 'text-neon-red font-bold' : 'text-slate-400'}"><span>${r.name}:</span><span>${r.riskContribPct.toFixed(1)}% a teljes kockázatból</span></div>`).join('')}
+                    ${edRows.map(r => `<div class="flex justify-between font-mono text-[10.5px] ${r.riskContribPct === maxEdContrib ? 'text-neon-red font-bold' : 'text-slate-400'}"><span>${escapeHtml(r.name)}:</span><span>${r.riskContribPct.toFixed(1)}% a teljes kockázatból</span></div>`).join('')}
                 </div>
                 <p class="text-[10.5px] font-semibold text-neon-cyan leading-relaxed">${verdict}</p>
             `;
