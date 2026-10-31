@@ -46361,8 +46361,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             tbody.innerHTML = tradeHistory.map(h => {
                 let pnlColor = h.pnl >= 0 ? 'text-neon-green' : 'text-neon-red';
+                // JAVÍTÁS (2026-10-31, mobil UX audit — HTML-injektálás): a
+                // h.note mezőt a prompt()-ból kapjuk, teljesen felhasználó
+                // által kontrollált szöveg, amit korábban NYERSEN, escapelés
+                // nélkül fűztünk be a tbody.innerHTML-be. Egy olyan jegyzet,
+                // mint "<img src=x onerror=...>", valódi HTML-ként futott
+                // volna le minden renderHistory() hívásnál (self-XSS, illetve
+                // ha a kereskedési előzmény valaha megosztásra/szinkronra
+                // kerülne, tárolt XSS más felhasználóknak is). Az előzmény
+                // többi mezője (h.time, h.asset stb.) programozottan generált,
+                // nem felhasználói bevitel, ezért azokat nem kell escapelni —
+                // csak a note-ot, a már meglévő escapeHtml() segítségével.
                 const noteRow = h.note
-                    ? `<tr class="bg-dark-900/40"><td colspan="7" class="pb-2 pt-0"><div class="flex items-start gap-1.5 text-[10px] text-slate-400 italic max-w-[340px]"><i class="fa-solid fa-note-sticky text-amber-400/70 mt-0.5 shrink-0"></i><span class="truncate">${h.note}</span><button onclick="editTradeNote('${h.id}')" class="shrink-0 text-slate-500 hover:text-neon-cyan not-italic ml-1"><i class="fa-solid fa-pen text-[9px]"></i></button></div></td></tr>`
+                    ? `<tr class="bg-dark-900/40"><td colspan="7" class="pb-2 pt-0"><div class="flex items-start gap-1.5 text-[10px] text-slate-400 italic max-w-[340px]"><i class="fa-solid fa-note-sticky text-amber-400/70 mt-0.5 shrink-0"></i><span class="truncate">${escapeHtml(h.note)}</span><button onclick="editTradeNote('${h.id}')" class="shrink-0 text-slate-500 hover:text-neon-cyan not-italic ml-1"><i class="fa-solid fa-pen text-[9px]"></i></button></div></td></tr>`
                     : '';
                 return `
                     <tr class="hover:bg-dark-850/50 transition">
