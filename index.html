@@ -2937,9 +2937,12 @@
             </div>
 
             <!-- Alsó időskála-mozgató sáv (TradingView-stílus pásztázás) -->
-            <div id="chart-pan-bar" class="h-4 bg-dark-950/70 border-t border-dark-750/40 relative shrink-0 z-20 cursor-pointer">
+            <div id="chart-pan-bar" class="h-4 bg-dark-950/70 border-t border-dark-750/40 relative shrink-0 z-20 cursor-pointer" title="Húzd a közepét a pásztázáshoz, a széleit a nagyításhoz/kicsinyítéshez">
                 <div id="chart-pan-track" class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-dark-800 rounded-full mx-1"></div>
-                <div id="chart-pan-handle" class="absolute top-0.5 bottom-0.5 bg-dark-600 hover:bg-neon-cyan/40 rounded-full transition-colors" style="left:0%; width:100%;"></div>
+                <div id="chart-pan-handle" class="absolute top-0.5 bottom-0.5 bg-dark-600 hover:bg-neon-cyan/40 rounded-full transition-colors" style="left:0%; width:100%;">
+                    <div class="absolute -left-px top-0 bottom-0 w-[3px] rounded-full bg-slate-300/80"></div>
+                    <div class="absolute -right-px top-0 bottom-0 w-[3px] rounded-full bg-slate-300/80"></div>
+                </div>
             </div>
 
             <!-- RSI panel átméretező sáv — húzd fel/le a magasság állításához -->
@@ -22035,10 +22038,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             pointerUp();
         });
 
-        /* ================= ALSÓ IDŐSKÁLA-SÁV (pásztázás fogantyúval) ================= */
+        /* ================= ALSÓ IDŐSKÁLA-SÁV (pásztázás + nagyítás fogantyúval) =================
+           JAVÍTÁS (felhasználói visszajelzés: "a charton könnyebb kezelhetőség,
+           oldalra csúsztatással nagyítod/kicsinyíted"): eddig csak a chartra
+           mért két ujjas csippentéssel (pinch) lehetett nagyítani/kicsinyíteni
+           mobilon — ez két kézre/két ujjra van tervezve, egy kézzel tartott
+           telefonon kényelmetlen. Mostantól az alsó sáv fogantyújának SZÉLEIT
+           egy ujjal oldalra húzva nagyítható/kicsinyíthető a látható tartomány
+           (a túlsó szél a helyén marad, mint egy TradingView-stílusú
+           idősáv-"brush"), a fogantyú KÖZEPét húzva pedig továbbra is
+           pásztázunk — pontosan ugyanaz a mozdulat, csak attól függően, hol
+           fogjuk meg a sávot. */
         (function setupChartPanBar() {
             const bar = document.getElementById('chart-pan-bar');
-            let isDraggingBar = false;
+            const handle = document.getElementById('chart-pan-handle');
+            let dragMode = null; // null | 'pan' | 'resize-left' | 'resize-right'
+            let resizeAnchorIndex = null; // a NEM húzott szél candle-indexe, rögzítve a drag indulásakor
+            const EDGE_TOLERANCE = 14; // px — a fogantyú szélétől mért távolság, ami még nagyítás-fogásnak számít
 
             function panToClientX(clientX) {
                 const rect = bar.getBoundingClientRect();
@@ -22052,23 +22068,57 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 drawChart();
             }
 
-            bar.addEventListener('mousedown', (e) => {
-                isDraggingBar = true;
-                panToClientX(e.clientX);
-            });
-            window.addEventListener('mousemove', (e) => {
-                if (isDraggingBar) panToClientX(e.clientX);
-            });
-            window.addEventListener('mouseup', () => { isDraggingBar = false; });
+            function resizeToClientX(clientX, edge) {
+                const rect = bar.getBoundingClientRect();
+                const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+                const total = lastVisibleRange.total || candleData.length;
+                const grabIndex = Math.round(ratio * total);
+                let newStart, newEnd;
+                if (edge === 'left') {
+                    newStart = Math.max(0, Math.min(grabIndex, resizeAnchorIndex - 10));
+                    newEnd = resizeAnchorIndex;
+                } else {
+                    newStart = resizeAnchorIndex;
+                    newEnd = Math.min(total, Math.max(grabIndex, resizeAnchorIndex + 10));
+                }
+                visibleCount = Math.max(10, newEnd - newStart);
+                panOffset = Math.max(0, total - newEnd);
+                drawChart();
+            }
 
-            bar.addEventListener('touchstart', (e) => {
-                isDraggingBar = true;
-                panToClientX(e.touches[0].clientX);
-            }, { passive: true });
-            bar.addEventListener('touchmove', (e) => {
-                if (isDraggingBar) panToClientX(e.touches[0].clientX);
-            }, { passive: true });
-            window.addEventListener('touchend', () => { isDraggingBar = false; });
+            function startDrag(clientX) {
+                const hRect = handle.getBoundingClientRect();
+                const distLeft = Math.abs(clientX - hRect.left);
+                const distRight = Math.abs(clientX - hRect.right);
+                const nearLeft = distLeft <= EDGE_TOLERANCE;
+                const nearRight = distRight <= EDGE_TOLERANCE;
+                if (nearLeft && (!nearRight || distLeft <= distRight)) {
+                    dragMode = 'resize-left';
+                    resizeAnchorIndex = lastVisibleRange.endIndex;
+                } else if (nearRight) {
+                    dragMode = 'resize-right';
+                    resizeAnchorIndex = lastVisibleRange.startIndex;
+                } else {
+                    dragMode = 'pan';
+                    panToClientX(clientX);
+                }
+            }
+
+            function moveDrag(clientX) {
+                if (dragMode === 'resize-left') resizeToClientX(clientX, 'left');
+                else if (dragMode === 'resize-right') resizeToClientX(clientX, 'right');
+                else if (dragMode === 'pan') panToClientX(clientX);
+            }
+
+            function endDrag() { dragMode = null; resizeAnchorIndex = null; }
+
+            bar.addEventListener('mousedown', (e) => startDrag(e.clientX));
+            window.addEventListener('mousemove', (e) => { if (dragMode) moveDrag(e.clientX); });
+            window.addEventListener('mouseup', endDrag);
+
+            bar.addEventListener('touchstart', (e) => { startDrag(e.touches[0].clientX); }, { passive: true });
+            bar.addEventListener('touchmove', (e) => { if (dragMode) moveDrag(e.touches[0].clientX); }, { passive: true });
+            window.addEventListener('touchend', endDrag);
         })();
 
         /* ================= REAL-TIME PRICE TICK SIMULATOR ================= */
