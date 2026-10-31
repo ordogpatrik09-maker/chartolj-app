@@ -32121,6 +32121,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const usedRatios = ratios.slice(ratios.length - usedCount);
             const massIndex = usedRatios.reduce((a, b) => a + b, 0);
 
+            if (!isFinite(massIndex)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A felhasznált gyertya-ablakok dupla EMA-simított tartomány-átlaga (Magas−Alacsony) legalább egy helyen pontosan nulla volt, így a Mass Index nem fejezhető ki véges számmal — adj meg más gyertyákat (ahol Magas ≠ Alacsony)!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (massIndex >= 27) {
                 colorClass = 'text-neon-red';
@@ -32336,6 +32341,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const trendStartPrice = values[n - 1 - length];
             const trendEndPrice = values[n - 1];
+
+            if (trendStartPrice === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A trend-kezdő záróár pontosan nulla, így a százalékos árváltozás (és a Trend Exhaustion Index) nem fejezhető ki véges számmal — adj meg más záróárakat!</div>`;
+                return;
+            }
+
             const totalPctChange = (trendEndPrice - trendStartPrice) / trendStartPrice * 100;
             const avgSpeedPct = totalPctChange / length;
             const tei = length * Math.abs(avgSpeedPct);
