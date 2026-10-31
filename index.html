@@ -1911,6 +1911,13 @@
                                 <div class="text-[10px] text-slate-400">Nyereség/veszteség nettósítás + 15% SZJA, magyar szabály szerint</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('cryptotax-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-coins"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Kriptó Adózás (Magyarország) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Önálló kategória, nettósítás + 15%, kriptó-kriptó váltás is adóköteles</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('obv-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-column"></i></span>
                             <div>
@@ -5661,6 +5668,41 @@ Kripto: 15000, 20</textarea>
 
             <div id="szjatax-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Emlékeztető: ha ugyanezeket az ügyleteket Tartós Befektetési Számlán (TBSZ), 5+ éves tartási idő után érnéd el, a nyereség 0% SZJA alá esne (lásd a TBSZ-kalkulátort a Magyar Piac fülön). Ez a kalkulátor kizárólag általános tájékoztatást nyújt — a saját, konkrét helyzetedre mindig konzultálj könyvelővel/adótanácsadóval.</p>
+        </div>
+    </div>
+
+    <!-- ================= KRIPTÓ ADÓZÁS (MAGYARORSZÁG) KALKULÁTOR (OKTATÁSI) =================
+         A kriptoeszközzel végrehajtott ügyletből származó jövedelem Magyarországon
+         ÖNÁLLÓ adózási kategória (NEM azonos a tőzsdei SZJA/TBSZ kerettel): egy
+         adóéven belül a nyereségek/veszteségek egymással szemben nettósíthatók,
+         és a megadott kulcs (alapesetben 15%) CSAK a NETTÓ POZITÍV eredményre
+         vetül ki — ugyanaz a nettósítási matematika, mint az SZJA Árfolyamnyereség-
+         adó Kalkulátorban, de a két kategória összege NEM vonható össze egymással.
+         Fontos (a lecke szerint): a kriptó-kriptó váltás (pl. BTC→ETH) is
+         adóköteles ügyletnek számíthat, nem csak a fiatra történő kiváltás. Ez
+         EGY EGYSZERŰSÍTETT, OKTATÁSI modell — NEM minősül adótanácsadásnak. -->
+    <div id="cryptotax-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-coins text-amber-400"></i> Kriptó Adózás (Magyarország) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('cryptotax-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">FIGYELEM: ez EGY OKTATÁSI, EGYSZERŰSÍTETT modell — NEM minősül adótanácsadásnak. A "kriptoeszközzel végrehajtott ügyletből származó jövedelem" Magyarországon ÖNÁLLÓ adózási kategória — add meg az adóéven belüli lezárt kriptó-ügyleteid eredményét (nyereség pozitív, veszteség negatív szám, Ft-ban, vesszővel elválasztva, FIAT-ra átszámítva), beleértve a kriptó-kriptó váltásokat is (pl. BTC→ETH) — ezek a lecke szerint is adóköteles eseménynek számíthatnak, nem csak a fiatra történő kiváltás.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Kriptó-ügyletek eredménye (Ft, vesszővel elválasztva — nyereség +, veszteség −)</label>
+            <textarea id="cryptotax-trades" rows="2" placeholder="pl. 200000, -60000, 45000, -15000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">200000, -60000, 45000, -15000</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Adókulcs (%, alapesetben 15%)</label>
+            <input type="number" id="cryptotax-rate" value="15" step="0.5" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcCryptoTax()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="cryptotax-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Fontos különbség a tőzsdei (SZJA) kalkulátorhoz képest: 1) a kriptó-ügyletek eredménye NEM nettósítható a részvény/ETF ügyleteid eredményével — önálló kategória. 2) a kriptó-kriptó váltás is adóköteles lehet, nem csak a fiatra váltás. 3) kriptóra nincs TBSZ-szerű, hosszú tartás esetén adómentességet biztosító számlatípus. Ez a kalkulátor kizárólag általános tájékoztatást nyújt — a saját, konkrét helyzetedre mindig konzultálj könyvelővel/adótanácsadóval, különösen staking, DeFi vagy NFT ügyletek esetén.</p>
         </div>
     </div>
 
@@ -13489,6 +13531,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">SZJA Árfolyamnyereség-adó Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Nyereség/veszteség nettósítás + 15% SZJA, magyar szabály szerint</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('cryptotax-modal')" data-tool-title="kriptó adózás (magyarország) kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-coins"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Kriptó Adózás (Magyarország) Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Önálló kategória, nettósítás + 15%, kriptó-kriptó váltás is adóköteles</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('preflight-modal')" data-tool-title="belépés előtti ellenőrzőlista" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -23957,6 +24006,103 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ${taxDue > 0.005 ? `<div class="glass-card rounded-xl p-3">
                     <div class="text-[11px] font-semibold text-slate-300 leading-relaxed">💡 Ha ugyanezeket az ügyleteket Tartós Befektetési Számlán (TBSZ), 5+ éves tartás után érnéd el, a teljes ${fmt(taxDue)} adót megspórolnád — a nettó eredmény teljes egészében (${fmt(netResult)}) a tiéd maradna.</div>
                 </div>` : ''}
+            `;
+        }
+
+        // ================= KRIPTÓ ADÓZÁS (MAGYARORSZÁG) KALKULÁTOR (OKTATÁSI) =================
+        // Magyar szabály (EGYSZERŰSÍTETT, oktatási modell): a kriptoeszközzel
+        // végrehajtott ügyletből származó jövedelem ÖNÁLLÓ adózási kategória —
+        // egy adóéven belüli ügyletek nyereségei/veszteségei egymással szemben
+        // nettósíthatók, és a megadott kulcs CSAK a NETTÓ POZITÍV eredményre
+        // vetül ki. A matematika azonos az SZJA Árfolyamnyereség-adó
+        // Kalkulátorral, de a két kategória összege a szabály szerint NEM
+        // vonható össze. Nem veszi figyelembe a NAV ügylet-specifikus
+        // részletszabályait (pl. staking, DeFi, NFT) — ez NEM adótanácsadás.
+        function calcCryptoTax() {
+            const tradesEl = document.getElementById('cryptotax-trades');
+            const rateEl = document.getElementById('cryptotax-rate');
+            const out = document.getElementById('cryptotax-result');
+            if (!tradesEl || !rateEl || !out) return;
+
+            const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && isFinite(n));
+            const ratePct = parseFloat(rateEl.value);
+
+            if (trades.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 érvényes kriptó-ügylet eredményt (Ft, vesszővel elválasztva)!</div>`;
+                return;
+            }
+            if (!isFinite(ratePct) || ratePct < 0 || ratePct > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az adókulcs 0% és 100% között legyen!</div>`;
+                return;
+            }
+
+            const rate = ratePct / 100;
+            const gains = trades.filter(t => t > 0);
+            const losses = trades.filter(t => t < 0);
+            const totalGains = gains.reduce((a, b) => a + b, 0);
+            const totalLosses = losses.reduce((a, b) => a + b, 0); // negatív szám (vagy 0)
+            const netResult = totalGains + totalLosses;
+
+            const taxDue = netResult > 0 ? netResult * rate : 0;
+            const netAfterTax = netResult - taxDue;
+            const effectiveRateOnGains = totalGains > 0 ? (taxDue / totalGains) * 100 : 0;
+
+            const fmt = (v) => Math.round(v).toLocaleString('hu-HU') + ' Ft';
+
+            let statusBanner;
+            if (netResult > 0) {
+                statusBanner = `
+                <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Fizetendő adó (${ratePct}% a nettó eredményre)</div>
+                    <div class="text-xl font-extrabold text-amber-400">${fmt(taxDue)}</div>
+                </div>`;
+            } else if (netResult < 0) {
+                statusBanner = `
+                <div class="glass-card rounded-xl border border-neon-green/30 bg-neon-green/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Fizetendő adó</div>
+                    <div class="text-xl font-extrabold text-neon-green">0 Ft</div>
+                    <div class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">Nettó veszteség esetén nincs adófizetési kötelezettség ebben az adóévben ezen a kategórián belül. Pontos nyilvántartás (dátum, mennyiség, árfolyam minden váltásnál) és könyvelői konzultáció szükséges a továbbvitelhez.</div>
+                </div>`;
+            } else {
+                statusBanner = `
+                <div class="glass-card rounded-xl border border-dark-750 p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Fizetendő adó</div>
+                    <div class="text-xl font-extrabold text-white">0 Ft</div>
+                    <div class="text-[10px] text-slate-500 mt-1.5">A nettó eredmény pontosan nulla — sem adó, sem elszámolható veszteség nem keletkezik.</div>
+                </div>`;
+            }
+
+            out.innerHTML = `
+                ${statusBanner}
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-[11px]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Ügyletek száma</span>
+                        <span class="text-white font-bold">${trades.length}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Összes nyereség (bruttó)</span>
+                        <span class="text-neon-green font-bold">+${fmt(totalGains)}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Összes veszteség</span>
+                        <span class="text-neon-red font-bold">${totalLosses === 0 ? '0 Ft' : '−' + fmt(Math.abs(totalLosses))}</span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">NETTÓ eredmény (adóalap, ha pozitív)</span>
+                        <span class="${netResult >= 0 ? 'text-white' : 'text-neon-red'} font-bold">${netResult >= 0 ? '+' : '−'}${fmt(Math.abs(netResult))}</span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">Nettó eredmény ADÓ UTÁN</span>
+                        <span class="text-amber-400 font-bold">${netAfterTax >= 0 ? '+' : '−'}${fmt(Math.abs(netAfterTax))}</span>
+                    </div>
+                    ${totalGains > 0 ? `<div class="flex items-center justify-between">
+                        <span class="text-slate-400">Effektív adókulcs a bruttó nyereségre</span>
+                        <span class="text-slate-300 font-bold">${effectiveRateOnGains.toFixed(2)}%</span>
+                    </div>` : ''}
+                </div>
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[11px] font-semibold text-slate-300 leading-relaxed">⚠️ Emlékeztető: ez a nettó eredmény ÖNÁLLÓ kategória — NEM vonható össze a tőzsdei (részvény/ETF) ügyleteid SZJA-alapjával, és minden kriptó-kriptó váltás (nem csak a fiatra történő kiváltás) külön adóköteles ügyletnek számíthat.</div>
+                </div>
             `;
         }
 
