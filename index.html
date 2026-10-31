@@ -1936,6 +1936,13 @@
                                 <div class="text-[10px] text-slate-400">Önálló kategória, nettósítás + 15%, kriptó-kriptó váltás is adóköteles</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('taxharvest-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scissors"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Adóveszteség-realizálás Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mennyi SZJA-t spórolsz egy veszteséges pozíció tudatos lezárásával</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('obv-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-column"></i></span>
                             <div>
@@ -5724,6 +5731,52 @@ Kripto: 15000, 20</textarea>
 
             <div id="cryptotax-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Fontos különbség a tőzsdei (SZJA) kalkulátorhoz képest: 1) a kriptó-ügyletek eredménye NEM nettósítható a részvény/ETF ügyleteid eredményével — önálló kategória. 2) a kriptó-kriptó váltás is adóköteles lehet, nem csak a fiatra váltás. 3) kriptóra nincs TBSZ-szerű, hosszú tartás esetén adómentességet biztosító számlatípus. Ez a kalkulátor kizárólag általános tájékoztatást nyújt — a saját, konkrét helyzetedre mindig konzultálj könyvelővel/adótanácsadóval, különösen staking, DeFi vagy NFT ügyletek esetén.</p>
+        </div>
+    </div>
+
+    <!-- ================= ADÓVESZTESÉG-REALIZÁLÁS (TAX-LOSS HARVESTING) KALKULÁTOR (OKTATÁSI) =================
+         NettóElőtte = eddig realizált nettó eredmény az adóévben; AdóElőtte =
+         max(NettóElőtte,0) × kulcs. A fontolgatott pozíció NEM realizált
+         veszteségének (abszolút érték) tudatos realizálása után: NettóUtána =
+         NettóElőtte - Veszteség; AdóUtána = max(NettóUtána,0) × kulcs.
+         Megtakarítás = AdóElőtte - AdóUtána. Ha a realizált veszteség nagyobb,
+         mint a meglévő nyereség, a FELESLEG ebben az adóévben nem térül meg —
+         ugyanaz a nettósítási logika, mint az SZJA/Kriptó Adózás
+         Kalkulátorban. EZ NEM ADÓTANÁCSADÁS — a "wash sale"-szerű
+         visszavásárlási korlátozás egyes külföldi joghatóságokban (pl. USA)
+         létezik, a magyar SZJA/kriptó-keretben a lecke szerint nincs ilyen
+         explicit szabály, de külföldi brókeren/piacon mindig ellenőrizd az
+         ottani előírásokat. -->
+    <div id="taxharvest-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scissors text-amber-400"></i> Adóveszteség-realizálás Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('taxharvest-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">FIGYELEM: ez EGY OKTATÁSI, EGYSZERŰSÍTETT modell — NEM minősül adótanácsadásnak. Nézd meg, mennyi SZJA-t spórolhatsz meg, ha tudatosan realizálod egy veszteséges pozíció veszteségét az adóéven belüli nyereségeid ellen (ugyanaz a nettósítási szabály, mint az SZJA/Kriptó Adózás Kalkulátorban).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Eddig realizált NETTÓ eredmény az adóévben (Ft)</label>
+            <input type="number" id="taxharvest-gain" value="500000" step="10000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Fontolgatott pozíció NEM realizált vesztesége (Ft, abszolút érték)</label>
+            <input type="number" id="taxharvest-loss" value="200000" step="10000" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">SZJA kulcs (%, alapesetben 15%)</label>
+            <input type="number" id="taxharvest-rate" value="15" step="0.5" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <label class="flex items-center gap-2 mb-4 cursor-pointer select-none">
+                <input type="checkbox" id="taxharvest-washsale" class="w-4 h-4 rounded accent-amber-400">
+                <span class="text-[11px] text-slate-400">30 napon belül vissza akarom vásárolni ugyanazt az eszközt</span>
+            </label>
+
+            <button onclick="calcTaxHarvest()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="taxharvest-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez a koncepció elsősorban hosszabb távú (swing/befektetői) pozícióknál releváns — day tradingnél minden pozíció napon belül zár, így kevésbé közvetlen tényező. A "wash sale"-szerű visszavásárlási korlátozás egyes külföldi joghatóságokban (pl. USA) létezik; a magyar SZJA/kriptó-keretben a lecke szerint nincs ilyen explicit szabály, de külföldi brókeren/piacon mindig ellenőrizd az ottani előírásokat, mielőtt a stratégiát alkalmaznád. Ez a kalkulátor kizárólag általános tájékoztatást nyújt — a saját helyzetedre mindig konzultálj adószakértővel.</p>
         </div>
     </div>
 
@@ -13559,6 +13612,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Kriptó Adózás (Magyarország) Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Önálló kategória, nettósítás + 15%, kriptó-kriptó váltás is adóköteles</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('taxharvest-modal')" data-tool-title="adóveszteség-realizálás kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scissors"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Adóveszteség-realizálás Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Mennyi SZJA-t spórolsz egy veszteséges pozíció tudatos lezárásával</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('preflight-modal')" data-tool-title="belépés előtti ellenőrzőlista" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -24319,6 +24379,104 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3">
                     <div class="text-[11px] font-semibold text-slate-300 leading-relaxed">⚠️ Emlékeztető: ez a nettó eredmény ÖNÁLLÓ kategória — NEM vonható össze a tőzsdei (részvény/ETF) ügyleteid SZJA-alapjával, és minden kriptó-kriptó váltás (nem csak a fiatra történő kiváltás) külön adóköteles ügyletnek számíthat.</div>
                 </div>
+            `;
+        }
+
+        // ================= ADÓVESZTESÉG-REALIZÁLÁS (TAX-LOSS HARVESTING) KALKULÁTOR (OKTATÁSI) =================
+        // NettóElőtte = eddig realizált nettó eredmény az adóévben;
+        // AdóElőtte = max(NettóElőtte,0) × kulcs. A fontolgatott pozíció
+        // nem realizált veszteségének (abszolút érték) realizálása után:
+        // NettóUtána = NettóElőtte - Veszteség; AdóUtána = max(NettóUtána,0) × kulcs.
+        // Megtakarítás = AdóElőtte - AdóUtána. Ha a veszteség nagyobb, mint a
+        // meglévő nyereség, a felesleg ebben az adóévben nem térül meg —
+        // ugyanaz a nettósítási logika, mint az SZJA/Kriptó Adózás
+        // Kalkulátorban. Ez NEM adótanácsadás.
+        function calcTaxHarvest() {
+            const gainEl = document.getElementById('taxharvest-gain');
+            const lossEl = document.getElementById('taxharvest-loss');
+            const rateEl = document.getElementById('taxharvest-rate');
+            const washEl = document.getElementById('taxharvest-washsale');
+            const out = document.getElementById('taxharvest-result');
+            if (!gainEl || !lossEl || !rateEl || !out) return;
+
+            const netBefore = parseFloat(gainEl.value);
+            const harvestLoss = parseFloat(lossEl.value);
+            const ratePct = parseFloat(rateEl.value);
+
+            if (!isFinite(netBefore)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, eddig realizált nettó eredményt (Ft)!</div>`;
+                return;
+            }
+            if (!isFinite(harvestLoss) || harvestLoss < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A realizálandó veszteség nem lehet negatív — add meg abszolút értékben (pl. 200000)!</div>`;
+                return;
+            }
+            if (harvestLoss === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb veszteséget a realizáláshoz!</div>`;
+                return;
+            }
+            if (!isFinite(ratePct) || ratePct < 0 || ratePct > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az SZJA kulcs 0% és 100% között legyen!</div>`;
+                return;
+            }
+
+            const rate = ratePct / 100;
+            const taxBefore = Math.max(netBefore, 0) * rate;
+            const netAfter = netBefore - harvestLoss;
+            const taxAfter = Math.max(netAfter, 0) * rate;
+            const taxSaved = taxBefore - taxAfter;
+            const usedLoss = Math.min(harvestLoss, Math.max(netBefore, 0));
+            const wastedLoss = harvestLoss - usedLoss;
+            const effectiveRateOnLoss = (taxSaved / harvestLoss) * 100;
+
+            const fmt = (v) => Math.round(v).toLocaleString('hu-HU') + ' Ft';
+
+            let statusBanner;
+            if (taxSaved > 0.005) {
+                statusBanner = `
+                <div class="glass-card rounded-xl border border-neon-green/30 bg-neon-green/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Megspórolt SZJA ebben az adóévben</div>
+                    <div class="text-xl font-extrabold text-neon-green">${fmt(taxSaved)}</div>
+                </div>`;
+            } else {
+                statusBanner = `
+                <div class="glass-card rounded-xl border border-dark-750 p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">Megspórolt SZJA ebben az adóévben</div>
+                    <div class="text-xl font-extrabold text-white">0 Ft</div>
+                    <div class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">Mivel az eddigi nettó eredményed már nulla vagy negatív, a veszteség realizálása ebben az adóévben nem csökkent tovább fizetendő adót — nincs mihez "elszámolni". A magyar szabály bizonyos feltételekkel lehetővé teszi a veszteség későbbi (akár a következő két adóévi) figyelembevételét.</div>
+                </div>`;
+            }
+
+            out.innerHTML = `
+                ${statusBanner}
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-[11px]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Fizetendő SZJA a realizálás ELŐTT</span>
+                        <span class="text-white font-bold">${fmt(taxBefore)}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Fizetendő SZJA a realizálás UTÁN</span>
+                        <span class="text-amber-400 font-bold">${fmt(taxAfter)}</span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">Nettó eredmény a realizálás után</span>
+                        <span class="${netAfter >= 0 ? 'text-white' : 'text-neon-red'} font-bold">${netAfter >= 0 ? '+' : '−'}${fmt(Math.abs(netAfter))}</span>
+                    </div>
+                    ${wastedLoss > 0.005 ? `<div class="flex items-center justify-between">
+                        <span class="text-slate-400">Idén "el nem számolt" veszteség-rész</span>
+                        <span class="text-neon-red font-bold">${fmt(wastedLoss)}</span>
+                    </div>` : ''}
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Megtakarítás effektív kulcsa a realizált veszteségre</span>
+                        <span class="text-slate-300 font-bold">${effectiveRateOnLoss.toFixed(2)}%</span>
+                    </div>
+                </div>
+                ${wastedLoss > 0.005 ? `<div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="text-[11px] font-semibold text-slate-300 leading-relaxed">💡 A realizált veszteség (${fmt(harvestLoss)}) nagyobb, mint az eddigi nyereséged — ebből idén csak ${fmt(usedLoss)} "térül meg" adózásilag, a maradék ${fmt(wastedLoss)} ebben az adóévben nem csökkent tovább adót. A magyar szabály bizonyos feltételekkel lehetővé teszi ennek későbbi (akár a következő két adóévi) figyelembevételét — ehhez pontos nyilvántartás és könyvelői konzultáció szükséges.</div>
+                </div>` : ''}
+                ${washEl && washEl.checked ? `<div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3">
+                    <div class="text-[11px] font-semibold text-amber-300 leading-relaxed">⚠️ Jelezted, hogy 30 napon belül vissza akarod vásárolni ugyanazt az eszközt. Egyes külföldi joghatóságokban (pl. USA "wash sale" szabály) ez részben vagy teljesen ÉRVÉNYTELENÍTHETI a veszteség adózási elszámolását. A magyar SZJA/kriptó-keretben a lecke szerint nincs ilyen explicit szabály, de ha külföldi brókeren/piacon kereskedsz, mindig ellenőrizd az ottani előírásokat, mielőtt a stratégiát alkalmaznád.</div>
+                </div>` : ''}
             `;
         }
 
@@ -44974,7 +45132,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             225: { tool: 'optionpayoff-modal', cta: 'Nézd meg élesben az Opciós Payoff Diagramon a korlátozott vs korlátlan veszteség-profil különbségét' },
             293: { tool: 'candlepattern-modal', cta: 'Nézd meg élesben a Gyertyaminta Multi-Klasszifikátor statisztikáját, és lásd számokban, mennyire NEM 100%-os egyetlen minta sem' },
             146: { tool: 'liquiditysize-modal', cta: 'Nézd meg élesben, hogyan korlátozza a likviditás a biztonságosan kereskedhető pozícióméretet' },
-            217: { tool: 'szjatax-modal', cta: 'Nézd meg élesben, hogyan csökkenti egy realizált veszteség a nettó SZJA-kötelezettségedet' },
+            217: { tool: 'taxharvest-modal', cta: 'Számold ki élesben, mennyi SZJA-t spórolsz egy veszteséges pozíció tudatos realizálásával' },
             56: { tool: 'pipvalue-modal', cta: 'Számold ki élesben, mennyit ér valójában egy pip-mozgás a te pozícióméretednél' },
             57: { tool: 'szjatax-modal', cta: 'Számold ki élesben a saját ügyleteid nettó SZJA-kötelezettségét, mielőtt elkezdenél kereskedni' },
             23: { tool: 'spreadcost-modal', cta: 'Számold ki élesben, mennyibe kerül neked a bid-ask spread (a slippage egyik fő forrása)' },
@@ -45018,7 +45176,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
