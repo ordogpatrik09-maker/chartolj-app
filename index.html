@@ -668,6 +668,22 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-10-31, mobil UX audit — valódi, blokkoló hiba,
+               Playwright-tal mérve): az Akadémia "Magyar Piac" alfüle
+               (#hungarian-market-viewer) a BUX-kártyák, a TBSZ- és MÁP+
+               kalkulátorok után egy Magyar Piac Kvíz-blokkal zár — a kvíz
+               válaszgombjai (.hungarian-quiz-opt) és a válaszadás utáni
+               "Következő" gomb a tartalom VÉGÉIG (scrollHeight) görgetve is
+               a fix alsó navigáció (#mobile-bottom-nav, 68px) alá futottak
+               (mért átfedés: 23.8px — a gomb mintegy fele takarásban volt),
+               ugyanaz a hibaosztály, mint a Replay/Chart Drill/Chart
+               Alakzatok eseteknél. Ez a konténer korábban lemaradt arról a
+               körről, amikor a többi Akadémia-alfület (drill/chart-strategy)
+               javítottuk — ugyanaz a bevált minta most itt is. */
+            #hungarian-market-viewer {
+                padding-bottom: 76px !important;
+            }
+
             /* JAVÍTÁS (2026-10-31, mobil UX audit): a lecke-kártyák
                Előző/Következő gombsora induláskor (scrollTop:0-nál) a
                tartalom legvégén, a görgethető terület alján jelent meg —
