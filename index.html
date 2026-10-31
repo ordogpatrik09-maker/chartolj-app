@@ -46179,12 +46179,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 document.getElementById('account-balance').textContent = '$' + accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
                 updateMaxAmountLabel();
 
+                // JAVÍTÁS (2026-10-31, mobil UX audit): ugyanaz a hibakategória,
+                // mint az updatePositionsPnL()-ben — a closePrice korábban
+                // mindig currentAsset.price volt, függetlenül attól, hogy p.asset
+                // valóban a charton megjelenített eszköz-e. p.currentPrice-t a
+                // (most javított) updatePositionsPnL() minden tick-nél az adott
+                // pozíció SAJÁT eszközének megfelelő árral tartja frissen, ezért
+                // azt kell itt rögzíteni az előzménybe, nem a chart aktuális
+                // eszközének árát.
                 tradeHistory.push({
                     id: 'th_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                     time: new Date().toLocaleTimeString(),
                     asset: p.asset,
                     side: p.side,
-                    closePrice: currentAsset.price,
+                    closePrice: p.currentPrice ?? currentAsset.price,
                     pnl: p.pnl,
                     reason: reason || 'Manuális zárás',
                     note: note || ''
@@ -46200,12 +46208,35 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function updatePositionsPnL() {
+            // JAVÍTÁS (2026-10-31, mobil UX audit — valódi PnL-korrupciós hiba):
+            // ez korábban MINDEN nyitott pozícióra a currentAsset.price-t
+            // (a charton éppen megjelenített eszköz árát) alkalmazta, p.asset-től
+            // függetlenül. Mivel a pozíciólista (renderPositions) és a kereskedési
+            // motor TÁMOGATJA, hogy egyszerre több, KÜLÖNBÖZŐ eszközön is legyen
+            // nyitott pozíció (a táblázat külön oszlopban mutatja p.asset-et),
+            // ez azt jelentette, hogy ha a felhasználó egy BTC pozíció nyitva
+            // tartása közben másik eszközre (pl. ETH) váltott a charton, a BTC
+            // pozíció megjelenített PnL-je és currentPrice-a HIRTELEN az ETH
+            // árával frissült — súlyosan téves, akár ezres nagyságrendű hibás
+            // PnL-t mutatva, és ha a pozíciót ekkor zárták volna le, a hibás
+            // PnL és a hibás (más eszközhöz tartozó) zárási ár került volna be
+            // véglegesen az egyenlegbe és az előzménybe (closePosition a
+            // currentAsset.price-t és a p.pnl-t használja fel).
+            // Megoldás: a már létező, minden eszközre 2 másodpercenként
+            // frissülő livePrices[] háttér-árfolyam-nyilvántartást használjuk a
+            // nem-aktív eszközön lévő pozíciókhoz (ugyanaz a forrás, amit a
+            // checkPriceAlerts() is használ más eszközök árfigyeléséhez) —
+            // csak a chart aktuális eszközének pozíciói kapják közvetlenül a
+            // currentAsset.price-t.
             positions.forEach(p => {
-                let diff = currentAsset.price - p.entryPrice;
+                const price = (p.asset === currentAsset.symbol)
+                    ? currentAsset.price
+                    : (livePrices[p.asset] ?? p.currentPrice ?? p.entryPrice);
+                let diff = price - p.entryPrice;
                 if (p.side === 'short') diff = -diff;
                 let pct = diff / p.entryPrice;
                 p.pnl = (p.amount * pct) * p.leverage;
-                p.currentPrice = currentAsset.price;
+                p.currentPrice = price;
             });
 
             // TP / SL automatikus kiváltás
