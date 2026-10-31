@@ -611,6 +611,29 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-10-31, mobil UX audit): a lecke-kártyák
+               Előző/Következő gombsora induláskor (scrollTop:0-nál) a
+               tartalom legvégén, a görgethető terület alján jelent meg —
+               rövid (pl. 4 kártyás) leckéknél ez részben a fix alsó
+               navigáció (#mobile-bottom-nav, 68px) ALÁ csúszott, mert a
+               fenti padding-bottom csak görgetve vált elérhetővé, és a
+               felhasználónak nem volt egyértelmű jelzés, hogy görgetnie
+               kell a gombokhoz. A gombsor most "position: sticky; bottom"
+               a görgethető #academy-viewer-en belül — mindig a látható
+               terület alján marad, a fix navigáció fölött, görgetés
+               nélkül is teljesen elérhető és kattintható. */
+            #academy-viewer .academy-nav-row {
+                position: sticky;
+                bottom: 0px;
+                background: #0b0e14;
+                padding: 10px 0 4px;
+                margin-left: -8px;
+                margin-right: -8px;
+                padding-left: 8px;
+                padding-right: 8px;
+                z-index: 2;
+            }
+
             /* JAVÍTÁS (2026-10-30, mobil UX audit — "Chart Drill" cím
                takarásban/levágva): az Akadémia több alfülének tartalom-
                nézete (#academy-viewer, #chart-strategy-viewer,
@@ -44727,7 +44750,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <h3 class="text-base font-bold text-white mb-3">${card.t}</h3>
                             <div class="text-sm text-slate-300 leading-relaxed academy-card-body" onclick="academyNextCard()" style="cursor:pointer"><div class="flex gap-1.5 mb-3 flex-wrap">${ACADEMY_MODULES[l.m] ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-'+ACADEMY_MODULES[l.m].accent+'/15 border border-'+ACADEMY_MODULES[l.m].accent+'/30 text-'+ACADEMY_MODULES[l.m].accent+'"><i class="fa-solid '+ACADEMY_MODULES[l.m].i+' mr-1"></i>'+ACADEMY_MODULES[l.m].n+'</span>' : ''}</div>${card.b}<div class="text-[10px] text-slate-600 text-right mt-2 select-none">Koppints a következőhöz →</div></div>
                         </div>
-                        <div class="flex items-center justify-between mt-6">
+                        <div class="academy-nav-row flex items-center justify-between mt-6">
                             <button onclick="academyPrevCard()" ${academyCardIdx === 0 ? 'disabled' : ''} class="px-4 py-2 rounded-xl text-xs font-bold border border-dark-750 text-slate-400 hover:text-white hover:border-dark-600 transition disabled:opacity-30 disabled:pointer-events-none">
                                 <i class="fa-solid fa-arrow-left mr-1"></i> Előző
                             </button>
