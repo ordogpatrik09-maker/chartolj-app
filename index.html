@@ -29702,6 +29702,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az ajánlati ár nem lehet egyenlő a bejelentés előtti árral (a bennefoglalt valószínűség nem számolható)!</div>`;
                 return;
             }
+            if (offerPrice < preAnnounce) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az ajánlati árnak a bejelentés előtti ár FÖLÖTT kell lennie! Ez a kalkulátor a tipikus felvásárlási-prémiumos (az ajánlati ár magasabb, mint a bejelentés előtti ár) esetet modellezi — csökkentett árú (markdown) ajánlatnál a prémium és a beárazott siker-valószínűség képlete nem ezt az irányt feltételezi, ezért itt nem értelmezhető.</div>`;
+                return;
+            }
 
             const premiumPct = (offerPrice - preAnnounce) / preAnnounce * 100;
             const spreadPct = (offerPrice - currentPrice) / currentPrice * 100;
