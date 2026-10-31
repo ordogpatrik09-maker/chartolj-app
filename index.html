@@ -27911,6 +27911,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: ha a maintenance margin ráta (mmr) eléri vagy
+            // meghaladja a kezdő fedezet arányát (1/leverage), a formula
+            // matematikailag átfordul — a likvidációs ár a belépési ár
+            // ROSSZ OLDALÁRA kerülne (long-nál FÖLÉ, short-nál ALÁ), mert a
+            // pozíció a nyitás pillanatában, PnL=0 mellett is már a
+            // maintenance margin szint alatt lenne. Ez nem egy extrém, de
+            // valid eset — ilyen tőkeáttétel/MMR pár mellett a pozíció
+            // azonnal likvidálódna, ezért explicit hibát kell adni, nem egy
+            // hibás (rossz oldali) likvidációs árat.
+            if (mmrPct / 100 >= 1 / leverage) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Ennyi tőkeáttétel (${leverage}x) és ${mmrPct}% maintenance margin ráta mellett a pozíció már a nyitás pillanatában, PnL nélkül is likvidálódna — a kezdő fedezet (${(100 / leverage).toFixed(2)}%) nem fedezi a maintenance margin követelményt. Csökkentsd a tőkeáttételt, vagy adj meg alacsonyabb MMR-t!</div>`;
+                return;
+            }
+
             const mmr = mmrPct / 100;
             const isLong = direction === 'long';
             const liqPrice = isLong
