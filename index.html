@@ -18454,7 +18454,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const canvas = document.getElementById('backtest-sparkline');
             drawBacktestEquitySparkline(canvas, result.equityCurve, startEquity);
 
-            window.lastBacktestResult = { trades: result.trades, startEquity };
+            window.lastBacktestResult = { ...result, startEquity };
             const bootstrapSection = document.getElementById('backtest-bootstrap-section');
             const bootstrapResult = document.getElementById('backtest-bootstrap-result');
             if (bootstrapSection) {
@@ -28017,6 +28017,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
             const period = parseInt(periodEl.value, 10) || 2;
             const n = closes.length;
+
+            if (period < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A periódus legalább 2 kell legyen — negatív vagy 1-nél kisebb periódussal a Fisher Transform nem számolható!</div>`;
+                return;
+            }
 
             if (n < period) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${period} záróár szükséges a ${period}-periódusú Fisher Transformhoz — jelenleg ${n} van megadva!</div>`;
