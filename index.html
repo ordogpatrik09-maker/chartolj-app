@@ -7217,7 +7217,14 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
             <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Van Tharp R-multiple rendszere: minden trade eredményét nem dollárban, hanem a kezdeti kockázat (R) többszöröseként mérjük (<strong>R-multiple = tényleges P/L ÷ kezdeti kockáztatott összeg</strong>). Így eltérő méretű trade-ek is összehasonlíthatóvá válnak. Add meg trade-enként a tényleges eredményt és a kezdetben vállalt kockázatot (ugyanabban a pénznemben), soronként egy trade-et, vesszővel elválasztva.</p>
 
             <label class="text-[11px] font-semibold text-slate-400">Trade-ek: eredmény,kockázat (pl. 500,250 → +2R)</label>
-            <textarea id="rmultiple-trades" rows="5" placeholder="500,250&#10;-150,250&#10;800,250&#10;-200,250" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50"></textarea>
+            <textarea id="rmultiple-trades" rows="5" placeholder="500,250&#10;-150,250&#10;800,250&#10;-200,250" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">500,250
+-150,250
+800,250
+-200,250
+300,250
+-250,250
+600,250
+-100,250</textarea>
 
             <button onclick="calcRMultiple()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                 Kiszámolás
@@ -10137,7 +10144,116 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
             <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróárak sorozatát (soronként egy érték, legalább 100 adat), és a kalkulátor 6 eltérő periódusú SMA-t (5, 10, 20, 30, 50, 100) számol ki. Ha a szalagot alkotó mozgóátlagok szorosan együtt haladnak (szűk szalag), az konszolidációt jelezhet; ha szétválnak (széles szalag), az erős trendet. Ez a koncepció mind a hagyományos MA Ribbonra, mind a Rainbow Moving Average-re érvényes.</p>
 
             <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy érték, min. 100 adat)</label>
-            <textarea id="maribbon-closes" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50" placeholder="100&#10;101.2&#10;..."></textarea>
+            <textarea id="maribbon-closes" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50" placeholder="100&#10;101.2&#10;...">94.58
+94.89
+95.58
+95.72
+95.95
+96.4
+96.27
+96.86
+97.04
+97.15
+98.02
+97.91
+98.55
+98.5
+99.28
+99.81
+100.27
+100.26
+100.76
+101.22
+101.3
+101.61
+101.67
+101.8
+102.22
+102.36
+102.98
+103.16
+103.36
+103.29
+103.99
+104.34
+104.87
+104.59
+104.94
+105.5
+105.61
+106.03
+106.58
+106.63
+106.97
+107.7
+107.54
+108.26
+108.08
+108.53
+108.86
+108.91
+109.55
+110.29
+110.26
+110.54
+110.78
+110.77
+111.35
+111.43
+111.68
+112.6
+112.66
+112.72
+113.38
+113.82
+113.74
+114.17
+114.6
+114.34
+115.36
+115.18
+115.43
+115.48
+116.02
+116.4
+116.26
+116.89
+116.79
+117.54
+117.73
+117.67
+118.1
+118.05
+118.38
+118.71
+118.69
+119.22
+119.05
+119.83
+120.25
+120.34
+120.59
+120.87
+121.41
+121.61
+122.0
+122.43
+122.69
+122.85
+123.41
+123.65
+123.49
+124.51
+125.1
+125.11
+125.44
+125.59
+126.39
+126.45
+126.51
+127.38
+127.55
+127.42</textarea>
 
             <button onclick="calcMARibbon()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-orange-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                 Kiszámolás
@@ -10225,7 +10341,46 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
             <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A hagyományos MACD-t volumen-súlyozott mozgóátlagokkal (VWMA) számolja, nem sima EMA-val — extra súlyt adva a magas volumenű napoknak, mivel egy magas volumenű nap nagyobb valós piaci konszenzust tükröz. Add meg a záróár/volumen pártokat soronként (legalább 35 adat szükséges).</p>
 
             <label class="text-[11px] font-semibold text-slate-400">Záróár, Volumen (soronként, min. 35 adat)</label>
-            <textarea id="vwmacd-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50" placeholder="100,1200&#10;101,1400&#10;..."></textarea>
+            <textarea id="vwmacd-candles" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50" placeholder="100,1200&#10;101,1400&#10;...">96.1,1699
+96.17,1501
+96.37,1387
+96.49,996
+96.36,1451
+96.76,942
+96.8,1363
+97.08,1061
+97.36,964
+97.23,1147
+97.69,1234
+97.92,1431
+97.88,904
+98.22,1184
+98.5,985
+98.71,1135
+98.88,1476
+99.38,1197
+99.88,1601
+99.78,953
+100.41,1306
+100.56,1103
+100.88,989
+101.09,1319
+101.59,1152
+102.0,1376
+102.57,1472
+103.02,1649
+103.5,1292
+103.81,1117
+104.26,1506
+104.66,1115
+105.07,1516
+105.26,1049
+105.71,1691
+106.5,1295
+106.55,1496
+107.13,1277
+107.8,1501
+108.41,1295</textarea>
 
             <button onclick="calcVWMACD()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-fuchsia-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                 Kiszámolás
