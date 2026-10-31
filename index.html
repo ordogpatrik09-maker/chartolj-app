@@ -22285,6 +22285,36 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById(id).classList.add('hidden');
         }
 
+        // ESC billentyű zárja a jelenleg nyitott eszköz-kalkulátor modalt
+        // (billentyűzet-barát UX — eddig az ESC semmit nem csinált egy nyitott
+        // kalkulátornál, csak a kattintás a háttérre vagy az X gomb zárta be).
+        // Az ID-lista futásidőben, a tényleges "openToolModal('xxx')" onclick
+        // hivatkozásokból épül fel (egyszer, gyorsítótárazva), így mindig pontosan
+        // azokra a modalokra vonatkozik, amiket az openToolModal/closeToolModal
+        // pár kezel — az egyedi nyitási logikájú modalokat (pl. alerts-modal,
+        // indicators-modal, chart-text-annotation-modal) szándékosan nem érinti.
+        let _toolModalIdsCache = null;
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            if (!_toolModalIdsCache) {
+                _toolModalIdsCache = [...new Set(
+                    Array.from(document.querySelectorAll('[onclick*="openToolModal("]'))
+                        .map(el => {
+                            const m = el.getAttribute('onclick').match(/openToolModal\('([^']+)'\)/);
+                            return m ? m[1] : null;
+                        })
+                        .filter(Boolean)
+                )];
+            }
+            for (const id of _toolModalIdsCache) {
+                const el = document.getElementById(id);
+                if (el && !el.classList.contains('hidden')) {
+                    closeToolModal(id);
+                    return;
+                }
+            }
+        });
+
         // --- Pozícióméret kalkulátor ---
         function calcPositionSize() {
             const bal = parseFloat(document.getElementById('ps-balance').value) || 0;
