@@ -27516,13 +27516,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rows = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p)) && parts[1] !== 0) {
+                // JAVÍTÁS: korábban csak a benchmark != 0 volt kiszűrve, az eszközár
+                // (parts[0]) lehetett 0 vagy negatív is. Ha ez a NULLA eszközár az
+                // ELSŐ érvényes sorban fordult elő, az "first" bázisérték RSC-je is
+                // 0 lett, és a lenti pctChange = (last-first)/first számítás 0-val
+                // osztott — a felhasználó egy hibás "Infinity%" / "NaN%" eredményt
+                // kapott volna, ami egy valódi kiszámolt eredménynek tűnt. Mivel az
+                // árfolyam (eszköz és benchmark egyaránt) fogalmilag csak pozitív
+                // lehet, most mindkettőt > 0-ra szűrjük — konzisztensen a kalkulátor
+                // többi, ár-alapú bemenetet kezelő részével.
+                if (parts.length === 2 && parts.every(p => !isNaN(p)) && parts[0] > 0 && parts[1] > 0) {
                     rows.push({ asset: parts[0], benchmark: parts[1] });
                 }
             }
 
             if (rows.length < 2) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 érvényes (eszköz, benchmark) pár szükséges!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 érvényes, NULLÁNÁL NAGYOBB (eszköz, benchmark) ár-pár szükséges!</div>`;
                 return;
             }
 
