@@ -297,6 +297,12 @@
             #mobile-bottom-nav { display: flex; }
             #app-scale-wrapper { padding-bottom: 68px; }
 
+            /* JAVÍTÁS: az eszközválasztó legördülő (#asset-dropdown) desktopon
+               fix 256px (w-64) széles — ebbe mobilon a szimbólum+típus oszlop
+               (ár + csengő + csillag gombok mellett) alig fért el, ezért pl.
+               "BTC/USDT" "BTC/U…"-ra vágódott. Mobilon szélesebb. */
+            #asset-dropdown.w-64 { width: min(92vw, 320px); }
+
             /* JAVÍTÁS (felhasználói visszajelzés: "a gombok egymáson, az
                eszköz chatbot és a kereskedés" — konkrét, megerősített
                strukturális hiba): a #left-toolbar-aside egy DESKTOPRA
@@ -45195,7 +45201,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const r = btn.getBoundingClientRect();
             const margin = 8;
             let left = r.left;
-            const maxLeft = window.innerWidth - 256 - margin;
+            const ddWidth = parseFloat(getComputedStyle(dd).width) || 256;
+            const maxLeft = window.innerWidth - ddWidth - margin;
             if (left > maxLeft) left = Math.max(margin, maxLeft);
             let top = r.bottom + 6;
             const maxTop = window.innerHeight - margin;
