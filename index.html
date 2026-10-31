@@ -628,6 +628,17 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-10-31, mobil UX audit — valódi, blokkoló hiba):
+               a Profil fülről nyitható Kereskedési Terv (#trading-plan-
+               screen, #trading-plan-body) űrlapja a tartalom VÉGÉIG
+               görgetve is a fix alsó navigáció alá futott — a "Terv
+               mentése" elsődleges mentés-gomb emiatt részben
+               takarásban/kattinthatatlan volt. Extra alsó térköz, ugyanaz
+               a mintázat, mint a Replay/Naptár/Tananyag-térkép fülnél. */
+            #trading-plan-body {
+                padding-bottom: 76px !important;
+            }
+
             /* JAVÍTÁS (2026-10-31, mobil UX audit): a lecke-kártyák
                Előző/Következő gombsora induláskor (scrollTop:0-nál) a
                tartalom legvégén, a görgethető terület alján jelent meg —
@@ -14377,7 +14388,7 @@ Mean-reversion,2.5</textarea>
             <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-clipboard-list text-neon-purple mr-1.5"></i>Kereskedési Terv</h2>
             <button onclick="closeTradingPlan()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="flex-grow overflow-y-auto px-4 pb-10">
+        <div id="trading-plan-body" class="flex-grow overflow-y-auto px-4 pb-10">
             <p class="text-[11px] text-slate-400 leading-relaxed mt-4 mb-4">
                 A profi kereskedők előre, higgadt fejjel írják le a szabályaikat — nem a pozíció közben, érzelmi nyomás alatt
                 találják ki őket. Töltsd ki egyszer, majd tartsd magad hozzá. A terv csak ezen az eszközön, a böngésződben tárolódik.
