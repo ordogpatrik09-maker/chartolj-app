@@ -611,6 +611,23 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-10-31, mobil UX audit — valódi, blokkoló hiba):
+               a Replay (#replay-viewer: nehézségi-szint gombok "Könnyű/
+               Közepes/Nehéz"), a Makró Naptár (#macro-calendar-list: utolsó
+               esemény-kártya) és a Tananyag-térkép (#academy-body-
+               curriculum: utolsó témakör-kártya) görgethető listái a
+               tartalom VÉGÉIG görgetve is a fix alsó navigáció
+               (#mobile-bottom-nav, 68px) ALÁ futottak — Playwright-mérés
+               igazolta: még scrollHeight-re görgetve is átfedésben
+               maradtak, vagyis a Replay nehézségi gombjai teljesen
+               elérhetetlenek/kattinthatatlanok voltak mobilon. A meglévő
+               24px-es alsó térköz (p-6/pb-6) nem volt elég — ugyanaz a
+               mintázat, mint a Kereskedés fülön korábban javított
+               pozíciók-táblázatnál. */
+            #replay-viewer, #macro-calendar-list, #academy-body-curriculum {
+                padding-bottom: 76px !important;
+            }
+
             /* JAVÍTÁS (2026-10-31, mobil UX audit): a lecke-kártyák
                Előző/Következő gombsora induláskor (scrollTop:0-nál) a
                tartalom legvégén, a görgethető terület alján jelent meg —
