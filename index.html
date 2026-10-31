@@ -22521,6 +22521,27 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (!document.getElementById('pwo-params-2').children.length) pwoUpdateParamFields(2);
                 if (!document.getElementById('pwo-params-3').children.length) pwoUpdateParamFields(3);
             }
+            // VÉDELMI HÁLÓ: ez a 3 modal egy <select onchange="renderXxxInputs()">
+            // alapján tölt fel egy kezdetben ÜRES input-konténert — eddig minden
+            // valós hívási hely (nav gombok, Akadémia CTA) véletlenül mindig
+            // párban hívta az open + render függvényt, de egyetlen render hívás
+            // kimaradása (pl. egy jövőbeli új belépési pont, ami elfelejti a
+            // render hívást) azonnali "Cannot read properties of null" hibát és
+            // néma (üres) kalkulátort okozna. Itt, az ÖSSZES megnyitási út közös
+            // pontján, idempotensen (csak ha még tényleg üres a konténer)
+            // biztosítjuk, hogy a form sosem maradhat kitöltetlen.
+            if (id === 'option-strategy-modal') {
+                const el = document.getElementById('os-inputs');
+                if (el && !el.children.length && typeof renderOptionStrategyInputs === 'function') renderOptionStrategyInputs();
+            }
+            if (id === 'backtest-modal') {
+                const el = document.getElementById('backtest-strategy-inputs');
+                if (el && !el.children.length && typeof renderBacktestStrategyInputs === 'function') renderBacktestStrategyInputs();
+            }
+            if (id === 'strategy-builder-modal') {
+                const el = document.getElementById('sb-entry-inputs') || document.getElementById('sb-exit-inputs');
+                if (el && !el.children.length && typeof renderStrategyBuilderInputs === 'function') renderStrategyBuilderInputs();
+            }
             document.getElementById(id).classList.remove('hidden');
         }
 
