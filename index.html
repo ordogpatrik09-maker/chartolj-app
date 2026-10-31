@@ -22294,8 +22294,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // pár kezel — az egyedi nyitási logikájú modalokat (pl. alerts-modal,
         // indicators-modal, chart-text-annotation-modal) szándékosan nem érinti.
         let _toolModalIdsCache = null;
-        document.addEventListener('keydown', function(e) {
-            if (e.key !== 'Escape') return;
+        function _getToolModalIds() {
             if (!_toolModalIdsCache) {
                 _toolModalIdsCache = [...new Set(
                     Array.from(document.querySelectorAll('[onclick*="openToolModal("]'))
@@ -22306,12 +22305,56 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         .filter(Boolean)
                 )];
             }
-            for (const id of _toolModalIdsCache) {
+            return _toolModalIdsCache;
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            for (const id of _getToolModalIds()) {
                 const el = document.getElementById(id);
                 if (el && !el.classList.contains('hidden')) {
                     closeToolModal(id);
                     return;
                 }
+            }
+        });
+
+        // ENTER billentyű lefuttatja az éppen nyitott eszköz-kalkulátor
+        // "Kiszámolás" gombját, ha a fókusz egy szöveges/szám mezőn van
+        // (billentyűzet-barát UX, az ESC-bezárás párja — eddig Enterre
+        // semelyik kalkulátor nem csinált semmit, csak a gombra kattintás
+        // futtatta le a számítást). SZÁNDÉKOSAN csak <input type="text"|
+        // "number"> mezőkre vonatkozik — a <textarea> mezőket (pl. vesszővel
+        // elválasztott hozamsorozatok) kihagyja, mert ott az Enter jogosan
+        // új sort jelenthet a felhasználó számára, és a <select> mezőket is
+        // kihagyja (böngészőfüggő, nem egyértelmű Enter-viselkedés). A
+        // kalkuláló gombot futásidőben azonosítja: a fókuszban lévő mezőt
+        // tartalmazó "...-modal" elemen belül megkeresi azt a gombot, aminek
+        // onclick-je pontosan egy argumentum nélküli calcXxx()/runXxx()
+        // hívás, és NEM a dinamikusan beillesztett eredmény-blokk
+        // (id="...-result") belsejében van (azok utólag megjelenő, extra
+        // elemző gombok, nem az elsődleges "Kiszámolás" gomb). Ha nulla vagy
+        // egynél több ilyen gomb található (egyértelműtlen eset), semmit nem
+        // csinál — biztonságos, nem-cselekvő alapállás.
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter') return;
+            if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            const target = e.target;
+            if (!target || target.tagName !== 'INPUT') return;
+            const inputType = (target.getAttribute('type') || 'text').toLowerCase();
+            if (inputType !== 'text' && inputType !== 'number') return;
+
+            const modalEl = target.closest('[id$="-modal"]');
+            if (!modalEl || !_getToolModalIds().includes(modalEl.id)) return;
+            if (modalEl.classList.contains('hidden')) return;
+
+            const candidates = Array.from(modalEl.querySelectorAll('button[onclick]')).filter(btn => {
+                const onclick = btn.getAttribute('onclick') || '';
+                if (!/^(calc|run)[A-Za-z0-9_]*\(\)$/.test(onclick.trim())) return false;
+                return !btn.closest('[id$="-result"]');
+            });
+            if (candidates.length === 1) {
+                e.preventDefault();
+                candidates[0].click();
             }
         });
 
