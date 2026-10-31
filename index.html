@@ -23428,7 +23428,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('sortino-result');
             if (!returnsEl || !marEl || !out) return;
 
-            const raw = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const raw = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const mar = parseFloat(marEl.value);
 
             if (raw.length < 2 || isNaN(mar)) {
@@ -23498,7 +23498,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('ulcer-result');
             if (!seriesEl || !out) return;
 
-            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n) && n > 0);
 
             if (values.length < 2) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, nullánál nagyobb, vesszővel elválasztott értéket!</div>`;
@@ -23562,7 +23562,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const bars = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] > 0 && parts[1] > 0) {
+                if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && parts[0] > 0 && parts[1] > 0) {
                     bars.push({ price: parts[0], volume: parts[1] });
                 }
             }
@@ -23621,7 +23621,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const allBars = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] > 0 && parts[1] > 0) {
+                if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && parts[0] > 0 && parts[1] > 0) {
                     allBars.push({ price: parts[0], volume: parts[1] });
                 }
             }
@@ -23692,7 +23692,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('omega-result');
             if (!returnsEl || !thresholdEl || !out) return;
 
-            const raw = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const raw = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const threshold = parseFloat(thresholdEl.value);
 
             if (raw.length < 2 || isNaN(threshold)) {
@@ -23762,8 +23762,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('treynor-result');
             if (!assetEl || !marketEl || !riskfreeEl || !out) return;
 
-            const assetReturns = assetEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
-            const marketReturns = marketEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const assetReturns = assetEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
+            const marketReturns = marketEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const riskFree = parseFloat(riskfreeEl.value);
 
             if (assetReturns.length < 2 || assetReturns.length !== marketReturns.length || isNaN(riskFree)) {
@@ -23838,7 +23838,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('skewkurt-result');
             if (!returnsEl || !out) return;
 
-            const returns = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const returns = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
 
             if (returns.length < 3) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 3 érvényes, vesszővel elválasztott időszaki hozamot — a ferdeség és csúcsosság megbízható becsléséhez ajánlott minél több adatpont (ideálisan 20+)!</div>`;
@@ -23918,7 +23918,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('certeq-result');
             if (!returnsEl || !riskAversionEl || !out) return;
 
-            const returns = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const returns = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const A = parseFloat(riskAversionEl.value);
 
             if (returns.length < 2) {
@@ -23989,7 +23989,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('calmar-result');
             if (!seriesEl || !periodsEl || !out) return;
 
-            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n) && n > 0);
             const periodsPerYear = parseFloat(periodsEl.value);
 
             if (values.length < 2 || !periodsPerYear || periodsPerYear <= 0) {
@@ -24065,7 +24065,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('sterling-result');
             if (!seriesEl || !periodsEl || !nDrawdownsEl || !out) return;
 
-            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n) && n > 0);
             const periodsPerYear = parseFloat(periodsEl.value);
             const requestedN = parseInt(nDrawdownsEl.value);
 
@@ -24163,7 +24163,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -24271,7 +24271,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -24500,7 +24500,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('szjatax-result');
             if (!tradesEl || !rateEl || !out) return;
 
-            const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && isFinite(n));
+            const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const ratePct = parseFloat(rateEl.value);
 
             if (trades.length < 1) {
@@ -24597,7 +24597,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('cryptotax-result');
             if (!tradesEl || !rateEl || !out) return;
 
-            const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && isFinite(n));
+            const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const ratePct = parseFloat(rateEl.value);
 
             if (trades.length < 1) {
@@ -24791,7 +24791,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 4 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2], volume: parts[3] });
                 }
             }
@@ -24841,7 +24841,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 4 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2], volume: parts[3] });
                 }
             }
@@ -24910,7 +24910,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('cci-result');
             if (!seriesEl || !periodEl || !out) return;
 
-            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const period = parseInt(periodEl.value);
 
             if (!period || period < 1 || values.length < period) {
@@ -25051,7 +25051,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -25115,7 +25115,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ close: parts[0], volume: parts[1] });
                 }
             }
@@ -25184,7 +25184,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const prices = [];
             for (const line of lines) {
                 const v = parseFloat(line.replace(',', '.'));
-                if (!isNaN(v)) prices.push(v);
+                if (Number.isFinite(v)) prices.push(v);
             }
             const period = parseInt(periodEl.value);
 
@@ -25251,7 +25251,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const prices = [];
             for (const line of lines) {
                 const v = parseFloat(line.replace(',', '.'));
-                if (!isNaN(v)) prices.push(v);
+                if (Number.isFinite(v)) prices.push(v);
             }
             const period = parseInt(periodEl.value);
             const oversold = parseFloat(oversoldEl.value);
@@ -25430,7 +25430,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const prices = [];
             for (const line of lines) {
                 const v = parseFloat(line.replace(',', '.'));
-                if (!isNaN(v)) prices.push(v);
+                if (Number.isFinite(v)) prices.push(v);
             }
             const period = parseInt(periodEl.value);
             const agg = parseInt(aggEl.value);
@@ -25617,7 +25617,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -25668,7 +25668,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -25740,7 +25740,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('bbwidth-result');
             if (!seriesEl || !periodEl || !multEl || !out) return;
 
-            const prices = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const prices = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => Number.isFinite(v));
             const period = parseInt(periodEl.value);
             const mult = parseFloat(multEl.value);
 
@@ -25836,7 +25836,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -25978,7 +25978,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 4 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2], volume: parts[3] });
                 }
             }
@@ -26051,7 +26051,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -26156,7 +26156,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('elderimpulse-result');
             if (!seriesEl || !emaPeriodEl || !fastEl || !slowEl || !signalEl || !out) return;
 
-            const prices = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const prices = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => Number.isFinite(v));
             const emaPeriod = parseInt(emaPeriodEl.value);
             const fast = parseInt(fastEl.value);
             const slow = parseInt(slowEl.value);
@@ -26331,7 +26331,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1] });
                 }
             }
@@ -26436,7 +26436,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1] });
                 }
             }
@@ -26490,7 +26490,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1] });
                 }
             }
@@ -26584,7 +26584,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('envelope-result');
             if (!closesEl || !periodEl || !pctEl || !out) return;
 
-            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => Number.isFinite(v));
             const period = parseInt(periodEl.value);
             const pct = parseFloat(pctEl.value);
 
@@ -26676,7 +26676,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('autoenv-result');
             if (!closesEl || !periodEl || !lookbackEl || !containEl || !out) return;
 
-            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => Number.isFinite(v));
             const period = parseInt(periodEl.value);
             const lookback = parseInt(lookbackEl.value);
             const containment = parseFloat(containEl.value);
@@ -26814,7 +26814,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('stc-result');
             if (!closesEl || !fastEl || !slowEl || !cycleEl || !out) return;
 
-            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => Number.isFinite(v));
             const fastPeriod = parseInt(fastEl.value);
             const slowPeriod = parseInt(slowEl.value);
             const cycleLength = parseInt(cycleEl.value);
@@ -26913,7 +26913,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('coppock-result');
             if (!pricesEl || !roc1El || !roc2El || !wmaEl || !out) return;
 
-            const closes = pricesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const closes = pricesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => Number.isFinite(v));
             const p1 = parseInt(roc1El.value);
             const p2 = parseInt(roc2El.value);
             const p3 = parseInt(wmaEl.value);
@@ -27041,7 +27041,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('levdecay-result');
             if (!retsEl || !levEl || !out) return;
 
-            const returns = retsEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => !isNaN(v));
+            const returns = retsEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => Number.isFinite(v));
             const L = parseFloat(levEl.value);
 
             if (returns.length < 1) {
@@ -27521,7 +27521,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!candlesEl || !refPeriodEl || !out) return;
 
             const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 5 && a.every(v => !isNaN(v)));
+            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 5 && a.every(v => Number.isFinite(v)));
             const refPeriod = parseInt(refPeriodEl.value, 10);
 
             if (!isFinite(refPeriod) || refPeriod < 1) {
@@ -27636,8 +27636,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const bidRows = parseLevels(bidsEl.value);
             const askRows = parseLevels(asksEl.value);
-            const validBids = bidRows.filter(a => a.length === 2 && a.every(v => !isNaN(v)));
-            const validAsks = askRows.filter(a => a.length === 2 && a.every(v => !isNaN(v)));
+            const validBids = bidRows.filter(a => a.length === 2 && a.every(v => Number.isFinite(v)));
+            const validAsks = askRows.filter(a => a.length === 2 && a.every(v => Number.isFinite(v)));
 
             if (bidRows.length === 0 || askRows.length === 0 || validBids.length !== bidRows.length || validAsks.length !== askRows.length) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden sor "Ár,Volumen" formátumban legyen (pl. 100.45,1200) — mindkét oldalon (Bid és Ask) legalább 1 sor szükséges!</div>`;
@@ -27715,7 +27715,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -27781,7 +27781,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 4 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2], volume: parts[3] });
                 }
             }
@@ -27978,7 +27978,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], volume: parts[2] });
                 }
             }
@@ -28030,7 +28030,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !periodEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const period = parseInt(periodEl.value, 10) || 2;
             const n = closes.length;
 
@@ -28088,7 +28088,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const n = closes.length;
 
             const minNeeded = 30 + 15 + 9 - 1; // leghosszabb ROC(30) + leghosszabb SMA(15) a jelvonal 9 periódusú simításához (ROC30 csak a 31. adattól érvényes, SMA15 csak a 45.-től, a 9 periódusú jelvonal-SMA pedig csak akkor, ha ebből már 9 egymást követő érvényes érték áll rendelkezésre)
@@ -28215,7 +28215,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rows = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     rows.push({ close: parts[0], volume: parts[1] });
                 }
             }
@@ -28256,7 +28256,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const n = closes.length;
             const periods = [5, 10, 20, 30, 50, 100];
             const maxPeriod = Math.max(...periods);
@@ -28369,7 +28369,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // árfolyam (eszköz és benchmark egyaránt) fogalmilag csak pozitív
                 // lehet, most mindkettőt > 0-ra szűrjük — konzisztensen a kalkulátor
                 // többi, ár-alapú bemenetet kezelő részével.
-                if (parts.length === 2 && parts.every(p => !isNaN(p)) && parts[0] > 0 && parts[1] > 0) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p)) && parts[0] > 0 && parts[1] > 0) {
                     rows.push({ asset: parts[0], benchmark: parts[1] });
                 }
             }
@@ -28409,7 +28409,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const closes = [], volumes = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     closes.push(parts[0]);
                     volumes.push(parts[1]);
                 }
@@ -28492,7 +28492,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !fastEl || !slowEl || !signalEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(s => parseFloat(s)).filter(v => !isNaN(v));
+            const closes = lines.map(s => parseFloat(s)).filter(v => Number.isFinite(v));
 
             const fastPeriod = parseInt(fastEl.value);
             const slowPeriod = parseInt(slowEl.value);
@@ -28589,7 +28589,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const assetReturns = [], marketReturns = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     assetReturns.push(parts[0]);
                     marketReturns.push(parts[1]);
                 }
@@ -28652,7 +28652,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const assetReturns = [], marketReturns = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     assetReturns.push(parts[0]);
                     marketReturns.push(parts[1]);
                 }
@@ -28904,7 +28904,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!pricesEl || !modeEl || !distanceEl || !atrEl || !out) return;
 
             const lines = pricesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const prices = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const prices = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const n = prices.length;
 
             if (n < 2) {
@@ -29067,7 +29067,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !shortEl || !longEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const shortP = parseInt(shortEl.value, 10) || 1;
             const longP = parseInt(longEl.value, 10) || 2;
             const n = closes.length;
@@ -29125,7 +29125,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!candlesEl || !out) return;
 
             const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 4 && a.every(v => !isNaN(v)));
+            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 4 && a.every(v => Number.isFinite(v)));
 
             if (candles.length < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 gyertya szükséges (Nyitó,Magas,Alacsony,Záró formátumban)!</div>`;
@@ -30112,7 +30112,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const price = parseFloat(parts[0]);
                 const type = (parts[1] || '').toUpperCase();
                 return { idx: idx + 1, price, type };
-            }).filter(s => !isNaN(s.price) && (s.type === 'HIGH' || s.type === 'LOW'));
+            }).filter(s => Number.isFinite(s.price) && (s.type === 'HIGH' || s.type === 'LOW'));
 
             const tolerancePct = parseFloat(tolEl.value);
 
@@ -30181,7 +30181,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const price = parseFloat(parts[0]);
                 const type = (parts[1] || '').toUpperCase();
                 return { idx: idx + 1, price, type };
-            }).filter(s => !isNaN(s.price) && (s.type === 'HIGH' || s.type === 'LOW'));
+            }).filter(s => Number.isFinite(s.price) && (s.type === 'HIGH' || s.type === 'LOW'));
 
             if (swings.length < 4) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 4 érvényes swing pont szükséges (minimum 2 csúcs és 2 mélypont, Ár,HIGH vagy Ár,LOW formátumban)!</div>`;
@@ -30287,7 +30287,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!candlesEl || !out) return;
 
             const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 4 && a.every(v => !isNaN(v)));
+            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 4 && a.every(v => Number.isFinite(v)));
 
             if (candles.length < 5) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 5 gyertya szükséges (Nyitó,Magas,Alacsony,Záró formátumban)!</div>`;
@@ -30460,7 +30460,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!candlesEl || !binsEl || !out) return;
 
             const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 3 && a.every(v => !isNaN(v)));
+            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 3 && a.every(v => Number.isFinite(v)));
             const numBins = parseInt(binsEl.value, 10) || 10;
 
             if (candles.length < 1 || numBins < 2) {
@@ -30646,7 +30646,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!candlesEl || !out) return;
 
             const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 4 && a.every(v => !isNaN(v)));
+            const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 4 && a.every(v => Number.isFinite(v)));
 
             if (candles.length < 3) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 3 gyertya szükséges (Nyitó,Magas,Alacsony,Záró) az FVG kereséséhez!</div>`;
@@ -30705,7 +30705,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!netEl || !out) return;
 
             const lines = netEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const net = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const net = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
 
             const emaShort = 19, emaLong = 39;
 
@@ -30747,7 +30747,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !periodEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const period = parseInt(periodEl.value);
 
             if (!period || period < 2 || closes.length < period) {
@@ -30790,7 +30790,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -30845,7 +30845,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !periodEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const period = parseInt(periodEl.value);
 
             const shift = Math.floor(period / 2) + 1;
@@ -30885,7 +30885,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
 
             const fastPeriod = 12, slowPeriod = 26, signalPeriod = 9;
 
@@ -30936,7 +30936,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !periodEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const period = parseInt(periodEl.value);
 
             if (!period || period < 1 || closes.length < period + 1) {
@@ -30980,7 +30980,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !periodEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const period = parseInt(periodEl.value);
 
             if (!period || period < 2) {
@@ -31040,7 +31040,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = lines.map(l => {
                 const parts = l.split(',').map(v => parseFloat(v.trim()));
                 return { open: parts[0], close: parts[1] };
-            }).filter(c => !isNaN(c.open) && !isNaN(c.close));
+            }).filter(c => Number.isFinite(c.open) && Number.isFinite(c.close));
 
             const period = parseInt(periodEl.value);
 
@@ -31100,7 +31100,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = lines.map(l => {
                 const parts = l.split(',').map(v => parseFloat(v.trim()));
                 return { open: parts[0], high: parts[1], low: parts[2], close: parts[3] };
-            }).filter(c => !isNaN(c.open) && !isNaN(c.high) && !isNaN(c.low) && !isNaN(c.close) && c.high >= c.low);
+            }).filter(c => Number.isFinite(c.open) && Number.isFinite(c.high) && Number.isFinite(c.low) && Number.isFinite(c.close) && c.high >= c.low);
 
             const period = parseInt(periodEl.value);
 
@@ -31176,7 +31176,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const m2 = Rf + sharpe * sigmaM;
 
             let comparisonHtml = '';
-            if (!isNaN(Rm)) {
+            if (Number.isFinite(Rm)) {
                 const diff = m2 - Rm;
                 const colorClass = diff >= 0 ? 'text-neon-green' : 'text-neon-red';
                 const verdict = diff >= 0
@@ -31237,7 +31237,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rows = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     rows.push({ close: parts[0], buy: parts[1], sell: parts[2] });
                 }
             }
@@ -31296,7 +31296,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !brickSizeEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
             const brickSize = parseFloat(brickSizeEl.value);
 
             if (!brickSize || brickSize <= 0 || closes.length < 2) {
@@ -31555,7 +31555,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 4 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ open: parts[0], high: parts[1], low: parts[2], close: parts[3] });
                 }
             }
@@ -31610,7 +31610,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -31681,7 +31681,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1] });
                 }
             }
@@ -31764,7 +31764,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!closesEl || !out) return;
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-            const closes = lines.map(l => parseFloat(l)).filter(v => !isNaN(v));
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
 
             const shortPeriods = [3, 5, 8, 10, 12, 15];
             const longPeriods = [30, 35, 40, 45, 50, 60];
@@ -31823,7 +31823,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -31915,7 +31915,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -31982,7 +31982,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ close: parts[0], volume: parts[1] });
                 }
             }
@@ -32037,7 +32037,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('tii-result');
             if (!seriesEl || !periodEl || !out) return;
 
-            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const period = parseInt(periodEl.value);
 
             if (!period || period < 1 || values.length < period) {
@@ -32096,7 +32096,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1] });
                 }
             }
@@ -32185,7 +32185,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 4 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 4 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ open: parts[0], close: parts[1], high: parts[2], low: parts[3] });
                 }
             }
@@ -32262,7 +32262,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1] });
                 }
             }
@@ -32326,7 +32326,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('trendexhaustion-result');
             if (!seriesEl || !out) return;
 
-            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
 
             if (values.length < 2) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott záróárat!</div>`;
@@ -32410,7 +32410,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const colonIdx = line.indexOf(':');
                 if (colonIdx === -1) continue;
                 const name = line.slice(0, colonIdx).trim();
-                const values = line.slice(colonIdx + 1).split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+                const values = line.slice(colonIdx + 1).split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
                 if (name && values.length >= 2) assets.push({ name, values });
             }
 
@@ -32526,7 +32526,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('ddduration-result');
             if (!seriesEl || !out) return;
 
-            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n) && n > 0);
 
             if (values.length < 2) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, nullánál nagyobb, vesszővel elválasztott értéket!</div>`;
@@ -32703,7 +32703,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('pathdep-result');
             if (!returnsEl || !capitalEl || !stopPctEl || !out) return;
 
-            const returns = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const returns = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const startCapital = parseFloat(capitalEl.value);
             const stopPct = parseFloat(stopPctEl.value);
 
@@ -32772,7 +32772,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const positions = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] > 0 && parts[0] < 100 && parts[1] > 0) {
+                if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && parts[0] > 0 && parts[0] < 100 && parts[1] > 0) {
                     positions.push({ winRatePct: parts[0], rr: parts[1] });
                 }
             }
@@ -33970,7 +33970,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const qty = parseFloat(qtyEl.value);
             const direction = directionEl.value;
             const balance = parseFloat(balanceEl.value);
-            const shocks = shocksEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const shocks = shocksEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
 
             if (!entry || entry <= 0 || !qty || qty <= 0 || !balance || balance <= 0 || shocks.length === 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb belépési árat, pozícióméretet és számla tőkét, valamint legalább egy érvényes, vesszővel elválasztott %-os sokk-forgatókönyvet (pl. -20,-10,10,20)!</div>`;
@@ -34537,7 +34537,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!capitalEl || !betasEl || !out) return;
 
             const totalCapital = parseFloat(capitalEl.value);
-            const betas = betasEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const betas = betasEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
 
             if (!totalCapital || totalCapital <= 0 || betas.length < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, pozitív tőkeösszeget és legalább 1 érvényes Bétát!</div>`;
@@ -34592,7 +34592,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!capitalEl || !volsEl || !out) return;
 
             const totalCapital = parseFloat(capitalEl.value);
-            const vols = volsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const vols = volsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
 
             if (!totalCapital || totalCapital <= 0 || vols.length < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, pozitív tőkeösszeget és legalább 1 érvényes volatilitás-értéket!</div>`;
@@ -34769,7 +34769,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('optimalf-result');
             if (!tradesEl || !out) return;
 
-            const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n !== 0);
+            const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n) && n !== 0);
 
             if (trades.length < 3) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 3 érvényes, nullától különböző, vesszővel elválasztott trade P&L-t!</div>`;
@@ -36363,7 +36363,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('realizedvol-result');
             if (!closesEl || !ivEl || !annEl || !out) return;
 
-            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const iv = parseFloat(ivEl.value);
             const annFactor = parseFloat(annEl.value);
 
@@ -36453,7 +36453,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+                if (parts.length === 3 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2] });
                 }
             }
@@ -37570,7 +37570,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('exchflow-result');
             if (!historyEl || !todayEl || !out) return;
 
-            const history = historyEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const history = historyEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
             const today = parseFloat(todayEl.value);
 
             if (history.length < 5) {
@@ -37760,8 +37760,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('season-result');
             if (!periodEl || !baselineEl || !out) return;
 
-            const period = periodEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
-            const baseline = baselineEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            const period = periodEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
+            const baseline = baselineEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
 
             if (period.length < 2 || baseline.length < 2) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2-2 érvényes, vesszővel elválasztott hozamot mindkét csoportban (vizsgált időszak és kontroll-csoport)!</div>`;
