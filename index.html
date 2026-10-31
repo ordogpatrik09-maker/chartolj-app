@@ -651,6 +651,23 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-10-31, mobil UX audit — valódi, blokkoló hiba):
+               Playwright-méréssel igazolt eset: a Chart Drill bevezető
+               nézete (#drill-viewer) a "Napi kihívás" doboz, a statisztika-
+               rács, a "Leggyakoribb hibák" doboz és a kategória-szűrők után
+               a "Gyakorlás indítása" fő CTA-gombbal zár — ez a gomb a
+               tartalom VÉGÉIG görgetve is TELJESEN a fix alsó navigáció
+               (#mobile-bottom-nav, 68px) alá futott (mért átfedés: a gomb
+               44px-es magasságának kb. a teljes egésze), így gyakorlatilag
+               kattinthatatlan volt mobilon. Hasonlóan, a Chart Alakzatok
+               (#chart-strategy-viewer) részletnézete a "Kapcsolódó lecke" /
+               "Drill gyakorlás" gombsorral zár, ami ugyanúgy részben a
+               navigáció alá csúszott. Ugyanaz a bevált minta, mint a
+               Replay/Naptár/Tananyag-térkép/Kereskedési Terv/Napló eseteknél. */
+            #drill-viewer, #chart-strategy-viewer {
+                padding-bottom: 76px !important;
+            }
+
             /* JAVÍTÁS (2026-10-31, mobil UX audit): a lecke-kártyák
                Előző/Következő gombsora induláskor (scrollTop:0-nál) a
                tartalom legvégén, a görgethető terület alján jelent meg —
