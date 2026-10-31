@@ -40545,7 +40545,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="rounded-2xl p-5 text-center" style="background: radial-gradient(circle at top, rgba(251,191,36,0.12), transparent 70%); border: 1px solid rgba(251,191,36,0.4);">
                     <div class="text-3xl mb-2">🎓</div>
                     <div class="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1">Chartolj! Day Trading Alapismereti Certifikáció</div>
-                    <div class="text-lg font-extrabold text-white mb-1">${myName}</div>
+                    <div class="text-lg font-extrabold text-white mb-1">${escapeHtml(myName)}</div>
                     <div class="text-[11px] text-slate-400 mb-3">sikeresen teljesítette a záróvizsgát</div>
                     <div class="text-xs font-mono text-slate-300">${status.score}/${CERTIFICATION_QUESTION_COUNT} helyes válasz</div>
                     <div class="text-[10px] text-slate-500 mt-1">${dateStr}</div>
@@ -43593,6 +43593,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const myName = (typeof currentUser !== 'undefined' && currentUser && currentUser.name) ? currentUser.name : 'Vendég';
             const rows = [...peers, { name: myName, xp: academyXP, isMe: true }]
                 .sort((a, b) => b.xp - a.xp);
+            // JAVÍTÁS (2026-10-31, mobil UX audit — HTML-injektálás): r.name itt
+            // a currentUser.name-ből jön, ami — bár a Profil-névváltáskor
+            // kliens-oldalon szűrve van < > karakterektől — a Supabase
+            // profiles.display_name mezőjéből IS betöltődhet (lásd a profil
+            // frissítését végző kódot), ami egy második, kevésbé megbízható
+            // forrás (akár régi adat, akár más kliensből). A lenti
+            // el.innerHTML-be ezt korábban nyersen fűztük be — escapeHtml()-lel
+            // védjük, ugyanúgy, mint a kereskedési-előzmény jegyzeteknél.
             el.innerHTML = rows.map((r, i) => {
                 const rank = i + 1;
                 const medal = medals[i] || (rank + '.');
@@ -43600,7 +43608,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="flex items-center justify-between px-2.5 py-2 rounded-lg ${r.isMe ? 'bg-neon-cyan/10 border border-neon-cyan/40' : 'hover:bg-dark-850/50'} transition">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 text-center text-xs font-bold ${rank <= 3 ? '' : 'text-slate-500'} shrink-0">${medal}</span>
-                        <span class="text-xs font-bold ${r.isMe ? 'text-neon-cyan' : 'text-slate-200'} truncate">${r.name}${r.isMe ? ' (Te)' : ''}</span>
+                        <span class="text-xs font-bold ${r.isMe ? 'text-neon-cyan' : 'text-slate-200'} truncate">${escapeHtml(r.name)}${r.isMe ? ' (Te)' : ''}</span>
                     </div>
                     <span class="text-xs font-mono font-bold text-amber-400 shrink-0">${r.xp.toLocaleString('hu-HU')} XP</span>
                 </div>`;
@@ -43772,7 +43780,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="flex items-center justify-between px-2.5 py-2 rounded-lg ${r.isMe ? 'bg-neon-cyan/10 border border-neon-cyan/40' : 'hover:bg-dark-850/50'} transition">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 text-center text-xs font-bold ${i < 3 ? '' : 'text-slate-500'} shrink-0">${medal}</span>
-                        <span class="text-xs font-bold ${r.isMe ? 'text-neon-cyan' : 'text-slate-200'} truncate">${r.name}${r.isMe ? ' (Te)' : ''}</span>
+                        <span class="text-xs font-bold ${r.isMe ? 'text-neon-cyan' : 'text-slate-200'} truncate">${escapeHtml(r.name)}${r.isMe ? ' (Te)' : ''}</span>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="text-xs font-mono font-bold text-amber-400">${r.xp.toLocaleString('hu-HU')} XP</span>
@@ -48043,7 +48051,17 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'glass-panel px-4 py-2.5 rounded-xl text-xs font-semibold text-neon-cyan border border-neon-cyan/40 shadow-2xl flex items-center gap-2 pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300';
-            toast.innerHTML = `<i class="fa-solid fa-circle-check text-neon-green text-sm"></i> <span>${msg}</span>`;
+            // JAVÍTÁS (2026-10-31, mobil UX audit — HTML-injektálás): a msg
+            // paramétert korábban nyersen fűztük be a toast innerHTML-jébe.
+            // A hívási helyek túlnyomó többsége statikus, program által írt
+            // szöveg, DE néhány hely felhasználó/szerver által kontrollált
+            // adatot (pl. barát nevét a sb.rpc('send_friend_request_by_code')
+            // válaszából) is belefűz a toast-szövegbe. Mivel SEHOL nem
+            // szándékos a toast-ban valódi HTML-jelölést megjeleníteni (egy
+            // gyors ellenőrzés szerint semelyik hívás nem ad át <b>/<i>/<br>
+            // stb. taget), biztonságosan escapelhetjük az egész üzenetet itt,
+            // egyetlen helyen védve az összes jelenlegi és jövőbeli hívót.
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-neon-green text-sm"></i> <span>${escapeHtml(msg)}</span>`;
 
             toast.style.cursor = 'pointer';
             toast.onclick = function() {
