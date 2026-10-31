@@ -46413,6 +46413,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         /* ================= RENDSZER NAPLÓ (valós események) ================= */
+        // JAVÍTÁS (2026-10-31, mobil UX audit — valódi DOM-szivárgás):
+        // addSystemLog() korábban KORLÁTLANUL fűzött új <div> bejegyzést a
+        // #system-log-list végéhez, sosem törölve a régieket. Mivel ezt 32
+        // különböző helyről hívjuk (pl. minden Akadémia-fülre lépéskor,
+        // minden kereskedésnél, szinkronizációnál stb.), egy hosszabb, sok
+        // fül-/akció-váltással járó munkamenet alatt a DOM-csomópontok
+        // száma folyamatosan, korlátlanul nőtt (mérve: 100 fül-váltás alatt
+        // +60 csomópont csak az Akadémia-belépésekből) — ez tartós
+        // memóriaterhelést/DOM-felfúvódást okozott volna hosszú valós
+        // használat során. Megoldás: a lista legfeljebb MAX_SYSTEM_LOG_
+        // ENTRIES (200) bejegyzést tart meg, a réginél régebbieket törli.
+        const MAX_SYSTEM_LOG_ENTRIES = 200;
         function addSystemLog(msg, level = 'INFO') {
             const list = document.getElementById('system-log-list');
             if (!list) return;
@@ -46421,6 +46433,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const entry = document.createElement('div');
             entry.innerHTML = `[${time}] <span class="${colorClass}">[${level}]</span> ${msg}`;
             list.appendChild(entry);
+            while (list.children.length > MAX_SYSTEM_LOG_ENTRIES) {
+                list.removeChild(list.firstChild);
+            }
             const container = document.getElementById('bottom-tab-logs');
             if (container) container.scrollTop = container.scrollHeight;
         }
