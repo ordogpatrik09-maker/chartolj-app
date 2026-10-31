@@ -15800,12 +15800,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         // ================= VALÓS PIACI ADAT (Binance) =================
         // Őszinte korlát: csak a kriptó (BTC/ETH) eszközökhöz van ingyenes,
-        // kulcs nélküli, CORS-barát nyilvános API (Binance). A forexhez
-        // (EUR/USD) egy valós napi árfolyamhoz igazítjuk a chartot, az
-        // NVDA-hoz nincs megbízható ingyenes forrás kulcs nélkül — ez a
-        // kettő egyelőre szimulált marad, és ezt a UI is jelzi (data-source
-        // pötty a fejlécben), ugyanabban az őszinte-jelölés szellemben, mint
-        // a demo-adatos funkciók (ranglista, barátok) a Fejlődés képernyőn.
+        // kulcs nélküli, CORS-barát nyilvános API (Binance), ami teljes
+        // gyertyasort (OHLC-történetet) ad. A forexhez (EUR/USD) és az
+        // NVDA részvényhez nincs ingyenes, kulcs nélküli INTRADAY gyertya-
+        // forrás, de mindkettőhöz van valós, friss ZÁRÓÁR (EUR/USD:
+        // frankfurter.app / ECB; NVDA: stooq.com) — ehhez igazítjuk a
+        // szimulált gyertyasort, hogy a chart egy valós mai ár körül
+        // mozogjon, nem kitalált számok körül. Ezt a UI is jelzi (data-
+        // source pötty a fejlécben), ugyanabban az őszinte-jelölés
+        // szellemben, mint a demo-adatos funkciók (ranglista, barátok) a
+        // Fejlődés képernyőn.
         const LIVE_DATA_SYMBOLS = { 'BTC/USDT': 'BTCUSDT', 'ETH/USDT': 'ETHUSDT' };
         const BINANCE_TF_MAP = { '1m': '1m', '5m': '5m', '15m': '15m', '1h': '1h', '4h': '4h', '1D': '1d' };
         let dataSourceForCurrentAsset = 'simulated'; // 'live' | 'anchored' | 'simulated'
@@ -15861,6 +15865,38 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             } catch (e) { /* csendes fallback — marad a tisztán szimulált adat */ }
         }
 
+        // NVDA-hoz sincs ingyenes, kulcs nélküli intraday gyertyaforrás, de a
+        // stooq.com nyilvános, kulcs nélküli CSV-végpontja ad egy valós, friss
+        // záróárat (US tőzsdei adat) — ugyanazzal az "igazítsd a szimulált
+        // gyertyasort egy valós árhoz" logikával, mint az EUR/USD-nél.
+        async function fetchStooqLastClose(stooqSymbol) {
+            try {
+                const res = await fetch(`https://stooq.com/q/l/?s=${stooqSymbol}&f=sd2t2ohlcv&h&e=csv`);
+                if (!res.ok) return null;
+                const text = await res.text();
+                const lines = text.trim().split('\n');
+                if (lines.length < 2) return null;
+                const cols = lines[1].split(',');
+                const close = parseFloat(cols[6]);
+                return (!isNaN(close) && close > 0) ? close : null;
+            } catch (e) { return null; }
+        }
+
+        async function anchorNvdaToRealPrice() {
+            const real = await fetchStooqLastClose('nvda.us');
+            if (real == null || candleData.length === 0 || currentAsset.symbol !== 'NVDA') return;
+            const lastClose = candleData[candleData.length - 1].close;
+            if (!lastClose) return;
+            const scale = real / lastClose;
+            candleData = candleData.map(c => ({ time: c.time, open: c.open * scale, high: c.high * scale, low: c.low * scale, close: c.close * scale, volume: c.volume }));
+            currentAsset.price = candleData[candleData.length - 1].close;
+            dataSourceForCurrentAsset = 'anchored';
+            updateTickerStats();
+            updateOrderBook();
+            updateDataSourceBadge();
+            drawChart();
+        }
+
         function updateDataSourceBadge() {
             const dot = document.getElementById('data-source-badge');
             if (!dot) return;
@@ -15877,9 +15913,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function showDataSourceInfo() {
+            const sourceName = currentAsset.symbol === 'NVDA' ? 'stooq.com' : (currentAsset.symbol === 'EUR/USD' ? 'frankfurter.app / ECB' : '');
             const msgs = {
                 live: '🟢 Élő piaci adat a Binance nyilvános API-járól — valós árfolyam, valós gyertyák.',
-                anchored: '🟡 A mai valós EUR/USD árfolyamhoz igazítva, a napon belüli mozgás szimulált.',
+                anchored: `🟡 A mai valós ${currentAsset.symbol} árfolyamhoz igazítva (${sourceName}), a napon belüli mozgás szimulált.`,
                 simulated: '⚪ Szimulált adat — ehhez az eszközhöz nincs ingyenes, kulcs nélküli valós idejű forrás.'
             };
             showNotification(msgs[dataSourceForCurrentAsset] || msgs.simulated);
@@ -15913,6 +15950,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 drawChart();
             } else if (mySymbol === 'EUR/USD') {
                 anchorEurUsdToRealRate();
+            } else if (mySymbol === 'NVDA') {
+                anchorNvdaToRealPrice();
             }
         }
 
