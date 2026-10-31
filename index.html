@@ -662,6 +662,20 @@
                 padding-right: 80px !important;
             }
 
+            /* JAVÍTÁS (felhasználói visszajelzés: "ne legyen minden egybe/
+               egymáson"): a fenti jobb oldali térköz a vízszintes takarást
+               oldotta meg, de a lebegő #mobile-trade-fab-row ("Eszközök"/
+               "Kereskedés" gombsor, fixed, bottom:80px) FÜGGŐLEGESEN is
+               eltakarta a táblázat alsó sorait, ha 2-3-nál több nyitott
+               pozíció/előzmény/napló-bejegyzés volt — a lista görgethető
+               volt, de az utolsó sorok mindig a gombsor ALATT, takarásban
+               maradtak, sosem lehetett őket szabadon látni. Ugyanaz a
+               150px-es alsó térköz, mint a Stratégiai Kalkulátorok
+               listájánál (lásd fent #mobile-tools-list). */
+            #bottom-tab-positions, #bottom-tab-history, #bottom-tab-logs {
+                padding-bottom: 150px !important;
+            }
+
             /* JAVÍTÁS: az AI chatbot gomb, a chat-panel és az értesítés-toastok
                eredetileg bottom-5 (20px) / bottom-24 (96px) pozíción álltak —
                ez a fix 1600x900-as, navigáció nélküli asztali elrendezésre lett
