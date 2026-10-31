@@ -2471,6 +2471,13 @@
                                 <div class="text-[10px] text-slate-400">Piaci árból visszafejtett IV</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('gex-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-magnet"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Dealer Gamma Exposure (GEX) Becslő</div>
+                                <div class="text-[10px] text-slate-400">Market maker fedezési nyomás strike-onként</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('confluence-modal'); renderConfluenceAssetLabel();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
                             <div>
@@ -7638,6 +7645,59 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
+    <!-- ================= DEALER GAMMA EXPOSURE (GEX) BECSLŐ (NAGY KITERJESZTÉS) =================
+         Az "Opciós Piac Hatása a Spot Árra (Gamma Exposure)" lecke eddig
+         CSAK elméleti szinten tárgyalta a GEX-et, dedikált kalkulátor
+         nélkül (a lecke CTA-ja korábban a Greeks Kalkulátorra mutatott,
+         mert nem volt jobb illő eszköz). Ez a kalkulátor a meglévő
+         Black-Scholes gamma motort (calcBlackScholes) használja fel:
+         minden megadott strike-nál kiszámolja az opció gammáját, majd a
+         széles körben használt, egyszerűsített piaci konvenció szerint
+         (dealerek NETTÓ LONG call / NETTÓ SHORT put pozícióban, ami egy
+         gyakori, de NEM egyetemes feltételezés — a valós dealer-pozíció
+         sosem ismert pontosan kívülről) dollárosítja a kitettséget:
+         GEX_strike = Gamma × 100 (kontraktusméret) × Spot² × 0.01 × (Call OI − Put OI).
+         A "gamma-flip szint" becsléséhez a nettó GEX-et egy spot-rácson
+         (a megadott strike-tartomány ±10%-án) ÚJRA kiszámoljuk minden
+         rácspontnál — mert a gamma maga is függ a spot-tól —, és lineáris
+         interpolációval keressük az előjelváltás helyét. Egységes (közös)
+         IV és lejárat minden strike-ra — ez egyszerűsítés, a valóságban
+         az OI több lejáratra/volatilitásra oszlik el. -->
+    <div id="gex-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-magnet text-neon-purple"></i> Dealer Gamma Exposure (GEX) Becslő
+                </h3>
+                <button onclick="closeToolModal('gex-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Megbecsüli, mennyi <strong style="color:#A855F7">dealer (market maker) gamma-kitettség</strong> rejlik az egyes strike-okban — azaz mennyire kell a delta-fedezésüket az árfolyam mozgásával gyorsan módosítaniuk. Pozitív nettó GEX fékező (vol-csökkentő), negatív nettó GEX felerősítő (vol-növelő) hatást jelez. Add meg a strike-okat Call/Put nyitott kötésállománnyal (OI), "Kötési ár: Call OI,Put OI" formátumban, soronként egyet.</p>
+
+            <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <div><label class="text-[10px] text-slate-500">Jelenlegi spot árfolyam (S)</label><input type="number" id="gex-spot" value="100" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Napok a lejáratig (közös)</label><input type="number" id="gex-days" value="15" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div><label class="text-[10px] text-slate-500">Implikált volatilitás (%/év, közös)</label><input type="number" id="gex-vol" value="40" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+                <div><label class="text-[10px] text-slate-500">Kockázatmentes ráta (%/év)</label><input type="number" id="gex-rate" value="4" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400">Strike-ok: Kötési ár: Call OI,Put OI (soronként egy strike)</label>
+            <textarea id="gex-strikes" rows="6" placeholder="95: 1200,4500" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">90: 1800,6200
+95: 3400,8100
+100: 9500,9800
+105: 7200,3100
+110: 2600,1400</textarea>
+
+            <button onclick="runGexCalculator()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                GEX kiszámítása
+            </button>
+
+            <div id="gex-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Egyszerűsítő feltételek: 100 db/kontraktus méret, minden strike-ra KÖZÖS implikált volatilitás és lejárat (a valóságban az OI több lejáratra/volatilitásra oszlik el), és a széles körben használt — de NEM egyetemes — "dealer nettó long call / nettó short put" konvenció. A valós dealer-pozíció kívülről sosem ismert pontosan: ez egy oktatási közelítés, nem kereskedési szignál.</p>
+        </div>
+    </div>
+
     <!-- ================= MULTI-IDŐSÍK ELEMZŐ (CONFLUENCE SCANNER, NAGY KITERJESZTÉS) =================
          Professzionális kereskedői alapelv: egy jelzés sokkal megbízhatóbb,
          ha TÖBB idősíkon (pl. 15m, 1h, 4h, 1D) EGYSZERRE ugyanabba az
@@ -12459,7 +12519,7 @@ Mean-reversion,2.5</textarea>
             </div>
             <div class="mobile-tools-category rounded-xl border border-dark-750 overflow-hidden" data-cat-id="tools-cat-options">
                 <button type="button" onclick="toggleAnalyzerCategory('tools-cat-options')" class="w-full flex items-center justify-between px-3 py-2.5 bg-dark-850 hover:bg-dark-800 transition">
-                    <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-square-root-variable text-amber-400 w-4 text-center"></i> Opciók & Derivatívák <span class="text-[9px] font-mono text-slate-500">(7)</span></span>
+                    <span class="text-[11px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-square-root-variable text-amber-400 w-4 text-center"></i> Opciók & Derivatívák <span class="text-[9px] font-mono text-slate-500">(8)</span></span>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="tools-cat-options-chevron"></i>
                 </button>
                 <div id="tools-cat-options" class="hidden p-2 pt-2 space-y-1.5 bg-dark-900/30 border-t border-dark-800">
@@ -12475,6 +12535,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Implikált Volatilitás Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Piaci árból visszafejtett IV</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('gex-modal')" data-tool-title="dealer gamma exposure (gex) becslő" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-magnet"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Dealer Gamma Exposure (GEX) Becslő</div>
+                            <div class="text-[10px] text-slate-400">Market maker fedezési nyomás strike-onként</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('optionpayoff-modal')" data-tool-title="opciós kifizetés kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -34924,6 +34991,165 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= DEALER GAMMA EXPOSURE (GEX) BECSLŐ MOTORJA (NAGY KITERJESZTÉS) =================
+        // A meglévő calcBlackScholes() gamma-képletét használja fel (a
+        // Call és Put gamma Black-Scholes alatt MATEMATIKAILAG azonos adott
+        // S/K/T/r/sigma mellett, ezért elég egyszer kiszámolni strike-onként).
+        // Dollárosított kitettség strike-onként, a széles körben használt
+        // (de nem egyetemes) "dealer nettó long call / nettó short put"
+        // konvenció szerint:
+        //   GEX_strike = Gamma × 100 (kontraktusméret) × Spot² × 0.01 × (CallOI − PutOI)
+        // A 0.01-es tényező azt fejezi ki, hogy a GEX hagyományosan "1%-os
+        // spot-elmozdulásra eső" dollár dealer-fedezési igényt mér.
+        function parseGexStrikeRows(text) {
+            const lines = String(text || '').split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const rows = [];
+            for (const line of lines) {
+                const colonIdx = line.indexOf(':');
+                if (colonIdx === -1) continue;
+                const strike = parseFloat(line.slice(0, colonIdx).trim());
+                const parts = line.slice(colonIdx + 1).split(',').map(s => parseFloat(s.trim()));
+                if (!Number.isFinite(strike) || strike <= 0) continue;
+                if (parts.length < 2) continue;
+                const callOI = parts[0];
+                const putOI = parts[1];
+                if (!Number.isFinite(callOI) || callOI < 0 || !Number.isFinite(putOI) || putOI < 0) continue;
+                rows.push({ strike, callOI, putOI });
+            }
+            return rows;
+        }
+
+        // Kiszámolja a teljes nettó dealer-GEX-et egy FELTÉTELEZETT (hipotetikus)
+        // spot árfolyamnál — ez a gamma-flip szint kereséséhez kell, mert a
+        // gamma maga is a spot függvénye, nem csak lineáris skálázó tényező.
+        function netGexAtHypotheticalSpot(rows, hypotheticalSpot, T, r, sigma) {
+            const CONTRACT_MULT = 100;
+            let total = 0;
+            for (const row of rows) {
+                const gamma = calcBlackScholes(hypotheticalSpot, row.strike, T, r, sigma, true).gamma;
+                const dollarFactor = gamma * CONTRACT_MULT * hypotheticalSpot * hypotheticalSpot * 0.01;
+                total += dollarFactor * (row.callOI - row.putOI);
+            }
+            return total;
+        }
+
+        function runGexCalculator() {
+            const out = document.getElementById('gex-result');
+            const S = parseFloat(document.getElementById('gex-spot').value);
+            const days = parseFloat(document.getElementById('gex-days').value);
+            const volPct = parseFloat(document.getElementById('gex-vol').value);
+            const ratePct = parseFloat(document.getElementById('gex-rate').value);
+            const strikesText = document.getElementById('gex-strikes').value;
+
+            if (!S || S <= 0 || !days || days <= 0 || !volPct || volPct <= 0 || !Number.isFinite(ratePct) || ratePct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív spot árfolyamot, napok számát és volatilitást (a ráta nem lehet negatív)!</div>`;
+                return;
+            }
+
+            const rows = parseGexStrikeRows(strikesText);
+            if (rows.length < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 érvényes sort "Kötési ár: Call OI,Put OI" formátumban — a kötési ár legyen pozitív, az OI-k nem lehetnek negatívak!</div>`;
+                return;
+            }
+
+            const T = days / 365;
+            const sigma = volPct / 100;
+            const r = ratePct / 100;
+            const CONTRACT_MULT = 100;
+
+            rows.sort((a, b) => a.strike - b.strike);
+
+            let totalNetGex = 0;
+            let callWall = null;
+            let putWall = null;
+            const detailed = rows.map(row => {
+                const gamma = calcBlackScholes(S, row.strike, T, r, sigma, true).gamma;
+                const dollarFactor = gamma * CONTRACT_MULT * S * S * 0.01;
+                const callGex = dollarFactor * row.callOI;
+                const putGex = -dollarFactor * row.putOI;
+                const netGex = callGex + putGex;
+                totalNetGex += netGex;
+                if (!callWall || callGex > callWall.callGex) callWall = { strike: row.strike, callGex };
+                if (!putWall || putGex < putWall.putGex) putWall = { strike: row.strike, putGex };
+                return { strike: row.strike, gamma, callOI: row.callOI, putOI: row.putOI, callGex, putGex, netGex };
+            });
+
+            // Gamma-flip szint becslése: a nettó GEX-et egy spot-rácson
+            // (a megadott strike-sáv ±10%-án) újraszámoljuk, és lineáris
+            // interpolációval keressük az első előjelváltás helyét.
+            const strikeValues = rows.map(rw => rw.strike);
+            const lo = Math.min(Math.min(...strikeValues), S) * 0.9;
+            const hi = Math.max(Math.max(...strikeValues), S) * 1.1;
+            const STEPS = 60;
+            let flipLevel = null;
+            let prevSpotGrid = lo;
+            let prevVal = netGexAtHypotheticalSpot(rows, lo, T, r, sigma);
+            for (let i = 1; i <= STEPS; i++) {
+                const spotGrid = lo + (hi - lo) * i / STEPS;
+                const val = netGexAtHypotheticalSpot(rows, spotGrid, T, r, sigma);
+                if ((prevVal < 0 && val >= 0) || (prevVal > 0 && val <= 0) || (prevVal === 0)) {
+                    const denom = Math.abs(prevVal) + Math.abs(val);
+                    const frac = denom === 0 ? 0 : Math.abs(prevVal) / denom;
+                    flipLevel = prevSpotGrid + (spotGrid - prevSpotGrid) * frac;
+                    break;
+                }
+                prevSpotGrid = spotGrid;
+                prevVal = val;
+            }
+
+            const isPositive = totalNetGex >= 0;
+            const regimeLabel = isPositive ? 'Pozitív gamma rezsim — fékező (vol-csökkentő) hatás valószínű' : 'Negatív gamma rezsim — felerősítő (vol-növelő) hatás valószínű';
+            const regimeColor = isPositive ? 'text-neon-green' : 'text-neon-red';
+            const fmtGex = (n) => (n < 0 ? '-$' : '+$') + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+            let rowsHtml = '';
+            for (const d of detailed) {
+                const netColor = d.netGex >= 0 ? 'text-neon-green' : 'text-neon-red';
+                const isCallWallRow = callWall && d.strike === callWall.strike;
+                const isPutWallRow = putWall && d.strike === putWall.strike;
+                rowsHtml += `
+                    <tr class="border-t border-dark-800">
+                        <td class="py-1 pr-1 font-bold text-white">${d.strike}${isCallWallRow ? ' <span class="text-neon-green">▲</span>' : ''}${isPutWallRow ? ' <span class="text-neon-red">▼</span>' : ''}</td>
+                        <td class="py-1 pr-1 text-slate-400">${d.gamma.toFixed(4)}</td>
+                        <td class="py-1 pr-1 text-slate-400">${d.callOI.toLocaleString('en-US')}</td>
+                        <td class="py-1 pr-1 text-slate-400">${d.putOI.toLocaleString('en-US')}</td>
+                        <td class="py-1 pr-0 text-right font-bold ${netColor}">${fmtGex(d.netGex)}</td>
+                    </tr>`;
+            }
+
+            const flipHtml = flipLevel !== null
+                ? `<div class="flex items-center justify-between font-mono text-xs"><span class="text-slate-400">Becsült gamma-flip szint:</span><span class="font-bold text-neon-amber">${flipLevel.toFixed(2)}</span></div>`
+                : `<div class="text-[10px] text-slate-500">A vizsgált spot-tartományban (${lo.toFixed(2)}–${hi.toFixed(2)}) nincs előjelváltás — a teljes sáv ${isPositive ? 'pozitív' : 'negatív'} gamma-rezsimben van.</div>`;
+
+            out.innerHTML = `
+                <div class="rounded-xl ${isPositive ? 'bg-neon-green/5 border-neon-green/30' : 'bg-neon-red/5 border-neon-red/30'} border p-3 mb-3">
+                    <div class="text-[10px] ${regimeColor} uppercase font-bold mb-1">Nettó dealer-GEX (1%-os spot-mozgásra)</div>
+                    <div class="text-xl font-extrabold text-white">${fmtGex(totalNetGex)}</div>
+                    <div class="text-[10px] ${regimeColor} font-semibold mt-1">${regimeLabel}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5">
+                        <div class="text-[9.5px] text-neon-green uppercase font-bold mb-0.5">Call Wall (potenciális ellenállás)</div>
+                        <div class="text-sm font-bold text-white">${callWall.strike}</div>
+                    </div>
+                    <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5">
+                        <div class="text-[9.5px] text-neon-red uppercase font-bold mb-0.5">Put Wall (potenciális támasz)</div>
+                        <div class="text-sm font-bold text-white">${putWall.strike}</div>
+                    </div>
+                </div>
+                <div class="rounded-lg bg-dark-850/60 border border-dark-750 p-2.5 mb-3">
+                    ${flipHtml}
+                </div>
+                <div class="overflow-x-auto mb-2">
+                    <table class="w-full text-[10px] font-mono">
+                        <tr class="text-slate-500 uppercase text-[9px]"><td class="pb-1">Strike</td><td class="pb-1">Γ</td><td class="pb-1">Call OI</td><td class="pb-1">Put OI</td><td class="pb-1 text-right">Nettó GEX</td></tr>
+                        ${rowsHtml}
+                    </table>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-relaxed">▲ = Call Wall strike, ▼ = Put Wall strike. A gamma-flip szint az a becsült spot-árfolyam, ahol a nettó dealer-gamma előjelet vált — efelett/alatt a piac eltérő gamma-rezsimbe kerülhet.</p>
+            `;
+        }
+
         // ================= MULTI-IDŐSÍK ELEMZŐ (CONFLUENCE SCANNER) MOTORJA (NAGY KITERJESZTÉS) =================
         // Teljesen ÖNÁLLÓ, pure szintetikus close-ár generátor — NEM a
         // globális candleData/currentTF-et használja, hogy a fő chartot
@@ -44027,7 +44253,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             70: { tool: 'makertaker-modal', cta: 'Számold ki élesben a maker/taker díj-mixed hatását' },
             199: { tool: 'makertaker-modal', cta: 'Számold ki élesben, mennyit spórolhatsz egy kedvezőbb VIP díjszinttel' },
             521: { tool: 'feeimpact-modal', cta: 'Számold ki élesben a round-trip díjak hatását' },
-            511: { tool: 'greeks-modal', cta: 'Számold ki élesben az opció Greeks mutatóit' },
+            511: { tool: 'gex-modal', cta: 'Becsüld meg élesben a dealer gamma exposure-t (GEX) és a gamma-flip szintet' },
             519: { tool: 'recovery-modal', cta: 'Számold ki élesben a szükséges visszanyerési nyereséget' },
             61: { tool: 'ichimoku-modal', cta: 'Számold ki élesben az Ichimoku Cloud vonalait' },
             182: { tool: 'ichimoku-modal', cta: 'Nézd meg élesben a Kumo Twist állapotát' },
@@ -44225,7 +44451,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
