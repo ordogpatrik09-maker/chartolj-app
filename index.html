@@ -10815,12 +10815,12 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                 <div><label class="text-[11px] font-semibold text-slate-400">In-sample split %</label><input type="number" id="wfo-split" value="70" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
             </div>
             <div class="grid grid-cols-2 gap-2 mb-2">
-                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA min</label><input type="number" id="wfo-fastmin" value="3" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
-                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA max</label><input type="number" id="wfo-fastmax" value="10" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA min</label><input type="number" id="wfo-fastmin" value="3" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA max</label><input type="number" id="wfo-fastmax" value="10" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
             </div>
             <div class="grid grid-cols-2 gap-2 mb-2">
-                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA min</label><input type="number" id="wfo-slowmin" value="15" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
-                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA max</label><input type="number" id="wfo-slowmax" value="35" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA min</label><input type="number" id="wfo-slowmin" value="15" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA max</label><input type="number" id="wfo-slowmax" value="35" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
             </div>
             <label class="text-[11px] font-semibold text-slate-400">Kezdő tőke</label>
             <input type="number" id="wfo-equity" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
@@ -10978,12 +10978,12 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
             <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A kalkulátor a JELENLEG BETÖLTÖTT, valós charton lévő árfolyamadatot két részre osztja: egy korábbi "in-sample" szakaszra (amin leteszteli az EMA-keresztezés stratégia MINDEN megadott gyors/lassú periódus-kombinációját, hőtérképen megjelenítve), és egy későbbi "out-of-sample" szakaszra, amin a talált "legjobb" kombinációt újra leteszteli. Ha a két eredmény nagyon eltér, az overfitting (túlillesztés) klasszikus jele — pontosan ez az, amiről a Sequential Testing és Walk-Forward módszerek szólnak.</p>
 
             <div class="grid grid-cols-2 gap-2 mb-2">
-                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA min</label><input type="number" id="gridopt-fastmin" value="3" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
-                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA max</label><input type="number" id="gridopt-fastmax" value="10" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA min</label><input type="number" id="gridopt-fastmin" value="3" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA max</label><input type="number" id="gridopt-fastmax" value="10" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
             </div>
             <div class="grid grid-cols-2 gap-2 mb-2">
-                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA min</label><input type="number" id="gridopt-slowmin" value="15" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
-                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA max</label><input type="number" id="gridopt-slowmax" value="35" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA min</label><input type="number" id="gridopt-slowmin" value="15" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA max</label><input type="number" id="gridopt-slowmax" value="35" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
             </div>
             <div class="grid grid-cols-2 gap-2 mb-4">
                 <div><label class="text-[11px] font-semibold text-slate-400">In-sample split %</label><input type="number" id="gridopt-split" value="70" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50"></div>
@@ -11015,12 +11015,12 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
             <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A JELENLEG BETÖLTÖTT chart in-sample szakaszán rácskeresést futtat, majd minden pontnál megnézi a SZOMSZÉDOS paraméter-kombinációk átlagos teljesítményét is. Megkülönbözteti a legjobb ÖNMAGÁBAN teljesítő, de elszigetelt pontot ("csúcs" — tipikus túlillesztés-jel) attól a ponttól, ahol a KÖRNYEZŐ kombinációk is hasonlóan jól teljesítenek ("fennsík" — robusztusabb). Mindkettőt leteszteli az out-of-sample szakaszon.</p>
 
             <div class="grid grid-cols-2 gap-2 mb-2">
-                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA min</label><input type="number" id="robustmap-fastmin" value="3" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
-                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA max</label><input type="number" id="robustmap-fastmax" value="12" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA min</label><input type="number" id="robustmap-fastmin" value="3" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Gyors EMA max</label><input type="number" id="robustmap-fastmax" value="12" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
             </div>
             <div class="grid grid-cols-2 gap-2 mb-2">
-                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA min</label><input type="number" id="robustmap-slowmin" value="15" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
-                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA max</label><input type="number" id="robustmap-slowmax" value="35" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA min</label><input type="number" id="robustmap-slowmin" value="15" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
+                <div><label class="text-[11px] font-semibold text-slate-400">Lassú EMA max</label><input type="number" id="robustmap-slowmax" value="35" step="1" min="2" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
             </div>
             <div class="grid grid-cols-2 gap-2 mb-4">
                 <div><label class="text-[11px] font-semibold text-slate-400">In-sample split %</label><input type="number" id="robustmap-split" value="70" step="1" min="1" max="99" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50"></div>
@@ -29489,10 +29489,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const slowMax = parseInt(document.getElementById('wfo-slowmax').value, 10);
             const startEquity = parseFloat(document.getElementById('wfo-equity').value);
 
+            // JAVÍTÁS: a fastMin/fastMax/slowMin/slowMax mezőknek korábban nem volt JS-ben
+            // érvényesített FELSŐ korlátja (csak az egymáshoz viszonyított min≤max és az ebből
+            // számolt "combosPerWindow × numWindows" szorzat volt ellenőrizve). Egy
+            // asztronómiailag extrém, de a parseInt() számára még "érvényes" bemenet (pl.
+            // 24+ jegyű szám mindkét mezőben, azonos értékkel) a lebegőpontos pontosság-
+            // vesztés miatt úgy adott kis "combos" értéket (mert fastMax-fastMin+1 ≈ 1), hogy a
+            // VALÓS `for (let fast = fastMin; fast <= fastMax; fast++)` ciklus SOHA nem állt
+            // le — ilyen magnitúdónál a `fast++` lépés a lebegőpontos ábrázolás granularitása
+            // miatt NEM változtatja meg az értéket, így a ciklusfeltétel örökké igaz marad és a
+            // böngészőlap lefagy. Explicit, 1000-es abszolút felső korlát (konzisztensen az
+            // input mezők "max" HTML-attribútumával) kizárja ezt a magnitúdót.
             if ([numWindows, inSamplePct, fastMin, fastMax, slowMin, slowMax, startEquity].some(v => isNaN(v)) ||
                 numWindows < 2 || numWindows > 10 || inSamplePct <= 0 || inSamplePct >= 100 ||
-                fastMin < 2 || fastMax < fastMin || slowMin < 2 || slowMax < slowMin || startEquity <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — az ablakok száma 2-10 közt, a split 0-100 közt legyen, és minden min ≤ max!</div>`;
+                fastMin < 2 || fastMax < fastMin || slowMin < 2 || slowMax < slowMin || startEquity <= 0 ||
+                fastMax > 1000 || slowMax > 1000) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — az ablakok száma 2-10 közt, a split 0-100 közt, minden EMA periódus 2 és 1000 közt legyen, és minden min ≤ max!</div>`;
                 return;
             }
             const combosPerWindow = (fastMax - fastMin + 1) * (slowMax - slowMin + 1);
@@ -29761,10 +29773,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const splitPct = parseFloat(document.getElementById('gridopt-split').value);
             const startEquity = parseFloat(document.getElementById('gridopt-equity').value);
 
+            // JAVÍTÁS: lásd a Walk-Forward Optimalizálónál (calcWalkForwardOptimizer)
+            // dokumentált azonos hibaosztályt — extrém nagy (de parseInt() számára érvényes)
+            // fastMin/fastMax/slowMin/slowMax érték esetén a lebegőpontos pontosságvesztés
+            // miatt a "combos" szorzat kis értéket mutat, míg a VALÓS `for` ciklus a
+            // `fast++`/`slow++` lépés no-op-pá válása miatt SOHA nem áll le (böngészőlap-
+            // lefagyás). Explicit 1000-es abszolút felső korlát zárja ki ezt a magnitúdót.
             if ([fastMin, fastMax, slowMin, slowMax, splitPct, startEquity].some(v => isNaN(v)) ||
                 fastMin < 2 || fastMax < fastMin || slowMin < 2 || slowMax < slowMin ||
+                fastMax > 1000 || slowMax > 1000 ||
                 splitPct <= 0 || splitPct >= 100 || startEquity <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — ellenőrizd, hogy minden min ≤ max, a split 0-100 közt és a tőke pozitív legyen!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — ellenőrizd, hogy minden min ≤ max, minden EMA periódus 2 és 1000 közt, a split 0-100 közt és a tőke pozitív legyen!</div>`;
                 return;
             }
             if ((fastMax - fastMin + 1) * (slowMax - slowMin + 1) > 400) {
@@ -29861,10 +29880,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const inSamplePct = parseFloat(document.getElementById('robustmap-split').value);
             const startEquity = parseFloat(document.getElementById('robustmap-equity').value);
 
+            // JAVÍTÁS: lásd a Walk-Forward Optimalizálónál (calcWalkForwardOptimizer)
+            // dokumentált azonos hibaosztályt — extrém nagy (de parseInt() számára érvényes)
+            // fastMin/fastMax/slowMin/slowMax érték esetén a lebegőpontos pontosságvesztés
+            // miatt a "combos" szorzat kis értéket mutat, míg a VALÓS `for` ciklus a
+            // `fast++`/`slow++` lépés no-op-pá válása miatt SOHA nem áll le (böngészőlap-
+            // lefagyás). Explicit 1000-es abszolút felső korlát zárja ki ezt a magnitúdót.
             if ([fastMin, fastMax, slowMin, slowMax, inSamplePct, startEquity].some(v => isNaN(v)) ||
                 fastMin < 2 || fastMax < fastMin || slowMin < 2 || slowMax < slowMin ||
+                fastMax > 1000 || slowMax > 1000 ||
                 inSamplePct <= 0 || inSamplePct >= 100 || startEquity <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — minden min ≤ max legyen, a split 0-100 közt, a tőke pozitív!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — minden min ≤ max, minden EMA periódus 2 és 1000 közt legyen, a split 0-100 közt, a tőke pozitív!</div>`;
                 return;
             }
             const combos = (fastMax - fastMin + 1) * (slowMax - slowMin + 1);
