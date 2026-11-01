@@ -23165,8 +23165,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rr = parseFloat(document.getElementById('ps-rr').value) || 0;
             const out = document.getElementById('ps-result');
 
-            if (bal <= 0 || riskPct <= 0 || slPct <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb értékeket!</div>`;
+            if (bal <= 0 || riskPct <= 0 || slPct <= 0 || !Number.isFinite(bal) || !Number.isFinite(riskPct) || !Number.isFinite(slPct) || !Number.isFinite(rr)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb és véges értékeket!</div>`;
                 return;
             }
 
@@ -23291,8 +23291,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const todayPnl = parseFloat(document.getElementById('dl-today-pnl').value) || 0;
             const out = document.getElementById('dl-result');
 
-            if (balance <= 0 || limitPct <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számla-egyenleget és limitet!</div>`;
+            if (balance <= 0 || limitPct <= 0 || !Number.isFinite(balance) || !Number.isFinite(limitPct) || !Number.isFinite(todayPnl)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számla-egyenleget, limitet és napi eredményt!</div>`;
                 return;
             }
 
