@@ -700,6 +700,32 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-11-01, mobil UX audit — valódi, blokkoló hiba,
+               Playwright-tal mérve): az Akadémia "Mi lenne, ha..."
+               (#whatif-viewer), "Szószedet" (#glossary-list) és "AI Chart
+               Elemző" (#ai-analyzer-viewer) nézetei a fentebb már javított
+               testvér-konténerekkel (academy-viewer, replay-viewer,
+               drill-viewer, stb.) SZERKEZETILEG AZONOS, ugyanazon Akadémia-
+               panel-rendszer alatt élő görgethető konténerek
+               ("flex-grow overflow-y-auto"), de lemaradtak a korábbi
+               körökből. Mért átfedés a fix alsó navigáció
+               (#mobile-bottom-nav, 68px) felett, a tartalom VÉGÉIG
+               görgetve: Szószedet (98 valódi szószedet-tétel) 43.75px, "Mi
+               lenne, ha..." (valódi szcenárió záró-képernyője, a "Következő
+               szcenárió" gombbal) 35.9px, AI Chart Elemző (az "Elemzés-
+               előzmények" szekció megtelve) 44px — mindhárom esetben a
+               legalsó gomb/elem részben takarásban/kattinthatatlan volt
+               mobilon. Ugyanaz a bevált minta, mint a többi Akadémia-
+               alfülnél. (A "Hibás kérdések" #mistake-bank-viewer testvér-
+               konténert szándékosan NEM érintettük — méréssel igazoltuk,
+               hogy annak tartalma (statisztika-kártyák, kompakt
+               intro-képernyők) szerkezetileg sosem nő elég magasra ahhoz,
+               hogy a görgethető terület túlcsorduljon, így nála nincs
+               átfedés.) */
+            #whatif-viewer, #glossary-list, #ai-analyzer-viewer {
+                padding-bottom: 76px !important;
+            }
+
             /* JAVÍTÁS (2026-10-31, mobil UX audit): a lecke-kártyák
                Előző/Következő gombsora induláskor (scrollTop:0-nál) a
                tartalom legvégén, a görgethető terület alján jelent meg —
