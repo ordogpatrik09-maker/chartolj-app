@@ -628,6 +628,22 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-11-01, mobil UX audit — valódi, blokkoló hiba):
+               az Akadémia "Ismétlés" (SRS) alfüle (#academy-body-review) a
+               fenti #academy-body-curriculum-mal SZERKEZETILEG AZONOS
+               görgethető konténer ("flex-grow overflow-y-auto p-6"), de
+               lemaradt az előző körből. A renderSrsReview() által
+               generált, esedékes-lecke gombok (lásd `.map(item => ...
+               <button onclick="setAcademyMode('lessons'); ...">`) a lista
+               VÉGÉIG görgetve is a fix alsó navigáció (#mobile-bottom-nav,
+               68px) ALÁ futottak, ha elég sok (4+) lecke volt esedékes
+               ismétlésre — az utolsó 1-2 gomb emiatt részben takarásban/
+               kattinthatatlan volt mobilon. Ugyanaz a bevált minta, mint a
+               Replay/Naptár/Tananyag-térkép eseteknél. */
+            #academy-body-review {
+                padding-bottom: 76px !important;
+            }
+
             /* JAVÍTÁS (2026-10-31, mobil UX audit — valódi, blokkoló hiba):
                a Profil fülről nyitható Kereskedési Terv (#trading-plan-
                screen, #trading-plan-body) űrlapja a tartalom VÉGÉIG
