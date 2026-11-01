@@ -726,6 +726,26 @@
                 padding-bottom: 76px !important;
             }
 
+            /* JAVÍTÁS (2026-11-01, mobil UX audit — valódi, blokkoló hiba,
+               Playwright-tal mérve): a Jogi Infó képernyő (#legal-screen,
+               "absolute inset-0 z-[85]") görgethető tartalma (#legal-
+               content) a fenti Akadémia-alfülekkel SZERKEZETILEG AZONOS
+               hibaosztályba esik — ugyanaz a fix alsó navigáció
+               (#mobile-bottom-nav, 68px, z-[95]) fedi el a tartalom alját,
+               mert a #legal-screen (és a #mobile-tools-modal, #journal-
+               screen, #trading-plan-screen) z-indexe (85) alacsonyabb a
+               navigációénál. A "Felhasználási feltételek" és "Adatvédelem"
+               fül végén lévő "Verzió: 0.1 (vázlat)..." sor a tartalom
+               VÉGÉIG görgetve is 36.25px-re a navigáció alá futott (mért
+               átfedés), a meglévő pb-8 (32px) nem volt elég. A "Kockázati
+               figyelmeztetés" fül rövidebb, nála nincs görgetés/átfedés,
+               de ugyanazt az extra alsó térközt kapja, mivel a szabály a
+               konténerre, nem fül-specifikusan vonatkozik. Ugyanaz a bevált
+               minta, mint a többi Akadémia-alfülnél/képernyőnél. */
+            #legal-content {
+                padding-bottom: 76px !important;
+            }
+
             /* JAVÍTÁS (2026-10-31, mobil UX audit): a lecke-kártyák
                Előző/Következő gombsora induláskor (scrollTop:0-nál) a
                tartalom legvégén, a görgethető terület alján jelent meg —
