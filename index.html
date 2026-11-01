@@ -2011,6 +2011,13 @@
                                 <div class="text-[10px] text-slate-400">Fix vagy ATR-alapú trailing stop lépésenként</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('timeexit-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-hourglass-half"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Idő-alapú Kilépés Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Elvárt vs tényleges progressz az idő függvényében</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('spreadcost-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-300/10 text-amber-300 border border-amber-300/30 flex items-center justify-center text-sm"><i class="fa-solid fa-left-right"></i></span>
                             <div>
@@ -10664,6 +10671,44 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
         </div>
     </div>
 
+    <!-- ================= IDŐ-ALAPÚ KILÉPÉS KALKULÁTOR (OKTATÁSI) =================
+         Modell: lineáris elvárt progresszió. Ha a setup pontosan az elvárt ütemben
+         halad, `elapsed` perc alatt `100 × elapsed/expected` %-ot kellene elérnie
+         (100%-ra korlátozva). Tolerancia-határidő = elvárt idő × tolerancia-szorzó —
+         ezen túl a kalkulátor a tényleges progressztől FÜGGETLENÜL zárást javasol,
+         mert a kapcsolódó lecke szerint az idő maga is objektív, érzelemmentes
+         kilépési jelzés lehet, még a stop-loss aktiválódása előtt. -->
+    <div id="timeexit-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-hourglass-half text-neon-cyan"></i> Idő-alapú Kilépés Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('timeexit-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg, mennyi idő alatt KELLENE "kijátszódnia" a setupnak, mennyi idő telt el eddig, és hol állsz most a célhoz képest (%-ban) — a kalkulátor objektíven megmutatja, időben vagy-e, vagy a setup már "halott", mielőtt a stop-loss aktiválódna.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Elvárt kibontakozási idő (perc)</label>
+            <input type="number" id="timeexit-expected" value="30" step="1" min="0.1" max="100000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Eltelt idő a belépés óta (perc)</label>
+            <input type="number" id="timeexit-elapsed" value="15" step="1" min="0" max="100000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Jelenlegi progressz a céláron (%, belépés=0%, take-profit=100%, negatív = a stop felé mozdult)</label>
+            <input type="number" id="timeexit-progress" value="60" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Tolerancia-szorzó (hányszorosa az elvárt időnek a kötelező zárásig)</label>
+            <input type="number" id="timeexit-tolerance" value="1.5" step="0.1" min="1" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcTimeExit()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Számolás
+            </button>
+
+            <div id="timeexit-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az időalapú kilépés KIEGÉSZÍTI a stop-loss/take-profit szabályokat, nem helyettesíti — ha egy setup nem mozdul a várt irányba a megadott időn belül, az önmagában objektív, érzelemmentes jelzés lehet a korai zárásra, még mielőtt a stop aktiválódna.</p>
+        </div>
+    </div>
+
     <!-- ================= BID-ASK SPREAD KÖLTSÉG KALKULÁTOR (OKTATÁSI) =================
          Spread = Ask - Bid. Spread% = Spread / Mid × 100, ahol Mid = (Bid+Ask)/2.
          Költség/trade = Spread × Pozícióméret. Teljes költség = Költség/trade × Trade-ek száma. -->
@@ -12844,6 +12889,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Trailing Stop Szimulátor</div>
                             <div class="text-[10px] text-slate-400">Fix vagy ATR-alapú trailing stop lépésenként</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('timeexit-modal')" data-tool-title="idő-alapú kilépés kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-hourglass-half"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Idő-alapú Kilépés Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Elvárt vs tényleges progressz az idő függvényében</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('pyramid-modal')" data-tool-title="piramizálás kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -29025,6 +29077,78 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó/trigger stop:</span><span class="${colorClass} font-extrabold text-sm">${finalStop.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // --- Idő-alapú Kilépés Kalkulátor ---
+        // Modell: lineáris elvárt progresszió — ha a setup pontosan az elvárt ütemben
+        // halad, akkor `elapsed` perc alatt `100 × elapsed/expected` %-ot kellene elérnie
+        // (0-100%-ra korlátozva). A tolerancia-határidő = expected × toleranceMult — ezen
+        // túl a kalkulátor a tényleges progressztől FÜGGETLENÜL zárást javasol.
+        function calcTimeExit() {
+            const out = document.getElementById('timeexit-result');
+            if (!out) return;
+            const expected = parseFloat(document.getElementById('timeexit-expected').value);
+            const elapsed = parseFloat(document.getElementById('timeexit-elapsed').value);
+            const progress = parseFloat(document.getElementById('timeexit-progress').value);
+            const tolerance = parseFloat(document.getElementById('timeexit-tolerance').value);
+
+            if (!Number.isFinite(expected) || !Number.isFinite(elapsed) || !Number.isFinite(progress) || !Number.isFinite(tolerance)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes (véges) számokat minden mezőben!</div>`;
+                return;
+            }
+            if (expected <= 0 || elapsed < 0 || tolerance <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az elvárt idő és a tolerancia-szorzó pozitív, az eltelt idő nem-negatív szám legyen!</div>`;
+                return;
+            }
+            // Felső korlát irreálisan extrém bemenetekre — tisztán védelmi jellegű
+            // bemenet-validáció, ugyanazt a mintát követve, mint a korábbi
+            // "NaN/Infinity szivárgás extrém bemenetnél" javítási körök.
+            if (expected > 100000 || elapsed > 100000 || tolerance > 1000 || Math.abs(progress) > 1e9) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott érték irreálisan nagy — adj meg praktikus kereskedési időtartamokat (percben)!</div>`;
+                return;
+            }
+
+            const hardDeadline = expected * tolerance;
+            const expectedProgressNow = Math.min(100, (elapsed / expected) * 100);
+            const progressGap = progress - expectedProgressNow;
+            const timeUtilizationPct = Math.max(0, (elapsed / hardDeadline) * 100);
+            const remainingToDeadline = hardDeadline - elapsed;
+
+            if (!Number.isFinite(hardDeadline) || !Number.isFinite(expectedProgressNow) || !Number.isFinite(progressGap) || !Number.isFinite(timeUtilizationPct) || !Number.isFinite(remainingToDeadline)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékekkel a számítás nem adott érvényes eredményt — ellenőrizd a bemeneteket!</div>`;
+                return;
+            }
+
+            let verdict, verdictColor, verdictIcon;
+            if (elapsed >= hardDeadline) {
+                verdict = 'ZÁRD A POZÍCIÓT — a tolerancia-határidő lejárt';
+                verdictColor = 'text-neon-red';
+                verdictIcon = 'fa-triangle-exclamation';
+            } else if (progress <= 0 && elapsed >= expected) {
+                verdict = 'Fontold meg a korai zárást — a setup nem mozdult a várt irányba az elvárt időn belül';
+                verdictColor = 'text-amber-400';
+                verdictIcon = 'fa-triangle-exclamation';
+            } else if (progressGap < -30) {
+                verdict = 'Jelentősen lemaradsz az elvárt progressziótól — fokozott figyelem indokolt';
+                verdictColor = 'text-amber-400';
+                verdictIcon = 'fa-circle-exclamation';
+            } else {
+                verdict = 'Tartás indokolt — a setup időben van';
+                verdictColor = 'text-neon-green';
+                verdictIcon = 'fa-circle-check';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Elvárt progressz most:</span><span class="text-white">${expectedProgressNow.toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Tényleges progressz:</span><span class="text-white">${progress.toFixed(1)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Eltérés (tény − elvárt):</span><span class="${progressGap >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${progressGap >= 0 ? '+' : ''}${progressGap.toFixed(1)} pp</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Tolerancia-határidő:</span><span class="text-white">${hardDeadline.toLocaleString(undefined, { maximumFractionDigits: 1 })} perc</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Idő-kihasználtság:</span><span class="text-white">${timeUtilizationPct.toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">${remainingToDeadline >= 0 ? 'Hátralévő idő a határidőig' : 'Túllépés a határidőn'}:</span><span class="${remainingToDeadline >= 0 ? 'text-white' : 'text-neon-red'} font-bold">${Math.abs(remainingToDeadline).toLocaleString(undefined, { maximumFractionDigits: 1 })} perc</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${verdictColor}"><i class="fa-solid ${verdictIcon} mr-1"></i>${verdict}</p>
             `;
         }
 
@@ -45470,6 +45594,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             17: { tool: 'poscalc-modal', cta: 'Számold ki élesben a megfelelő tételméretet' },
             19: { tool: 'rr-modal', cta: 'Vizualizáld élesben a Risk/Reward arányodat' },
             117: { tool: 'confluence-modal', cta: 'Futtasd le élesben a Confluence szkennert' },
+            119: { tool: 'timeexit-modal', cta: 'Számold ki élesben az Idő-alapú Kilépés Kalkulátort — mutatja, időben vagy-e, vagy a setup már lemaradt az elvárt progressziótól' },
             365: { tool: 'feeimpact-modal', cta: 'Számold ki élesben a kereskedési díjak hatását' },
             70: { tool: 'makertaker-modal', cta: 'Számold ki élesben a maker/taker díj-mixed hatását' },
             199: { tool: 'makertaker-modal', cta: 'Számold ki élesben, mennyit spórolhatsz egy kedvezőbb VIP díjszinttel' },
@@ -45672,7 +45797,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
