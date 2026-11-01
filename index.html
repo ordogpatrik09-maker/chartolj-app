@@ -19871,6 +19871,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let ror;
             if (edge <= 0) {
                 ror = 1;
+            } else if (edge >= 1) {
+                // Lásd a calcRiskOfRuin()-ban lévő részletes magyarázatot:
+                // edge >= 1 mellett a Math.pow() negatív alapot nem egész
+                // kitevőre emelne (NaN) — ez a tartomány ≈0% csőd-kockázat.
+                ror = 0;
             } else {
                 const base = (1 - edge) / (1 + edge);
                 ror = Math.pow(base, units);
@@ -23123,6 +23128,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // a csőd elkerülhetetlen — ez nem becslés, ez a várható érték
                 // negatív voltának direkt következménye.
                 ror = 1;
+            } else if (edge >= 1) {
+                // Edge >= 1 esetén a formula alapja negatívvá válik, és egy
+                // nem egész kitevőre emelve (Math.pow) NaN-t adna — matema-
+                // tikailag viszont egy ≥1 egységnyi várható érték/trade mellett
+                // a csőd-kockázat elhanyagolhatóan közel van a nullához, ezért
+                // ezt a tartományt explicit 0%-ként kezeljük, NaN helyett.
+                ror = 0;
             } else {
                 // Közelítő fixed-fractional Risk of Ruin formula:
                 // RoR ≈ ((1 - edge) / (1 + edge)) ^ (tőke / kockázati egység)
