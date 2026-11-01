@@ -2073,6 +2073,13 @@
                                 <div class="text-[10px] text-slate-400">Rövid/hosszú SMA keresztezés felismerése</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('macalc-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">SMA/EMA Mozgóátlag Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Melyik reagál gyorsabban, melyikhez van közel az ár</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('cmf-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-water"></i></span>
                             <div>
@@ -10953,6 +10960,47 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
         </div>
     </div>
 
+    <!-- ================= SMA/EMA MOZGÓÁTLAG ÖSSZEHASONLÍTÓ KALKULÁTOR (OKTATÁSI) =================
+         SMA(periódus) = az utolsó `periódus` záróár egyszerű átlaga.
+         EMA(periódus): seed = az első `periódus` záróár SMA-ja, utána a szabványos
+         EMA-rekurzió (k = 2/(periódus+1)), ugyanaz a konvenció, mint a calcEMASeries()-ben.
+         A cél a "Mozgóátlagok (EMA/SMA)" lecke két fő állítását tegye SZÁMSZERŰVÉ:
+         (1) az EMA nagyobb súlyt ad a friss áraknak, ezért gyorsabban reagál, mint az SMA;
+         (2) az ár és a mozgóátlag távolsága jelzi, hogy az éppen dinamikus
+         támaszként/ellenállásként viselkedhet-e. -->
+    <div id="macalc-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-neon-purple"></i> SMA/EMA Mozgóátlag Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('macalc-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróárak sorozatát (időrendben, a legrégebbi az első sorban) és egy periódust. A kalkulátor kiszámolja az adott periódusú SMA-t és EMA-t, megmutatja, melyikhez van közelebb az ár (dinamikus támasz/ellenállás jelzés), és számszerűsíti, hogy az utolsó bar-on melyik mozgóátlag reagált gyorsabban az árelmozdulásra.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy érték, időrendben)</label>
+            <textarea id="macalc-closes" rows="7" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" placeholder="100&#10;100.2&#10;...">100
+100.2
+99.8
+100.1
+99.9
+100.3
+100.0
+100.2
+103.5
+106.0</textarea>
+            <label class="text-[11px] font-semibold text-slate-400">Periódus</label>
+            <input type="number" id="macalc-period" value="5" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+
+            <button onclick="calcMaSmaEmaCompare()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="macalc-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Mindkét mozgóátlag lagging (múltbeli árakból számolt) indikátor — sem az SMA, sem az EMA nem jelzi előre a jövőbeli árat, csak a már megtörtént mozgást simítja és teszi áttekinthetőbbé.</p>
+        </div>
+    </div>
+
     <div id="candlepattern-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -13675,6 +13723,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Golden Cross / Death Cross Detektor</div>
                             <div class="text-[10px] text-slate-400">Rövid/hosszú SMA keresztezés felismerése</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('macalc-modal')" data-tool-title="sma/ema mozgóátlag kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-line"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">SMA/EMA Mozgóátlag Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Melyik reagál gyorsabban, melyikhez van közel az ár</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('keltner-modal')" data-tool-title="keltner csatorna kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -29512,6 +29567,97 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Jelen SMA${shortP} / SMA${longP}:</span><span class="text-white">${currShort.toLocaleString(undefined, { maximumFractionDigits: 4 })} / ${currLong.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcMaSmaEmaCompare() {
+            const closesEl = document.getElementById('macalc-closes');
+            const periodEl = document.getElementById('macalc-period');
+            const out = document.getElementById('macalc-result');
+            if (!closesEl || !periodEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
+            let period = parseInt(periodEl.value, 10);
+            if (!Number.isFinite(period) || period < 1) period = 10;
+
+            const n = closes.length;
+            const minNeeded = period + 1;
+            if (n < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} záróár szükséges (periódus + 1) — jelenleg ${n} érvényes érték van megadva!</div>`;
+                return;
+            }
+
+            function smaAt(idx) {
+                let sum = 0;
+                for (let i = idx - period + 1; i <= idx; i++) sum += closes[i];
+                return sum / period;
+            }
+            const smaLast = smaAt(n - 1);
+            const smaPrev = smaAt(n - 2);
+
+            // EMA-sorozat: seed = az első `period` záróár SMA-ja, utána a
+            // szabványos EMA-rekurzió — ugyanaz a konvenció, mint calcEMASeries().
+            const ema = new Array(n).fill(null);
+            let seedSum = 0;
+            for (let i = 0; i < period; i++) seedSum += closes[i];
+            ema[period - 1] = seedSum / period;
+            const k = 2 / (period + 1);
+            for (let i = period; i < n; i++) {
+                ema[i] = closes[i] * k + ema[i - 1] * (1 - k);
+            }
+            const emaLast = ema[n - 1];
+            const emaPrev = ema[n - 2];
+
+            const price = closes[n - 1];
+            const prevPrice = closes[n - 2];
+
+            function srNote(distPct) {
+                if (!Number.isFinite(distPct)) return 'N/A (nulla mozgóátlag-érték)';
+                const absd = Math.abs(distPct);
+                if (absd <= 1.5) return `nagyon közel van (±1.5%-on belül) — dinamikus támasz/ellenállásként viselkedhet`;
+                return distPct > 0 ? `${absd.toFixed(2)}%-kal FELETTE van` : `${absd.toFixed(2)}%-kal ALATTA van`;
+            }
+            const distSmaPct = smaLast !== 0 ? ((price - smaLast) / smaLast) * 100 : NaN;
+            const distEmaPct = emaLast !== 0 ? ((price - emaLast) / emaLast) * 100 : NaN;
+
+            const emaMove = Math.abs(emaLast - emaPrev);
+            const smaMove = Math.abs(smaLast - smaPrev);
+            const priceMove = Math.abs(price - prevPrice);
+
+            let responsivenessNote;
+            if (priceMove === 0) {
+                responsivenessNote = 'Az utolsó bar-on nem volt árelmozdulás, a reagálási sebesség ezen az adaton nem demonstrálható.';
+            } else {
+                const emaRatio = (emaMove / priceMove) * 100;
+                const smaRatio = (smaMove / priceMove) * 100;
+                if (emaRatio > smaRatio + 0.001) {
+                    responsivenessNote = `Az utolsó bar árelmozdulásának ${emaRatio.toFixed(1)}%-át követte le az EMA, az SMA csak ${smaRatio.toFixed(1)}%-át — ez számszerűsíti, hogy az EMA gyorsabban reagál a friss árváltozásra, mert nagyobb súlyt ad a legutóbbi áraknak.`;
+                } else if (smaRatio > emaRatio + 0.001) {
+                    responsivenessNote = `Ezen a konkrét bar-on az SMA (${smaRatio.toFixed(1)}%) nagyobb arányban mozdult az árral, mint az EMA (${emaRatio.toFixed(1)}%) — egyedi bar-okon ez előfordulhat, de hosszabb, trendes sorozaton az EMA jellemzően konzisztensebben reagál gyorsabban.`;
+                } else {
+                    responsivenessNote = `Az EMA és az SMA elmozdulása ezen a bar-on megegyezett (${emaRatio.toFixed(1)}%).`;
+                }
+            }
+
+            const trendNote = (Number.isFinite(distSmaPct) && Number.isFinite(distEmaPct))
+                ? ((price > smaLast && price > emaLast)
+                    ? 'Az ár mindkét mozgóátlag FELETT van — bullish strukturális összhang.'
+                    : (price < smaLast && price < emaLast)
+                        ? 'Az ár mindkét mozgóátlag ALATT van — bearish strukturális összhang.'
+                        : 'Az ár a két mozgóátlag KÖZÖTT van — vegyes, nem egyértelmű kép.')
+                : 'A mozgóátlag(ok) nulla értéke miatt a trend-összhang nem értelmezhető ezen az adaton.';
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Utolsó záróár:</span><span class="text-white">${price.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">SMA(${period}):</span><span class="text-white">${smaLast.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">EMA(${period}):</span><span class="text-white">${emaLast.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Ár vs SMA:</span><span class="${Number.isFinite(distSmaPct) && distSmaPct < 0 ? 'text-neon-red' : 'text-neon-green'}">${srNote(distSmaPct)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Ár vs EMA:</span><span class="${Number.isFinite(distEmaPct) && distEmaPct < 0 ? 'text-neon-red' : 'text-neon-green'}">${srNote(distEmaPct)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold text-neon-cyan mb-2">${trendNote}</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${responsivenessNote}</p>
             `;
         }
 
