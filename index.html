@@ -11364,7 +11364,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
 104,100,900
 111,107,2000</textarea>
             <label class="text-[11px] font-semibold text-slate-400">Sávok száma</label>
-            <input type="number" id="vp-bins" value="10" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+            <input type="number" id="vp-bins" value="10" step="1" min="2" max="200" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
 
             <button onclick="calcVolumeProfile()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-500 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                 Profil Számolása
@@ -11424,7 +11424,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
             <div class="grid grid-cols-3 gap-2 mb-4">
                 <div>
                     <label class="text-[11px] font-semibold text-slate-400">Pótlások száma</label>
-                    <input type="number" id="pyramid-addons" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
+                    <input type="number" id="pyramid-addons" value="3" step="1" min="1" max="50" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-500/50">
                 </div>
                 <div>
                     <label class="text-[11px] font-semibold text-slate-400">Trigger %</label>
@@ -23227,8 +23227,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('mc-result');
             const canvas = document.getElementById('mc-fanchart');
 
-            if (!winRatePct || winRatePct <= 0 || winRatePct >= 100 || !rr || rr <= 0 || !riskPct || riskPct <= 0 || riskPct >= 100 || !numTrades || numTrades < 1 || !numSims || numSims < 1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%), R/R arányt, kockázat/trade %-ot (1-99%) és pozitív egész számokat a trade-ek/szimulációk számához!</div>`;
+            // JAVÍTÁS: a numTrades/numSims mezők felső korlát nélkül egyenesen egy EGYMÁSBA
+            // ÁGYAZOTT ciklus határaiként szolgáltak (numSims × numTrades iteráció) — egy
+            // extrém nagy érték a böngészőlapot a főszálon futó, gyakorlatilag véget nem érő
+            // ciklussal LEFAGYASZTOTTA, miközben a mezőkön látható "max" HTML-attribútum (2000
+            // és 1000) CSAK a spinner-nyilakra hat, a billentyűzettel beírt értéket NEM
+            // korlátozza. Most explicit felső korlátot kaptak, konzisztensen a mezők HTML
+            // max attribútumaival.
+            if (!winRatePct || winRatePct <= 0 || winRatePct >= 100 || !rr || rr <= 0 || !riskPct || riskPct <= 0 || riskPct >= 100 || !numTrades || numTrades < 1 || numTrades > 2000 || !numSims || numSims < 1 || numSims > 1000) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%), R/R arányt, kockázat/trade %-ot (1-99%), egy 1 és 2000 közötti trade-számot, és egy 1 és 1000 közötti szimulációszámot!</div>`;
                 return;
             }
 
@@ -30491,8 +30498,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 3 && a.every(v => Number.isFinite(v)));
             const numBins = parseInt(binsEl.value, 10) || 10;
 
-            if (candles.length < 1 || numBins < 2) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 gyertya (Magas,Alacsony,Volumen) és legalább 2 sáv szükséges!</div>`;
+            // JAVÍTÁS: a numBins mezőnek korábban EGYÁLTALÁN nem volt felső korlátja (HTML
+            // "max" attribútuma sem) — közvetlenül egy, a gyertyák számával is SZORZÓDÓ
+            // (gyertyánként végigfutó) beágyazott ciklus határaként szolgált. Egy extrém nagy
+            // érték a böngészőlapot a főszálon futó, gyakorlatilag véget nem érő ciklussal
+            // LEFAGYASZTOTTA. Most explicit felső korlátot kapott (200 sáv bőven elég a
+            // volumenprofil-elemzéshez), és a HTML mezőre is felkerült a max="200" attribútum.
+            if (candles.length < 1 || numBins < 2 || numBins > 200) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 gyertya (Magas,Alacsony,Volumen), és egy 2 és 200 közötti sávszám szükséges!</div>`;
                 return;
             }
 
@@ -30625,8 +30638,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const triggerPct = parseFloat(triggerEl.value);
             const addPct = parseFloat(addpctEl.value);
 
-            if ([entry, initSize, numAddons, triggerPct, addPct].some(v => isNaN(v)) || entry <= 0 || initSize <= 0 || numAddons < 1 || addPct <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt érvényesen ki kell tölteni (pozitív belépő ár, méret, legalább 1 pótlás, pozitív pótlás-méret %)!</div>`;
+            // JAVÍTÁS: a numAddons (pótlások száma) mezőnek korábban nem volt JS-ben
+            // érvényesített felső korlátja (a HTML inputnak sem volt "max" attribútuma) —
+            // közvetlenül egy pótlás-sorokat építő ciklus határaként szolgált. Egy extrém
+            // nagy érték a böngészőlapot a főszálon futó, gyakorlatilag véget nem érő
+            // ciklussal LEFAGYASZTOTTA. Most explicit felső korlátot kapott (50 pótlás
+            // bőven elég a piramizálás szemléltetéséhez).
+            if ([entry, initSize, numAddons, triggerPct, addPct].some(v => isNaN(v)) || entry <= 0 || initSize <= 0 || numAddons < 1 || numAddons > 50 || addPct <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt érvényesen ki kell tölteni (pozitív belépő ár, méret, 1 és 50 közötti pótlás-szám, pozitív pótlás-méret %)!</div>`;
                 return;
             }
 
@@ -34682,8 +34701,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const endPrice = parseFloat(endPriceEl.value);
             const numTranches = parseInt(tranchesEl.value);
 
-            if (!totalSize || totalSize <= 0 || !startPrice || startPrice <= 0 || !endPrice || endPrice <= 0 || !numTranches || numTranches < 2) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb pozícióméretet, mindkét árszintet, és legalább 2 tranche-t!</div>`;
+            // JAVÍTÁS: a numTranches mezőnek korábban nem volt JS-ben érvényesített felső
+            // korlátja — közvetlenül egy ármentő-tömböt építő ciklus határaként szolgált. Egy
+            // extrém nagy érték a böngészőlapot a főszálon futó, gyakorlatilag véget nem érő
+            // ciklussal LEFAGYASZTOTTA, miközben a mezőn látható "max" HTML-attribútum (20)
+            // CSAK a spinner-nyilakra hat, a billentyűzettel beírt értéket NEM korlátozza. Most
+            // explicit felső korlátot kapott, konzisztensen a mező HTML max="20" attribútumával.
+            if (!totalSize || totalSize <= 0 || !startPrice || startPrice <= 0 || !endPrice || endPrice <= 0 || !numTranches || numTranches < 2 || numTranches > 20) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb pozícióméretet, mindkét árszintet, és egy 2 és 20 közötti tranche-számot!</div>`;
                 return;
             }
             if (startPrice === endPrice) {
@@ -35042,7 +35067,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!totalEl || !yearsEl || !rebalanceEl || !resultEl) return;
 
             const totalRaw = parseFloat(totalEl.value);
-            const years = Math.max(1, Math.round(parseFloat(yearsEl.value) || 0));
+            // JAVÍTÁS: a years mező felső korlát nélkül (csak az alsó Math.max(1,...) padlóval)
+            // közvetlenül a rebalancing-ág `for (y = 0; y < years; y++)` ciklusának határaként
+            // szolgált — egy extrém nagy érték a böngészőlapot a főszálon futó, gyakorlatilag
+            // véget nem érő ciklussal LEFAGYASZTOTTA, miközben a mezőn látható "max" HTML-
+            // attribútum (50) CSAK a spinner-nyilakra hat, a billentyűzettel beírt értéket NEM
+            // korlátozza. Most explicit felső korláttal (Math.min) is lezárva, konzisztensen a
+            // mező HTML max="50" attribútumával.
+            const years = Math.max(1, Math.min(50, Math.round(parseFloat(yearsEl.value) || 0)));
             const rebalance = rebalanceEl.checked;
 
             // JAVÍTÁS: korábban a Math.max(0, parseFloat(...) || 0) minta érvénytelen/
@@ -36635,8 +36667,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg érvényes, nullánál nagyobb havi összeget!</div>`;
                 return;
             }
-            if (!Number.isFinite(monthsRaw) || monthsRaw < 1) {
-                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Az időszak hossza legyen legalább 1 hónap!</div>`;
+            // JAVÍTÁS: a months mező felső korlát nélkül egyenesen egy `for (m = 0; m < months; m++)`
+            // ciklus határaként szolgált — egy extrém nagy (pl. véletlenül/szándékosan beírt
+            // 24+ jegyű) érték a böngészőlapot a főszálon futó, gyakorlatilag véget nem érő
+            // ciklussal LEFAGYASZTOTTA, miközben a mezőn látható "max" HTML-attribútum (600)
+            // CSAK a spinner-nyilakra hat, a billentyűzettel beírt értéket NEM korlátozza. Most
+            // explicit felső korlátot kapott, konzisztensen a mező HTML max="600" attribútumával.
+            if (!Number.isFinite(monthsRaw) || monthsRaw < 1 || monthsRaw > 600) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Az időszak hossza legalább 1, legfeljebb 600 hónap (50 év) lehet!</div>`;
                 return;
             }
             if (!Number.isFinite(startPriceRaw) || startPriceRaw <= 0 || !Number.isFinite(endPriceRaw) || endPriceRaw <= 0) {
