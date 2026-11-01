@@ -2025,6 +2025,13 @@
                                 <div class="text-[10px] text-slate-400">Rejtett kereskedési költség halmozott hatása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('stoplimitgap-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-orange-400/10 text-orange-400 border border-orange-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-shield-halved"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Stop-Limit Védelmi Sáv Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Teljesül-e a megbízás, vagy védelem nélkül marad a pozíció</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('yieldcurve-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-rose-300/10 text-rose-300 border border-rose-300/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-simple"></i></span>
                             <div>
@@ -10751,6 +10758,49 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
         </div>
     </div>
 
+    <!-- ================= STOP-LIMIT VÉDELMI SÁV KALKULÁTOR (OKTATÁSI) =================
+         Tolerancia-sáv = Stop ár × (tolerancia% / 100). Gap = Stop ár × (gap% / 100).
+         Ha Gap <= Tolerancia-sáv, a stop-limit megbízás TELJESÜL (védett maradsz, de
+         a gap mértékéig csúszol). Ha Gap > Tolerancia-sáv, a megbízás NEM TELJESÜL —
+         a pozíció védelem nélkül, nyitva marad, szemben a stop-market megbízással,
+         amely garantáltan (ugyanazon a töréspontnál) zár. -->
+    <div id="stoplimitgap-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-orange-400"></i> Stop-Limit Védelmi Sáv Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('stoplimitgap-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A stop-limit megbízás ár-védelmet nyújt (limit sáv), de végrehajtási garanciát NEM — ha egy hirtelen mozgás (gap) nagyobb, mint a beállított toleranciád, a megbízás egyáltalán nem teljesül, és a pozíciód védelem nélkül, nyitva marad. Add meg az irányt, a pozícióméretet, a stop-szintedet, a tolerancia-sávodat és egy feltételezett gap méretét, és nézd meg, melyik forgatókönyv valósulna meg.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Irány</label>
+            <select id="stoplimitgap-direction" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50">
+                <option value="long">Long (eladási stop lefelé)</option>
+                <option value="short">Short (vételi stop felfelé)</option>
+            </select>
+
+            <label class="text-[11px] font-semibold text-slate-400">Pozícióméret (egység)</label>
+            <input type="number" id="stoplimitgap-size" value="100" step="1" min="0.0001" max="1000000000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Stop-loss szint (ár)</label>
+            <input type="number" id="stoplimitgap-stopprice" value="100" step="0.01" min="0.0001" max="1000000000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Max. slippage tolerancia (limit sáv, % a stop ártól)</label>
+            <input type="number" id="stoplimitgap-tolerance" value="0.5" step="0.01" min="0" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Feltételezett gap/hirtelen mozgás a stop-szint átlépésekor (%)</label>
+            <input type="number" id="stoplimitgap-gap" value="2" step="0.01" min="0" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-orange-400/50">
+
+            <button onclick="calcStopLimitGap()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-orange-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Számolás
+            </button>
+
+            <div id="stoplimitgap-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél szigorúbb (kisebb) a tolerancia-sávod, annál nagyobb az esélye, hogy egy gyors mozgás esetén a megbízásod nem teljesül — a stop-limit ár-védelmet ad, a stop-market pedig végrehajtási garanciát; a kettő közti választás mindig kompromisszum.</p>
+        </div>
+    </div>
+
     <!-- ================= HOZAMGÖRBE SPREAD (INVERZIÓ) KALKULÁTOR (OKTATÁSI) =================
          Spread = Hosszú lejáratú hozam - Rövid lejáratú hozam. Ha Spread < 0, a görbe invertált
          (rövid hozam magasabb, mint a hosszú) — történelmileg recessziós figyelmeztető jel. -->
@@ -14067,6 +14117,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Bid-Ask Spread Költség Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Rejtett kereskedési költség halmozott hatása</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('stoplimitgap-modal')" data-tool-title="stop-limit védelmi sáv kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-shield-halved"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Stop-Limit Védelmi Sáv Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Teljesül-e a megbízás, vagy védelem nélkül marad a pozíció</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('il-modal')" data-tool-title="impermanent loss kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -29203,6 +29260,72 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Teljes költség (${count} trade):</span><span class="${colorClass} font-extrabold text-sm">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcStopLimitGap() {
+            const dirEl = document.getElementById('stoplimitgap-direction');
+            const sizeEl = document.getElementById('stoplimitgap-size');
+            const stopEl = document.getElementById('stoplimitgap-stopprice');
+            const tolEl = document.getElementById('stoplimitgap-tolerance');
+            const gapEl = document.getElementById('stoplimitgap-gap');
+            const out = document.getElementById('stoplimitgap-result');
+            if (!dirEl || !sizeEl || !stopEl || !tolEl || !gapEl || !out) return;
+
+            const direction = dirEl.value;
+            const size = parseFloat(sizeEl.value);
+            const stopPrice = parseFloat(stopEl.value);
+            const tolerancePct = parseFloat(tolEl.value);
+            const gapPct = parseFloat(gapEl.value);
+
+            if (!Number.isFinite(size) || !Number.isFinite(stopPrice) || !Number.isFinite(tolerancePct) || !Number.isFinite(gapPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes (véges) számokat minden mezőben!</div>`;
+                return;
+            }
+            if (size <= 0 || stopPrice <= 0 || tolerancePct < 0 || gapPct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret és a stop-ár pozitív, a tolerancia és a gap mérete nem-negatív szám legyen!</div>`;
+                return;
+            }
+            // Felső korlát irreálisan extrém bemenetekre — tisztán védelmi jellegű
+            // bemenet-validáció, ugyanazt a mintát követve, mint a korábbi
+            // "NaN/Infinity szivárgás extrém bemenetnél" javítási körök.
+            if (size > 1000000000 || stopPrice > 1000000000 || tolerancePct > 1000 || gapPct > 1000) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott érték irreálisan nagy — adj meg praktikus kereskedési értékeket!</div>`;
+                return;
+            }
+
+            const toleranceAmount = stopPrice * (tolerancePct / 100);
+            const gapAmount = stopPrice * (gapPct / 100);
+            const sign = direction === 'short' ? 1 : -1;
+            const limitPrice = stopPrice + sign * toleranceAmount;
+            const breachPrice = stopPrice + sign * gapAmount;
+            const filled = gapAmount <= toleranceAmount;
+            const slippageCost = gapAmount * size;
+            const maxFilledCost = toleranceAmount * size;
+
+            if (!Number.isFinite(toleranceAmount) || !Number.isFinite(gapAmount) || !Number.isFinite(limitPrice) || !Number.isFinite(breachPrice) || !Number.isFinite(slippageCost) || !Number.isFinite(maxFilledCost)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékekkel a számítás nem adott érvényes eredményt — ellenőrizd a bemeneteket!</div>`;
+                return;
+            }
+
+            const fmt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+
+            let statusHtml;
+            if (filled) {
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green"><i class="fa-solid fa-circle-check mr-1"></i>A megbízás TELJESÜLT — a pozíció védett maradt, ${fmt(breachPrice)} áron zárt, ${fmt(slippageCost)} egységnyi (ár × méret) csúszási többletköltséggel a szándékolt stop-árhoz képest.</p>`;
+            } else {
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-red"><i class="fa-solid fa-triangle-exclamation mr-1"></i>A megbízás NEM TELJESÜLT — a gap átlépte a tolerancia-sávot! A pozíció védelem nélkül, NYITVA maradt azon a ponton, ahol már ${fmt(slippageCost)} egységnyi nem realizált veszteséged volt — ez tovább nőhet, amíg manuálisan be nem avatkozol, vagy az ár vissza nem tér a sávba. Egy stop-market megbízás ugyanitt garantáltan zárt, és lezárta volna a veszteséget ${fmt(slippageCost)} egységnél.</p>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Limit ár (legrosszabb elfogadott):</span><span class="text-white">${fmt(limitPrice)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Becsült tényleges ár a gap után:</span><span class="text-white">${fmt(breachPrice)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Megbízás teljesül?</span><span class="${filled ? 'text-neon-green' : 'text-neon-red'} font-bold">${filled ? 'IGEN' : 'NEM'}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Csúszási (nem realizált) költség a gap pontjában:</span><span class="text-white">${fmt(slippageCost)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Max. költség, ha még éppen teljesül (sáv szélén):</span><span class="text-white">${fmt(maxFilledCost)}</span></div>
+                </div>
+                ${statusHtml}
             `;
         }
 
@@ -45758,6 +45881,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             57: { tool: 'szjatax-modal', cta: 'Számold ki élesben a saját ügyleteid nettó SZJA-kötelezettségét, mielőtt elkezdenél kereskedni' },
             23: { tool: 'spreadcost-modal', cta: 'Számold ki élesben, mennyibe kerül neked a bid-ask spread (a slippage egyik fő forrása)' },
             294: { tool: 'spreadcost-modal', cta: 'Nézd meg élesben a Bid-Ask Spread Költség Kalkulátort, és lásd, mekkora a mozgástér a toleranciaszint beállításánál' },
+            88: { tool: 'stoplimitgap-modal', cta: 'Nézd meg élesben a Stop-Limit Védelmi Sáv Kalkulátort — teljesül-e a megbízásod egy adott gap mellett, vagy védelem nélkül marad a pozíciód' },
             351: { tool: 'alerts-modal', cta: 'Állíts be élesben egy ár-riasztást, hogy ne kelljen folyamatosan a képernyőt bámulnod' },
             399: { tool: 'newscal-modal', cta: 'Nézd meg élesben a Gazdasági Hírnaptárat a színkódolt fontossági szintekkel' },
             313: { tool: 'trailingstop-modal', cta: 'Próbáld ki élesben a Trailing Stop-Loss kalkulátort, és hasonlítsd össze a limit-komponens hatásával' },
@@ -45797,7 +45921,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
