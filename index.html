@@ -35463,8 +35463,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const inflationPct = parseFloat(rateEl.value);
             const years = parseInt(yearsEl.value, 10);
 
-            if (!amount || amount <= 0 || !Number.isFinite(nominalPct) || !Number.isFinite(inflationPct) || inflationPct < 0 || !years || years < 1) {
-                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív kezdő összeget és időtartamot (az infláció nem lehet negatív)!</div>`;
+            // JAVÍTÁS: a years mezőnek van HTML max="60" attribútuma, de az (a
+            // többi hasonló "évek száma" mezőhöz hasonlóan, lásd calcDividendDRIP)
+            // CSAK a spinner-nyilakra hat, billentyűzettel beírt extrém nagy
+            // értéket NEM korlátoz. Egy ilyen érték a Math.pow(1+ráta, years)
+            // hatványozást Infinity-be futtathatja — és ha ez EGYSZERRE történik
+            // a számlálóban (nominalFinal) és a nevezőben (Math.pow(1+inflationFrac,
+            // years)) is, az osztás Infinity/Infinity = NaN-t ad, ami korábban
+            // csendben megjelent a "Reál végösszeg" mezőben. Most explicit felső
+            // korlát (konzisztensen a mező HTML max="60" attribútumával) + lentebb
+            // egy második védelmi réteg (véges-szám ellenőrzés a végeredményen).
+            if (!amount || amount <= 0 || !Number.isFinite(nominalPct) || !Number.isFinite(inflationPct) || inflationPct < 0 || !years || years < 1 || years > 60) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív kezdő összeget, és egy 1 és 60 év közötti időtartamot (az infláció nem lehet negatív)!</div>`;
                 return;
             }
 
@@ -35480,6 +35490,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // realFrac rátával kamatosítanánk, csak szemléletesebb a levezetés.
             const realFinal = nominalFinal / Math.pow(1 + inflationFrac, years);
             const purchasingPowerLostPct = (1 - realFinal / nominalFinal) * 100;
+
+            // JAVÍTÁS (2. védelmi réteg): ha a fenti felső korlát mellett is
+            // (pl. extrém magas %-os ráták miatt) nem-véges eredmény jönne ki,
+            // explicit hibaüzenetet adunk, NEM pedig egy "$NaN"/"$Infinity"
+            // feliratot a felhasználói felületen.
+            if (!Number.isFinite(nominalFinal) || !Number.isFinite(realFinal) || !Number.isFinite(purchasingPowerLostPct)) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozam/infláció-ráta és időtartam mellett az eredmény túl nagy ahhoz, hogy véges számmal kifejezhető legyen — csökkentsd a rátákat vagy az évek számát!</div>`;
+                return;
+            }
 
             const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
             const isRealPositive = realFrac > 0;
@@ -36899,6 +36918,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const riskAdjustedProfit = grossProfit * (1 - haircutPct / 100);
             const riskAdjustedBalance = principal + riskAdjustedProfit;
             const apyVsAprDiffPct = apyPct - aprPct;
+
+            // JAVÍTÁS: a "Tartási időtartam (nap)" mezőnek nincs HTML max attribútuma
+            // (csak min="1"), és a Math.pow(1+periodicRate, n*days/365) hatványozás
+            // elég extrém days (pl. több milliós, billentyűzettel beírt) érték mellett
+            // Infinity-be futhat, amit a principal * Infinity szorzás továbbvisz a
+            // végső egyenlegbe — ez a korábban (más kalkulátoroknál, lásd
+            // calcPortfolioSimulation/calcTemporalDiscounting) már felismert
+            // "extrém numerikus bemenet" hibaosztály egy további előfordulása.
+            // Explicit véges-szám ellenőrzés a hatványozás UTÁN, NEM egy új
+            // tetszőleges felső korlát a napok mezőn (azt máshol sem alkalmazza
+            // az app konzisztensen "nap" típusú mezőknél).
+            if (!Number.isFinite(growthFactor) || !Number.isFinite(finalBalance)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott APR, jóváírási gyakoriság és tartási időtartam mellett a végösszeg túl nagy ahhoz, hogy véges számmal kifejezhető legyen — csökkentsd a tartási időt vagy az APR-t!</div>`;
+                return;
+            }
 
             const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
