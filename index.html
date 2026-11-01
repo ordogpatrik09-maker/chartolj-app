@@ -1590,6 +1590,13 @@
                                 <div class="text-[10px] text-slate-400">Egyenlő Béta-súlyozott kitettség eszközönként</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('hedgeratio-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-shield-halved"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fedezeti Arány (Hedge Ratio) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mekkora fedező pozíció minimalizálja a kockázatot?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('volscale-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-sliders"></i></span>
                             <div>
@@ -4331,6 +4338,60 @@
 
             <div id="betasize-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél nagyobb egy eszköz Bétája, annál KISEBB dollár-összeget kap — így minden pozíció egyformán "húz" a portfólió piaci kockázatán, nem csak a nyers dollár-kitettség egyenlő. Negatív vagy 0 Béta esetén a formula nem alkalmazható (a fordított arányosság nem értelmezhető), ezeket az eszközöket hagyd ki a listából, vagy kezeld külön.</p>
+        </div>
+    </div>
+
+    <!-- ================= FEDEZETI ARÁNY (HEDGE RATIO) KALKULÁTOR (OKTATÁSI) =================
+         A "Hedging Alapjai Day Tradingben" lecke (85) gyakorlativá tétele:
+         minimum-variancia fedezeti arány h* = ρ × (σ_pozíció / σ_fedezet),
+         ahol ρ a két eszköz hozamkorrelációja, σ a volatilitásuk. Ez a h*
+         az a dollár-arány, amennyit a fedező eszközből kell nyitni a
+         pozíció dollár-értékéhez képest, hogy a KOMBINÁLT pozíció
+         varianciája minimális legyen (standard minimum-variancia hedge,
+         ld. Treynor/Jensen Bétától és a Korrelációs Mátrixtól független,
+         önálló képlet). Irány-logika: ha a főpozíció LONG és ρ>0 (a két
+         eszköz együtt mozog), a fedezetnek SHORT-nak kell lennie a
+         fedező eszközön; ha ρ<0 (ellentétesen mozognak), a fedezetnek
+         LONG-nak kell lennie. SHORT főpozíciónál ez pontosan megfordul.
+         A variancia-csökkenés mértéke ρ² (R²-szerű interpretáció),
+         függetlenül az iránytól — ez azt mutatja meg, a kockázat hány
+         %-át szünteti meg az OPTIMÁLIS fedezet; a maradék (nem fedezhető)
+         kockázat szórása ≈ σ_pozíció × √(1-ρ²). ρ=0 esetén a lineáris
+         hedge nulla hasznot hoz — erre explicit figyelmeztetés jár. -->
+    <div id="hedgeratio-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-emerald-400"></i> Fedezeti Arány (Hedge Ratio) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('hedgeratio-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Mekkora összegben nyiss egy ELLENTÉTES (vagy korrelált) eszközt, hogy a meglévő pozíciód kockázatát a lehető legjobban csökkentsd? A kalkulátor a minimum-varianciájú fedezeti arányt számolja ki a két eszköz volatilitása és korrelációja alapján.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Főpozíció iránya</label>
+            <select id="hedgeratio-direction" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                <option value="long">Long (megvettem az eszközt)</option>
+                <option value="short">Short (eladtam az eszközt)</option>
+            </select>
+
+            <label class="text-[11px] font-semibold text-slate-400">Főpozíció mérete ($)</label>
+            <input type="number" id="hedgeratio-position-value" value="10000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Főpozíció eszközének volatilitása (%, pl. éves szórás)</label>
+            <input type="number" id="hedgeratio-vol-a" value="40" step="0.1" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Fedező eszköz volatilitása (%, ugyanolyan időtávon)</label>
+            <input type="number" id="hedgeratio-vol-b" value="30" step="0.1" min="0.0001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">A két eszköz hozamkorrelációja (-1 és +1 között)</label>
+            <input type="number" id="hedgeratio-corr" value="0.75" step="0.01" min="-1" max="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+
+            <button onclick="calcHedgeRatio()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-emerald-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="hedgeratio-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">h* = ρ × (σ_pozíció / σ_fedezet) — ez a minimum-varianciájú fedezeti arány MINIMALIZÁLJA a kombinált pozíció ingadozását, nem garantálja a nyereséget. A fedezésnek ÁRA van (spread, finanszírozási költség, elmaradt felfelé irányuló nyereség) — csak akkor érdemes alkalmazni, ha a kockázat-csökkentés megéri ezt az árat.</p>
         </div>
     </div>
 
@@ -12882,6 +12943,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Béta-Kiegyensúlyozott Pozícióméretezés</div>
                             <div class="text-[10px] text-slate-400">Egyenlő Béta-súlyozott kitettség eszközönként</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('hedgeratio-modal')" data-tool-title="fedezeti arány hedge ratio kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-shield-halved"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Fedezeti Arány (Hedge Ratio) Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Mekkora fedező pozíció minimalizálja a kockázatot?</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('volscale-modal')" data-tool-title="volatilitás-alapú pozícióméretezés" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -34951,6 +35019,104 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= FEDEZETI ARÁNY (HEDGE RATIO) KALKULÁTOR (OKTATÁSI) =================
+        // h* = ρ × (σ_pozíció / σ_fedezet) — minimum-varianciájú fedezeti
+        // arány. A fedezet dollár-értéke: |h*| × pozícióérték. Az irányt
+        // (long/short a fedező eszközön) a főpozíció iránya ÉS a korreláció
+        // előjele együtt határozza meg (ld. a modal feletti kommentet).
+        // Variancia-csökkenés = ρ² × 100%, maradék szórás ≈ σ_pozíció×√(1-ρ²).
+        // Önálló képlet — nem hívja a Béta/Volatilitás-alapú méretezőt
+        // vagy a Korrelációs Mátrixot.
+        function calcHedgeRatio() {
+            const dirEl = document.getElementById('hedgeratio-direction');
+            const posValEl = document.getElementById('hedgeratio-position-value');
+            const volAEl = document.getElementById('hedgeratio-vol-a');
+            const volBEl = document.getElementById('hedgeratio-vol-b');
+            const corrEl = document.getElementById('hedgeratio-corr');
+            const out = document.getElementById('hedgeratio-result');
+            if (!dirEl || !posValEl || !volAEl || !volBEl || !corrEl || !out) return;
+
+            const direction = dirEl.value;
+            const positionValue = parseFloat(posValEl.value);
+            const volA = parseFloat(volAEl.value);
+            const volB = parseFloat(volBEl.value);
+            const corr = parseFloat(corrEl.value);
+
+            if (!Number.isFinite(positionValue) || positionValue <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, NULLÁNÁL NAGYOBB főpozíció-méretet!</div>`;
+                return;
+            }
+            if (!Number.isFinite(volA) || volA <= 0 || !Number.isFinite(volB) || volB <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A két eszköz volatilitásának NULLÁNÁL NAGYOBB, érvényes számnak kell lennie!</div>`;
+                return;
+            }
+            if (!Number.isFinite(corr) || corr < -1 || corr > 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A korreláció csak -1 és +1 közötti érvényes szám lehet!</div>`;
+                return;
+            }
+
+            const hedgeRatioMagnitude = Math.abs(corr) * (volA / volB);
+            const hedgeValue = hedgeRatioMagnitude * positionValue;
+            const varianceReductionPct = corr * corr * 100;
+            const residualVolPct = volA * Math.sqrt(Math.max(0, 1 - corr * corr));
+
+            if (!Number.isFinite(hedgeRatioMagnitude) || !Number.isFinite(hedgeValue)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékekkel a fedezeti arány nem számítható ki érvényesen (túl extrém bemenet) — próbálj reálisabb volatilitás-értékeket!</div>`;
+                return;
+            }
+
+            const fmt = (v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+            if (corr === 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 font-mono text-xs">
+                        <div class="text-amber-400 font-bold mb-1">⚠️ Korreláció = 0</div>
+                        <p class="text-slate-300 leading-relaxed">Mivel a két eszköz hozama NEM korrelál, egy lineáris fedezeti pozíció ezzel az eszközzel nem csökkenti érdemben a kockázatodat — a fedezeti arány 0, a fedezet dollár-értéke $0. Keress egy olyan eszközt, amelynek van valódi (pozitív vagy negatív) korrelációja a pozíciód eszközével, vagy fontolj más típusú fedezést (pl. opciós tail hedge).</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let hedgeDirection;
+            if (direction === 'long') {
+                hedgeDirection = corr > 0 ? 'SHORT' : 'LONG';
+            } else {
+                hedgeDirection = corr > 0 ? 'LONG' : 'SHORT';
+            }
+            const hedgeDirectionColor = hedgeDirection === 'SHORT' ? 'text-neon-red' : 'text-neon-green';
+
+            let strengthNote = '';
+            const absCorr = Math.abs(corr);
+            if (absCorr < 0.2) {
+                strengthNote = `<p class="text-[10.5px] text-amber-400 leading-relaxed mt-2">⚠️ A korreláció nagyon GYENGE (|ρ| < 0.2) — a fedezet matematikailag kiszámolható, de a valóságban kevés kockázatot vesz le, és a fedezés költsége (spread, finanszírozás) könnyen meghaladhatja a hasznát.</p>`;
+            } else if (absCorr > 0.9) {
+                strengthNote = `<p class="text-[10.5px] text-neon-green leading-relaxed mt-2">✅ A korreláció nagyon ERŐS (|ρ| > 0.9) — ez a fedezeti instrumentum matematikailag hatékony lehet, de ellenőrizd, hogy a korreláció stresszhelyzetben (pl. piaci pánik) is kitart-e, mert a korrelációk gyakran instabilak pont akkor, amikor a fedezésre a legnagyobb szükség lenne.</p>`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-xs mb-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Fedezeti arány (h*):</span>
+                        <span class="text-white font-bold">${hedgeRatioMagnitude.toFixed(4)}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">Szükséges fedezeti pozíció:</span>
+                        <span class="${hedgeDirectionColor} font-bold">${hedgeDirection} ${fmt(hedgeValue)}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">Variancia-csökkenés (ρ²):</span>
+                        <span class="text-neon-cyan font-bold">${varianceReductionPct.toFixed(1)}%</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-dark-750 pt-1.5">
+                        <span class="text-slate-400">Maradék (fedezhetetlen) volatilitás:</span>
+                        <span class="text-white font-bold">${residualVolPct.toFixed(2)}%</span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">A ${fmt(positionValue)} ${direction === 'long' ? 'LONG' : 'SHORT'} főpozíciód mellé egy <span class="${hedgeDirectionColor} font-bold">${hedgeDirection} ${fmt(hedgeValue)}</span> méretű pozíció a fedező eszközben minimalizálja a kombinált pozíció ingadozását — ez a kockázat <span class="text-neon-cyan font-bold">${varianceReductionPct.toFixed(1)}%-át</span> szünteti meg, a maradék ${residualVolPct.toFixed(2)}%-os volatilitást a fedezés nem éri el (a két eszköz nem-korrelált mozgása miatt).</p>
+                ${strengthNote}
+            `;
+        }
+
         // ================= VOLATILITÁS-ALAPÚ POZÍCIÓMÉRETEZÉS (SCALING) KALKULÁTOR (OKTATÁSI) =================
         // capital_i = TőkeÖsszes × (1/vol_i) / Σ(1/vol_j) — ugyanaz a
         // fordítottan-arányos szerkezet, mint a Béta-kiegyensúlyozott
@@ -45559,6 +45725,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            85: { tool: 'hedgeratio-modal', cta: 'Számold ki élesben a minimum-varianciájú fedezeti arányt egy korrelált eszközzel' },
             111: { tool: 'gsl-modal', cta: 'Számold ki élesben, várható értékben megéri-e a Garantált Stop-Loss (GSL) felára a gap-kockázat ellen' },
             541: { tool: 'l2fee-modal', cta: 'Számold ki élesben, mennyit spórolnál egy Layer 2-n, és hány tranzakció után térülne meg a bridge-díj' },
             515: { tool: 'halving-modal', cta: 'Számold ki élesben a jelenlegi blokkmagasság alapján, hol állsz a 210k-blokkos halving-cikluson belül, és mikor várható a következő halving' },
@@ -45941,7 +46108,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
