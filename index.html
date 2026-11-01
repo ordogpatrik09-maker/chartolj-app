@@ -32494,7 +32494,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const lengths = assets.map(a => a.values.length);
             if (new Set(lengths).size > 1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden eszköz hozamsorozatának egyenlő hosszúnak kell lennie! Jelenlegi hosszak: ${assets.map(a => a.name + '=' + a.values.length).join(', ')}</div>`;
+                // JAVÍTÁS: az eszköznév itt a "Név: érték,érték,..." szabad szöveges
+                // bemenetből származik, teljesen felhasználó-vezérelt — ez a hibaág
+                // korábban escapelés nélkül írta az innerHTML-be, miközben a FÜGGVÉNY
+                // SIKERES ágában (a korrelációs táblázat fejsorában, lentebb) ugyanez a
+                // név már helyesen escapeHtml()-lel ment. Konzisztencia + self-XSS javítás.
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden eszköz hozamsorozatának egyenlő hosszúnak kell lennie! Jelenlegi hosszak: ${assets.map(a => escapeHtml(a.name) + '=' + a.values.length).join(', ')}</div>`;
                 return;
             }
 
@@ -35133,6 +35138,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: az eszköznév szabad szöveges mező (port-a1/2/3-name) értéke korábban
+            // escapelés nélkül került az eredmény innerHTML-jébe (lásd lejjebb) — egy
+            // <img src=x onerror=...> vagy hasonló HTML/JS-t tartalmazó "eszköznév" a
+            // felhasználó SAJÁT böngészőjében futott volna le (self-XSS), konzisztensen
+            // azzal a hibaosztállyal, amit a korábbi körök már javítottak 7 másik
+            // szöveges-bemenetű kalkulátorban (toast, ranglista, barátlista, igazolás stb.),
+            // de ezt a mezőt akkor kihagyták. Az üres fallback névnél nincs escapelésre
+            // szükség (statikus string), a felhasználó által beírt névnél az escapeHtml()
+            // a megjelenítés helyén (lentebb) végzi a védelmet.
             const assets = [1, 2, 3].map((i, idx) => ({
                 name: (document.getElementById(`port-a${i}-name`).value || `Eszköz ${i}`).trim(),
                 weightPct: weightRaws[idx],
@@ -35179,7 +35193,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="space-y-1.5 mb-3">
                     ${assets.map((a, i) => `
                         <div class="flex items-center justify-between text-[11px] font-mono">
-                            <span class="text-slate-400">${a.name} (${(100 * a.weightPct / weightSum).toFixed(0)}%):</span>
+                            <span class="text-slate-400">${escapeHtml(a.name)} (${(100 * a.weightPct / weightSum).toFixed(0)}%):</span>
                             <span class="font-bold text-white">${fmt(values[i])}</span>
                         </div>
                     `).join('')}
