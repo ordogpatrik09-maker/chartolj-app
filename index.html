@@ -2598,6 +2598,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyi nyereség kell egy veszteség után?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('emergencyfund-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-piggy-bank"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Vésztartalék / Kereskedési Tőke Elosztó</div>
+                                <div class="text-[10px] text-slate-400">Mennyi megtakarításod biztonságosan kereskedési tőke?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('feeimpact-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-receipt"></i></span>
                             <div>
@@ -9606,6 +9613,41 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
         </div>
     </div>
 
+    <!-- ================= VÉSZTARTALÉK / KERESKEDÉSI TŐKE ELOSZTÓ (OKTATÁSI) =================
+         Cél-vésztartalék = havi alapvető kiadás × célzott hónapok száma.
+         Jelenlegi fedezettség (hónap) = teljes megtakarítás / havi kiadás.
+         Ha megtakarítás < cél-vésztartalék: hiány = cél − megtakarítás, és a
+         teljes összeg a vésztartalékot szolgálja (kereskedési tőke = 0).
+         Ha megtakarítás ≥ cél-vésztartalék: kereskedési tőkeként biztonságosan
+         elkülöníthető összeg = megtakarítás − cél-vésztartalék. -->
+    <div id="emergencyfund-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-piggy-bank text-neon-green"></i> Vésztartalék / Kereskedési Tőke Elosztó
+                </h3>
+                <button onclick="closeToolModal('emergencyfund-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A vésztartalék és a kereskedési tőke elkülönítése nem csak elméleti tanács: egy váratlan kiadás ne kényszerítsen nyitott pozíció elhamarkodott, nem-piaci-alapú zárására. Add meg az adataidat, és nézd meg, mennyi a megtakarításodból biztonságosan elkülöníthető kereskedési tőke.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Havi alapvető kiadásaid ($)</label>
+            <input type="number" id="ef-expenses" value="1500" step="any" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Célzott vésztartalék (hónap)</label>
+            <input type="number" id="ef-months" value="6" step="1" min="1" max="36" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400">Teljes elérhető megtakarításod ($)</label>
+            <input type="number" id="ef-savings" value="12000" step="any" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcEmergencyFundSplit()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="ef-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A vésztartalék feladata nem a hozam — a feladata, hogy egy váratlan élethelyzet (pl. sürgős kiadás) NE a nyitott pozícióid vagy a kereskedési stratégiád feladásával legyen megoldva. Amíg a célzott vésztartalék nincs meg, a kalkulátor nem javasol belőle kereskedési tőkét elkülöníteni.</p>
+        </div>
+    </div>
+
     <!-- ================= ICHIMOKU CLOUD (KUMO) KALKULÁTOR (OKTATÁSI) =================
          Tenkan-sen (9) = (HighestHigh(9)+LowestLow(9))/2; Kijun-sen (26) =
          (HighestHigh(26)+LowestLow(26))/2; Senkou Span A = (Tenkan+Kijun)/2
@@ -14253,6 +14295,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Drawdown Visszanyerési Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Mennyi nyereség kell egy veszteség után?</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('emergencyfund-modal')" data-tool-title="vésztartalék / kereskedési tőke elosztó" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-piggy-bank"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Vésztartalék / Kereskedési Tőke Elosztó</div>
+                            <div class="text-[10px] text-slate-400">Mennyi megtakarításod biztonságosan kereskedési tőke?</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('spreadcost-modal')" data-tool-title="bid-ask spread költség kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -37302,6 +37351,57 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= VÉSZTARTALÉK / KERESKEDÉSI TŐKE ELOSZTÓ (OKTATÁSI) =================
+        function calcEmergencyFundSplit() {
+            const expensesEl = document.getElementById('ef-expenses');
+            const monthsEl = document.getElementById('ef-months');
+            const savingsEl = document.getElementById('ef-savings');
+            const out = document.getElementById('ef-result');
+            if (!expensesEl || !monthsEl || !savingsEl || !out) return;
+
+            const expenses = parseFloat(expensesEl.value);
+            const months = parseFloat(monthsEl.value);
+            const savings = parseFloat(savingsEl.value);
+
+            if (!Number.isFinite(expenses) || expenses <= 0 || !Number.isFinite(months) || months <= 0 || !Number.isFinite(savings) || savings < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy pozitív havi kiadást, egy pozitív célzott hónapszámot, és egy nullánál nagyobb vagy egyenlő megtakarítást!</div>`;
+                return;
+            }
+
+            // Felső korlát a hónapszámra és a bemeneti összegekre — ugyanaz a
+            // védelmi elv, mint a többi kalkulátornál: egy astronómiailag
+            // extrém (de a form "max" attribútumát megkerülő, pl. beírt)
+            // érték se okozzon Infinity-szivárgást vagy értelmezhetetlen
+            // kimenetet a lenti osztásokban/formázásban.
+            const safeMonths = Math.min(months, 600);
+            const safeExpenses = Math.min(expenses, 1e12);
+            const safeSavings = Math.min(savings, 1e12);
+
+            const targetFund = safeExpenses * safeMonths;
+            const monthsCovered = safeSavings / safeExpenses;
+            const hasFullFund = safeSavings >= targetFund;
+            const tradingCapital = hasFullFund ? (safeSavings - targetFund) : 0;
+            const shortfall = hasFullFund ? 0 : (targetFund - safeSavings);
+            const fundFillPct = targetFund > 0 ? Math.min(100, (safeSavings / targetFund) * 100) : 100;
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Cél-vésztartalék (${safeMonths.toLocaleString('hu-HU', {maximumFractionDigits: 1})} hónap):</span><span class="text-white">$${targetFund.toLocaleString('en-US', {maximumFractionDigits: 0})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelenlegi fedezettség:</span><span class="text-white">${monthsCovered.toLocaleString('hu-HU', {maximumFractionDigits: 1})} hónap</span></div>
+                    <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-1">
+                        <div class="h-full ${hasFullFund ? 'bg-neon-green' : 'bg-amber-400'} transition-all" style="width:${Math.max(2, fundFillPct)}%"></div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl border ${hasFullFund ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]'} p-3 mt-3 mb-1">
+                    <div class="text-[11px] text-slate-400 mb-1">${hasFullFund ? 'Biztonságosan elkülöníthető kereskedési tőke' : 'Hiány a cél-vésztartalékhoz'}</div>
+                    <div class="text-lg font-extrabold ${hasFullFund ? 'text-neon-green' : 'text-amber-400'}">${hasFullFund ? '$' + tradingCapital.toLocaleString('en-US', {maximumFractionDigits: 0}) : '$' + shortfall.toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${hasFullFund ? 'text-neon-green' : 'text-neon-red'}">${hasFullFund
+                    ? `A célzott vésztartalékod megvan — a fennmaradó $${tradingCapital.toLocaleString('en-US', {maximumFractionDigits: 0})} elkülöníthető kereskedési tőkeként, anélkül, hogy egy váratlan kiadás a nyitott pozícióid feladására kényszerítene.`
+                    : `Még nincs meg a teljes célzott vésztartalékod — jelenleg csak ${monthsCovered.toLocaleString('hu-HU', {maximumFractionDigits: 1})} hónapra elegendő megtakarításod van a célzott ${safeMonths.toLocaleString('hu-HU', {maximumFractionDigits: 1})} hónaphoz képest. Amíg ez a hiány fennáll, nem javasolt ebből az összegből kereskedési tőkét elkülöníteni.`}</p>
+            `;
+        }
+
         // ================= DCA (RENDSZERES BEFEKTETÉS) SZIMULÁTOR (OKTATÁSI) =================
         function calcDCASimulation() {
             const monthlyEl = document.getElementById('dca-monthly');
@@ -45945,7 +46045,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             336: { tool: 'volscale-modal', cta: 'Számold ki élesben a volatilitás-alapú pozícióméretezést' },
             216: { tool: 'scaling-modal', cta: 'Tervezd meg élesben a pozíció skálázását' },
             177: { tool: 'recovery-modal', cta: 'Számold ki élesben a veszteség utáni szükséges hozamot' },
-            198: { tool: 'poscalc-modal', cta: 'Számold ki élesben a pozícióméretet' },
+            198: { tool: 'emergencyfund-modal', cta: 'Számold ki élesben, mennyi vésztartalékod van meg, és mennyi különíthető el belőle kereskedési tőkeként' },
+            249: { tool: 'emergencyfund-modal', cta: 'Nézd meg élesben a saját adataiddal, mennyi a cél-vésztartalékod, és mennyi marad fölötte kereskedési tőkének' },
             101: { tool: 'rr-modal', cta: 'Számold ki élesben a kockázat/hozam arányt' },
             324: { tool: 'backtest-modal', cta: 'Futtasd le élesben a backtestet' },
             207: { tool: 'poscalc-modal', cta: 'Számold ki élesben a pozícióméretet a stop alapján' },
@@ -46254,7 +46355,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
