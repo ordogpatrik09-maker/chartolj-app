@@ -35837,6 +35837,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const finalTotal = values.reduce((s, v) => s + v, 0);
+
+            // JAVÍTÁS: egy extrém (de szintaktikailag érvényes, véges) éves hozam-
+            // százalék — pl. egy elgépelt, sok nullás érték egy eszköz "Hozam %"
+            // mezőjében — a kamatos (Math.pow) vagy évenkénti rebalancing-ciklus
+            // után túlcsordíthatja az IEEE754 double tartományt, és a finalTotal
+            // (illetve belőle a totalReturn/totalReturnPct) Infinity vagy NaN lesz.
+            // Korábban ez simán végigfutott a renderelésig, és a felhasználó egy
+            // megtévesztő "$∞" / "Infinity%" eredményt kapott valódi hibaüzenet
+            // helyett — konzisztensen azzal a hibaosztállyal, amit a korábbi körök
+            // már számos más kalkulátorban javítottak. Mivel a NaN/Infinity
+            // minden végösszeg-komponensen (totalReturn, totalReturnPct) keresztül
+            // továbbterjed, egyetlen explicit véges-ellenőrzés itt lefedi mindet.
+            if (!Number.isFinite(finalTotal)) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">A megadott hozam-százalék(ok) és időtartam kombinációja olyan extrém, hogy a végső portfólióérték nem fejezhető ki véges számmal — adj meg reálisabb éves hozam-százalékokat!</div>`;
+                if (warningEl) warningEl.classList.add('hidden');
+                return;
+            }
+
             const totalReturn = finalTotal - total;
             const totalReturnPct = (totalReturn / total) * 100;
             const weightedAvgReturn = assets.reduce((s, a) => s + (a.weightPct / weightSum) * a.returnPct, 0);
