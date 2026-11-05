@@ -24365,6 +24365,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const annualizationExponent = periodsPerYear / numIntervals;
             const cagr = Math.pow(totalReturnMultiple, annualizationExponent) - 1;
 
+            // JAVÍTÁS: egy extrém, de szintaktikailag érvényes évesítési szorzó
+            // (pl. elgépelt, túl sok nullás "periódus/év" érték) a Math.pow()
+            // kitevőjét is extrémre növeli, és túlcsordíthatja az IEEE754 double
+            // tartományt — a cagr Infinity/-Infinity/NaN lesz, és ez a Calmar
+            // Ratio végeredményig továbbterjedne egy megtévesztő "Infinity"
+            // kiírásként, valódi hibaüzenet helyett (ugyanaz a hibaosztály, amit
+            // korábbi körök már a Portfólió Szimulátorban és másutt javítottak).
+            if (!Number.isFinite(cagr)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott évesítési szorzó és adatsor-hossz kombinációja olyan extrém, hogy az évesített hozam (CAGR) nem fejezhető ki véges számmal — adj meg reálisabb évesítési szorzót (pl. napi adatnál 252, havinál 12)!</div>`;
+                return;
+            }
+
             let runningPeak = values[0];
             let maxDrawdownPct = 0;
             for (let i = 0; i < n; i++) {
@@ -24440,6 +24452,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const numIntervals = n - 1;
             const totalReturnMultiple = values[n - 1] / values[0];
             const cagr = Math.pow(totalReturnMultiple, periodsPerYear / numIntervals) - 1;
+
+            // JAVÍTÁS: egy extrém, de szintaktikailag érvényes évesítési szorzó
+            // túlcsordíthatja az IEEE754 double tartományt a Math.pow() kitevőjén
+            // keresztül — a cagr Infinity/-Infinity/NaN lesz, és ez a Sterling
+            // Ratio végeredményig továbbterjedne egy megtévesztő "Infinity"
+            // kiírásként, valódi hibaüzenet helyett (ld. Calmar Ratio kalkulátor).
+            if (!Number.isFinite(cagr)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott évesítési szorzó és adatsor-hossz kombinációja olyan extrém, hogy az évesített hozam (CAGR) nem fejezhető ki véges számmal — adj meg reálisabb évesítési szorzót (pl. napi adatnál 252, havinál 12)!</div>`;
+                return;
+            }
 
             // Önálló visszaesés-episódok azonosítása: egy új all-time
             // csúcs lezárja az addigi episódot (ha volt), és új episód
