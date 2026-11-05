@@ -28400,9 +28400,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }
             }
 
-            const period = parseInt(periodEl.value, 10) || 1;
+            const period = parseInt(periodEl.value, 10);
             const divisor = parseFloat(divisorEl.value) || 1;
             const n = candles.length;
+
+            // JAVÍTÁS: a period mezőt korábban `parseInt(...) || 1` eséssel olvastuk —
+            // ez csak a nem-numerikus/0 bemenetet fogta ki, egy negatív (pl. billentyűzettel
+            // beírt, a HTML min="1" attribútumot megkerülő, mert az csak a spinner-nyilakra hat)
+            // periódus truthy számként simán átment. Negatív period esetén a lenti
+            // `raw.slice(raw.length - period)` hívás egy ÜRES tömböt ad (mert raw.length - period
+            // ekkor raw.length-nél NAGYOBB index), a `reduce` ezen 0-t ad, és a 0/negatívPeriod
+            // osztás egy csendes, hibaüzenet nélküli "-0.0000"-s (megtévesztően érvényesnek tűnő)
+            // simított EMV-eredményt produkált, miközben a `raw.length < period` védelem nem fogta
+            // ki (negatív period esetén az összehasonlítás sosem igaz). Explicit, előzetes
+            // egész-szám és "legalább 1" ellenőrzés zárja ki ezt, konzisztensen a session többi
+            // kalkulátorának input-validációs mintájával.
+            if (!Number.isFinite(period) || period < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A simítási periódusnak egy érvényes, legalább 1 értékű egész számnak kell lennie!</div>`;
+                return;
+            }
 
             if (n < 2) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 gyertya szükséges az EMV kiszámításához!</div>`;
@@ -29623,9 +29639,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
-            const shortP = parseInt(shortEl.value, 10) || 1;
-            const longP = parseInt(longEl.value, 10) || 2;
+            const shortP = parseInt(shortEl.value, 10);
+            const longP = parseInt(longEl.value, 10);
             const n = closes.length;
+
+            // JAVÍTÁS: a shortP/longP mezőket korábban `parseInt(...) || N` eséssel olvastuk —
+            // ez csak a nem-numerikus/0 bemenetet fogta ki, egy negatív (pl. billentyűzettel
+            // beírt, a HTML min="1"/min="2" attribútumot megkerülő, mert az csak a spinner-nyilakra
+            // hat) periódus truthy számként simán átment. Negatív periódussal a lenti sma()
+            // segédfüggvény `slice(idx - period + 1, idx + 1)` hívása egy ÜRES tömböt ad (mert
+            // idx - period + 1 ekkor idx+1-nél NAGYOBB), a `reduce` ezen 0-t ad, és a 0/negatívPeriod
+            // osztás egy csendes, hibaüzenet nélküli "-0.0000"-s SMA-értéket produkált, amire a
+            // golden/death cross logika is lefutott, és a felhasználó egy megtévesztően
+            // érvényesnek tűnő (de értelmezhetetlen) kereszteződés-eredményt kapott. Explicit,
+            // előzetes egész-szám és "legalább 1" ellenőrzés zárja ki ezt, a `shortP >= longP`
+            // vizsgálat elé helyezve.
+            if (!Number.isFinite(shortP) || shortP < 1 || !Number.isFinite(longP) || longP < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Mindkét periódusnak (rövid és hosszú) érvényes, legalább 1 értékű egész számnak kell lennie!</div>`;
+                return;
+            }
 
             if (shortP >= longP) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A rövid periódusnak kisebbnek kell lennie a hosszú periódusnál!</div>`;
