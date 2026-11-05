@@ -27633,12 +27633,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az éves osztalék/részvény nem lehet negatív! (0 = nem fizet osztalékot)</div>`;
                 return;
             }
-            if (!isFinite(gPct) || gPct <= -100) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az osztalék-növekedési ráta érvénytelen (nagyobbnak kell lennie, mint -100%)!</div>`;
+            // JAVÍTÁS (2026-11-05, audit — Infinity/NaN-szivárgás): gPct/rPct
+            // korábban csak alulról (-100%) volt korlátozva, felülről nem. Egy
+            // extrém, beírt növekedési/árfolyam-ráta (pl. "1e40"%) mellett a
+            // lenti ciklusban a Math.pow(1+g, t-1) ill. priceEnd = price0 *
+            // Math.pow(1+r, t) túlcsordulhatott Infinity-be — majd egy
+            // Infinity-vel osztás (dNet / priceEnd) NaN-t is eredményezett,
+            // ami hibaüzenet nélkül, valódi eredményként jelent meg a
+            // kimeneten. 1000% felső korlát bőven elegendő bármilyen reális
+            // oktatási szcenárióhoz, és 60 éven át garantáltan nem csordul túl.
+            if (!isFinite(gPct) || gPct <= -100 || gPct > 1000) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az osztalék-növekedési ráta érvénytelen (-100% és 1000% között legyen)!</div>`;
                 return;
             }
-            if (!isFinite(rPct) || rPct <= -100) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az árfolyam-növekedési ráta érvénytelen (nagyobbnak kell lennie, mint -100%)!</div>`;
+            if (!isFinite(rPct) || rPct <= -100 || rPct > 1000) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az árfolyam-növekedési ráta érvénytelen (-100% és 1000% között legyen)!</div>`;
                 return;
             }
             if (!isFinite(years) || years < 1 || years > 60) {
@@ -27686,6 +27695,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const dripTotalReturnPct = ((dripFinalValue - initialInvestment) / initialInvestment) * 100;
             const cashCagr = (Math.pow(cashFinalValue / initialInvestment, 1 / years) - 1) * 100;
             const dripCagr = (Math.pow(dripFinalValue / initialInvestment, 1 / years) - 1) * 100;
+
+            // JAVÍTÁS (2026-11-05, audit — Infinity/NaN-szivárgás): a fenti
+            // 1000%-os gPct/rPct felső korlát ÖNMAGÁBAN NEM elegendő, mert a
+            // DRIP-ág dripShares-e minden évben a saját maga által megnövelt
+            // osztalékot forgatja vissza — ez egy ÖNERŐSÍTŐ (dupla-exponenciális)
+            // folyamat, ami már 1000%-os (10x-es) éves ráta mellett is, 60 év
+            // alatt, több nagyságrenddel gyorsabban túlcsordul Infinity-be, mint
+            // maga a divPerShare. Mivel a pontos biztonságos felső korlátot a
+            // bemenetek kombinációjától (shares0, tax, years) függően nehéz
+            // előre garantálni, a kimenet VÉGSŐ, kiszámolt értékeit ellenőrizzük
+            // — ha bármelyik nem véges szám, explicit hibát adunk, nem jelenítünk
+            // meg Infinity/NaN-t valódi eredményként.
+            if (![finalPrice, cashFinalValue, dripFinalValue, cashTotalReturnPct, dripTotalReturnPct, cashCagr, dripCagr].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott paraméterekkel (növekedési ráta, időtáv) a számítás túlcsordul — adj meg visszafogottabb, reálisabb értékeket!</div>`;
+                return;
+            }
 
             const dripBonus = dripFinalValue - cashFinalValue;
             const divContribution = cashFinalValue - priceOnlyValue; // = cashDivNet pontosan
@@ -42956,6 +42981,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nem kisebb tőkét és hozam-százalékokat!</div>`;
                 return;
             }
+            // JAVÍTÁS (2026-11-05, audit — Infinity-szivárgás): a hozam-%
+            // mezők max="100" attribútuma csak a lépésnyilakat korlátozza,
+            // egy beírt (pl. "1e200") érték a parseFloat-on simán átmegy.
+            // mapHorizonYears kis, fix érték (3 vagy 5), de egy extrém
+            // mapYieldRaw/depositYieldRaw esetén a lenti Math.pow(1+r, years)
+            // simán túlcsordul Infinity-be, amit a kimenet "∞ Ft"-ként,
+            // hibaüzenet nélkül, valódi eredményként jelenített meg.
+            // A mezők szándéka (max="100") szerint reális éves hozam-% nem
+            // lehet 100%-nál nagyobb — ezt most explicit is kikényszerítjük.
+            if (mapYieldRaw > 100 || depositYieldRaw > 100 || principalRaw > 1e15) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg reális értékeket: a hozam-százalékok legfeljebb 100% lehetnek, a tőke legfeljebb 1 000 000 000 000 000 Ft!</div>`;
+                return;
+            }
 
             const principal = principalRaw;
             const mapReturn = mapYieldRaw / 100;
@@ -43024,6 +43062,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // a Math.max(0, ... || 0) csendes 0-ra-esés hiba volt itt is.
             if (!Number.isFinite(principalRaw) || principalRaw < 0 || !Number.isFinite(annualReturnRaw) || annualReturnRaw < 0) {
                 resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nem kisebb tőkét és éves hozam-százalékot!</div>`;
+                return;
+            }
+            // JAVÍTÁS (2026-11-05, audit — Infinity-szivárgás): lásd a
+            // calculateMapComparison megjegyzését — a return-% mező max="100"
+            // attribútuma egy beírt extrém értéket nem akadályoz meg, és
+            // a Math.pow(1+r, years) ekkor Infinity-be csordulhatott volna,
+            // hibaüzenet nélkül "∞ Ft"-ot megjelenítve valódi eredményként.
+            if (annualReturnRaw > 100 || principalRaw > 1e15) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg reális értékeket: az éves hozam legfeljebb 100% lehet, a tőke legfeljebb 1 000 000 000 000 000 Ft!</div>`;
                 return;
             }
 
