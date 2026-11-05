@@ -26652,6 +26652,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb elviselhető maximum össz-veszteség %-ot!</div>`;
                 return;
             }
+            if (risk > equity) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kockáztatott összeg nem lehet nagyobb, mint a számla tőke!</div>`;
+                return;
+            }
+            if (maxLossPct > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az elviselhető maximum össz-veszteség nem lehet nagyobb 100%-nál!</div>`;
+                return;
+            }
 
             const riskPct = (risk / equity) * 100;
 
