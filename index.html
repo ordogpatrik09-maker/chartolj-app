@@ -37242,8 +37242,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const days = parseFloat(document.getElementById('iv-days').value);
             const ratePct = parseFloat(document.getElementById('iv-rate').value);
 
-            if (!marketPrice || marketPrice <= 0 || !S || S <= 0 || !K || K <= 0 || !days || days <= 0 || !Number.isFinite(ratePct) || ratePct < 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív piaci árat, árfolyamot, kötési árat és napok számát (a ráta nem lehet negatív)!</div>`;
+            // JAVÍTÁS: a négy mező korábban `!x || x <= 0` mintával volt ellenőrizve
+            // — ugyanaz a hibaosztály, mint amit a testvér Opciós Greeks
+            // kalkulátorban (runGreeksCalculator) korábban már javítottunk. Egy
+            // TÚL NAGY, a double tartományát túllépő (pl. "1e400") bemenet a
+            // parseFloat()-ból Infinity-t ad, ami truthy és nem <=0, így átment a
+            // validáción. Az Infinity a Black-Scholes d1/d2 köztes értékein át a
+            // bisection keresésbe (solveImpliedVolatility) szivárgott: ott a
+            // NaN-ná vált közbenső árak miatt a ciklus hamis konvergenciát
+            // mutatott, és egy MEGTÉVESZTŐ, véges-nek látszó, de értelmetlen IV-t
+            // (pl. a keresési sáv alsó határa, 0.01%) adott vissza explicit
+            // hibaüzenet helyett — a hozzá tartozó Delta/Gamma mezőkben pedig
+            // szó szerint "NaN" szöveg jelent meg. Most mind a négy mező
+            // explicit Number.isFinite() ellenőrzést kap, konzisztensen az app
+            // többi kalkulátorának validációs mintájával.
+            if (!Number.isFinite(marketPrice) || marketPrice <= 0 || !Number.isFinite(S) || S <= 0 || !Number.isFinite(K) || K <= 0 || !Number.isFinite(days) || days <= 0 || !Number.isFinite(ratePct) || ratePct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, pozitív piaci árat, árfolyamot, kötési árat és napok számát (a ráta nem lehet negatív)!</div>`;
                 return;
             }
 
@@ -37252,7 +37266,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const isCall = currentIvOptionType === 'call';
             const iv = solveImpliedVolatility(marketPrice, S, K, T, r, isCall);
 
-            if (iv === null) {
+            if (iv === null || !Number.isFinite(iv)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Ez a piaci ár a Black-Scholes modell szerint NEM érhető el semmilyen volatilitással (0.01%-500% sávban) ezekkel a paraméterekkel — valószínűleg a megadott ár kisebb, mint az opció belső értéke, vagy irreálisan magas.</div>`;
                 return;
             }
@@ -37261,6 +37275,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // mi lenne az opció Delta/Gamma/stb. ÉRTÉKE a piac által beárazott
             // volatilitás mellett, nem csak egy becsült számmal.
             const g = calcBlackScholes(S, K, T, r, iv, isCall);
+
+            // JAVÍTÁS: a fenti ellenőrzések a bemeneti mezőket és az IV-t fedik
+            // le, de a belőle visszaszámolt Greekek egy utolsó biztonsági hálót
+            // igényelnek (ugyanazon okból, mint fent) — anélkül egy extrém, de
+            // a bisection-t technikailag "megoldó" paraméterkombináció esetén a
+            // Delta/Gamma mezőkben jelenhetne meg szó szerinti "NaN" szöveg.
+            if (![g.delta, g.gamma].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott paraméterek kombinációja olyan extrém, hogy a megoldott volatilitáshoz tartozó Greekek nem fejezhetők ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
+
             const fmtNum = (n, d = 4) => (n >= 0 ? '+' : '') + n.toFixed(d);
 
             out.innerHTML = `
