@@ -1732,6 +1732,13 @@
                                 <div class="text-[10px] text-slate-400">Trend hossza × sebessége, kifáradás-jelzéshez</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('roc-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gauge-simple-high"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Rate of Change (ROC) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">%-os árváltozás N periódussal korábbihoz képest</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('corrmatrix-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-table-cells"></i></span>
                             <div>
@@ -6989,6 +6996,54 @@ Kripto: 15000, 20</textarea>
 
             <div id="trendexhaustion-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha az utolsó két záróár egyenlő (nincs irány), a trend hossza 0, és az index nem értelmezhető. A kifáradás jelzése SOHA nem garantálja a fordulatot — más eszközökkel (pl. gyertyaminták, volumen) együtt érdemes értelmezni, a lecke explicit figyelmeztetése szerint.</p>
+        </div>
+    </div>
+
+    <!-- ================= RATE OF CHANGE (ROC) KALKULÁTOR (OKTATÁSI) =================
+         ROC_t = (Close_t - Close_{t-N}) / Close_{t-N} × 100 — a
+         legegyszerűbb, "nyers" momentum-oszcillátor, simítás nélkül.
+         A kalkulátor a LEGUTÓBBI ÉS az azt megelőző ROC-értéket is
+         kiszámolja, hogy a nulla vonal metszése (keresztezés) is
+         felismerhető legyen, nem csak a pillanatnyi előjel. -->
+    <div id="roc-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-simple-high text-neon-green"></i> Rate of Change (ROC) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('roc-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Rate of Change (ROC) a legegyszerűbb momentum-oszcillátor: megmutatja, hány %-kal van magasabban vagy alacsonyabban a mai záróár az N periódussal korábbi záróárhoz képest — ROC = (Mai záróár − N periódussal korábbi záróár) / N periódussal korábbi záróár × 100. Simítás nélküli, "nyers" mutató, ezért érzékenyebb és zajosabb, mint pl. a TRIX. A nulla vonal felfelé/lefelé keresztezése gyakori jelzés: fölötte a közelmúlt ára magasabb (bullish momentum), alatta alacsonyabb (bearish momentum). Add meg a záróárakat soronként egyet, időrendben.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Záróárak (soronként egy, időrendben)</label>
+            <textarea id="roc-closes" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-green/50">100
+101.5
+100.8
+102.3
+103.1
+102.5
+104.0
+103.2
+105.5
+104.8
+106.2
+105.0
+107.3
+106.5
+108.0
+109.2
+108.5
+110.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (N, tipikusan 12)</label>
+            <input type="number" id="roc-period" value="12" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcROC()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="roc-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A ROC nem veszi figyelembe, MI történt a két időpont KÖZÖTT — egy éles visszaesés majd felépülés is simán pozitív ROC-ot adhat, ezért más eszközökkel (pl. trendvonal, volumen) együtt érdemes értelmezni.</p>
         </div>
     </div>
 
@@ -13696,6 +13751,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Trend Exhaustion Index Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Trend hossza × sebessége, kifáradás-jelzéshez</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('roc-modal')" data-tool-title="rate of change (roc) kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-simple-high"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Rate of Change (ROC) Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">%-os árváltozás N periódussal korábbihoz képest</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('denomeffect-modal')" data-tool-title="denomination effect kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -33149,6 +33211,71 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= RATE OF CHANGE (ROC) KALKULÁTOR (OKTATÁSI) =================
+        // ROC_t = (Close_t - Close_{t-N}) / Close_{t-N} × 100. A
+        // keresztezés felismeréséhez a LEGUTÓBBI ÉS az azt megelőző
+        // ROC-értéket is kiszámoljuk (ehhez legalább N+2 záróár kell).
+        function calcROC() {
+            const closesEl = document.getElementById('roc-closes');
+            const periodEl = document.getElementById('roc-period');
+            const out = document.getElementById('roc-result');
+            if (!closesEl || !periodEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
+            const period = parseInt(periodEl.value);
+
+            if (!period || period < 1 || closes.length < period + 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes (legalább 1) periódust, és legalább (periódus + 2) érvényes záróárat — a jelenlegi ÉS az előző ROC-érték kiszámításához mindkettő szükséges!</div>`;
+                return;
+            }
+
+            const n = closes.length;
+            const refClose = closes[n - 1 - period];
+            const prevRefClose = closes[n - 2 - period];
+
+            if (refClose === 0 || prevRefClose === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${period} periódussal korábbi záróár(ak) pontosan nulla, így a ROC nem fejezhető ki véges számmal — adj meg más záróárakat!</div>`;
+                return;
+            }
+
+            const latestClose = closes[n - 1];
+            const prevClose = closes[n - 2];
+            const latestRoc = (latestClose - refClose) / refClose * 100;
+            const prevRoc = (prevClose - prevRefClose) / prevRefClose * 100;
+
+            const crossedUp = prevRoc <= 0 && latestRoc > 0;
+            const crossedDown = prevRoc >= 0 && latestRoc < 0;
+
+            let colorClass, verdict;
+            if (crossedUp) {
+                colorClass = 'text-neon-green';
+                verdict = `✅ A ROC az előző értékről FELFELÉ keresztezte a nulla vonalat — sokak számára ez bullish momentum-jelzés, de önmagában, más eszköz megerősítése nélkül félrevezető is lehet.`;
+            } else if (crossedDown) {
+                colorClass = 'text-neon-red';
+                verdict = `🚨 A ROC az előző értékről LEFELÉ keresztezte a nulla vonalat — sokak számára ez bearish momentum-jelzés, de önmagában, más eszköz megerősítése nélkül félrevezető is lehet.`;
+            } else if (latestRoc > 0) {
+                colorClass = 'text-neon-green';
+                verdict = `A ROC pozitív — a jelenlegi záróár magasabban van, mint ${period} periódussal korábban, ami felfelé irányuló momentumra utal.`;
+            } else if (latestRoc < 0) {
+                colorClass = 'text-neon-red';
+                verdict = `A ROC negatív — a jelenlegi záróár alacsonyabban van, mint ${period} periódussal korábban, ami lefelé irányuló momentumra utal.`;
+            } else {
+                colorClass = 'text-slate-300';
+                verdict = `A ROC pontosan nulla — a jelenlegi záróár megegyezik a ${period} periódussal korábbi záróárral.`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Jelenlegi záróár:</span><span class="text-white">${latestClose}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">${period} periódussal korábbi záróár:</span><span class="text-white">${refClose}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Előző ROC:</span><span class="text-slate-300">${prevRoc >= 0 ? '+' : ''}${prevRoc.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">ROC (jelenlegi):</span><span class="font-extrabold ${colorClass} text-sm">${latestRoc >= 0 ? '+' : ''}${latestRoc.toFixed(2)}%</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
         // ================= KORRELÁCIÓS MÁTRIX KALKULÁTOR (OKTATÁSI) =================
         // corr(X,Y) = Cov(X,Y) / (σX × σY), population (n-osztós)
         // momentum-konvencióval, konzisztensen a session többi
@@ -46574,7 +46701,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
