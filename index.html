@@ -42226,9 +42226,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             } else if (focusIds && focusIds.length > 0) {
                 // Célzott gyakorlás: csak a megadott (leggyengébb) alakzatokból húzunk,
                 // szükség esetén ismételve, hogy kitöltsük a kör hosszát.
-                pool = [];
-                while (pool.length < n) {
-                    pool.push(...focusIds.map(id => DRILL_PATTERN_POOL.find(p => p.id === id)).filter(Boolean));
+                // JAVÍTÁS: a focusIds néha korábbi (localStorage-ban perzisztált
+                // drillStats/weakest-pattern) adatból érkezik — ha egy ilyen id már
+                // nem létezik a (jövőben esetleg átnevezett/törölt) DRILL_PATTERN_POOL-ban,
+                // a .filter(Boolean) eredménye ÜRES tömb lehetett, és az alábbi
+                // while-ciklus a pool.length SOHA nem nőtt volna 0 fölé — végtelen
+                // ciklusba fagyasztva a böngészőlapot. Most előre leszűrjük a valóban
+                // létező mintákra, és ha egy sem maradt, a teljes pool-ra esünk vissza.
+                const validFocusPatterns = focusIds.map(id => DRILL_PATTERN_POOL.find(p => p.id === id)).filter(Boolean);
+                if (validFocusPatterns.length === 0) {
+                    pool = [...DRILL_PATTERN_POOL];
+                } else {
+                    pool = [];
+                    while (pool.length < n) {
+                        pool.push(...validFocusPatterns);
+                    }
                 }
             } else {
                 pool = [...DRILL_PATTERN_POOL];
