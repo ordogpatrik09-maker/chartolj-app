@@ -28652,8 +28652,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     rows.push({ close: parts[0], volume: parts[1] });
                 }
             }
-            const period = parseInt(periodEl.value, 10) || 1;
+            const period = parseInt(periodEl.value, 10);
             const n = rows.length;
+
+            // JAVÍTÁS: a period mezőt korábban `parseInt(...) || 1` eséssel olvastuk —
+            // ez csak a nem-numerikus/0 bemenetet fogta ki, egy negatív (pl. billentyűzettel
+            // beírt, a HTML min="1" attribútumot megkerülő, mert az csak a spinner-nyilakra hat)
+            // periódus truthy számként simán átment. Negatív period esetén a lenti
+            // `rows.slice(n - period)` hívás (n - negatívPeriod = n-nél NAGYOBB index) egy ÜRES
+            // tömböt adott vissza, ami miatt num=0 ÉS den=0 lett — ezt a lenti `den === 0`
+            // védelem ugyan elkapta, de egy FÉLREVEZETŐ "a volumen összege nulla" hibaüzenettel,
+            // miközben a valódi probléma az érvénytelen periódus volt. Explicit, előzetes
+            // egész-szám és "legalább 1" ellenőrzés zárja ki ezt, konzisztensen a session többi
+            // kalkulátorának (pl. EMV, SMA/EMA Golden Cross) input-validációs mintájával.
+            if (!Number.isFinite(period) || period < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A periódusnak egy érvényes, legalább 1 értékű egész számnak kell lennie!</div>`;
+                return;
+            }
 
             if (n < period) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${period} adatpont szükséges a ${period}-periódusú VWMA-hoz — jelenleg ${n} van megadva!</div>`;
