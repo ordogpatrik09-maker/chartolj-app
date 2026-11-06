@@ -75,12 +75,20 @@ check('academy_modules_count', () => {
     return { moduleCount: data.length };
 });
 
-// 3) GLOSSARY_TERMS — 98 szószedet-tétel.
+// 3) GLOSSARY_TERMS — 96 szószedet-tétel.
+// JAVÍTÁS (2026-11-06): korábban 98 tétel volt, de ebből 2 pár valódi
+// duplikátum ("Kelly Kritérium"/"Kelly-kritérium" és kétszer "Profit
+// Factor", eltérő, részben inkonzisztens definíciókkal) — ezeket egy-egy
+// összevont, teljesebb definícióra egyesítettük, ezért a várt szám
+// szándékosan 98-ról 96-ra csökkent (nem regresszió).
 check('glossary_terms_count', () => {
     const src = extractBalanced(html, 'const GLOSSARY_TERMS = ', '[', ']');
     const data = new Function('return ' + src)();
     if (!Array.isArray(data)) throw new Error('GLOSSARY_TERMS nem tömb');
-    if (data.length !== 98) throw new Error(`Várt 98 szószedet-tétel, kapott ${data.length}`);
+    if (data.length !== 96) throw new Error(`Várt 96 szószedet-tétel, kapott ${data.length}`);
+    const terms = data.map(t => t.term.toLowerCase().replace(/[^a-z0-9áéíóöőúüű]+/g, ''));
+    const dupes = terms.filter((t, i) => terms.indexOf(t) !== i);
+    if (dupes.length > 0) throw new Error(`Duplikált szószedet-tétel(ek): ${[...new Set(dupes)].join(', ')}`);
     return { glossaryCount: data.length };
 });
 
