@@ -36918,8 +36918,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const volPct = parseFloat(document.getElementById('greeks-vol').value);
             const ratePct = parseFloat(document.getElementById('greeks-rate').value);
 
-            if (!S || S <= 0 || !K || K <= 0 || !days || days <= 0 || !volPct || volPct <= 0 || !Number.isFinite(ratePct) || ratePct < 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, pozitív árfolyamot, kötési árat, napok számát és volatilitást (a ráta nem lehet negatív)!</div>`;
+            // JAVÍTÁS: a négy mező korábban `!x || x <= 0` mintával volt ellenőrizve, ami
+            // a nem-numerikus/0/negatív bemenetet kifogta, de egy TÚL NAGY, a double
+            // tartományát túllépő (pl. billentyűzettel beírt "1e400") értéket NEM — a
+            // parseFloat() ott Infinity-t ad vissza, ami truthy és nem <=0, így simán
+            // átment a validáción (a mezők "min" HTML-attribútuma csak a spinner-nyilakra
+            // hat). Az Infinity onnan a Black-Scholes d1/d2/Nd1/Nd2 közbenső értékein
+            // végigterjedt, és egy megtévesztő "$Infinity" vagy "$NaN" árat/Greeket
+            // produkált (pl. extrém "napok a lejáratig" érték esetén Infinity/Infinity =
+            // NaN a d1 képletben) valódi hibaüzenet helyett. Most mind a négy mező
+            // explicit Number.isFinite() ellenőrzést kapott, konzisztensen az app többi
+            // kalkulátorának (pl. Tőke-mérföldkövek Szerinti Méretezés) validációs
+            // mintájával.
+            if (!Number.isFinite(S) || S <= 0 || !Number.isFinite(K) || K <= 0 || !Number.isFinite(days) || days <= 0 || !Number.isFinite(volPct) || volPct <= 0 || !Number.isFinite(ratePct) || ratePct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, pozitív árfolyamot, kötési árat, napok számát és volatilitást (a ráta nem lehet negatív)!</div>`;
                 return;
             }
 
@@ -36928,6 +36940,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const r = ratePct / 100;
             const isCall = currentGreeksOptionType === 'call';
             const g = calcBlackScholes(S, K, T, r, sigma, isCall);
+
+            // JAVÍTÁS: a fenti explicit ellenőrzés a négy ismert, konkrét forrást fedi le,
+            // de egy végső véges-ellenőrzés a Black-Scholes kimenetén (ár + mind az 5
+            // Greek) egy utolsó biztonsági hálót ad bármilyen más, előre nem látott
+            // extrém bemenet-kombináció (pl. rendkívül kicsi volatilitás és nagy
+            // kötési ár/árfolyam arány együtt) ellen is — konzisztensen az app többi
+            // kalkulátorának validációs mintájával.
+            if (![g.price, g.delta, g.gamma, g.theta, g.vega, g.rho].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott paraméterek kombinációja olyan extrém, hogy az opciós ár és a Greekek nem fejezhetők ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             const fmt = (n, d = 2) => (n < 0 ? '-$' + Math.abs(n).toFixed(d) : '$' + n.toFixed(d));
             const fmtNum = (n, d = 4) => (n >= 0 ? '+' : '') + n.toFixed(d);
