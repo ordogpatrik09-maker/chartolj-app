@@ -27687,6 +27687,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const actualReturnPct = (leveredFactor - 1) * 100;
             const decayPct = naiveReturnPct - actualReturnPct;
 
+            // JAVÍTÁS: egy szintaktikailag érvényes, de rendkívül nagy (pl. "1e308")
+            // napi hozam vagy tőkeáttételi szorzó mellett a `naiveReturnPct = L *
+            // underlyingReturnPct` szorzás (vagy a leveredDailyFactor szorzat-sorozat)
+            // túlcsordíthatja az IEEE754 double tartományt — a decayPct ilyenkor
+            // Infinity - Infinity = NaN lett, és a felhasználó egy valódi "NaN pp" /
+            // "Infinity%" eredményt látott a mindig megjelenő "Mögöttes eszköz nettó
+            // hozama" és "Naiv elvárás" mezőkben, valódi hibaüzenet helyett. Végső
+            // véges-ellenőrzés biztonsági hálóként, konzisztensen az app többi
+            // kalkulátorának mintájával.
+            if (!Number.isFinite(underlyingReturnPct) || !Number.isFinite(naiveReturnPct) || (ruinDay === null && !Number.isFinite(actualReturnPct))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott napi hozamsor és tőkeáttételi szorzó kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb napi hozamokat!</div>`;
+                return;
+            }
+
             const absL = Math.abs(L);
             const isInverse = L < 0;
 
@@ -28073,6 +28087,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const epsGrowthFromBuybackPct = epsAfterSplit !== 0
                 ? ((epsAfterBuyback - epsAfterSplit) / Math.abs(epsAfterSplit)) * 100
                 : null;
+
+            // JAVÍTÁS: egyenként véges, de rendkívül nagy (pl. "1e308") árfolyam/
+            // részvényszám/split arány bemenetek mellett a `price0 * shares0` vagy
+            // `shares0 * ratio` szorzások túlcsordíthatják az IEEE754 double
+            // tartományt (Infinity) — ez a sharesBoughtBack >= sharesAfterSplit
+            // védelmet megkerülte (Infinity mindig "nagyobb"), és a market cap/
+            // részvényszám mezőkben szó szerint "Infinity" szöveg jelent meg
+            // valódi hibaüzenet helyett. Végső véges-ellenőrzés biztonsági
+            // hálóként, konzisztensen az app többi kalkulátorának mintájával.
+            if (![marketCap0, sharesAfterSplit, marketCapAfterSplit, sharesAfterBuyback, marketCapAfterBuyback, buybackYieldPct, epsAfterBuyback].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árfolyam, részvényszám és split arány kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             let splitNote = '';
             if (Math.abs(ratio - 1) > 1e-9) {
@@ -30483,15 +30510,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const leg3Enabled = document.getElementById('ptf-enable-3').checked;
             if (leg3Enabled) legs.push(ptfReadLeg(3));
 
+            // JAVÍTÁS: a leg.weight/paraméter mezőket korábban `isNaN(...)`-tal validáltuk —
+            // ez a NaN-t elkapja, de egy a double tartományát túllépő, de szintaktikailag
+            // érvényes bemenetet (pl. "1e308" a súly mezőben) NEM, mert az Infinity nem
+            // NaN. Ez a runPortfolioCombiner() súly-összeg hibaüzenetében
+            // ((weightSum * 100).toFixed(1)) szó szerint "Infinity%" szöveget
+            // eredményezett. Number.isFinite()-ra váltva, ÉS egy explicit, reális felső
+            // korláttal a súlyra (100% = teljes tőke egy lábra, 1000%-ig engedve
+            // tolerancia-képpen), ez a hibaosztály itt is kizárva.
             for (const leg of legs) {
-                if (isNaN(leg.weight) || leg.weight < 0 || Object.values(leg.params).some(v => isNaN(v))) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméter vagy súly valamelyik stratégiánál!</div>`;
+                if (!Number.isFinite(leg.weight) || leg.weight < 0 || leg.weight > 10 || Object.values(leg.params).some(v => !Number.isFinite(v))) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen, véges paraméter vagy súly (0-1000% között) valamelyik stratégiánál!</div>`;
                     return;
                 }
             }
 
             const startEquity = parseFloat(document.getElementById('ptf-equity').value);
-            if (isNaN(startEquity) || startEquity <= 0) {
+            if (!Number.isFinite(startEquity) || startEquity <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen kezdő tőke!</div>`;
                 return;
             }
@@ -31019,8 +31054,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const Cx = parseFloat(cxEl.value), Cp = parseFloat(cpEl.value);
             const targetX = parseFloat(tEl.value);
 
-            if ([Ax, Ap, Bx, Bp, Cx, Cp, targetX].some(v => isNaN(v))) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+            // JAVÍTÁS: a 7 mezőt korábban `isNaN(v)`-vel validáltuk — ez a NaN-t elkapja,
+            // de egy a double tartományát túllépő, de szintaktikailag érvényes
+            // bemenetet (pl. "1e308") NEM, mert az Infinity nem NaN. Number.isFinite()-ra
+            // váltva ez is explicit hibát ad, konzisztensen a fájl többi kalkulátorával.
+            if ([Ax, Ap, Bx, Bp, Cx, Cp, targetX].some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat minden mezőben!</div>`;
                 return;
             }
             const midBCx = (Bx + Cx) / 2;
@@ -31034,6 +31073,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const medianAtX = Ap + slope * (targetX - Ax);
             const upperAtX = Bp + slope * (targetX - Bx);
             const lowerAtX = Cp + slope * (targetX - Cx);
+
+            // JAVÍTÁS: egyenként véges, de rendkívül nagy (pl. mindhárom pont azonos
+            // "1e308" koordinátán) bemenetek mellett a `Bx + Cx` / `Bp + Cp` összegek
+            // túlcsordíthatják az IEEE754 double tartományt (Infinity), ami a
+            // `slope = (midBCp - Ap) / (midBCx - Ax)` osztásban Infinity/Infinity =
+            // NaN-t eredményezett — ez a `slope`/`medianAtX`/`upperAtX`/`lowerAtX`
+            // mezőkön (`.toLocaleString()`-tel megjelenítve, ami NaN-ra szó szerint
+            // "NaN"-t ad) végigterjedt, valódi hibaüzenet helyett. Végső véges-
+            // ellenőrzés biztonsági hálóként, konzisztensen az app többi
+            // kalkulátorának mintájával.
+            if (![slope, medianAtX, upperAtX, lowerAtX].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott koordináták kombinációja olyan extrém, hogy a villa-vonalak nem fejezhetők ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
@@ -31555,8 +31608,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // nagy érték a böngészőlapot a főszálon futó, gyakorlatilag véget nem érő
             // ciklussal LEFAGYASZTOTTA. Most explicit felső korlátot kapott (50 pótlás
             // bőven elég a piramizálás szemléltetéséhez).
-            if ([entry, initSize, numAddons, triggerPct, addPct].some(v => isNaN(v)) || entry <= 0 || initSize <= 0 || numAddons < 1 || numAddons > 50 || addPct <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt érvényesen ki kell tölteni (pozitív belépő ár, méret, 1 és 50 közötti pótlás-szám, pozitív pótlás-méret %)!</div>`;
+            // JAVÍTÁS: a numerikus mezőket korábban `isNaN(v)`-vel validáltuk — ez a
+            // NaN-t elkapja, de egy a double tartományát túllépő, de szintaktikailag
+            // érvényes bemenetet (pl. "1e308") NEM, mert az Infinity nem NaN.
+            // Number.isFinite()-ra váltva ez is explicit hibát ad.
+            if ([entry, initSize, numAddons, triggerPct, addPct].some(v => !Number.isFinite(v)) || entry <= 0 || initSize <= 0 || numAddons < 1 || numAddons > 50 || addPct <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt érvényesen, véges számmal kell kitölteni (pozitív belépő ár, méret, 1 és 50 közötti pótlás-szám, pozitív pótlás-méret %)!</div>`;
                 return;
             }
 
@@ -31576,6 +31633,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const growthPct = (totalSize / initSize - 1) * 100;
             const finalAvg = rows[rows.length - 1].avgEntry;
             const avgDriftPct = (finalAvg / entry - 1) * 100;
+
+            // JAVÍTÁS: egyenként véges, de rendkívül nagy (pl. "1e308") belépő ár/méret/
+            // trigger%/pótlás-méret% mellett a `price * size` / `entry * (1 + i *
+            // triggerPct / 100)` szorzások túlcsordíthatják az IEEE754 double
+            // tartományt (Infinity) — a `totalCost / totalSize` ekkor Infinity/
+            // Infinity = NaN lett, ami a pótlás-sorokban és a "Végső átlagos belépő"
+            // mezőben szó szerint "NaN"/"Infinity" szöveget eredményezett valódi
+            // hibaüzenet helyett. Végső véges-ellenőrzés biztonsági hálóként,
+            // konzisztensen az app többi kalkulátorának mintájával.
+            if (!Number.isFinite(growthPct) || !Number.isFinite(finalAvg) || !Number.isFinite(avgDriftPct) || rows.some(r => !Number.isFinite(r.price) || !Number.isFinite(r.size) || !Number.isFinite(r.avgEntry))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott belépő ár, méret és %-os paraméterek kombinációja olyan extrém, hogy a piramizálási terv nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             const rowsHtml = rows.map(r => `
                 <div class="flex justify-between font-mono text-[10px] py-1 border-b border-dark-750/50">
@@ -34574,6 +34644,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const breakevenTxs = savingsPerTx > 0 ? Math.ceil(bridgeFee / savingsPerTx) : null;
             const totalSavingsN = savingsPerTx * numTx - bridgeFee;
 
+            // JAVÍTÁS: egyenként véges, de rendkívül nagy (pl. "1e308") gas limit/ár/
+            // ETH-árfolyam bemenetek mellett az `l1Fee`/`l2ExecFee` szorzatok
+            // túlcsordíthatják az IEEE754 double tartományt (Infinity) — a
+            // `savingsPerTx = l1Fee - l2Fee` ekkor Infinity - Infinity = NaN lett, és
+            // ez (illetve a belőle származó savingsPct/totalSavingsN) az fmtUSD()-n
+            // keresztül szó szerint "$NaN"/"$Infinity" eredményt adott valódi
+            // hibaüzenet helyett. Végső véges-ellenőrzés biztonsági hálóként,
+            // konzisztensen az app többi kalkulátorának mintájával.
+            if (![l1Fee, l2Fee, savingsPerTx, savingsPct, totalSavingsN].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gas-limit/ár/ETH-árfolyam kombinációja olyan extrém, hogy a díjak nem fejezhetők ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
+
             const fmtUSD = (n) => {
                 const abs = Math.abs(n);
                 const decimals = abs < 0.01 ? 6 : (abs < 1 ? 4 : 2);
@@ -35003,11 +35086,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const [position, flatFeePerSide, pctFeePerSide, tradesRaw] = els.map(el => parseFloat(el.value));
             const trades = Math.max(1, Math.round(tradesRaw || 0));
 
+            // JAVÍTÁS: a flatFeePerSide/pctFeePerSide mezőket korábban `isNaN(...)`-tal
+            // validáltuk — ez a NaN-t elkapja, de egy a double tartományát túllépő,
+            // de szintaktikailag érvényes bemenetet (pl. "1e308") NEM, mert az
+            // Infinity nem NaN. Number.isFinite()-ra váltva ez is explicit hibát ad.
             if (!position || position <= 0 ||
-                isNaN(flatFeePerSide) || flatFeePerSide < 0 ||
-                isNaN(pctFeePerSide) || pctFeePerSide < 0 ||
+                !Number.isFinite(flatFeePerSide) || flatFeePerSide < 0 ||
+                !Number.isFinite(pctFeePerSide) || pctFeePerSide < 0 ||
                 !trades || trades <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb pozícióméretet, egy nullánál nem kisebb fix díjat és százalékos díjat, és legalább 1 trade-et!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, véges pozícióméretet, egy nullánál nem kisebb, véges fix díjat és százalékos díjat, és legalább 1 trade-et!</div>`;
                 return;
             }
 
@@ -35019,6 +35106,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const breakEvenPosition = pctFeePerSide > 0 ? (flatFeePerSide / (pctFeePerSide / 100)) : Infinity;
             const flatAsPctOfPosition = (flatCostPerRoundTrip / position) * 100;
             const pctAsPctOfPosition = pctCostPerRoundTrip / position * 100;
+
+            // JAVÍTÁS: egyenként véges, de rendkívül nagy bemenetek mellett a fenti
+            // szorzások túlcsordíthatják az IEEE754 double tartományt — a `diff`
+            // ekkor Infinity - Infinity = NaN lett, ami a "FIX díj olcsóbb" / "SZÁZALÉKOS
+            // díj olcsóbb" döntési logikát is félrevezette (a NaN mindkét `> 0`
+            // összehasonlításon elesik), és a flatAsPctOfPosition/pctAsPctOfPosition
+            // mezőket `.toFixed()`-del (nem `.toLocaleString()`-tel) jelenítjük meg,
+            // ami szó szerint "Infinity%"-et adott valódi hibaüzenet helyett. Végső
+            // véges-ellenőrzés biztonsági hálóként, konzisztensen az app többi
+            // kalkulátorának mintájával.
+            if (![totalFlatCost, totalPctCost, diff, flatAsPctOfPosition, pctAsPctOfPosition].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott pozícióméret, díjak és trade-szám kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
             const fmtPos = isFinite(breakEvenPosition) ? fmtMoney(breakEvenPosition) : 'nincs (a százalékos díj 0%, így sosem drágább)';
@@ -35217,6 +35318,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
                 return { shock, newPrice, pnl, pnlPct, colorClass, weightClass, status, clamped };
             }).sort((a, b) => a.shock - b.shock);
+
+            // JAVÍTÁS: egy szintaktikailag érvényes, de rendkívül nagy (pl. "1e308")
+            // belépési ár, pozícióméret vagy %-os sokk-forgatókönyv mellett a fenti
+            // `entry * (1 + shock / 100)` szorzás túlcsordíthatja az IEEE754 double
+            // tartományt (Infinity) — ez a `pnl < 0` / `pnl <= -balance` ágakat
+            // megkerülte (egy pozitív Infinity sosem veszteség), és a pnlPct mezőt
+            // `.toFixed()`-del (nem `.toLocaleString()`-tel) jelenítjük meg, ami szó
+            // szerint "Infinity%"-et adott, miközben a hamis "Nyereség" státusz
+            // teljesen megtévesztő egy ilyen extrém, definíció szerint
+            // kiértékelhetetlen forgatókönyvnél. Végső véges-ellenőrzés biztonsági
+            // hálóként, konzisztensen az app többi kalkulátorának mintájával.
+            if (rows.some(r => !Number.isFinite(r.pnl) || !Number.isFinite(r.pnlPct))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott belépési ár, pozícióméret vagy sokk-forgatókönyv olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             const worst = rows.reduce((a, b) => (b.pnl < a.pnl ? b : a), rows[0]);
             const best = rows.reduce((a, b) => (b.pnl > a.pnl ? b : a), rows[0]);
@@ -36156,8 +36272,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const delta = parseFloat(deltaEl.value);
             const profit = parseFloat(profitEl.value);
 
-            if (!startUnits || startUnits < 1 || !delta || delta <= 0 || isNaN(profit)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 kezdeti egységet, egy nullánál nagyobb delta-t, és egy érvényes felhalmozott profitot!</div>`;
+            // JAVÍTÁS: a profit mezőt korábban `isNaN(profit)`-tal validáltuk — ez a NaN-t
+            // elkapja, de egy a double tartományát túllépő, de szintaktikailag érvényes
+            // bemenetet (pl. "1e308") NEM, mert az Infinity nem NaN. Number.isFinite()-ra
+            // váltva ez is explicit hibát ad, konzisztensen a fájl többi kalkulátorával.
+            if (!startUnits || startUnits < 1 || !delta || delta <= 0 || !Number.isFinite(profit)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 kezdeti egységet, egy nullánál nagyobb, véges delta-t, és egy érvényes, véges felhalmozott profitot!</div>`;
                 return;
             }
 
@@ -36178,6 +36298,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // profit, amelynél computedUnits+1-re nőne a formula.
             const nextUnitIndex = (computedUnits - (startUnits - 1)) + 1;
             const profitForNextUnit = delta * (nextUnitIndex * (nextUnitIndex - 1)) / 2;
+
+            // JAVÍTÁS: egy nagyon nagy, de egyenként véges `profit`/`delta` érték mellett
+            // a `8 * profit` vagy a `delta * (nextUnitIndex * ...)` szorzás túlcsordíthatja
+            // az IEEE754 double tartományt (Infinity), ami a "Jelenleg kereskedhető
+            // egységek" mezőben szó szerint "Infinity" szöveget jelenített meg valódi
+            // hibaüzenet helyett. Végső véges-ellenőrzés biztonsági hálóként,
+            // konzisztensen az app többi kalkulátorának mintájával.
+            if (!Number.isFinite(computedUnits) || !Number.isFinite(profitForNextUnit)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott profit és delta kombinációja olyan extrém, hogy az egységszám nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             const fmt = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -36376,6 +36507,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }));
 
             const weightSum = assets.reduce((s, a) => s + a.weightPct, 0);
+            // JAVÍTÁS: a három súly mező egyenként véges, de ha az összegük (pl. három
+            // "1e308"-as érték) túlcsordítja az IEEE754 double tartományt, a weightSum
+            // Infinity lett — ez a lenti figyelmeztető sávban szó szerint "A súlyok
+            // összege Infinity%" szöveget jelenített meg, és a `weightSum <= 0` ág nem
+            // fogta ki (Infinity > 0), így a normalizált súlyok (weightPct/weightSum)
+            // nullára estek, ami a kijelzett eszköz-súly %-oknál (100 * weightPct /
+            // weightSum, overflow-ra hajlamos sorrendben) "NaN%"-ot eredményezett.
+            // Explicit véges-ellenőrzés itt, a figyelmeztető sáv renderelése ELŐTT,
+            // konzisztensen az app többi kalkulátorának mintájával.
+            if (warningEl && !Number.isFinite(weightSum)) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">A megadott súlyok összege túl extrém — adj meg reálisabb, 0-100 közötti súly %-okat!</div>`;
+                warningEl.classList.add('hidden');
+                return;
+            }
             if (warningEl) {
                 if (Math.abs(weightSum - 100) > 0.01) {
                     warningEl.classList.remove('hidden');
@@ -36433,7 +36578,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="space-y-1.5 mb-3">
                     ${assets.map((a, i) => `
                         <div class="flex items-center justify-between text-[11px] font-mono">
-                            <span class="text-slate-400">${escapeHtml(a.name)} (${(100 * a.weightPct / weightSum).toFixed(0)}%):</span>
+                            <span class="text-slate-400">${escapeHtml(a.name)} (${(a.weightPct / weightSum * 100).toFixed(0)}%):</span>
                             <span class="font-bold text-white">${fmt(values[i])}</span>
                         </div>
                     `).join('')}
@@ -36658,6 +36803,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const breakEvenMovePct = feePctPerSide * 2;
             const feeAsPctOfPosition = (totalFees / position) * 100;
 
+            // JAVÍTÁS: egy szintaktikailag érvényes, de rendkívül nagy (pl. "1e308")
+            // pozícióméret és/vagy díj% mellett a fenti szorzások túlcsordíthatják az
+            // IEEE754 double tartományt — a breakEvenMovePct (amit `.toFixed()`-del,
+            // nem `.toLocaleString()`-tel jelenítünk meg) ilyenkor szó szerint
+            // "Infinity%" szöveget adott valódi hibaüzenet helyett. Végső véges-
+            // ellenőrzés biztonsági hálóként, konzisztensen az app többi
+            // kalkulátorának mintájával.
+            if (![roundTripFee, totalFees, breakEvenMovePct, feeAsPctOfPosition].every(Number.isFinite)) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott pozícióméret és díj% kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
+
             const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
             resultEl.innerHTML = `
@@ -36814,6 +36971,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const fmt = (n) => (n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }));
             const isPayment = netCashFlow < 0;
             const dailyAvg = netCashFlow / days;
+
+            // JAVÍTÁS: egy szintaktikailag érvényes, de rendkívül nagy (pl. "1e308")
+            // pozícióméret, ráta vagy tartási időtartam mellett a fenti szorzások
+            // túlcsordíthatják az IEEE754 double tartományt — a numIntervals és a
+            // totalFundingPctOfPosition mezőt `.toFixed()`-del (nem `.toLocaleString()`-
+            // tel) jelenítjük meg, ami ilyenkor szó szerint "Infinity" szöveget adott
+            // valódi hibaüzenet helyett. Végső véges-ellenőrzés biztonsági hálóként,
+            // konzisztensen az app többi kalkulátorának mintájával.
+            if (![numIntervals, totalFundingPctOfPosition, netCashFlow, dailyAvg].every(Number.isFinite)) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott pozícióméret, ráta és tartási időtartam kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             resultEl.innerHTML = `
                 <div class="rounded-xl ${isPayment ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-neon-green/5 border border-neon-green/30'} p-3 mb-3">
@@ -37729,6 +37898,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lvarAmount = varAmount + liquidityCostAmount;
             const lvarPct = varPct + (spreadPct * 0.5);
 
+            // JAVÍTÁS: egy szintaktikailag érvényes, de rendkívül nagy (pl. "1e308")
+            // portfólióérték/volatilitás/tartási időszak/spread% mellett a
+            // scaledVolFrac/varAmount/esAmount/lvarAmount szorzatok túlcsordíthatják
+            // az IEEE754 double tartományt — a varPct/esPct/lvarPct mezőket
+            // `.toFixed()`-del (nem `.toLocaleString()`-tel) jelenítjük meg, ami
+            // ilyenkor szó szerint "Infinity%" szöveget adott valódi hibaüzenet
+            // helyett. Végső véges-ellenőrzés biztonsági hálóként, konzisztensen
+            // az app többi kalkulátorának mintájával.
+            if (![varAmount, varPct, esAmount, esPct, lvarAmount, lvarPct].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott portfólióérték, volatilitás és tartási időszak kombinációja olyan extrém, hogy a VaR nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
+
             const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
             out.innerHTML = `
@@ -38329,6 +38511,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const positionValue = units * entry;
             const longStopPrice = entry - stopDistance;
             const shortStopPrice = entry + stopDistance;
+
+            // JAVÍTÁS: egyenként véges, de rendkívül nagy (pl. "1e308") ATR-érték és/vagy
+            // szorzó mellett a `stopDistance = atrValue * mult` szorzás túlcsordíthatja
+            // az IEEE754 double tartományt (Infinity) — ez a stopDistancePct/
+            // longStopPrice/shortStopPrice mezőkben szó szerint "Infinity" szöveget
+            // eredményezett valódi hibaüzenet helyett. Végső véges-ellenőrzés
+            // biztonsági hálóként, konzisztensen az app többi kalkulátorának mintájával.
+            if (![stopDistance, stopDistancePct, units, positionValue, longStopPrice, shortStopPrice].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott ATR-érték és szorzó kombinációja olyan extrém, hogy a stop-távolság nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2.5">
@@ -38945,12 +39138,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const RISK_WEIGHTS = { cash: 0.1, crypto: 0.5, algo: 1.0 };
 
-            if (isNaN(holding) || holding <= 0 ||
-                isNaN(price) || price < 0 ||
-                isNaN(collateralPct) || collateralPct < 0 ||
+            // JAVÍTÁS: a numerikus mezőket korábban `isNaN(...)`-tal validáltuk — ez a
+            // NaN-t elkapja, de egy a double tartományát túllépő, de szintaktikailag
+            // érvényes bemenetet (pl. "1e308") NEM, mert az Infinity nem NaN.
+            // Number.isFinite()-ra váltva ez is explicit hibát ad.
+            if (!Number.isFinite(holding) || holding <= 0 ||
+                !Number.isFinite(price) || price < 0 ||
+                !Number.isFinite(collateralPct) || collateralPct < 0 ||
                 !RISK_WEIGHTS.hasOwnProperty(type) ||
-                isNaN(outflowPct) || outflowPct < 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb stablecoin kitettséget, egy nullánál nem kisebb aktuális árat, egy nullánál nem kisebb fedezeti arány %-ot, egy érvényes fedezet-típust, és egy nullánál nem kisebb napi kiáramlási %-ot!</div>`;
+                !Number.isFinite(outflowPct) || outflowPct < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, véges stablecoin kitettséget, egy nullánál nem kisebb, véges aktuális árat, egy nullánál nem kisebb, véges fedezeti arány %-ot, egy érvényes fedezet-típust, és egy nullánál nem kisebb, véges napi kiáramlási %-ot!</div>`;
                 return;
             }
 
@@ -38960,6 +39157,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const pegDeviationPct = (1 - price) * 100;
             const immediateLoss = holding * (1 - price);
             const absDev = Math.abs(pegDeviationPct);
+
+            // JAVÍTÁS: a `price` mezőnek korábban nem volt felső korlátja (csak a
+            // negatív érték volt kizárva) — egy rendkívül nagy, de egyenként véges
+            // (pl. "1e308") ár mellett a `(1 - price) * 100` szorzás túlcsordíthatja
+            // az IEEE754 double tartományt (Infinity), ami a Peg-eltérés mezőben
+            // (amit `.toFixed()`-del jelenítünk meg) szó szerint "-Infinity%"
+            // szöveget eredményezett valódi hibaüzenet helyett. Végső véges-
+            // ellenőrzés biztonsági hálóként, konzisztensen az app többi
+            // kalkulátorának mintájával.
+            if (!Number.isFinite(pegDeviationPct) || !Number.isFinite(immediateLoss)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott ár és kitettség kombinációja olyan extrém, hogy a peg-eltérés nem fejezhető ki véges számmal — adj meg egy reálisabb árat!</div>`;
+                return;
+            }
 
             let severityLabel, severityColor, severityEmoji;
             if (absDev < 0.5) { severityLabel = 'Normál ingadozás'; severityColor = 'text-neon-green'; severityEmoji = '✅'; }
