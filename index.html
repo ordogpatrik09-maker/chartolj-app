@@ -7672,24 +7672,36 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
             <label class="text-[11px] font-semibold text-slate-400">Teljes befektetett összeg ($)</label>
             <input type="number" id="port-total" value="10000" step="100" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
 
+            <!-- JAVÍTÁS: a 3 eszköz-sor name/weight/return <input>-jei korábban
+                 NEM kapták meg a projekt mindenhol másutt (pl. a Monte Carlo
+                 kalkulátor grid-cols-2 soraiban) következetesen használt
+                 "w-full"-t. Grid-layoutban egy <input> alapértelmezett
+                 min-width-e NEM a rácsoszlop szélessége, hanem a böngésző
+                 saját, tartalom-alapú minimum-szélessége — ez szűk (mobil)
+                 viewportnál szélesebb, mint a 4.5rem-es "Éves hozam %"
+                 oszlop, ezért az utolsó input kilógott/levágódott a kártya
+                 jobb széléből (Playwright: 360px-es mobil nézetnél az
+                 input jobb széle 18px-rel a kártya szélén TÚL mérve).
+                 w-full + min-w-0: az input mindig a saját rácsoszlopát
+                 tölti ki, sosem lóg ki belőle. -->
             <div class="space-y-2 mb-3">
                 <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5 text-[9px] text-slate-500 font-bold uppercase px-1">
                     <span>Eszköz</span><span>Súly %</span><span>Éves hozam %</span>
                 </div>
                 <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
-                    <input type="text" id="port-a1-name" value="Részvény ETF" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a1-weight" value="60" step="1" min="0" max="100" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a1-return" value="8" step="0.5" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="text" id="port-a1-name" value="Részvény ETF" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a1-weight" value="60" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a1-return" value="8" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
                 </div>
                 <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
-                    <input type="text" id="port-a2-name" value="Állampapír" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a2-weight" value="30" step="1" min="0" max="100" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a2-return" value="6" step="0.5" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="text" id="port-a2-name" value="Állampapír" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a2-weight" value="30" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a2-return" value="6" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
                 </div>
                 <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
-                    <input type="text" id="port-a3-name" value="Kripto (BTC)" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a3-weight" value="10" step="1" min="0" max="100" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a3-return" value="15" step="0.5" class="bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="text" id="port-a3-name" value="Kripto (BTC)" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a3-weight" value="10" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="number" id="port-a3-return" value="15" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
                 </div>
             </div>
             <div id="port-weight-warning" class="hidden text-[10px] text-amber-400 font-bold mb-2"></div>
