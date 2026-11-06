@@ -33564,12 +33564,39 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const stepPct = parseFloat(stepPctEl.value);
             const riskPct = parseFloat(riskPctEl.value);
 
-            if (!startCapital || startCapital <= 0 || !currentCapital || currentCapital <= 0 || !stepPct || stepPct <= 0 || !riskPct || riskPct <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb kezdő tőkét, egy nullánál nagyobb jelenlegi tőkét, egy nullánál nagyobb mérföldkő-lépésközt, és egy nullánál nagyobb kockázati %-ot!</div>`;
+            // JAVÍTÁS: a négy mező korábban `!x || x <= 0` mintával volt ellenőrizve, ami
+            // a nem-numerikus/0/negatív bemenetet kifogta, de egy TÚL NAGY, a double
+            // tartományát túllépő (pl. billentyűzettel beírt "1e400") értéket NEM — a
+            // parseFloat() ott Infinity-t ad vissza, ami truthy és nem <=0, így simán
+            // átment a validáción, miközben a mezőkön látható "min"/"max" HTML-attribútum
+            // csak a spinner-nyilakra hat. Az Infinity onnan a ratio/k/effectiveCapital/
+            // recommendedPositionSize minden származtatott értékén végigterjedt, és egy
+            // megtévesztő "$∞" / "$NaN" (capitalNeededForNext = Infinity − Infinity = NaN)
+            // eredményt produkált valódi hibaüzenet helyett. Most explicit Number.isFinite()
+            // ellenőrzést kapott mind a négy mező, konzisztensen az app többi
+            // kalkulátorának validációs mintájával.
+            if (!Number.isFinite(startCapital) || startCapital <= 0 || !Number.isFinite(currentCapital) || currentCapital <= 0 || !Number.isFinite(stepPct) || stepPct <= 0 || !Number.isFinite(riskPct) || riskPct <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, véges kezdő tőkét, egy nullánál nagyobb, véges jelenlegi tőkét, egy nullánál nagyobb, véges mérföldkő-lépésközt, és egy nullánál nagyobb, véges kockázati %-ot!</div>`;
                 return;
             }
 
             const factor = 1 + stepPct / 100;
+
+            // JAVÍTÁS: egy extrém kicsi (de szintaktikailag érvényes, pozitív) lépésköz-
+            // százalék — pl. billentyűzettel beírt "0.0000000000000001" — a lebegőpontos
+            // pontosság határa miatt a `factor`-t PONTOSAN 1-re kerekíti (1 + egy a
+            // double-epsilonnál kisebb szám == 1). Ez a log(factor) = log(1) = 0 miatt a
+            // k = log(ratio)/log(factor) hányadosban nullával osztást okozott — NaN-t, ha
+            // ratio=1 (0/0), vagy ±Infinity-t, ha ratio≠1 — ami a Math.pow(factor, k) hívás
+            // miatt (Math.pow(1, Infinity) a IEEE754 szerint NaN) megtévesztő "$NaN"
+            // eredményt adott valódi hibaüzenet helyett. Most explicit ellenőrzést kapott:
+            // ha a lépésköz a lebegőpontos pontosság miatt nem hoz létre 1-nél nagyobb
+            // szorzót, a felhasználó egy érthető hibaüzenetet kap.
+            if (!(factor > 1)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A mérföldkő-lépésköz túl kicsi ahhoz, hogy a lebegőpontos pontosság mellett érvényes szorzót adjon — adj meg egy nagyobb lépésköz-százalékot!</div>`;
+                return;
+            }
+
             const ratio = currentCapital / startCapital;
             const k = Math.trunc(Math.log(ratio) / Math.log(factor));
             const effectiveCapital = startCapital * Math.pow(factor, k);
@@ -33578,6 +33605,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // A következő mérföldkő szintje és a hozzá szükséges további tőke.
             const nextMilestoneCapital = startCapital * Math.pow(factor, k + 1);
             const capitalNeededForNext = Math.max(0, nextMilestoneCapital - currentCapital);
+
+            // JAVÍTÁS: bár a fenti két explicit ellenőrzés lefedi a két ismert, konkrét
+            // forrást, egy végső véges-ellenőrzés a származtatott eredményeken egy utolsó
+            // biztonsági hálót ad bármilyen más, előre nem látott extrém bemenet-
+            // kombináció ellen is — konzisztensen az app többi kalkulátorának
+            // (pl. Portfólió Szimulátor) validációs mintájával.
+            if (![k, effectiveCapital, recommendedPositionSize, nextMilestoneCapital, capitalNeededForNext].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott tőke- és lépésköz-értékek kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (k > 0) {
