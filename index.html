@@ -24391,6 +24391,29 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const skewness = m3 / Math.pow(m2, 1.5);
             const excessKurtosis = m4 / (m2 * m2) - 3;
 
+            // JAVÍTÁS: a bemenetet csak egyedileg, elemenként szűrtük Number.isFinite()-fel
+            // (azaz minden egyes beírt szám önmagában véges volt), de ez nem védett a
+            // NEGYEDIK HATVÁNY (d*d*d*d a kurtosishoz) és a HARMADIK HATVÁNY (d*d*d a
+            // skewnesshez) túlcsordulása ellen. Egy egyébként véges, de extrém nagyságrendű
+            // hozam — pl. "5, -3, 1e170, 2" — esetén a d (eltérés az átlagtól) négyzete már
+            // d²≈1e340, ami meghaladja az IEEE754 double ábrázolható tartományát
+            // (~1.8e308), így a d*d összeadás Infinity-t ad. Negatív és pozitív extrém
+            // értékek vegyesen (pl. "1e200, -1e200, 1e200") esetén ez tovább romlik:
+            // Infinity − Infinity = NaN keletkezik már az m3 felösszegzésekor is. A fenti
+            // `m2 === 0` ellenőrzés ezt NEM fogta ki (Infinity ≠ 0), így a skewness/
+            // excessKurtosis NaN vagy Infinity eredményt produkált, amit a `.toFixed(3)`
+            // "NaN"/"Infinity" szövegként írt volna ki egy megtévesztő, hibásan zöld/piros
+            // színezésű verdikt mellett (a NaN < -0.5 összehasonlítás csendben false-ra
+            // értékelődik ki, így a kód a legutolsó, pozitív-ferdeségi ágra esne át).
+            // Most egy explicit, a két származtatott értéken végzett véges-ellenőrzés
+            // egyértelmű magyar hibaüzenetet ad extrém bemenet esetén, konzisztensen az
+            // app többi kalkulátorának (pl. Tőke-mérföldkő Méretezés) biztonsági-háló
+            // mintájával.
+            if (!Number.isFinite(skewness) || !Number.isFinite(excessKurtosis)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok között túl nagy a nagyságrendi eltérés — a számítás a lebegőpontos tartományt túllépve Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
+                return;
+            }
+
             let skewColorClass, skewVerdict;
             if (skewness < -0.5) {
                 skewColorClass = 'text-neon-red';
