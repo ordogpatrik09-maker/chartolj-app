@@ -1009,9 +1009,32 @@
             #academy-body-lessons.academy-module-chosen #academy-module-rail {
                 display: none !important;
             }
+            /* JAVÍTÁS (mobil UX audit — valódi, blokkoló hiba, Playwright-tal
+               mérve): a fenti "max-height: none !important; flex-grow: 1;"
+               szabály a modul-sín elrejtése után ÖNMAGÁBAN NEM elég ahhoz,
+               hogy a #academy-lesson-list-panel a rendelkezésre álló
+               (column-irányú flex-) helyre korlátozódjon — a korábbi
+               általános szabály ("flex: 0 0 auto") flex-shrink-je 0 maradt,
+               és a flex-basis "auto" (tartalom-alapú) maradt, ezért a panel
+               flex-grow:1 ELLENÉRE a TARTALMA méretére (akár több ezer px)
+               nőtt, nem a szülő #academy-body-lessons által kiosztott
+               magasságra. Mivel a panel saját "overflow: hidden" osztálya
+               (HTML-ben) csak a SAJÁT (immár tartalom-méretű) dobozán belül
+               vág — nem kényszeríti ki a kisebb méretet —, a belső
+               #academy-lesson-list ("flex-grow overflow-y-auto") sosem vált
+               tényleges görgethetővé (scrollHeight === clientHeight, a
+               scrollTop mindig 0 maradt), így egy hosszabb modul (pl. a
+               Technikai Elemzés 185 leckéje) leckéinek túlnyomó többsége
+               LÁTHATATLAN és ELÉRHETETLEN maradt mobilon — sem érintéssel,
+               sem programozottan nem volt görgethető. A javítás a "flex: 1 1
+               0" (explicit flex-shrink:1 és flex-basis:0) és "min-height: 0"
+               — ez a flex-item mérete most VALÓBAN a szülő által kiosztott
+               helyre korlátozódik tartalom-mérettől függetlenül, így a belső
+               lista a tényleges, kisebb magasságon belül válik görgethetővé. */
             #academy-body-lessons.academy-module-chosen #academy-lesson-list-panel {
                 max-height: none !important;
-                flex-grow: 1;
+                flex: 1 1 0;
+                min-height: 0;
             }
             .academy-module-collapse-bar {
                 display: none;
