@@ -29445,8 +29445,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const mmrPct = parseFloat(mmrEl.value);
             const direction = directionEl.value;
 
-            if ([entry, leverage, mmrPct].some(v => isNaN(v))) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+            // JAVÍTÁS: a régi `isNaN(v)` ellenőrzés csak a NaN esetet fogta
+            // meg, az Infinity/-Infinity-t (pl. egy "1e400" túlcsordulásból
+            // parseFloat-tal) NEM — az Infinity nem NaN, így átment ezen a
+            // validáción. Ugyanaz a hibaosztály, mint a Greeks és az
+            // Implikált Volatilitás kalkulátorban korábban javított eset:
+            // Number.isFinite()-ra váltva a NaN ÉS a végtelen bemenetek is
+            // explicit hibát adnak, mielőtt a liqPrice/distPct számításba
+            // szivárognának.
+            if ([entry, leverage, mmrPct].some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat minden mezőben!</div>`;
                 return;
             }
             if (entry <= 0 || leverage <= 0) {
