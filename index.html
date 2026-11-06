@@ -20106,6 +20106,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const skewness = m3 / Math.pow(m2, 1.5);
             const excessKurtosis = m4 / (m2 * m2) - 3;
 
+            // JAVÍTÁS: ugyanaz a hibaosztály, mint a manuális Ferdeség és
+            // Csúcsosság Kalkulátorban (lásd ott a részletes magyarázatot) —
+            // a harmadik/negyedik hatványra emelés (d*d*d / d*d*d*d) extrém
+            // nagyságrendű, de EGYEDILEG véges trade-hozamnál (pl. egy erősen
+            // tőkeáttételes/martingale-szerű stratégia egyetlen degenerált
+            // trade-jénél) túlcsordulhat Infinity/NaN-ra, amit a fenti
+            // "m2 === 0" ellenőrzés nem fog ki (Infinity ≠ 0). Mivel ez a
+            // függvény a MÁR LEFUTOTT backtest/stratégia-builder valódi
+            // trade-adatain fut (nem kézi, elemenként validált szöveges
+            // bemeneten), a bemenet itt sosem garantáltan "reális" nagyságrendű
+            // — explicit véges-ellenőrzés a származtatott értékeken, hogy
+            // extrém esetben egyértelmű hibaüzenet jöjjön egy megtévesztő
+            // NaN/Infinity-eredmény (és a NaN-összehasonlításból adódó hibás
+            // verdikt) helyett.
+            if (!Number.isFinite(skewness) || !Number.isFinite(excessKurtosis)) {
+                throw new Error('A trade-hozamok között túl nagy a nagyságrendi eltérés — a számítás a lebegőpontos tartományt túllépve Infinity/NaN eredményt adna.');
+            }
+
             return { tradeCount: n, skewness, excessKurtosis };
         }
 
