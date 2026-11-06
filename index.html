@@ -16943,7 +16943,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (index < period - 1) return null;
             let sum = 0;
             for (let i = index - period + 1; i <= index; i++) sum += values[i];
-            return sum / period;
+            const result = sum / period;
+            // JAVÍTÁS: szélsőséges, de egyenként véges bemeneti értékek esetén az
+            // összegzés túlcsordulhat Infinity/NaN-re — ilyenkor null-t adunk vissza
+            // (meglévő "nincs érvényes adat ezen a ponton" konvenció), hogy a hívó
+            // oldalak ezt helyesen kezeljék. Ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál.
+            return Number.isFinite(result) ? result : null;
         }
 
         function calcStdDev(values, period, index, mean) {
@@ -17974,9 +17980,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!Number.isFinite(period) || period < 1 || n < period) return atr;
             let sum = 0;
             for (let i = 0; i < period; i++) sum += tr[i];
-            atr[period - 1] = sum / period;
+            const firstAtr = sum / period;
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony/Záró
+            // bemenetnél a True Range összege (vagy a Wilder-simítás
+            // rekurziója) túlcsordulhat Infinity/NaN-re — innentől a
+            // rekurzió minden további eleme is szennyezett lenne, ezért a
+            // megbízhatatlan ponttól kezdve a már ismert null ("nincs elég/
+            // érvényes adat") szemantikát használjuk, amit minden hívó fél
+            // ismer és kezel (atr[i] === null ellenőrzés).
+            if (!Number.isFinite(firstAtr)) return atr;
+            atr[period - 1] = firstAtr;
             for (let i = period; i < n; i++) {
-                atr[i] = (atr[i - 1] * (period - 1) + tr[i]) / period;
+                const next = (atr[i - 1] * (period - 1) + tr[i]) / period;
+                if (!Number.isFinite(next)) break;
+                atr[i] = next;
             }
             return atr;
         }
@@ -22027,6 +22044,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
             let avgGain = gains / period;
             let avgLoss = losses / period;
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél (pl.
+            // nagyságrendi ugrások) az átlagos nyereség/veszteség Wilder-
+            // simítása túlcsordulhat Infinity-re/NaN-re — innentől a rekurzió
+            // MINDEN további eleme is szennyezett lenne, ezért a megbízhatatlan
+            // (nem véges) ponttól kezdve a null-lal már megjelölt, "nincs elég/
+            // érvényes adat" szemantikát használjuk, amit minden hívó fél már
+            // ismer és kezel (rsi[i] === null ellenőrzés).
+            if (!Number.isFinite(avgGain) || !Number.isFinite(avgLoss)) return rsi;
             rsi[period] = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
 
             for (let i = period + 1; i < closes.length; i++) {
@@ -22035,6 +22060,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const loss = diff < 0 ? -diff : 0;
                 avgGain = (avgGain * (period - 1) + gain) / period;
                 avgLoss = (avgLoss * (period - 1) + loss) / period;
+                if (!Number.isFinite(avgGain) || !Number.isFinite(avgLoss)) break;
                 rsi[i] = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
             }
             return rsi;
@@ -24124,8 +24150,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // sortino-arány kiszámítása előtt) is megjelenik a kijelzett
             // "Downside deviation" sorban. Ugyanaz a hibaosztály, mint a
             // korábban javított kalkulátoroknál.
-            if (!Number.isFinite(downsideDeviation)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott MAR érték túl szélsőséges érvényes Sortino-ráta számításához!</div>`;
+            if (!Number.isFinite(downsideDeviation) || !Number.isFinite(meanReturn)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok és/vagy MAR érték túl szélsőségesek érvényes Sortino-ráta számításához — a köztes számítás (átlagos hozam vagy downside deviation) túlcsordul!</div>`;
                 return;
             }
 
@@ -24261,6 +24287,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const deviationPct = (currentPrice - vwap) / vwap * 100;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges ár/volumen bemenetnél a
+            // Σ(ár×volumen) vagy a Σ(volumen) túlcsordulhat Infinity-re (vagy a
+            // VWAP maga NaN-re, 0/0 vagy Infinity/Infinity esetén) — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(vwap) || !Number.isFinite(totalVolume) || !Number.isFinite(deviationPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak és/vagy volumenek túl szélsőségesek — a VWAP számítása túlcsordul. Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (Math.abs(deviationPct) < 0.3) {
                 colorClass = 'text-neon-cyan';
@@ -24330,6 +24365,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const upper1 = avwap + stdDev, lower1 = avwap - stdDev;
             const upper2 = avwap + 2 * stdDev, lower2 = avwap - 2 * stdDev;
             const deviationPct = (currentPrice - avwap) / avwap * 100;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges ár/volumen bemenetnél a
+            // köztes összegek (Σár×volumen, Σvolumen, a szórás négyzetösszege)
+            // túlcsordulhatnak Infinity-re, vagy az AVWAP maga NaN-re — ugyanaz
+            // a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (![avwap, stdDev, upper1, lower1, upper2, lower2, deviationPct, totalVolume].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak és/vagy volumenek túl szélsőségesek — az Anchored VWAP számítása túlcsordul. Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (currentPrice >= upper2) {
@@ -24484,16 +24528,35 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const beta = covariance / marketVariance;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges hozam-bemenetnél a
+            // kovariancia/variancia felösszegzése (és az ebből vezérelt
+            // meanAsset/meanMarket/béta/Treynor/Jensen's Alpha) túlcsordulhat
+            // Infinity-re vagy NaN-re — ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál.
+            if (![meanAsset, meanMarket, covariance, marketVariance, beta].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok túl szélsőségesek — a Béta/Treynor/Jensen's Alpha számítása túlcsordul. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
+                return;
+            }
+
             let treynorHtml;
             if (beta === 0) {
                 treynorHtml = `<div class="flex justify-between"><span class="text-slate-400">Treynor Ratio:</span><span class="text-amber-400 font-bold">nem értelmezhető (Béta = 0)</span></div>`;
             } else {
                 const treynor = (meanAsset - riskFree) / beta;
+                if (!Number.isFinite(treynor)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok túl szélsőségesek — a Treynor Ratio számítása túlcsordul. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
+                    return;
+                }
                 treynorHtml = `<div class="flex justify-between"><span class="text-slate-400">Treynor Ratio:</span><span class="font-extrabold text-sm ${treynor >= 0 ? 'text-neon-green' : 'text-neon-red'}">${treynor.toFixed(3)}</span></div>`;
             }
 
             const expectedReturn = riskFree + beta * (meanMarket - riskFree);
             const jensensAlpha = meanAsset - expectedReturn;
+
+            if (!Number.isFinite(expectedReturn) || !Number.isFinite(jensensAlpha)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok túl szélsőségesek — a CAPM elvárt hozam / Jensen's Alpha számítása túlcsordul. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
+                return;
+            }
 
             let betaDesc;
             if (beta > 1.2) betaDesc = 'a piacnál ÉRZÉKENYEBBEN (volatilisebben) mozog';
@@ -24663,6 +24726,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const stdDevPct = Math.sqrt(varianceDec) * 100;
             const cePct = ceDec * 100;
             const riskPremiumPct = meanPct - cePct;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges hozam-bemenetnél a
+            // variancia felösszegzése (vagy a CE/kockázati prémium ebből
+            // származó számítása) túlcsordulhat Infinity-re — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (![meanPct, stdDevPct, cePct, riskPremiumPct].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok túl szélsőségesek — a Bizonyossági Egyenérték számítása túlcsordul. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
+                return;
+            }
 
             let verdictColor, verdict;
             if (cePct < 0 && meanPct > 0) {
@@ -25257,6 +25329,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const totalLosses = losses.reduce((a, b) => a + b, 0); // negatív szám (vagy 0)
             const netResult = totalGains + totalLosses;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges ügylet-eredmény bemenetnél
+            // (pl. több 1e308 Ft-os "ügylet") a Σnyereség/Σveszteség túlcsordulhat
+            // Infinity-re, a kettő különbsége (netResult) pedig Infinity-Infinity
+            // esetén NaN-re — ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(totalGains) || !Number.isFinite(totalLosses) || !Number.isFinite(netResult)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott ügylet-eredmények túl szélsőségesek — az adó számítása túlcsordul. Adj meg reálisabb nagyságrendű Ft-összegeket!</div>`;
+                return;
+            }
+
             const taxDue = netResult > 0 ? netResult * rate : 0;
             const netAfterTax = netResult - taxDue;
             const effectiveRateOnGains = totalGains > 0 ? (taxDue / totalGains) * 100 : 0;
@@ -25353,6 +25435,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const totalGains = gains.reduce((a, b) => a + b, 0);
             const totalLosses = losses.reduce((a, b) => a + b, 0); // negatív szám (vagy 0)
             const netResult = totalGains + totalLosses;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges ügylet-eredmény bemenetnél
+            // (pl. több 1e308 Ft-os "ügylet") a Σnyereség/Σveszteség túlcsordulhat
+            // Infinity-re, a kettő különbsége (netResult) pedig Infinity-Infinity
+            // esetén NaN-re — ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(totalGains) || !Number.isFinite(totalLosses) || !Number.isFinite(netResult)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott ügylet-eredmények túl szélsőségesek — az adó számítása túlcsordul. Adj meg reálisabb nagyságrendű Ft-összegeket!</div>`;
+                return;
+            }
 
             const taxDue = netResult > 0 ? netResult * rate : 0;
             const netAfterTax = netResult - taxDue;
@@ -25662,6 +25754,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const meanAbsDeviation = window.reduce((acc, v) => acc + Math.abs(v - sma), 0) / period;
             const currentPrice = values[n - 1];
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges árbemenetnél az SMA
+            // és/vagy az átlagos abszolút eltérés túlcsordulhat Infinity-re —
+            // ez nem egyezik a `=== 0` ellenőrzéssel, így a lenti ág átugrik.
+            // Ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(sma) || !Number.isFinite(meanAbsDeviation) || !Number.isFinite(currentPrice)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak túl szélsőségesek — a CCI számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             if (meanAbsDeviation === 0) {
                 out.innerHTML = `
                     <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
@@ -25674,6 +25775,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const cci = (currentPrice - sma) / (0.015 * meanAbsDeviation);
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges árak esetén az átlagos abszolút
+            // eltérés lehet rendkívül KICSI (nem csak nulla) — ez a fenti `=== 0`
+            // ellenőrzést nem kapja el, de a CCI osztása ettől még túlcsordulhat
+            // Infinity-re. Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(cci)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak túl szélsőségesek — a CCI számítása túlcsordul (az átlagos abszolút eltérés rendkívül kicsi a jelenlegi ártól vett eltéréshez képest). Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (cci >= 100) {
@@ -25810,6 +25921,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lastCandle = candles[candles.length - 1];
             const bullPower = lastCandle.high - ema;
             const bearPower = lastCandle.low - ema;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél az EMA
+            // (és az ebből vezérelt Bull/Bear Power) túlcsordulhat Infinity-re —
+            // ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(ema) || !Number.isFinite(bullPower) || !Number.isFinite(bearPower)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — az EMA/Bull-Bear Power számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let bullColorClass = bullPower >= 0 ? 'text-neon-green' : 'text-neon-red';
             let bearColorClass = bearPower <= 0 ? 'text-neon-red' : 'text-neon-green';
@@ -26027,12 +26146,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 avgLoss = (avgLoss * (period - 1) + loss) / period;
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges árbemenetnél (pl. egymást
+            // követő +1e308/-1e308 "záróárak") az átlagos nyereség/veszteség
+            // Wilder-simítása túlcsordulhat Infinity-re — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(avgGain) || !Number.isFinite(avgLoss)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — az RSI számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let rsi;
             if (avgLoss === 0 && avgGain === 0) rsi = 50;
             else if (avgLoss === 0) rsi = 100;
             else {
                 const rs = avgGain / avgLoss;
                 rsi = 100 - (100 / (1 + rs));
+            }
+
+            if (!Number.isFinite(rsi)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — az RSI számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
             }
 
             let colorClass, verdict;
@@ -26288,6 +26421,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const shortRSI = shortRSISeries[shortRSISeries.length - 1];
             const longRSI = longRSISeries[longRSISeries.length - 1];
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges árbemenetnél a
+            // calcRSISeries() a megbízhatatlan pontoktól kezdve null-t ad
+            // vissza (lásd a függvény saját javítását) — ezt itt is explicit
+            // kezelni kell, különben a null a classify()/összehasonlítások
+            // során csendben 0-ra konvertálódna, félrevezető "Túladott"
+            // besorolást adva.
+            if (shortRSI === null || longRSI === null || !Number.isFinite(shortRSI) || !Number.isFinite(longRSI)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — az RSI számítása túlcsordul valamelyik idősíkon. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             function classify(v) {
                 if (v >= overbought) return { label: 'Túlvett', color: 'text-neon-red' };
                 if (v <= oversold) return { label: 'Túladott', color: 'text-neon-green' };
@@ -26465,6 +26609,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const williamsR = ((highestHigh - lastClose) / (highestHigh - lowestLow)) * -100;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges gyertya-bemenetnél a
+            // (highestHigh - lastClose) vagy (highestHigh - lowestLow) különbség
+            // túlcsordulhat Infinity-re, a kettő hányadosa pedig Infinity/Infinity
+            // esetén NaN-re — ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(williamsR)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Williams %R számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (williamsR > -20) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (-20 fölött) — a záróár a közelmúlt tartományának tetején van, lehetséges korrekció vagy fordulat jöhet.'; }
             else if (williamsR < -80) { colorClass = 'text-neon-green'; verdict = 'Túladott zóna (-80 alatt) — a záróár a közelmúlt tartományának alján van, lehetséges fordulat felfelé jöhet.'; }
@@ -26529,6 +26683,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const dValue = lastKValues.reduce((a, b) => a + b, 0) / dPeriod;
             const kValue = kValues[kValues.length - 1];
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges gyertya-bemenetnél a
+            // %K számításban szereplő (close-ll)/(hh-ll) köztes túlcsordulhat
+            // NaN/Infinity-re — ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(kValue) || !Number.isFinite(dValue)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Stochastic számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (kValue > 80) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (%K 80 fölött) — a záróár a periódus tartományának tetején van.'; }
             else if (kValue < 20) { colorClass = 'text-neon-green'; verdict = 'Túladott zóna (%K 20 alatt) — a záróár a periódus tartományának alján van.'; }
@@ -26582,7 +26745,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const stddev = Math.sqrt(variance);
                 const upper = sma + mult * stddev;
                 const lower = sma - mult * stddev;
-                return { width: ((upper - lower) / sma) * 100, sma, upper, lower };
+                const width = ((upper - lower) / sma) * 100;
+                // JAVÍTÁS: szélsőséges, de egyenként véges árbemenetnél az SMA,
+                // a szórás-négyzetösszeg vagy a sávok túlcsordulhatnak Infinity-re
+                // (az `sma === 0` ellenőrzés ezt nem fogja ki) — ugyanaz a
+                // hibaosztály, mint a korábban javított kalkulátoroknál.
+                if (![sma, variance, stddev, upper, lower, width].every(Number.isFinite)) return null;
+                return { width, sma, upper, lower };
             }
 
             const widths = [];
@@ -26591,13 +26760,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (r !== null) widths.push(r.width);
             }
             if (widths.length === 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Band Width nem számolható (az SMA nulla valahol a sorozatban)!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Band Width nem számolható (az SMA nulla, vagy a megadott árak túl szélsőségesek és a számítás túlcsordul, valahol a sorozatban)!</div>`;
                 return;
             }
 
             const current = bandWidthAt(prices.length - 1);
             if (current === null) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A legutolsó ${period} áras ablak átlaga (SMA) pontosan nulla, így a jelenlegi Band Width nem számolható — adj meg más árakat!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A legutolsó ${period} áras ablak átlaga (SMA) pontosan nulla, vagy a megadott árak túl szélsőségesek és a számítás túlcsordul — adj meg más, reálisabb nagyságrendű árakat!</div>`;
                 return;
             }
             const currentWidth = current.width;
@@ -26717,6 +26886,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }
 
                 sar = newSar;
+
+                // JAVÍTÁS: szélsőséges, de egyenként véges gyertya-bemenetnél a
+                // SAR-rekurzió (priorSar + af×(ep-priorSar)) túlcsordulhat
+                // Infinity/NaN-re — innentől a rekurzió minden további lépése is
+                // szennyezett lenne, ezért korán leállítjuk a ciklust. Ugyanaz a
+                // hibaosztály, mint a korábban javított kalkulátoroknál.
+                if (!Number.isFinite(sar) || !Number.isFinite(ep)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Parabolic SAR számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                    return;
+                }
             }
 
             const lastCandle = candles[candles.length - 1];
@@ -26973,10 +27152,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = new Array(n).fill(null);
             if (!Number.isFinite(period) || period < 1 || n < period) return out;
             let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+            // JAVÍTÁS: szélsőséges, de egyenként véges bemenetnél az EMA
+            // rekurziója túlcsordulhat Infinity/NaN-re — innentől minden
+            // további elem is szennyezett lenne, ezért a megbízhatatlan
+            // ponttól kezdve a már ismert null ("nincs elég/érvényes adat")
+            // szemantikát használjuk, amit minden hívó fél ismer és kezel.
+            if (!Number.isFinite(ema)) return out;
             out[period - 1] = ema;
             const k = 2 / (period + 1);
             for (let i = period; i < n; i++) {
                 ema = ema * (1 - k) + values[i] * k;
+                if (!Number.isFinite(ema)) break;
                 out[i] = ema;
             }
             return out;
@@ -27296,6 +27482,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const middle = (upper + lower) / 2;
             const width = upper - lower;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony bemenetnél
+            // a (Felső-Alsó) különbség túlcsordulhat Infinity-re — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(middle) || !Number.isFinite(width)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Donchian Csatorna számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2">
                     <div class="flex items-center justify-between font-mono text-xs">
@@ -27457,6 +27651,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const bandWidth = upper - lower;
             const positionPct = bandWidth !== 0 ? ((current - lower) / bandWidth) * 100 : null;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél a
+            // középvonal (SMA) vagy a sávok túlcsordulhatnak Infinity-re (a
+            // `middle === 0` ellenőrzés ezt nem fogja ki) — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (![middle, upper, lower, current, distFromMidPct, bandWidth].every(Number.isFinite) || (positionPct !== null && !Number.isFinite(positionPct))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — az Envelope sáv számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (current > upper) {
                 colorClass = 'text-neon-red';
@@ -27554,7 +27757,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${i + 1}. pontnál a gördülő mozgóátlag nulla — az eltérés-százalék nem számolható!</div>`;
                     return;
                 }
-                deviations.push((closes[i] - sma) / sma * 100);
+                const dev = (closes[i] - sma) / sma * 100;
+                // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél a
+                // gördülő SMA vagy az eltérés-százalék túlcsordulhat Infinity/
+                // NaN-re (a `sma === 0` ellenőrzés ezt nem fogja ki) — ugyanaz a
+                // hibaosztály, mint a korábban javított kalkulátoroknál.
+                if (!Number.isFinite(sma) || !Number.isFinite(dev)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${i + 1}. pontnál a gördülő mozgóátlag vagy az eltérés-százalék túlcsordul — a megadott záróárak túl szélsőségesek. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                    return;
+                }
+                deviations.push(dev);
             }
 
             const recentDevs = deviations.slice(deviations.length - lookback);
@@ -27574,6 +27786,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const distFromMidPct = (current - currentSma) / currentSma * 100;
             const breachCount = absDevs.filter(d => d > bandPct).length;
             const breachPct = (breachCount / n) * 100;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél a
+            // percentilis-interpoláció (bandPct) vagy a sávok túlcsordulhatnak
+            // Infinity/NaN-re — ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (![bandPct, currentSma, upper, lower, current, distFromMidPct].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — az Autoenvelope sáv számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (current > upper) {
@@ -27701,6 +27922,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const prevStc = d2Series.length > 1 ? d2Series[d2Series.length - 2] : null;
             const lastMacd = macdSeries[macdSeries.length - 1];
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél a
+            // dupla EMA-/Stochastic-simítás túlcsordulhat Infinity/NaN-re —
+            // ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(stc) || !Number.isFinite(lastMacd) || (prevStc !== null && !Number.isFinite(prevStc))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — a Schaff Trend Cycle számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (stc > 75) {
                 colorClass = 'text-neon-red';
@@ -27777,7 +28006,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (i - n < 0) return null;
                 const base = closes[i - n];
                 if (base === 0) return null;
-                return ((closes[i] - base) / base) * 100;
+                const roc = ((closes[i] - base) / base) * 100;
+                // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél a
+                // ROC köztes számítása túlcsordulhat Infinity/NaN-re (a
+                // `base === 0` ellenőrzés ezt nem fogja ki) — ugyanaz a
+                // hibaosztály, mint a korábban javított kalkulátoroknál. Itt
+                // null-lal jelezzük, hogy ez a pont megbízhatatlan (a hívó kód
+                // már ismeri és kezeli a null-t "nincs elég adat" jelzésként).
+                if (!Number.isFinite(roc)) return null;
+                return roc;
             }
 
             const raw = [];
@@ -27785,7 +28022,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const r1 = rocAt(i, p1);
                 const r2 = rocAt(i, p2);
                 if (r1 === null || r2 === null) { raw.push(null); continue; }
-                raw.push(r1 + r2);
+                const sum = r1 + r2;
+                raw.push(Number.isFinite(sum) ? sum : null);
             }
 
             const weightSum = (p3 * (p3 + 1)) / 2;
@@ -27795,7 +28033,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (windowSlice.some(v => v === null)) { coppock.push(null); continue; }
                 let weighted = 0;
                 for (let w = 0; w < p3; w++) weighted += windowSlice[w] * (w + 1);
-                coppock.push(weighted / weightSum);
+                const coppockVal = weighted / weightSum;
+                coppock.push(Number.isFinite(coppockVal) ? coppockVal : null);
             }
 
             const validCoppock = coppock.filter(v => v !== null);
@@ -28639,6 +28878,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lower = ema - mult * lastAtr;
             const lastClose = closes[closes.length - 1];
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges gyertya-bemenetnél az
+            // EMA/ATR vagy a sávok túlcsordulhatnak Infinity-re — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(ema) || !Number.isFinite(lastAtr) || !Number.isFinite(upper) || !Number.isFinite(lower)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Keltner Csatorna számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (lastClose > upper) { colorClass = 'text-neon-green'; verdict = 'A záróár a felső sáv FÖLÖTT van — erős bullish momentum, esetleg túlvett állapot.'; }
             else if (lastClose < lower) { colorClass = 'text-neon-red'; verdict = 'A záróár az alsó sáv ALATT van — erős bearish momentum, esetleg túladott állapot.'; }
@@ -28727,6 +28974,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const kvo = ema34Last - ema55Last;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges gyertya-bemenetnél a
+            // Volume Force (ár×volumen-alapú köztes szorzat) vagy az EMA34/
+            // EMA55 túlcsordulhat Infinity-re, a kettő különbsége pedig
+            // Infinity-Infinity esetén NaN-re — ugyanaz a hibaosztály, mint a
+            // korábban javított kalkulátoroknál.
+            if (!Number.isFinite(ema34Last) || !Number.isFinite(ema55Last) || !Number.isFinite(kvo)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Klinger Oscillator számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat/volumeneket!</div>`;
+                return;
+            }
+
             const colorClass = kvo >= 0 ? 'text-neon-green' : 'text-neon-red';
             const verdict = kvo >= 0
                 ? 'Pozitív KVO — a rövid-távú pénzáramlás erősebb a hosszú-távúnál, bullish momentumra utal.'
@@ -28957,6 +29215,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const value = new Array(n).fill(0);
             const fisher = new Array(n).fill(0);
+            let overflowed = false;
 
             for (let i = 0; i < n; i++) {
                 if (i < period - 1) continue;
@@ -28966,8 +29225,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const range = hh !== ll ? (hh - ll) : 0.001;
                 let raw = 0.33 * 2 * ((closes[i] - ll) / range - 0.5) + 0.67 * value[i - 1];
                 raw = Math.max(-0.999, Math.min(0.999, raw));
+                // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél a
+                // periódus-ablak tartománya (hh-ll) túlcsordulhat Infinity-re,
+                // és az Infinity/Infinity osztás NaN-t ad — a Math.max/min
+                // clamp ezt NEM fogja ki (NaN-nel mindkettő NaN-t ad vissza),
+                // és a rekurzió miatt ez MINDEN további pontot is szennyezne.
+                // Ugyanaz a hibaosztály, mint a korábban javított
+                // kalkulátoroknál — itt korai megállással jelezzük a hibát.
+                if (!Number.isFinite(raw)) { overflowed = true; break; }
                 value[i] = raw;
                 fisher[i] = 0.5 * Math.log((1 + raw) / (1 - raw)) + 0.5 * fisher[i - 1];
+                if (!Number.isFinite(fisher[i])) { overflowed = true; break; }
+            }
+
+            if (overflowed) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — a Fisher Transform számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
             }
 
             const lastFisher = fisher[n - 1];
@@ -29012,7 +29285,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const r = new Array(series.length).fill(null);
                 if (!Number.isFinite(period) || period < 1) return r;
                 for (let i = period; i < series.length; i++) {
-                    r[i] = (series[i] - series[i - period]) / series[i - period] * 100;
+                    const base = series[i - period];
+                    if (base === 0) continue;
+                    const val = (series[i] - base) / base * 100;
+                    // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél a
+                    // ROC köztes számítása túlcsordulhat Infinity/NaN-re — itt
+                    // null-lal jelezzük (a hívó sma() függvény már ismeri és
+                    // kiszűri a null pontokat), ugyanaz a hibaosztály, mint a
+                    // korábban javított kalkulátoroknál.
+                    if (Number.isFinite(val)) r[i] = val;
                 }
                 return r;
             }
@@ -29023,7 +29304,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     if (i - period + 1 < 0) continue;
                     const window = series.slice(i - period + 1, i + 1);
                     if (window.some(v => v === null)) continue;
-                    r[i] = window.reduce((a, b) => a + b, 0) / period;
+                    const avg = window.reduce((a, b) => a + b, 0) / period;
+                    if (Number.isFinite(avg)) r[i] = avg;
                 }
                 return r;
             }
@@ -29036,7 +29318,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const kst = new Array(n).fill(null);
             for (let i = 0; i < n; i++) {
                 if (sma1[i] === null || sma2[i] === null || sma3[i] === null || sma4[i] === null) continue;
-                kst[i] = sma1[i] * 1 + sma2[i] * 2 + sma3[i] * 3 + sma4[i] * 4;
+                const kstVal = sma1[i] * 1 + sma2[i] * 2 + sma3[i] * 3 + sma4[i] * 4;
+                if (Number.isFinite(kstVal)) kst[i] = kstVal;
             }
             const signal = sma(kst, 9);
 
@@ -29167,6 +29450,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const smaSimple = window.reduce((sum, r) => sum + r.close, 0) / period;
             const diffPct = ((vwma - smaSimple) / smaSimple) * 100;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár/volumen bemenetnél
+            // a Σ(ár×volumen) vagy a Σ(volumen) túlcsordulhat Infinity-re (a
+            // `den === 0` ellenőrzés ezt nem fogja ki) — ugyanaz a hibaosztály,
+            // mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(vwma) || !Number.isFinite(smaSimple) || !Number.isFinite(diffPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak és/vagy volumenek túl szélsőségesek — a VWMA számítása túlcsordul. Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">VWMA (${period}):</span><span class="text-neon-cyan font-extrabold text-sm">${vwma.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
@@ -29199,9 +29491,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const smaValues = periods.map(p => ({ period: p, value: sma(closes, p) }));
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél az
+            // egyes SMA-k összege túlcsordulhat Infinity-re — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!smaValues.every(s => Number.isFinite(s.value))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — a Mozgóátlag Szalag számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const highest = Math.max(...smaValues.map(s => s.value));
             const lowest = Math.min(...smaValues.map(s => s.value));
             const spreadPct = ((highest - lowest) / lowest) * 100;
+
+            if (!Number.isFinite(spreadPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — a szalag szórásának számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
             const isAscending = smaValues.every((s, i) => i === 0 || smaValues[i - 1].value >= s.value);
             const isDescending = smaValues.every((s, i) => i === 0 || smaValues[i - 1].value <= s.value);
 
@@ -29359,7 +29665,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         num += closes[j] * volumes[j];
                         den += volumes[j];
                     }
-                    r[i] = den !== 0 ? num / den : null;
+                    // JAVÍTÁS: szélsőséges, de egyenként véges záróár/volumen
+                    // bemenetnél a Σ(ár×volumen)/Σ(volumen) túlcsordulhat
+                    // Infinity/NaN-re (a `den !== 0` ellenőrzés ezt nem fogja
+                    // ki) — ugyanaz a hibaosztály, mint a korábban javított
+                    // kalkulátoroknál.
+                    const vwmaVal = den !== 0 ? num / den : null;
+                    r[i] = (vwmaVal !== null && Number.isFinite(vwmaVal)) ? vwmaVal : null;
                 }
                 return r;
             }
@@ -29369,7 +29681,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const vwmacd = new Array(n).fill(null);
             for (let i = 0; i < n; i++) {
                 if (vwma12[i] === null || vwma26[i] === null) continue;
-                vwmacd[i] = vwma12[i] - vwma26[i];
+                const diff = vwma12[i] - vwma26[i];
+                if (Number.isFinite(diff)) vwmacd[i] = diff;
             }
 
             function sma(series, period) {
@@ -29379,7 +29692,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     if (i - period + 1 < 0) continue;
                     const w = series.slice(i - period + 1, i + 1);
                     if (w.some(v => v === null)) continue;
-                    r[i] = w.reduce((a, b) => a + b, 0) / period;
+                    const avg = w.reduce((a, b) => a + b, 0) / period;
+                    if (Number.isFinite(avg)) r[i] = avg;
                 }
                 return r;
             }
@@ -29394,6 +29708,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const histogram = lastVwmacd - lastSignal;
+
+            if (!Number.isFinite(histogram)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott adatok túl szélsőségesek — a VWMACD hisztogram számítása túlcsordul. Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
             const crossUp = histogram > 0;
             const colorClass = crossUp ? 'text-neon-green' : 'text-neon-red';
             const verdict = crossUp
@@ -29441,9 +29760,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const k = 2 / (period + 1);
                 const result = new Array(values.length).fill(null);
                 let ema = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                // JAVÍTÁS: szélsőséges, de egyenként véges bemenetnél az EMA
+                // rekurziója túlcsordulhat Infinity/NaN-re — innentől minden
+                // további elem is szennyezett lenne, ezért a megbízhatatlan
+                // ponttól kezdve a már ismert null ("nincs elég/érvényes adat")
+                // szemantikát használjuk, amit a hívó kód ismer és kezel.
+                if (!Number.isFinite(ema)) return result;
                 result[period - 1] = ema;
                 for (let i = period; i < values.length; i++) {
                     ema = values[i] * k + ema * (1 - k);
+                    if (!Number.isFinite(ema)) break;
                     result[i] = ema;
                 }
                 return result;
@@ -29456,7 +29782,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const macdLine = new Array(n).fill(null);
             for (let i = 0; i < n; i++) {
                 if (emaFast[i] === null || emaSlow[i] === null) continue;
-                macdLine[i] = emaFast[i] - emaSlow[i];
+                const diff = emaFast[i] - emaSlow[i];
+                if (Number.isFinite(diff)) macdLine[i] = diff;
             }
             const macdValues = macdLine.filter(v => v !== null);
 
@@ -29478,6 +29805,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const histogram = lastMacd - lastSignal;
             const prevHistogram = (prevMacd !== null && prevSignal !== null) ? prevMacd - prevSignal : null;
+
+            if (!Number.isFinite(histogram) || (prevHistogram !== null && !Number.isFinite(prevHistogram))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — a MACD hisztogram számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             const bullish = histogram > 0;
             const freshCross = prevHistogram !== null && ((bullish && prevHistogram <= 0) || (!bullish && prevHistogram >= 0));
@@ -29545,7 +29877,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges hozam-bemenetnél a
+            // kovariancia/variancia felösszegzése túlcsordulhat Infinity-re
+            // (a `varM === 0` ellenőrzés ezt nem fogja ki) — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(cov) || !Number.isFinite(varM)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok túl szélsőségesek — a Béta számítása túlcsordul. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
+                return;
+            }
+
             const beta = cov / varM;
+            if (!Number.isFinite(beta)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok túl szélsőségesek — a Béta számítása túlcsordul. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
+                return;
+            }
             let verdict, colorClass;
             if (beta > 1) {
                 verdict = `Béta > 1 — az eszköz a piacnál NAGYOBB mértékben mozog (${beta.toFixed(2)}x érzékenység).`;
@@ -29613,6 +29958,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
             if (varA === 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az eszköz hozamainak varianciája nulla — nincs mit szétbontani!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges hozam-bemenetnél a
+            // kovariancia/variancia felösszegzése túlcsordulhat Infinity-re
+            // (a `=== 0` ellenőrzések ezt nem fogják ki) — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(cov) || !Number.isFinite(varA) || !Number.isFinite(varM)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok túl szélsőségesek — a kockázat-dekompozíció túlcsordul. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
                 return;
             }
 
@@ -30192,6 +30546,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const currShort = sma(closes, shortP, n - 1);
             const currLong = sma(closes, longP, n - 1);
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél az
+            // SMA-k összege túlcsordulhat Infinity-re — ugyanaz a hibaosztály,
+            // mint a korábban javított kalkulátoroknál.
+            if (![prevShort, prevLong, currShort, currLong].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — az SMA-k számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const goldenCross = prevShort <= prevLong && currShort > currLong;
             const deathCross = prevShort >= prevLong && currShort < currLong;
 
@@ -30260,6 +30622,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const price = closes[n - 1];
             const prevPrice = closes[n - 2];
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróár-bemenetnél az
+            // SMA/EMA összege, illetve a rekurzió túlcsordulhat Infinity-re —
+            // ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (![smaLast, smaPrev, emaLast, emaPrev].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — az SMA/EMA számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             function srNote(distPct) {
                 if (!Number.isFinite(distPct)) return 'N/A (nulla mozgóátlag-érték)';
@@ -30343,6 +30713,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const n = candles.length;
             const m = candles.map(metrics);
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges gyertya-bemenetnél (pl.
+            // Magas/Alacsony egy-egy 1e308/-1e308 szélsőértékkel) a tartomány
+            // (rng = Magas-Alacsony) túlcsordulhat Infinity-re, és az
+            // Infinity/Infinity osztás (bodyPct/upperPct/lowerPct) NaN-t ad —
+            // ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!m.every(x => [x.rng, x.body, x.bodyPct, x.upper, x.lower, x.upperPct, x.lowerPct].every(Number.isFinite))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a minta-felismerés számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const c3 = m[n - 1];
             const c2 = n >= 2 ? m[n - 2] : null;
             const c1 = n >= 3 ? m[n - 3] : null;
@@ -31374,6 +31755,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         const p1 = arr[i].price, p2 = arr[j].price;
                         const avg = (p1 + p2) / 2;
                         const diffPct = Math.abs(p1 - p2) / avg * 100;
+                        // JAVÍTÁS: szélsőséges, de egyenként véges ár-bemenetnél a
+                        // |p1-p2| különbség túlcsordulhat Infinity-re, vagy az
+                        // avg pontosan 0 lehet (ellentétes extrém előjelű swingek
+                        // esetén) — mindkettő Infinity/NaN eredményt adna. Azonos
+                        // extrém előjelű szélsőséges swingeknél az ÖSSZEG (p1+p2) is
+                        // túlcsordulhat Infinity-re úgy, hogy a diffPct emellett még
+                        // véges (pl. 0) marad — ezért az avg-t KÜLÖNVÉVE is ellenőrizni
+                        // kell. Ugyanaz a hibaosztály, mint a korábban javított
+                        // kalkulátoroknál.
+                        if (!Number.isFinite(diffPct) || !Number.isFinite(avg)) continue;
                         if (diffPct <= tolerancePct) {
                             pairs.push({ i1: arr[i].idx, i2: arr[j].idx, avg, diffPct });
                         }
@@ -31731,6 +32122,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const allLow = Math.min(...candles.map(c => c[1]));
             const rng = (allHigh - allLow) > 0 ? (allHigh - allLow) : 1e-9;
             const binSize = rng / numBins;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony bemenetnél
+            // a teljes tartomány (allHigh-allLow) túlcsordulhat Infinity-re — a
+            // sávméret (binSize) ekkor is Infinity lesz, és az ebből számolt
+            // sávhatárok (allLow + b×binSize) a b=0 esetén 0×Infinity=NaN-t
+            // adnak, amely innentől minden sávba és a POC/Value Area
+            // kimenetbe is beszivárog. Ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál.
+            if (!Number.isFinite(allHigh) || !Number.isFinite(allLow) || !Number.isFinite(binSize)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Volume Profile számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const bins = new Array(numBins).fill(0);
 
             for (const [h, l, v] of candles) {
@@ -31746,6 +32150,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const totalVol = bins.reduce((a, b) => a + b, 0);
+            if (!Number.isFinite(totalVol)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott volumenek túl szélsőségesek — a Volume Profile összesítése túlcsordul. Adj meg reálisabb nagyságrendű volumeneket!</div>`;
+                return;
+            }
             let pocIdx = 0;
             for (let i = 1; i < numBins; i++) if (bins[i] > bins[pocIdx]) pocIdx = i;
 
@@ -32007,6 +32415,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const mcclellan = ema19Last - ema39Last;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Net Advance értékek esetén a két
+            // EMA különbsége túlcsordulhat Infinity/NaN-re. Ugyanaz a hibaosztály, mint a
+            // korábban javított kalkulátoroknál.
+            if (!Number.isFinite(mcclellan)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott Net Advance adatok szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a McClellan Oscillator Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű adatokat!</div>`;
+                return;
+            }
+
             const colorClass = mcclellan >= 0 ? 'text-neon-green' : 'text-neon-red';
             const verdict = mcclellan >= 0
                 ? 'Pozitív McClellan Oscillator — szélesebb körű vételi nyomás a piaci szélesség szerint.'
@@ -32046,12 +32463,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 den += windowRev[i];
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróárak esetén a súlyozott
+            // összeg és/vagy az árak összege túlcsordulhat Infinity/NaN-re. Ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(num) || !Number.isFinite(den)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a Center of Gravity Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             if (den === 0) {
                 out.innerHTML = `<div class="text-xs text-neon-amber font-semibold">A záróárak összege 0 — a CoG nem értelmezhető.</div>`;
                 return;
             }
 
             const cog = -num / den;
+
+            if (!Number.isFinite(cog)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Center of Gravity kiszámítása túlcsordulást okozott a lebegőpontos számábrázolásban (Infinity/NaN eredmény) — adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
@@ -32104,6 +32534,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const avg28 = avgRatio(28);
             const uo = 100 * (4 * avg7 + 2 * avg14 + avg28) / 7;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony/Záró értékek esetén
+            // a BP/TR összegek és/vagy az Ultimate Oscillator túlcsordulhatnak
+            // Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(avg7) || !Number.isFinite(avg14) || !Number.isFinite(avg28) || !Number.isFinite(uo)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyaadatok szélsőséges (de egyenként véges) árkülönbségei túlcsordulást okoztak a lebegőpontos számábrázolásban — az Ultimate Oscillator Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (uo > 70) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (UO > 70) — esetleg korrekció következhet.'; }
             else if (uo < 30) { colorClass = 'text-neon-green'; verdict = 'Túladott zóna (UO < 30) — esetleg visszapattanás következhet.'; }
@@ -32145,6 +32584,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const sma = lastN.reduce((a, b) => a + b, 0) / period;
             const shiftedClose = closes[closes.length - 1 - shift];
             const dpo = shiftedClose - sma;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróárak esetén az SMA és/vagy a
+            // DPO túlcsordulhat Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál.
+            if (!Number.isFinite(sma) || !Number.isFinite(dpo)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a DPO Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             const colorClass = dpo >= 0 ? 'text-neon-green' : 'text-neon-red';
             const verdict = dpo >= 0
@@ -32195,7 +32642,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróárak esetén a PPO-sorozat
+            // (fastEma-slowEma)/slowEma osztása és/vagy a Histogram túlcsordulhat
+            // Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(lastPpo) || !Number.isFinite(lastSignal)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a PPO és/vagy a Signal vonal Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const histogram = lastPpo - lastSignal;
+
+            if (!Number.isFinite(histogram)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Histogram kiszámítása túlcsordulást okozott a lebegőpontos számábrázolásban (Infinity/NaN eredmény) — adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
             const colorClass = histogram >= 0 ? 'text-neon-green' : 'text-neon-red';
             const verdict = histogram >= 0
                 ? 'Pozitív Histogram (PPO a Signal fölött) — bullish momentum.'
@@ -32233,12 +32694,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const sumUp = lastChanges.filter(c => c > 0).reduce((a, b) => a + b, 0);
             const sumDown = lastChanges.filter(c => c < 0).reduce((a, b) => a - b, 0);
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróárak esetén az árváltozások
+            // összege (sumUp/sumDown) túlcsordulhat Infinity/NaN-re. Ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(sumUp) || !Number.isFinite(sumDown)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a CMO Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             if (sumUp + sumDown === 0) {
                 out.innerHTML = `<div class="text-xs text-neon-amber font-semibold">Nincs árváltozás az utolsó ${period} periódusban — a CMO nem értelmezhető.</div>`;
                 return;
             }
 
             const cmo = 100 * (sumUp - sumDown) / (sumUp + sumDown);
+
+            if (!Number.isFinite(cmo)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A CMO kiszámítása túlcsordulást okozott a lebegőpontos számábrázolásban (Infinity/NaN eredmény) — adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (cmo > 50) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (CMO > 50) — erős felfelé momentum, esetleg korrekció következhet.'; }
@@ -32286,8 +32760,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const trixSeries = [];
+            let trixOverflowed = false;
             for (let i = 1; i < ema3.length; i++) {
-                trixSeries.push((ema3[i] - ema3[i - 1]) / ema3[i - 1] * 100);
+                const trixVal = (ema3[i] - ema3[i - 1]) / ema3[i - 1] * 100;
+                // JAVÍTÁS: szélsőséges, de egyenként véges záróárak esetén a háromszoros
+                // EMA-simítás különbsége, illetve az azt követő osztás (vagy egy nulla
+                // közeli ema3[i-1] nevező) túlcsordulhat Infinity/NaN-re. Ugyanaz a
+                // hibaosztály, mint a korábban javított kalkulátoroknál.
+                if (!Number.isFinite(trixVal)) {
+                    trixOverflowed = true;
+                    break;
+                }
+                trixSeries.push(trixVal);
+            }
+
+            if (trixOverflowed || trixSeries.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése, vagy egy nullához közeli simított érték túlcsordulást okozott a lebegőpontos számábrázolásban — a TRIX Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
             }
 
             const lastTrix = trixSeries[trixSeries.length - 1];
@@ -32345,6 +32834,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const lastQstick = qstickSeries[qstickSeries.length - 1];
             const prevQstick = qstickSeries.length > 1 ? qstickSeries[qstickSeries.length - 2] : null;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Nyitó/Záró árak esetén a Qstick
+            // SMA-ja túlcsordulhat — a megosztott calcSMA segédfüggvény ilyenkor null-t
+            // ad vissza, amit itt explicit módon kezelünk. Ugyanaz a hibaosztály, mint a
+            // korábban javított kalkulátoroknál.
+            if (lastQstick === null || !Number.isFinite(lastQstick)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott Nyitó/Záró árak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a Qstick Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             const colorClass = lastQstick >= 0 ? 'text-neon-green' : 'text-neon-red';
             let verdict = lastQstick >= 0
@@ -32406,6 +32904,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lastRaw = rawBop[rawBop.length - 1];
             const lastBop = bopSeries[bopSeries.length - 1];
             const prevBop = bopSeries.length > 1 ? bopSeries[bopSeries.length - 2] : null;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Nyitó/Magas/Alacsony/Záró árak
+            // esetén a nyers BOP osztása és/vagy a megosztott calcSMA segédfüggvény
+            // túlcsordulhat (a calcSMA ilyenkor null-t ad vissza). Ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(lastRaw) || lastBop === null || !Number.isFinite(lastBop)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyaadatok szélsőséges (de egyenként véges) árai túlcsordulást okoztak a lebegőpontos számábrázolásban — a BOP Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             const colorClass = lastBop >= 0 ? 'text-neon-green' : 'text-neon-red';
             let verdict = lastBop >= 0
@@ -32537,6 +33044,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 cum += d;
                 deltas.push(d);
                 cums.push(cum);
+            }
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Vételi/Eladási Volumen értékek
+            // esetén a Delta és/vagy a kumulált Delta túlcsordulhat Infinity/NaN-re.
+            // Ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (deltas.some(d => !Number.isFinite(d)) || cums.some(c => !Number.isFinite(c))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott Vételi/Eladási Volumen adatok szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a Delta és/vagy a Kumulált Delta Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű volumen-adatokat!</div>`;
+                return;
             }
 
             const priceDir = rows[rows.length - 1].close - rows[rows.length - 2].close;
@@ -32889,6 +33404,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ha.push({ open: haOpen, high: haHigh, low: haLow, close: haClose });
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges Nyitó/Magas/Alacsony/Záró árak
+            // esetén a Heikin-Ashi Close/Open négyes átlaga túlcsordulhat
+            // Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (ha.some(h => !Number.isFinite(h.open) || !Number.isFinite(h.high) || !Number.isFinite(h.low) || !Number.isFinite(h.close))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyaadatok szélsőséges (de egyenként véges) árai túlcsordulást okoztak a lebegőpontos számábrázolásban — a Heikin-Ashi gyertyák Infinity/NaN eredményt adnának. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const rows = ha.map((h, i) => {
                 const bullish = h.close >= h.open;
                 const colorClass = bullish ? 'text-neon-green' : 'text-neon-red';
@@ -32952,6 +33476,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const senkouB = (b52.hh + b52.ll) / 2;
             const chikou = candles[candles.length - 1].close;
             const lastClose = candles[candles.length - 1].close;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony értékek esetén a
+            // Tenkan/Kijun/Senkou szintek (legmagasabb+legalacsonyabb átlaga)
+            // túlcsordulhatnak Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál.
+            if (!Number.isFinite(tenkan) || !Number.isFinite(kijun) || !Number.isFinite(senkouA) || !Number.isFinite(senkouB)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyaadatok szélsőséges (de egyenként véges) árai túlcsordulást okoztak a lebegőpontos számábrázolásban — az Ichimoku szintek Infinity/NaN eredményt adnának. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             const cloudBullish = senkouA > senkouB;
             const cloudColorClass = cloudBullish ? 'text-neon-green' : 'text-neon-red';
@@ -33098,6 +33631,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return series[series.length - 1];
             });
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróárak esetén az EMA-sorozatok
+            // belső összegzése túlcsordulhat — a megosztott emaSmaSeededAligned segédfüggvény
+            // ilyenkor null-t ad vissza (meglévő "nincs érvényes adat" konvenció), amit itt
+            // korábban nem kezeltünk, így a .toFixed(2) hívás null-on dobott volna hibát.
+            // Ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (shortEmas.some(v => v === null || !Number.isFinite(v)) || longEmas.some(v => v === null || !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban az egyik EMA-sorozatnál — adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const shortestShort = shortEmas[0];
             const longestLong = longEmas[longEmas.length - 1];
             const bullish = shortestShort > longestLong;
@@ -33162,6 +33705,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const mid = (candles[i].high + candles[i].low) / 2;
                 const basicUpper = mid + mult * atr;
                 const basicLower = mid - mult * atr;
+
+                // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony értékek esetén a
+                // középpont és/vagy a szorzóval megnövelt sávok túlcsordulhatnak
+                // Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban javított
+                // kalkulátoroknál.
+                if (!Number.isFinite(mid) || !Number.isFinite(basicUpper) || !Number.isFinite(basicLower)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyaadatok szélsőséges (de egyenként véges) árai túlcsordulást okoztak a lebegőpontos számábrázolásban — a Supertrend sávok Infinity/NaN eredményt adnának. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                    return;
+                }
 
                 if (!started) {
                     finalUpper[i] = basicUpper;
@@ -33254,6 +33806,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const longExit = highestHigh - mult * lastAtr;
             const shortExit = lowestLow + mult * lastAtr;
             const lastClose = candles[candles.length - 1].close;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony/Záró értékek esetén
+            // a legmagasabb/legalacsonyabb érték és a szorzóval megnövelt ATR különbsége
+            // túlcsordulhat Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál.
+            if (!Number.isFinite(longExit) || !Number.isFinite(shortExit)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyaadatok szélsőséges (de egyenként véges) árai túlcsordulást okoztak a lebegőpontos számábrázolásban — a Long/Short Exit szint Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (lastClose < longExit) { colorClass = 'text-neon-red'; verdict = 'A záróár a Long Exit szint ALATT van — egy long pozíciót már ki kellett volna zárni ezen a szinten.'; }
@@ -33362,6 +33923,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const n = values.length;
             const window = values.slice(n - period, n);
             const sma = window.reduce((a, b) => a + b, 0) / period;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges árak esetén az SMA (a periódus
+            // összege) túlcsordulhat Infinity/NaN-re. Ugyanaz a hibaosztály, mint a
+            // korábban javított kalkulátoroknál.
+            if (!Number.isFinite(sma)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — az SMA Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const aboveCount = window.filter(v => v > sma).length;
             const tii = (aboveCount / period) * 100;
 
@@ -33538,6 +34108,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const latestRvi = r[r.length - 1];
             const signalLine = weighted4(r[r.length - 1], r[r.length - 2], r[r.length - 3], r[r.length - 4]);
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges nyitó/záró/magas/alacsony árak esetén
+            // a numSma/denSma osztás, illetve a jelvonal súlyozott összege túlcsordulhat
+            // Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(latestRvi) || !Number.isFinite(signalLine)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyaadatok szélsőséges (de egyenként véges) árkülönbségei túlcsordulást okoztak a lebegőpontos számábrázolásban — az RVI és/vagy a jelvonal Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (latestRvi > signalLine) {
                 colorClass = 'text-neon-green';
@@ -33596,12 +34174,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const currentAvg = currentWindow.reduce((a, b) => a + b, 0) / currentPeriod;
             const referenceAvg = referenceWindow.reduce((a, b) => a + b, 0) / referencePeriod;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony értékek esetén a
+            // range-ek összege túlcsordulhat Infinity/NaN-re. Ugyanaz a hibaosztály, mint
+            // a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(currentAvg) || !Number.isFinite(referenceAvg)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyaadatok szélsőséges (de egyenként véges) tartományai túlcsordulást okoztak a lebegőpontos számábrázolásban — az átlagos tartomány Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             if (referenceAvg === 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A referencia-időszak átlagos tartománya 0 (minden Magas=Alacsony volt ott) — a Volatility Ratio nem fejezhető ki véges számmal.</div>`;
                 return;
             }
 
             const volatilityRatio = currentAvg / referenceAvg;
+
+            if (!Number.isFinite(volatilityRatio)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Volatility Ratio kiszámítása túlcsordulást okozott a lebegőpontos számábrázolásban (Infinity/NaN eredmény) — adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (volatilityRatio >= 2) {
@@ -33685,6 +34276,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const totalPctChange = (trendEndPrice - trendStartPrice) / trendStartPrice * 100;
             const avgSpeedPct = totalPctChange / length;
             const tei = length * Math.abs(avgSpeedPct);
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges záróárak esetén a százalékos
+            // árváltozás és/vagy a Trend Exhaustion Index túlcsordulhat Infinity/NaN-re.
+            // Ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(totalPctChange) || !Number.isFinite(avgSpeedPct) || !Number.isFinite(tei)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a Trend Exhaustion Index Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (tei >= 20) {
@@ -33824,6 +34423,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lastWilder = wilder[n - 1];
             const lastEma = ema[n - 1];
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges árak esetén a Wilder-simítás
+            // és/vagy az EMA rekurziója túlcsordulhat Infinity/NaN-re. Ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(lastWilder) || !Number.isFinite(lastEma)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a Wilder-simítás és/vagy az EMA Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             // --- Félidő (half-life), tisztán a súlyokból, zárt alakban ---
             const wilderAlpha = 1 / period;
             const wilderHalfLife = Math.log(0.5) / Math.log(1 - wilderAlpha);
@@ -33919,8 +34526,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 covariance /= n;
                 varX /= n;
                 varY /= n;
-                if (varX === 0 || varY === 0) return null;
-                return covariance / (Math.sqrt(varX) * Math.sqrt(varY));
+                // JAVÍTÁS: szélsőséges, de egyenként véges hozamértékek esetén a
+                // kovariancia és/vagy a varianciák túlcsordulhatnak Infinity/NaN-re —
+                // ilyenkor a null (meglévő "nincs értelmezhető korreláció" konvenció)
+                // kerül visszaadásra, hogy a hívó oldal (táblázat "N/A" cellája) ezt
+                // helyesen kezelje. Ugyanaz a hibaosztály, mint a korábban javított
+                // kalkulátoroknál.
+                if (!Number.isFinite(covariance) || !Number.isFinite(varX) || !Number.isFinite(varY) || varX === 0 || varY === 0) return null;
+                const result = covariance / (Math.sqrt(varX) * Math.sqrt(varY));
+                return Number.isFinite(result) ? result : null;
             }
 
             const k = assets.length;
@@ -34198,20 +34812,33 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 let capital = startCapital;
                 let stoppedOut = false;
                 let stopAtTrade = null;
+                let overflowed = false;
                 for (let i = 0; i < sequence.length; i++) {
                     capital *= (1 + sequence[i] / 100);
+                    // JAVÍTÁS: szélsőséges, de egyenként véges %-os hozamok esetén a
+                    // kamatos tőke-szorzás túlcsordulhat Infinity/NaN-re. Ugyanaz a
+                    // hibaosztály, mint a korábban javított kalkulátoroknál.
+                    if (!Number.isFinite(capital)) {
+                        overflowed = true;
+                        break;
+                    }
                     if (capital <= stopFloor) {
                         stoppedOut = true;
                         stopAtTrade = i + 1;
                         break;
                     }
                 }
-                return { finalCapital: capital, stoppedOut, stopAtTrade };
+                return { finalCapital: capital, stoppedOut, stopAtTrade, overflowed };
             }
 
             const original = simulate(returns);
             const reversedSeq = [...returns].reverse();
             const reversedResult = simulate(reversedSeq);
+
+            if (original.overflowed || reversedResult.overflowed) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott %-os hozamok szélsőséges (de egyenként véges) értékei miatt a kamatos tőke-szimuláció túlcsordult a lebegőpontos számábrázolásban (Infinity/NaN eredmény) — adj meg reálisabb nagyságrendű hozamokat!</div>`;
+                return;
+            }
 
             const finalDiff = original.finalCapital - reversedResult.finalCapital;
             const sameOutcome = Math.abs(finalDiff) < 0.01 && original.stoppedOut === reversedResult.stoppedOut;
@@ -35008,6 +35635,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges bar-index/ár érintési pontok
+            // esetén a regresszió köztes összegei (varX, meanX/meanY) túlcsordulhatnak
+            // Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(meanX) || !Number.isFinite(meanY) || !Number.isFinite(varX)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott érintési pontok szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a regresszió nem végezhető el. Adj meg reálisabb nagyságrendű bar-indexeket/árakat!</div>`;
+                return;
+            }
+
             const covXY = touches.reduce((s, t) => s + (t.bar - meanX) * (t.price - meanY), 0);
             const slope = covXY / varX;
             const intercept = meanY - slope * meanX;
@@ -35022,6 +35658,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const projectedPrice = slope * curBar + intercept;
             const deviation = curPrice - projectedPrice;
             const deviationPct = projectedPrice !== 0 ? (deviation / Math.abs(projectedPrice)) * 100 : 0;
+
+            if (!Number.isFinite(slope) || !Number.isFinite(intercept) || !Number.isFinite(r2) || !Number.isFinite(projectedPrice) || !Number.isFinite(deviation) || !Number.isFinite(deviationPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott érintési pontok és/vagy az aktuális bar/ár szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a trendvonal-projekció Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű adatokat!</div>`;
+                return;
+            }
 
             let reliabilityNote, reliabilityColor;
             if (n < 3) {
@@ -35162,8 +35803,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 covariance /= m;
                 varX /= m;
                 varY /= m;
-                if (varX === 0 || varY === 0) return null;
-                return covariance / (Math.sqrt(varX) * Math.sqrt(varY));
+                // JAVÍTÁS: szélsőséges, de egyenként véges hozamértékek esetén a
+                // kovariancia és/vagy a varianciák túlcsordulhatnak Infinity/NaN-re —
+                // ilyenkor a null (meglévő "nincs értelmezhető korreláció" konvenció)
+                // kerül visszaadásra, hogy a hívó oldal (gördülő ablakok "N/A" jelzése)
+                // ezt helyesen kezelje. Ugyanaz a hibaosztály, mint a korábban javított
+                // kalkulátoroknál.
+                if (!Number.isFinite(covariance) || !Number.isFinite(varX) || !Number.isFinite(varY) || varX === 0 || varY === 0) return null;
+                const result = covariance / (Math.sqrt(varX) * Math.sqrt(varY));
+                return Number.isFinite(result) ? result : null;
             }
 
             const fullCorr = pearsonCorrelation(assets[0].values, assets[1].values);
@@ -35781,6 +36429,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const sumIS = windows.reduce((s, w) => s + w.is, 0);
             const sumOOS = windows.reduce((s, w) => s + w.oos, 0);
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges in-sample/out-of-sample %-ok
+            // esetén az összesített hozamok túlcsordulhatnak Infinity/NaN-re. Ugyanaz
+            // a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(sumIS) || !Number.isFinite(sumOOS)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott szakaszok szélsőséges (de egyenként véges) %-os hozamai túlcsordulást okoztak a lebegőpontos számábrázolásban — az összesített hozam Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű %-okat!</div>`;
+                return;
+            }
+
             // Szakaszonkénti bontás: egyedi WFE_i csak akkor értelmezhető,
             // ha az adott szakasz in-sample hozama pozitív.
             const rows = windows.map((w, idx) => {
@@ -35791,7 +36447,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     flagColor = 'text-slate-500';
                 } else {
                     wfeI = (w.oos / w.is) * 100;
-                    if (w.oos <= 0) {
+                    // JAVÍTÁS: szélsőséges, de egyenként véges IS/OOS %-ok esetén a
+                    // szakaszonkénti WFE_i túlcsordulhat Infinity/NaN-re — ilyenkor null-ra
+                    // állítjuk (meglévő "nem értékelhető" konvenció), hogy a sablon
+                    // "—"-ként jelenítse meg. Ugyanaz a hibaosztály, mint a korábban
+                    // javított kalkulátoroknál.
+                    if (!Number.isFinite(wfeI)) {
+                        wfeI = null;
+                        flag = 'túlcsordulás — nem értékelhető';
+                        flagColor = 'text-slate-500';
+                    } else if (w.oos <= 0) {
                         flag = 'overfitting jel (OOS veszteséges)';
                         flagColor = 'text-neon-red';
                     } else if (wfeI >= 70) {
@@ -35832,6 +36497,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const wfe = (sumOOS / sumIS) * 100;
             const degradation = 100 - wfe;
+
+            if (!Number.isFinite(wfe) || !Number.isFinite(degradation)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott szakaszok szélsőséges (de egyenként véges) %-os hozamai túlcsordulást okoztak a lebegőpontos számábrázolásban — a Walk-Forward Efficiency Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű %-okat!</div>`;
+                return;
+            }
 
             let wfeColor, wfeVerdict;
             if (wfe < 0) {
@@ -36166,6 +36836,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const allocations = betas.map(b => (1 / b) / inverseSum * totalCapital);
             const betaWeightedExposures = betas.map((b, i) => b * allocations[i]);
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges Béta-értékek esetén az inverz
+            // összeg, az allokációk és/vagy a Béta-súlyozott kitettség (Béta × allokáció)
+            // túlcsordulhat Infinity/NaN-re — ez a toLocaleString()-en keresztül "∞"
+            // jelként szivárogna ki. Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(inverseSum) || allocations.some(v => !Number.isFinite(v)) || betaWeightedExposures.some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott Béta-értékek szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — az allokáció és/vagy a Béta-súlyozott kitettség Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű Béta-értékeket!</div>`;
+                return;
+            }
+
             const fmt = (v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
             let rowsHtml = '';
@@ -36318,6 +36998,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const inverseSum = vols.reduce((acc, v) => acc + (1 / v), 0);
             const allocations = vols.map(v => (1 / v) / inverseSum * totalCapital);
             const dollarVolatilities = vols.map((v, i) => (v / 100) * allocations[i]);
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges volatilitás-értékek esetén az
+            // inverz összeg, az allokációk és/vagy a dollár-volatilitás (vol% × allokáció)
+            // túlcsordulhat Infinity/NaN-re — ez a toLocaleString()-en keresztül "∞"
+            // jelként szivárogna ki. Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            if (!Number.isFinite(inverseSum) || allocations.some(v => !Number.isFinite(v)) || dollarVolatilities.some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott volatilitás-értékek szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — az allokáció és/vagy a dollár-volatilitás Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű volatilitás-értékeket!</div>`;
+                return;
+            }
 
             const fmt = (v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -39293,6 +39983,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const effectivePct = Math.sqrt(effectiveVariance);
             const diversificationBenefitPct = naivePct - effectivePct;
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges Kockázat% értékek esetén az
+            // összegek, a négyzetösszeg és/vagy a korrelációval korrigált variancia
+            // túlcsordulhatnak Infinity/NaN-re. Ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál.
+            if (!Number.isFinite(sumRisks) || !Number.isFinite(sumSquares) || !Number.isFinite(effectivePct) || !Number.isFinite(diversificationBenefitPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott pozíció-kockázatok szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — az egyidejű kockázat Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű kockázat%-okat!</div>`;
+                return;
+            }
+
             let simStatus, simColor;
             if (effectivePct >= 10) { simStatus = 'VESZÉLYES'; simColor = 'text-neon-red'; }
             else if (effectivePct >= 5) { simStatus = 'FIGYELEM'; simColor = 'text-amber-400'; }
@@ -39614,6 +40313,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const variance = history.reduce((a, b) => a + (b - mean) * (b - mean), 0) / n;
             const std = Math.sqrt(variance);
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges historikus áramlás-értékek
+            // esetén az átlag és/vagy a szórás túlcsordulhat Infinity/NaN-re. Ugyanaz
+            // a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(mean) || !Number.isFinite(std)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott historikus áramlás-adatok szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — az átlag és/vagy a szórás Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű adatokat!</div>`;
+                return;
+            }
+
             if (std === 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott historikus sorozat minden értéke azonos — a szórás 0, így a Z-score nem számítható!</div>`;
                 return;
@@ -39621,6 +40328,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const z = (today - mean) / std;
             const cumulative = history.reduce((a, b) => a + b, 0) + today;
+
+            if (!Number.isFinite(z) || !Number.isFinite(cumulative)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Z-score és/vagy a kumulatív nettó áramlás kiszámítása túlcsordulást okozott a lebegőpontos számábrázolásban (Infinity/NaN eredmény) — adj meg reálisabb nagyságrendű adatokat!</div>`;
+                return;
+            }
 
             let verdictClass, verdictText;
             if (z > 2) {
@@ -39805,6 +40517,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const se1 = v1 / n1, se2 = v2 / n2;
             const seDiff = Math.sqrt(se1 + se2);
             const diff = m1 - m2;
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges hozamok esetén a csoportátlagok
+            // (m1/m2) és/vagy a különbségük (diff) túlcsordulhatnak Infinity/NaN-re —
+            // ez korábban közvetlenül, védtelenül jelent meg a kijelzőn ("+Infinity%",
+            // "NaN%"). FONTOS: ez nem keverendő össze a t-statisztika szándékos
+            // ±Infinity-ágával (amikor seDiff===0, lásd lejjebb) — az egy külön, már
+            // helyesen kezelt, matematikailag értelmes eset. Ugyanaz a hibaosztály,
+            // mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(m1) || !Number.isFinite(m2) || !Number.isFinite(diff)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a csoportátlagok Infinity/NaN eredményt adnának. Adj meg reálisabb nagyságrendű hozamokat!</div>`;
+                return;
+            }
 
             let tStat;
             if (seDiff === 0) {
