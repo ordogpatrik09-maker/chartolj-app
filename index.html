@@ -1739,6 +1739,13 @@
                                 <div class="text-[10px] text-slate-400">%-os árváltozás N periódussal korábbihoz képest</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('wildersmooth-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-blue/10 text-neon-blue border border-neon-blue/30 flex items-center justify-center text-sm"><i class="fa-solid fa-hourglass-half"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Wilder-simítás vs EMA Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Miért reagál lassabban a Wilder-simítás, mint az EMA</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('corrmatrix-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-table-cells"></i></span>
                             <div>
@@ -7044,6 +7051,65 @@ Kripto: 15000, 20</textarea>
 
             <div id="roc-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A ROC nem veszi figyelembe, MI történt a két időpont KÖZÖTT — egy éles visszaesés majd felépülés is simán pozitív ROC-ot adhat, ezért más eszközökkel (pl. trendvonal, volumen) együtt érdemes értelmezni.</p>
+        </div>
+    </div>
+
+    <!-- ================= WILDER-SIMÍTÁS vs EMA KALKULÁTOR (OKTATÁSI) =================
+         Wilder-simítás (RMA), SMA-maggal indítva: RMA_N = SMA(első N ár);
+         RMA_i = (RMA_{i-1}×(N-1) + ár_i) / N  — ez ekvivalens egy EMA-val,
+         ahol α = 1/N (szemben a hagyományos EMA α = 2/(N+1) súlyozásával).
+         A kalkulátor mindkettőt kiszámolja AZONOS SMA-maggal indítva, és a
+         zárt alakú "félidő" (half-life) formulával — hl = ln(0.5)/ln(1-α) —
+         megmutatja, hány periódus kell mindkettőnek egy hirtelen árugrás
+         FELÉNEK "lekövetéséhez", bizonyítva a lecke állítását: a Wilder-
+         simítás ugyanazon N periódusra MATEMATIKAILAG MINDIG lassabban
+         reagál, mint egy azonos periódusú EMA (α=1/N < α=2/(N+1), minden
+         N≥2 esetén). -->
+    <div id="wildersmooth-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-hourglass-half text-neon-blue"></i> Wilder-simítás vs EMA Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('wildersmooth-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Wilder-simítás (amit Wilder az RSI-ben és az ATR-ben használ) egy EMA-hoz hasonló, de ELTÉRŐ súlyozású technika: egy N periódusú Wilder-simítás ugyanazt a matematikát használja, mint egy EMA, csak α = 1/N súllyal — szemben a hagyományos EMA α = 2/(N+1) súlyával. Mivel 1/N mindig kisebb, mint 2/(N+1) (N≥2-re), a Wilder-simítás MINDIG lassabban reagál. Add meg az árakat (soronként egyet, időrendben) és a periódust — a kalkulátor mindkét simítást AZONOS SMA-maggal indítva futtatja le, és kiszámolja mindkettő "félidejét" (hány periódus kell egy hirtelen árugrás felének lekövetéséhez).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400">Árak (soronként egy, időrendben)</label>
+            <textarea id="wildersmooth-prices" rows="8" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-blue/50">100
+100.8
+101.2
+100.5
+101.8
+102.3
+101.9
+102.8
+103.5
+102.9
+104.1
+105.6
+104.8
+106.0
+107.2
+106.8
+108.5
+109.0
+107.8
+109.6
+115.0
+116.2
+117.5
+118.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400">Periódus (N, tipikusan 14)</label>
+            <input type="number" id="wildersmooth-period" value="14" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-blue/50">
+
+            <button onclick="calcWilderSmoothing()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-blue text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="wildersmooth-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A félidő (half-life) azt mutatja meg, elméletben hány periódus kell, hogy egy HIRTELEN, egyszeri árugrás hatásának a FELÉT "beépítse" a simított érték — ez a mutató csak a súlyozási képletből adódik, nem a konkrét megadott adatsortól függ. Oktatási célú közelítés, nem kereskedési jelzés.</p>
         </div>
     </div>
 
@@ -13758,6 +13824,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Rate of Change (ROC) Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">%-os árváltozás N periódussal korábbihoz képest</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('wildersmooth-modal')" data-tool-title="wilder-simítás vs ema kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-hourglass-half"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Wilder-simítás vs EMA Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Miért reagál lassabban a Wilder-simítás, mint az EMA</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('denomeffect-modal')" data-tool-title="denomination effect kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -33296,6 +33369,103 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= WILDER-SIMÍTÁS vs EMA KALKULÁTOR (OKTATÁSI) =================
+        // Wilder RMA, SMA-maggal indítva: RMA_{N-1} = SMA(első N ár);
+        // RMA_i = (RMA_{i-1}×(N-1) + ár_i) / N, i = N..n-1 — ez
+        // ekvivalens egy EMA-val α = 1/N súlyozással. A standard EMA
+        // (α = 2/(N+1)) UGYANAZZAL az SMA-maggal indul, hogy a két
+        // sorozat végértéke közvetlenül összevethető legyen. A "félidő"
+        // (half-life, hány periódus kell egy egyszeri ugrás FELÉNEK
+        // lekövetéséhez) zárt alakban: hl = ln(0.5) / ln(1-α) — ez
+        // tisztán a súlyból adódik, a konkrét adatsortól független.
+        function calcWilderSmoothing() {
+            const pricesEl = document.getElementById('wildersmooth-prices');
+            const periodEl = document.getElementById('wildersmooth-period');
+            const out = document.getElementById('wildersmooth-result');
+            if (!pricesEl || !periodEl || !out) return;
+
+            const lines = pricesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const prices = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
+            const period = parseInt(periodEl.value);
+
+            if (!Number.isFinite(period) || period < 2 || !prices.length || prices.length < period + 3) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes (legalább 2) periódust, és legalább (periódus + 3) érvényes árat — a Wilder-simítás ÉS az EMA kiszámításához, valamint egy érdemi végérték-összevetéshez mindkettő szükséges!</div>`;
+                return;
+            }
+
+            const n = prices.length;
+
+            // --- Közös SMA-mag (az első `period` ár átlaga) ---
+            let seedSum = 0;
+            for (let i = 0; i < period; i++) seedSum += prices[i];
+            const seed = seedSum / period;
+
+            // --- Wilder-simítás (RMA), α = 1/N ---
+            const wilder = new Array(n).fill(null);
+            wilder[period - 1] = seed;
+            for (let i = period; i < n; i++) {
+                wilder[i] = (wilder[i - 1] * (period - 1) + prices[i]) / period;
+            }
+
+            // --- Standard EMA, α = 2/(N+1), AZONOS SMA-maggal indítva ---
+            const emaAlpha = 2 / (period + 1);
+            const ema = new Array(n).fill(null);
+            ema[period - 1] = seed;
+            for (let i = period; i < n; i++) {
+                ema[i] = prices[i] * emaAlpha + ema[i - 1] * (1 - emaAlpha);
+            }
+
+            const lastPrice = prices[n - 1];
+            const lastWilder = wilder[n - 1];
+            const lastEma = ema[n - 1];
+
+            // --- Félidő (half-life), tisztán a súlyokból, zárt alakban ---
+            const wilderAlpha = 1 / period;
+            const wilderHalfLife = Math.log(0.5) / Math.log(1 - wilderAlpha);
+            const emaHalfLife = Math.log(0.5) / Math.log(1 - emaAlpha);
+            const halfLifeRatio = wilderHalfLife / emaHalfLife;
+
+            const diffWilder = Math.abs(lastPrice - lastWilder);
+            const diffEma = Math.abs(lastPrice - lastEma);
+
+            let colorClass, verdict;
+            if (diffWilder > diffEma * 1.001) {
+                colorClass = 'text-neon-blue';
+                verdict = `Ezen a konkrét adatsoron is látható: a Wilder-simítás végértéke MESSZEBB van a legutóbbi ártól, mint az EMA-é — azaz lassabban követte le az árfolyam legutóbbi mozgását, pontosan ahogy a lecke állítja.`;
+            } else if (diffEma > diffWilder * 1.001) {
+                colorClass = 'text-amber-400';
+                verdict = `Ezen a konkrét, rövid adatsoron az EMA végértéke momentán nincs közelebb a legutóbbi árhoz, mint a Wilder-simításé — ez előfordulhat, ha a legutóbbi néhány ár nem egyirányú ugrást követ. A fenti félidő (half-life) alapján a Wilder-simítás ÁLTALÁNOSSÁGBAN, hosszabb távon mindig lassabban reagál, mint egy azonos periódusú EMA.`;
+            } else {
+                colorClass = 'text-slate-300';
+                verdict = `Ezen a konkrét adatsoron a két végérték gyakorlatilag megegyezik — ez nem jelenti, hogy a két technika egyenértékű: a félidő (half-life) mutatja a valódi, adatsor-független különbséget.`;
+            }
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl bg-neon-blue/5 border border-neon-blue/30 p-3">
+                        <div class="text-[10px] text-neon-blue uppercase font-bold mb-1">Wilder-simítás (RMA)</div>
+                        <div class="text-lg font-extrabold text-white font-mono">${lastWilder.toFixed(4)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">α = 1/${period} = ${wilderAlpha.toFixed(4)}</div>
+                    </div>
+                    <div class="rounded-xl bg-amber-400/5 border border-amber-400/30 p-3">
+                        <div class="text-[10px] text-amber-400 uppercase font-bold mb-1">EMA (azonos periódus)</div>
+                        <div class="text-lg font-extrabold text-white font-mono">${lastEma.toFixed(4)}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">α = 2/(${period}+1) = ${emaAlpha.toFixed(4)}</div>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-xs mb-3">
+                    <div class="flex justify-between"><span class="text-slate-400">Legutóbbi ár:</span><span class="text-slate-300">${lastPrice.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Wilder félidő (periódus):</span><span class="font-bold text-neon-blue">${wilderHalfLife.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">EMA félidő (periódus):</span><span class="font-bold text-amber-400">${emaHalfLife.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Wilder ennyi×lassabb félidőben:</span><span class="font-extrabold text-white">${halfLifeRatio.toFixed(2)}×</span></div>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-800 border border-dark-700 mb-2">
+                    <span class="text-[10.5px] ${colorClass} font-bold">${verdict}</span>
+                </div>
+                <p class="text-[9px] text-slate-500 leading-relaxed">A félidő (half-life) zárt alakban: hl = ln(0,5) / ln(1−α) — ahol α a simítás súlya (Wilder: 1/N, EMA: 2/(N+1)). Mivel N≥2 esetén 1/N mindig kisebb, mint 2/(N+1), a Wilder-simítás félideje MINDIG hosszabb — azaz MINDIG lassabban reagál egy azonos N periódusú EMA-nál, függetlenül a konkrét adatsortól.</p>
+            `;
+        }
+
         // ================= KORRELÁCIÓS MÁTRIX KALKULÁTOR (OKTATÁSI) =================
         // corr(X,Y) = Cov(X,Y) / (σX × σY), population (n-osztós)
         // momentum-konvencióval, konzisztensen a session többi
@@ -46617,7 +46787,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             532: { tool: 'dividend-modal', cta: 'Számold ki élesben az osztalékhozamot és a DRIP hatását' },
             455: { tool: 'certeq-modal', cta: 'Számold ki élesben a bizonyossági egyenértéket (CE)' },
             460: { tool: 'treynor-modal', cta: 'Nézd meg élesben a Jensen\'s Alfát a Treynor Kalkulátorban' },
-            446: { tool: 'atr-modal', cta: 'Nézd meg élesben a Wilder-simítást az ATR Kalkulátorban' },
+            446: { tool: 'wildersmooth-modal', cta: 'Hasonlítsd össze élesben a Wilder-simítást és az EMA-t, és nézd meg, mennyivel lassabb' },
             473: { tool: 'histvolatr-modal', cta: 'Vesd össze élesben az ATR-t és a Historical Volatility-t' },
             412: { tool: 'multikelly-modal', cta: 'Számold ki élesben a korrelált portfólió Kelly-allokációját' },
             420: { tool: 'envelope-modal', cta: 'Számold ki élesben az Envelope Csatorna sávjait' },
@@ -46744,7 +46914,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
