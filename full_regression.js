@@ -125,6 +125,78 @@ check('modals_are_reachable', () => {
     return { modalCount: modalIds.length };
 });
 
+// 7) Minden lecke "cards" és "qs" tömbje strukturálisan ép: minden kártyának
+//    van cím és törzsszöveg, minden kvízkérdésnek van szövege, legalább 2,
+//    egymástól eltérő opciója, a helyes válasz indexe az opciók tartományán
+//    belül van, és van magyarázó szövege.
+check('lessons_cards_and_quiz_integrity', () => {
+    const src = extractBalanced(html, 'const LESSONS_DATA = ', '[', ']');
+    const data = new Function('return ' + src)();
+    const issues = [];
+    data.forEach((l, li) => {
+        if (!Array.isArray(l.cards) || l.cards.length === 0) {
+            issues.push(`Lecke #${li} (${l.t}): nincs kártya`);
+        } else {
+            l.cards.forEach((c, ci) => {
+                if (!c.t || !c.b) issues.push(`Lecke #${li} (${l.t}) kártya #${ci}: hiányzó cím/törzsszöveg`);
+            });
+        }
+        if (!Array.isArray(l.qs) || l.qs.length === 0) {
+            issues.push(`Lecke #${li} (${l.t}): nincs kvízkérdés`);
+        } else {
+            l.qs.forEach((q, qi) => {
+                if (!q.q) issues.push(`Lecke #${li} (${l.t}) kérdés #${qi}: hiányzó kérdésszöveg`);
+                if (!Array.isArray(q.o) || q.o.length < 2) {
+                    issues.push(`Lecke #${li} (${l.t}) kérdés #${qi}: kevesebb mint 2 opció`);
+                } else {
+                    const norm = q.o.map(x => String(x).trim().toLowerCase());
+                    const dupeIdx = norm.findIndex((x, i) => norm.indexOf(x) !== i);
+                    if (dupeIdx !== -1) issues.push(`Lecke #${li} (${l.t}) kérdés #${qi}: duplikált válaszopció`);
+                    if (typeof q.a !== 'number' || q.a < 0 || q.a >= q.o.length) {
+                        issues.push(`Lecke #${li} (${l.t}) kérdés #${qi}: érvénytelen helyes-válasz index (a=${q.a}, opciók=${q.o.length})`);
+                    }
+                }
+                if (!q.e) issues.push(`Lecke #${li} (${l.t}) kérdés #${qi}: hiányzó magyarázat`);
+            });
+        }
+    });
+    if (issues.length > 0) throw new Error(issues.slice(0, 20).join(' | ') + (issues.length > 20 ? ` | (+${issues.length - 20} további)` : ''));
+    return { lessonsChecked: data.length };
+});
+
+// 8) A LESSON_TOOL_MAP minden "tool" hivatkozása vagy egy valóban létező
+//    "...-modal" id-re mutat, vagy egy ismert chart-overlay/rajzeszköz
+//    kulcsszóra (rsi/bollinger/ema/trendline/fibonacci), amit a
+//    tryToolFromLesson() külön ágon kezel. A DIRECT_MODAL_TOOLS tömb minden
+//    eleme is valóban létező modal id kell legyen — egy elgépelt/törölt id
+//    itt néma hibát okozna (a "Próbáld ki élesben" gomb nem nyitna semmit).
+check('lesson_tool_map_integrity', () => {
+    const modalIds = new Set([...html.matchAll(/id="([a-zA-Z0-9-]*-modal)"/g)].map(m => m[1]));
+    const chartToggleTools = new Set(['rsi', 'bollinger', 'ema', 'trendline', 'fibonacci']);
+
+    const dmtMatch = html.match(/const DIRECT_MODAL_TOOLS = (\[[^\]]*\]);/);
+    if (!dmtMatch) throw new Error('DIRECT_MODAL_TOOLS tömb nem található');
+    const directModalTools = new Function('return ' + dmtMatch[1])();
+    const badDirect = directModalTools.filter(t => !modalIds.has(t));
+    if (badDirect.length > 0) throw new Error(`DIRECT_MODAL_TOOLS érvénytelen (nem létező modal) hivatkozás(ok): ${badDirect.join(', ')}`);
+
+    const mapSrc = extractBalanced(html, 'const LESSON_TOOL_MAP = ', '{', '}');
+    const map = new Function('return ' + mapSrc)();
+    const issues = [];
+    Object.keys(map).forEach(k => {
+        const idx = parseInt(k, 10);
+        if (!(idx >= 0 && idx <= 551)) issues.push(`Lecke-index tartományon kívül: ${k}`);
+        const tool = map[k].tool;
+        const valid = modalIds.has(tool) || chartToggleTools.has(tool);
+        if (!valid) { issues.push(`Lecke #${k}: érvénytelen tool hivatkozás "${tool}"`); return; }
+        if (tool !== 'alerts-modal' && !chartToggleTools.has(tool) && !directModalTools.includes(tool)) {
+            issues.push(`Lecke #${k}: tool "${tool}" sem a DIRECT_MODAL_TOOLS-ban, sem chart-toggle nem — a tryToolFromLesson()-ben lekezeletlen maradna`);
+        }
+    });
+    if (issues.length > 0) throw new Error(issues.join(' | '));
+    return { mappedLessons: Object.keys(map).length, directModalToolCount: directModalTools.length };
+});
+
 const overallOk = results.every(r => r.ok);
 console.log(JSON.stringify({ ok: overallOk, results }, null, 2));
 process.exit(overallOk ? 0 : 1);
