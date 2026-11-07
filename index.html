@@ -3239,6 +3239,9 @@
                         <button onclick="switchBottomTab('logs')" id="tab-btn-logs" class="text-slate-400 hover:text-slate-200 py-1 transition whitespace-nowrap">
                             Tevékenység
                         </button>
+                        <button onclick="openPortfolioOverview()" id="tab-btn-portfolio" class="ml-auto text-slate-400 hover:text-neon-cyan py-1 transition whitespace-nowrap">
+                            <i class="fa-solid fa-layer-group mr-1"></i><span class="hidden lg:inline">Portfólió</span>
+                        </button>
                     </div>
                     <!-- JAVÍTÁS (felhasználói visszajelzés: "ne legyen minden
                          egybe/egymáson, legyen több fül"): az Eszközök és
@@ -15870,6 +15873,27 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
+    <!-- ================= TÖBB-ESZKÖZÖS PORTFÓLIÓ ÁTTEKINTÉS (ÚJ FUNKCIÓ) =================
+         Tisztán MEGJELENÍTŐ funkció: a MÁR MEGLÉVŐ, élő `positions` tömbből
+         él, eszközönkénti bontásban (összesített kitettség, darabszám,
+         nem realizált PnL), plusz egy egyszerű koncentráció-figyelmeztetés,
+         ha több pozíció is nyitva van UGYANAZON az eszközön és oldalon
+         (ez oktatásilag NEM valódi diverzifikáció, még ha külön
+         pozíciókként is jelennek meg). Nincs saját állapot-mentés. -->
+    <div id="portfolio-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] max-h-[85%] flex flex-col p-4">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-neon-cyan"></i> Portfólió Áttekintés
+                </h3>
+                <button onclick="closePortfolioOverview()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="portfolio-overview-content" class="flex-grow overflow-y-auto space-y-2 pr-1 font-mono text-xs"></div>
+        </div>
+    </div>
+
     <!-- ================= "MI LETT VOLNA, HA?" RETROAKTÍV SZIMULÁTOR (OKTATÁSI) =================
          Tisztán MEGJELENÍTŐ/SZÁMOLÓ funkció: a MÁR MEGLÉVŐ tradeHistory tömböt
          játssza le újra egy megváltoztatott pozícióméret-szorzóval (pl. "mi
@@ -23671,6 +23695,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             'badges-modal': () => closeBadgesPanel(),
             'trade-journal-modal': () => closeTradeJournalDashboard(),
             'whatif-modal': () => closeWhatIfSimulator(),
+            'portfolio-modal': () => closePortfolioOverview(),
             'close-reason-modal': () => confirmCloseWithReason(null),
             'logout-confirm-modal': () => document.getElementById('logout-confirm-modal').classList.add('hidden'),
             'reset-balance-confirm-modal': () => document.getElementById('reset-balance-confirm-modal').classList.add('hidden'),
@@ -43175,6 +43200,68 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         // Kozmetikai jelvényfokozatok — tisztán presztízs, nincs mögötte vásárolható tartalom.
+        // ================= TÖBB-ESZKÖZÖS PORTFÓLIÓ ÁTTEKINTÉS =================
+        function openPortfolioOverview() {
+            document.getElementById('portfolio-modal').classList.remove('hidden');
+            renderPortfolioOverview();
+        }
+        function closePortfolioOverview() {
+            document.getElementById('portfolio-modal').classList.add('hidden');
+        }
+        function renderPortfolioOverview() {
+            const out = document.getElementById('portfolio-overview-content');
+            if (!out) return;
+
+            if (!positions || positions.length === 0) {
+                out.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Nincs nyitott pozíciód — nincs mit megjeleníteni a portfólió-áttekintésben.</div>`;
+                return;
+            }
+
+            const totalExposure = positions.reduce((s, p) => s + (Number.isFinite(p.amount) ? p.amount : 0), 0);
+            const totalMargin = positions.reduce((s, p) => s + (Number.isFinite(p.margin) ? p.margin : 0), 0);
+            const totalUnrealized = positions.reduce((s, p) => s + (Number.isFinite(p.pnl) ? p.pnl : 0), 0);
+
+            // Eszközönkénti (ÉS oldalankénti) bontás
+            const byKey = {};
+            positions.forEach(p => {
+                const key = p.asset + '|' + p.side;
+                if (!byKey[key]) byKey[key] = { asset: p.asset, side: p.side, count: 0, exposure: 0, pnl: 0 };
+                byKey[key].count++;
+                byKey[key].exposure += Number.isFinite(p.amount) ? p.amount : 0;
+                byKey[key].pnl += Number.isFinite(p.pnl) ? p.pnl : 0;
+            });
+            const rows = Object.values(byKey).sort((a, b) => b.exposure - a.exposure);
+
+            // Koncentráció-figyelmeztetés: 2+ pozíció UGYANAZON eszközön ÉS oldalon
+            const concentrated = rows.filter(r => r.count >= 2);
+
+            const fmtMoney = (v) => v < 0 ? ('-$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+
+            out.innerHTML = `
+                <div class="grid grid-cols-3 gap-2 mb-1">
+                    <div class="glass-card rounded-xl p-2.5 border border-dark-750"><div class="text-[9px] text-slate-500 uppercase">Összesített kitettség</div><div class="text-xs font-extrabold text-white">$${totalExposure.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div></div>
+                    <div class="glass-card rounded-xl p-2.5 border border-dark-750"><div class="text-[9px] text-slate-500 uppercase">Lekötött margin</div><div class="text-xs font-extrabold text-white">$${totalMargin.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div></div>
+                    <div class="glass-card rounded-xl p-2.5 border border-dark-750"><div class="text-[9px] text-slate-500 uppercase">Nem realizált PnL</div><div class="text-xs font-extrabold ${totalUnrealized >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(totalUnrealized)}</div></div>
+                </div>
+                ${concentrated.length > 0 ? `
+                <div class="glass-card rounded-xl p-2.5 border border-amber-400/30 bg-amber-400/[0.05]">
+                    <p class="text-[10px] text-amber-400 leading-relaxed"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${concentrated.length === 1 ? 'Több pozíciód is nyitva van' : 'Több eszköz-oldal kombinációnál is több pozíciód van nyitva'} ugyanazon az eszközön és oldalon (${concentrated.map(r => escapeHtml(r.asset) + ' ' + r.side.toUpperCase()).join(', ')}) — ez NEM valódi diverzifikáció, mert ugyanarra az árelmozdulásra fogadsz több tételben.</p>
+                </div>` : ''}
+                <div class="glass-card rounded-xl p-3 border border-dark-750">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-1.5">Eszközönkénti bontás</div>
+                    ${rows.map(r => `
+                        <div class="flex justify-between items-center py-1 border-b border-dark-800/60 last:border-0">
+                            <span class="text-slate-300">${escapeHtml(r.asset)} <span class="${r.side === 'long' ? 'text-neon-green' : 'text-neon-red'} text-[10px]">${r.side.toUpperCase()}</span> <span class="text-slate-600">(${r.count})</span></span>
+                            <span class="text-right">
+                                <span class="text-slate-400 text-[10px] mr-2">$${r.exposure.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                                <span class="${r.pnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(r.pnl)}</span>
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
         // ================= "MI LETT VOLNA, HA?" RETROAKTÍV SZIMULÁTOR =================
         const WHATIF_MULTIPLIERS = [0.25, 0.5, 1, 2, 3];
         const WHATIF_START_BALANCE = 100000; // ugyanaz, mint a resetBalance()/kezdő demó egyenleg
