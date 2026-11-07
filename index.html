@@ -15289,6 +15289,7 @@ Mean-reversion,2.5</textarea>
 
             <!-- Lelkiállapot vs. eredmény statisztika (trading pszichológia) -->
             <div id="journal-mood-stats-wrap" class="hidden mb-4"></div>
+            <div id="journal-strategy-stats-wrap" class="hidden mb-4"></div>
 
             <!-- Naptár rács -->
             <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-500 uppercase mb-1">
@@ -15322,6 +15323,12 @@ Mean-reversion,2.5</textarea>
                      eredmény között (pl. "bosszú-kereskedésnél mindig veszítek"). -->
                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Milyen lelkiállapotban kereskedtél? (opcionális)</label>
                 <div id="journal-entry-mood-picker" class="flex flex-wrap gap-1.5 mb-3"></div>
+
+                <!-- Stratégia-tag: melyik beidegzett/stratégia-típust követted aznap —
+                     ebből derül ki objektíven, MELYIK saját stratégiád a nyerő, nem
+                     csak az, hogy összességében plusz vagy mínusz volt-e a nap. -->
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Milyen stratégiát követtél? (opcionális)</label>
+                <div id="journal-entry-strategy-picker" class="flex flex-wrap gap-1.5 mb-3"></div>
                 <div id="journal-entry-today-hint" class="hidden text-[10px] text-slate-500 mb-3"></div>
                 <div class="flex items-center gap-2">
                     <button id="journal-entry-delete-btn" onclick="deleteJournalEntry()" class="hidden px-4 py-2.5 rounded-xl text-xs font-bold text-neon-red bg-neon-red/10 border border-neon-red/30 hover:bg-neon-red/20 transition">Törlés</button>
@@ -42222,6 +42229,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         ];
         let journalEntryMoodId = null; // a jelenleg szerkesztett bejegyzés kiválasztott moodja (vagy null)
 
+        const JOURNAL_STRATEGIES = [
+            { id: 'trend', label: '📈 Trend-követés', color: 'neon-cyan' },
+            { id: 'breakout', label: '🚀 Kitörés (breakout)', color: 'neon-green' },
+            { id: 'reversal', label: '🔄 Fordulat (reversal)', color: 'amber-400' },
+            { id: 'scalp', label: '⚡ Scalping', color: 'neon-purple' },
+            { id: 'range', label: '↔️ Sávkereskedés', color: 'slate-400' },
+            { id: 'news', label: '📰 Hír-alapú', color: 'neon-red' },
+            { id: 'egyeb', label: '🧩 Egyéb / nincs konkrét terv', color: 'slate-400' }
+        ];
+        let journalEntryStrategyId = null; // a jelenleg szerkesztett bejegyzés kiválasztott stratégiája (vagy null)
+
         // ================= REPLAY SZIMULÁTOR (nyitott végű, procedurálisan generált) =================
         // A "Mi lenne, ha..." modul fix, előre megírt forgatókönyv — itt viszont MINDEN
         // egyes gyertyánál szabadon dönthetsz (Long/Short/Zárás/Várakozás), a piaci "nap"
@@ -49006,6 +49024,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             renderJournalEquityCurve();
             renderJournalAdvancedStats();
             renderJournalMoodStats();
+            renderJournalStrategyStats();
 
             // --- Havi összesítő ---
             const firstOfMonth = new Date(y, m, 1);
@@ -49083,6 +49102,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('journal-entry-note').value = entry.note || '';
             journalEntryMoodId = entry.mood || null;
             renderJournalMoodPicker();
+            journalEntryStrategyId = entry.strategy || null;
+            renderJournalStrategyPicker();
             document.getElementById('journal-entry-delete-btn').classList.toggle('hidden', entry.pnl === undefined);
 
             // Ha ma van az adott nap, és a szimulátorban volt ma zárt pozíció, felajánljuk az összegét.
@@ -49122,7 +49143,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const pnlRaw = document.getElementById('journal-entry-pnl').value;
             if (pnlRaw === '' || isNaN(Number(pnlRaw))) { showNotification('Adj meg egy érvényes számot (pl. 150 vagy -80).'); return; }
             const note = document.getElementById('journal-entry-note').value.trim();
-            tradingJournal[journalEditingKey] = { pnl: Number(pnlRaw), note, mood: journalEntryMoodId || null, savedAt: Date.now() };
+            tradingJournal[journalEditingKey] = { pnl: Number(pnlRaw), note, mood: journalEntryMoodId || null, strategy: journalEntryStrategyId || null, savedAt: Date.now() };
             saveTradingJournalState();
             closeJournalEntryEditor();
             renderTradingJournalCalendar();
@@ -49150,6 +49171,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             el.innerHTML = JOURNAL_MOODS.map(m => {
                 const active = journalEntryMoodId === m.id;
                 return `<button type="button" onclick="selectJournalMood('${m.id}')" class="px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold border transition ${active ? `bg-${m.color}/15 border-${m.color}/40 text-${m.color}` : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">${m.label}</button>`;
+            }).join('');
+        }
+
+        // Ugyanaz az egyszer-választós ("rádiógomb") logika, mint a moodnál —
+        // egy nap csak egy fő stratégiát kap, hogy a statisztika egyértelmű maradjon.
+        function selectJournalStrategy(strategyId) {
+            journalEntryStrategyId = (journalEntryStrategyId === strategyId) ? null : strategyId;
+            renderJournalStrategyPicker();
+        }
+        function renderJournalStrategyPicker() {
+            const el = document.getElementById('journal-entry-strategy-picker');
+            if (!el) return;
+            el.innerHTML = JOURNAL_STRATEGIES.map(s => {
+                const active = journalEntryStrategyId === s.id;
+                return `<button type="button" onclick="selectJournalStrategy('${s.id}')" class="px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold border transition ${active ? `bg-${s.color}/15 border-${s.color}/40 text-${s.color}` : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">${s.label}</button>`;
             }).join('');
         }
 
@@ -49197,6 +49233,54 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         `).join('')}
                     </div>
                     <p class="text-[9.5px] text-slate-500 leading-relaxed mt-2.5">Ez a saját adataid alapján készült — minél több bejegyzést taggelsz lelkiállapottal, annál megbízhatóbb a mintázat.</p>
+                </div>
+            `;
+        }
+
+        // Stratégia-statisztika: a tageltbejegyzésekből stratégiánként kiszámolt
+        // "nyerő nap" arány (hány % volt pozitív P&L-ű nap) és átlagos napi
+        // eredmény — ebből derül ki objektíven, MELYIK saját stratégiád működik
+        // ténylegesen, nem csak a "benyomás" alapján.
+        function renderJournalStrategyStats() {
+            const wrap = document.getElementById('journal-strategy-stats-wrap');
+            if (!wrap) return;
+            const entries = Object.values(tradingJournal).filter(e => e && e.strategy);
+            if (entries.length < 3) { wrap.classList.add('hidden'); return; }
+            wrap.classList.remove('hidden');
+
+            const byStrategy = {};
+            entries.forEach(e => {
+                if (!byStrategy[e.strategy]) byStrategy[e.strategy] = [];
+                byStrategy[e.strategy].push(Number(e.pnl) || 0);
+            });
+
+            const rows = JOURNAL_STRATEGIES.map(s => {
+                const pnls = byStrategy[s.id];
+                if (!pnls || pnls.length === 0) return null;
+                const avg = pnls.reduce((a, b) => a + b, 0) / pnls.length;
+                const winRate = (pnls.filter(p => p > 0).length / pnls.length) * 100;
+                return { strategy: s, count: pnls.length, avg, winRate };
+            }).filter(Boolean).sort((a, b) => b.winRate - a.winRate);
+
+            if (rows.length === 0) { wrap.classList.add('hidden'); return; }
+
+            wrap.innerHTML = `
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[9px] text-slate-500 uppercase font-bold mb-2.5">Stratégia vs. nyerő nap arány</div>
+                    <div class="space-y-2">
+                        ${rows.map(r => `
+                            <div>
+                                <div class="flex items-center justify-between text-[10.5px] mb-0.5">
+                                    <span class="text-slate-300 font-semibold">${r.strategy.label} <span class="text-slate-600">(${r.count}×)</span></span>
+                                    <span class="font-mono font-bold ${r.winRate >= 50 ? 'text-neon-green' : 'text-neon-red'}">${r.winRate.toFixed(0)}% <span class="text-slate-500 font-normal">· ${r.avg >= 0 ? '+' : ''}$${r.avg.toLocaleString('en-US', { maximumFractionDigits: 0 })}/nap</span></span>
+                                </div>
+                                <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden">
+                                    <div class="h-full ${r.winRate >= 50 ? 'bg-neon-green' : 'bg-neon-red'}" style="width:${Math.max(3, r.winRate)}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p class="text-[9.5px] text-slate-500 leading-relaxed mt-2.5">A nyerő nap arány azt mutatja, az adott stratégiával taggelt napok hány %-a zárult pluszban.</p>
                 </div>
             `;
         }
