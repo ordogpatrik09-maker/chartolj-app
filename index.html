@@ -48687,8 +48687,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Ha ma van az adott nap, és a szimulátorban volt ma zárt pozíció, felajánljuk az összegét.
             const hint = document.getElementById('journal-entry-today-hint');
             const todayKey = journalDateKey(new Date());
-            if (key === todayKey && entry.pnl === undefined && typeof tradeHistory !== 'undefined' && tradeHistory.length > 0) {
-                const simTotal = tradeHistory.reduce((s, h) => s + (Number(h.pnl) || 0), 0);
+            // JAVÍTÁS (audit): ua. a hibaosztály, mint a kereskedési terv
+            // "mai trade-limit" jelzőjénél - a "simTotal" korábban a
+            // tradeHistory TELJES (minden idők) összegét vette, nem csak a
+            // mai zárásokét, holott a szöveg ("Ma a szimulátorban...")
+            // kifejezetten "mát" ígér. Ugyanazzal a "th_<epochMs>_<rand>"
+            // ID-ből visszanyert időbélyeg-szűréssel javítva.
+            const todayStartMsJournal = new Date(); todayStartMsJournal.setHours(0, 0, 0, 0);
+            const todaysTradeHistory = (typeof tradeHistory !== 'undefined' ? tradeHistory : []).filter(h => {
+                const m = /^th_(\d+)_/.exec(String(h.id));
+                return !m || Number(m[1]) >= todayStartMsJournal.getTime();
+            });
+            if (key === todayKey && entry.pnl === undefined && todaysTradeHistory.length > 0) {
+                const simTotal = todaysTradeHistory.reduce((s, h) => s + (Number(h.pnl) || 0), 0);
                 hint.classList.remove('hidden');
                 hint.innerHTML = `Ma a szimulátorban lezárt pozícióid összesen <strong class="text-white">${simTotal >= 0 ? '+' : ''}$${simTotal.toFixed(2)}</strong>-t hoztak.
                     <button onclick="document.getElementById('journal-entry-pnl').value='${simTotal.toFixed(2)}'" class="text-neon-cyan font-bold underline ml-1">Átvétel</button>`;
