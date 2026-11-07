@@ -50903,7 +50903,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2.5">${p.leverage}x</td>
                         <td class="py-2.5 font-bold ${pnlColor}" ${p.fundingAccrued ? `title="Tartalmaz felhalmozott funding-díjat: ${p.fundingAccrued < 0 ? '-$' + Math.abs(p.fundingAccrued).toFixed(2) : '+$' + p.fundingAccrued.toFixed(2)}"` : ''}>${formatPnl(p.pnl)}${p.fundingAccrued ? '<i class="fa-solid fa-coins text-amber-400/70 ml-1 text-[9px]"></i>' : ''}</td><td class="py-2.5 text-right text-[10px] text-slate-500 font-mono">${p.margin?"$"+p.margin.toFixed(0):"-"}</td>
                         <td class="py-2.5 text-right whitespace-nowrap">
-                            <button onclick="promptAddToPosition(${p.id})" title="Átlagold be a pozíciót (DCA)" class="px-2 py-1 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded text-[10px] font-bold transition mr-1">
+                            <button onclick="promptAddToPosition(${p.id})" title="Átlagold be a pozíciót (DCA)" aria-label="Átlagold be a pozíciót (DCA)" class="px-2 py-1 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded text-[10px] font-bold transition mr-1">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
                             <button onclick="openCloseReasonModal(${p.id})" class="px-2 py-1 bg-neon-red/20 hover:bg-neon-red/30 text-neon-red border border-neon-red/40 rounded text-[10px] font-bold transition">
@@ -50928,7 +50928,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2.5">${o.leverage}x</td>
                         <td class="py-2.5 text-slate-500">--</td>
                         <td class="py-2.5 text-right whitespace-nowrap">
-                            ${!o.ocoGroupId ? `<button onclick="promptLinkOco(${o.id})" title="OCO-pár létrehozása egy másik függő megbízással" class="px-2 py-1 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded text-[10px] font-bold transition mr-1"><i class="fa-solid fa-link"></i></button>` : ''}
+                            ${!o.ocoGroupId ? `<button onclick="promptLinkOco(${o.id})" title="OCO-pár létrehozása egy másik függő megbízással" aria-label="OCO-pár létrehozása egy másik függő megbízással" class="px-2 py-1 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded text-[10px] font-bold transition mr-1"><i class="fa-solid fa-link"></i></button>` : ''}
                             <button onclick="cancelPendingOrder(${o.id})" class="px-2 py-1 bg-dark-800 hover:bg-dark-750 text-slate-300 border border-dark-700 rounded text-[10px] font-bold transition">
                                 Törlés
                             </button>
