@@ -3369,7 +3369,7 @@
 
                 <!-- Tab 2: Trade History -->
                 <div id="bottom-tab-history" class="hidden flex-grow overflow-auto p-2">
-                    <div class="flex justify-between items-center px-1 mb-1.5"><span class="text-[10px] text-slate-500">Lezárt pozíciók</span><div class="flex items-center gap-3"><button onclick="openWhatIfSimulator()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-code-branch mr-1"></i>Mi lett volna, ha?</button><button onclick="openTradeJournalDashboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-chart-pie mr-1"></i>Riport</button><button onclick="copyTradeHistoryToClipboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-copy mr-1"></i>Másolás</button></div></div>
+                    <div class="flex justify-between items-center px-1 mb-1.5"><span class="text-[10px] text-slate-500">Lezárt pozíciók</span><div class="flex items-center gap-3"><button onclick="openWhatIfSimulator()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-code-branch mr-1"></i>Mi lett volna, ha?</button><button onclick="openTradeJournalDashboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-chart-pie mr-1"></i>Riport</button><button onclick="copyTradeHistoryToClipboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-copy mr-1"></i>Másolás</button><button onclick="exportTradeHistoryCsv()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-file-csv mr-1"></i>CSV</button></div></div>
                     <!-- JAVÍTÁS: ugyanaz a hiba, mint a Nyitott Pozíciók táblánál — 6
                          oszlop fix szélesség nélkül mobilon egymásra/levágva jelent
                          meg (pl. "Ok / Indoklás" fejléc "Ok /"-ra vágva). Ugyanaz a
@@ -51139,16 +51139,58 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         function copyTradeHistoryToClipboard() {
             if (!tradeHistory || tradeHistory.length === 0) { showNotification('Nincs kereskedési előzmény.'); return; }
-            const lines = ['Időpont\tEszköz\tTípus\tBelépő\tZáró\tPnL\tIndoklás'];
+            // JAVÍTÁS: ez a függvény korábban "new Date(h.time)"-ot próbált
+            // építeni, de h.time MÁR egy előre formázott IDŐ-STRING (pl.
+            // "14:32:10", lásd a closePosition()-beli
+            // "time: new Date().toLocaleTimeString()" sort), nem egy
+            // Date-kompatibilis string vagy timestamp. A new Date("14:32:10")
+            // minden böngészőben "Invalid Date"-et ad vissza, tehát a
+            // vágólapra másolt szöveg MINDEN sorában "Invalid Date" szerepelt
+            // dátum/idő helyett. Emellett a tradeHistory-bejegyzéseknek SOHA
+            // nem volt entryPrice/exitPrice mezőjük (csak closePrice, lásd
+            // closePosition()), ezért a "Belépő"/"Záró" oszlopok is mindig
+            // üresek maradtak. Mindkettő javítva: h.time közvetlen
+            // felhasználása (már formázott), h.closePrice a záróárhoz.
+            const lines = ['Időpont\tEszköz\tTípus\tZáró\tPnL\tIndoklás'];
             tradeHistory.forEach(function(h) {
-                const d = new Date(h.time || Date.now());
-                const ts = d.toLocaleDateString('hu-HU') + ' ' + d.toLocaleTimeString('hu-HU', {hour:'2-digit',minute:'2-digit'});
-                lines.push([ts, h.asset||'', h.side||'', h.entryPrice?'$'+h.entryPrice.toFixed(2):'', h.exitPrice?'$'+h.exitPrice.toFixed(2):'', formatPnl(h.pnl||0), h.reason||''].join('\t'));
+                lines.push([h.time || '', h.asset||'', h.side||'', Number.isFinite(h.closePrice)?'$'+h.closePrice.toFixed(2):'', formatPnl(h.pnl||0), h.reason||''].join('\t'));
             });
             const text = lines.join('\n');
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(text).then(function(){showNotification('Kereskedési napló másolva ('+tradeHistory.length+' sor).');}).catch(function(){showNotification('Másolás sikertelen.');});
             } else { showNotification('Clipboard API nem elérhető.'); }
+        }
+
+        // ÚJ FUNKCIÓ: a teljes (session alatti) kereskedési előzmény (nem csak
+        // a napi Napló) letölthető CSV-fájlba — ugyanaz a minta, mint a már
+        // meglévő exportJournalCsv(). Itt is h.closePrice/h.time a helyes
+        // mezőnév (lásd a fenti copyTradeHistoryToClipboard()-ban talált és
+        // javított hibát — ugyanazt a hibát itt eleve elkerüljük).
+        function exportTradeHistoryCsv() {
+            if (!tradeHistory || tradeHistory.length === 0) { showNotification('Nincs kereskedési előzmény.'); return; }
+            const escapeCsv = (s) => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+            const rows = [['Időpont', 'Eszköz', 'Típus', 'Záró ár ($)', 'Realizált PnL ($)', 'Indoklás', 'Jegyzet'].map(escapeCsv).join(',')];
+            tradeHistory.forEach(h => {
+                rows.push([
+                    h.time || '',
+                    h.asset || '',
+                    (h.side || '').toUpperCase(),
+                    Number.isFinite(h.closePrice) ? h.closePrice.toFixed(2) : '',
+                    Number.isFinite(h.pnl) ? h.pnl.toFixed(2) : '',
+                    h.reason || '',
+                    h.note || ''
+                ].map(escapeCsv).join(','));
+            });
+            const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chartolj_kereskedesi_elozmenyek_${Date.now()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('Kereskedési előzmények exportálva CSV fájlba.');
         }
 
         function setMaxAmount() {
