@@ -31998,9 +31998,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }
             }
 
+            // JAVÍTÁS (audit): ua. a hibaosztály, mint több másik kalkulátornál
+            // - isNaN(Infinity) === false, egy direktben begépelt túlcsordult
+            // kezdő tőke (pl. "1e309") átment volna ezen, és a lenti
+            // runPortfolioWeightOptimizer() belsejében potenciálisan csendes
+            // Infinity/NaN-terjedést okozhatott volna.
             const stepPct = parseInt(document.getElementById('pwo-step').value, 10);
             const startEquity = parseFloat(document.getElementById('pwo-equity').value);
-            if (isNaN(stepPct) || isNaN(startEquity) || startEquity <= 0) {
+            if (!Number.isFinite(stepPct) || !Number.isFinite(startEquity) || startEquity <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen lépésköz vagy kezdő tőke!</div>`;
                 return;
             }
@@ -32228,7 +32233,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const htfSlow = parseInt(document.getElementById('mtf-htfslow').value, 10);
             const startEquity = parseFloat(document.getElementById('mtf-equity').value);
 
-            if ([fast, slow, htfAgg, htfFast, htfSlow, startEquity].some(v => isNaN(v)) ||
+            // JAVÍTÁS (audit): ua. a hibaosztály, mint több másik kalkulátornál
+            // - isNaN(Infinity) === false, egy direktben begépelt túlcsordult
+            // kezdő tőke (startEquity, pl. "1e309") átment volna ezen.
+            if ([fast, slow, htfAgg, htfFast, htfSlow, startEquity].some(v => !Number.isFinite(v)) ||
                 fast < 2 || slow <= fast || htfAgg < 2 || htfFast < 2 || htfSlow <= htfFast || startEquity <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — a gyors EMA legyen kisebb a lassúnál (mindkét idősíkon), az aggregáció legalább 2, a tőke pozitív!</div>`;
                 return;
@@ -32276,7 +32284,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const overbought = parseFloat(document.getElementById('vrs-overbought').value);
             const startEquity = parseFloat(document.getElementById('vrs-equity').value);
 
-            if ([atrPeriod, medianWindow, emaFast, emaSlow, rsiPeriod, oversold, overbought, startEquity].some(v => isNaN(v)) ||
+            // JAVÍTÁS (audit): ua. a hibaosztály, mint több másik kalkulátornál
+            // - isNaN(Infinity) === false, egy direktben begépelt túlcsordult
+            // kezdő tőke (startEquity, pl. "1e309") átment volna ezen (az
+            // oversold/overbought mezőket az "oversold >= overbought"
+            // összehasonlítás már eddig is helyesen elfogta volna Infinity
+            // esetén, de a konzisztencia és a defenzív-programozás miatt itt is
+            // Number.isFinite-re váltottam).
+            if ([atrPeriod, medianWindow, emaFast, emaSlow, rsiPeriod, oversold, overbought, startEquity].some(v => !Number.isFinite(v)) ||
                 atrPeriod < 2 || medianWindow < 5 || emaFast < 2 || emaSlow <= emaFast || rsiPeriod < 2 ||
                 oversold <= 0 || overbought <= 0 || oversold >= overbought || startEquity <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — a gyors EMA legyen kisebb a lassúnál, a túladott szint kisebb a túlvettnél, a többi érték pozitív!</div>`;
