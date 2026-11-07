@@ -29723,7 +29723,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const start = parseFloat(startEl.value);
             const end = parseFloat(endEl.value);
 
-            if (isNaN(start) || isNaN(end)) {
+            // JAVÍTÁS (audit): az eredeti "isNaN(...)" csak a NaN esetét szűrte
+            // ki, egy Infinity értéket (pl. a mezőbe direktben begépelt
+            // "1e309" - túlcsordul, a HTML-nek nincs ilyen input-mezőn "max"
+            // attribútuma, és az is csak a léptető nyilakra vonatkozna)
+            // átengedett, mert isNaN(Infinity) === false. A start===end
+            // ellenőrzés ezt csak akkor fogja el, ha MINDKÉT mező Infinity -
+            // ha csak az egyik, a "high - r*range" (felfelé mozgásnál) kifejezés
+            // "Infinity - Infinity"-t, azaz LÁTHATÓ "NaN" szöveget adott volna
+            // minden egyes Fibonacci-szintre. Number.isFinite-re váltva ez most
+            // a már meglévő, felhasználóbarát hibaüzenettel tér vissza.
+            if (!Number.isFinite(start) || !Number.isFinite(end)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat mindkét mezőben!</div>`;
                 return;
             }
@@ -29780,7 +29790,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const y2 = parseFloat(y2El.value);
             const target = parseInt(targetEl.value);
 
-            if ([x1, y1, x2, y2, target].some(v => isNaN(v))) {
+            // JAVÍTÁS (audit): ua. a hibaosztály, mint a Fib Retracement
+            // kalkulátornál - isNaN(Infinity) === false, tehát egy direktben
+            // begépelt túlcsordult érték (pl. "1e309" az ár-mezőkben) átment
+            // volna ezen a szűrésen, majd a lenti slope/priceAtTarget
+            // kifejezésekben "Infinity - Infinity" típusú LÁTHATÓ "NaN"
+            // eredményt adott volna minden sorra.
+            if ([x1, y1, x2, y2, target].some(v => !Number.isFinite(v))) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
                 return;
             }
