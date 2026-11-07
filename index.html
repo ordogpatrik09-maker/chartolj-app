@@ -3248,6 +3248,9 @@
                         <button onclick="openProgressExport()" id="tab-btn-progress-export" class="text-slate-400 hover:text-emerald-400 py-1 transition whitespace-nowrap">
                             <i class="fa-solid fa-image mr-1"></i><span class="hidden lg:inline">Export</span>
                         </button>
+                        <button onclick="openWeakTopicsDashboard()" id="tab-btn-weak-topics" class="text-slate-400 hover:text-rose-400 py-1 transition whitespace-nowrap">
+                            <i class="fa-solid fa-magnifying-glass-chart mr-1"></i><span class="hidden lg:inline">Gyengepont</span>
+                        </button>
                     </div>
                     <!-- JAVÍTÁS (felhasználói visszajelzés: "ne legyen minden
                          egybe/egymáson, legyen több fül"): az Eszközök és
@@ -15951,6 +15954,32 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
+    <!-- ================= GYENGEPONTOK DASHBOARD (OKTATÁSI) =================
+         Tisztán MEGJELENÍTŐ funkció: a MÁR MEGLÉVŐ Hibás Kérdések Gyűjtője
+         (academyMistakes Set, "lessonIdx:qIdx" kulcsokkal) tartalmát AKADÉMIAI
+         MODULONKÉNT (ACADEMY_MODULES / LESSONS_DATA[i].m) összesíti, hogy a
+         felhasználó lássa, melyik tananyag-területen gyűjtött a legtöbb hibás
+         kérdést — ez egy új, modul-szintű nézet a MÁR LÉTEZŐ (típus-szintű)
+         tanulási-profil mellett. Nem módosítja az academyMistakes-et, a
+         mistakeQueue-t vagy bármilyen más állapotot - csak olvas és
+         megjelenít. Nincs saját állapot-mentés. A tényleges gyakorlást a
+         már létező "Hibás kérdések" Akadémia-fülre irányítja a felhasználót
+         (nem hívja meg annak belső navigációs/állapot-függvényeit, hogy a
+         meglévő, bevált mechanizmust érintetlenül hagyja). -->
+    <div id="weak-topics-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] max-h-[85%] flex flex-col p-4">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass-chart text-rose-400"></i> Gyengepontok Dashboard
+                </h3>
+                <button onclick="closeWeakTopicsDashboard()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="weak-topics-content" class="flex-grow overflow-y-auto space-y-2 pr-1 font-mono text-xs"></div>
+        </div>
+    </div>
+
     <!-- ================= "MI LETT VOLNA, HA?" RETROAKTÍV SZIMULÁTOR (OKTATÁSI) =================
          Tisztán MEGJELENÍTŐ/SZÁMOLÓ funkció: a MÁR MEGLÉVŐ tradeHistory tömböt
          játssza le újra egy megváltoztatott pozícióméret-szorzóval (pl. "mi
@@ -23755,6 +23784,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             'portfolio-modal': () => closePortfolioOverview(),
             'historical-event-modal': () => closeHistoricalEventSimulator(),
             'progress-export-modal': () => closeProgressExport(),
+            'weak-topics-modal': () => closeWeakTopicsDashboard(),
             'close-reason-modal': () => confirmCloseWithReason(null),
             'logout-confirm-modal': () => document.getElementById('logout-confirm-modal').classList.add('hidden'),
             'reset-balance-confirm-modal': () => document.getElementById('reset-balance-confirm-modal').classList.add('hidden'),
@@ -52130,6 +52160,79 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             } catch (e) {
                 showNotification('A kép letöltése nem sikerült ebben a böngészőben.');
             }
+        }
+
+        // ÚJ FUNKCIÓ: Gyengepontok Dashboard — lásd a weak-topics-modal
+        // HTML-kommentjét fentebb a teljes magyarázatért. A MÁR MEGLÉVŐ
+        // academyMistakes Set-et (Hibás Kérdések Gyűjtője) összesíti
+        // Akadémia-modulonként, tisztán olvasó/megjelenítő módon.
+        function openWeakTopicsDashboard() {
+            document.getElementById('weak-topics-modal').classList.remove('hidden');
+            renderWeakTopicsDashboard();
+        }
+        function closeWeakTopicsDashboard() {
+            document.getElementById('weak-topics-modal').classList.add('hidden');
+        }
+        function renderWeakTopicsDashboard() {
+            const out = document.getElementById('weak-topics-content');
+            if (!out) return;
+
+            const keys = academyMistakes ? [...academyMistakes] : [];
+            if (keys.length === 0) {
+                out.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Még nincs gyűjtött hibás kérdésed — ez jó hír! Ha hibázol egy kvízben, itt fog megjelenni, melyik területen van a legtöbb gyakorlásra váró kérdésed.</div>`;
+                return;
+            }
+
+            // Modulonkénti összesítés: hányszor (aktívan, még nem "graduálva")
+            // tartozik az adott akadémiai modulhoz hibás kérdés, és ebből
+            // mennyi esedékes most (isMistakeDue).
+            const now = Date.now();
+            const perModule = {}; // moduleIdx -> { total, due }
+            keys.forEach(key => {
+                const parsed = parseMistakeKey(key);
+                if (!parsed) return;
+                const l = LESSONS_DATA[parsed.lessonIdx];
+                if (!l || typeof l.m !== 'number') return;
+                const bucket = perModule[l.m] || (perModule[l.m] = { total: 0, due: 0 });
+                bucket.total++;
+                if (isMistakeDue(key, now)) bucket.due++;
+            });
+
+            const rows = Object.entries(perModule)
+                .map(([moduleIdx, stats]) => ({ moduleIdx: Number(moduleIdx), ...stats }))
+                .filter(r => Number.isFinite(r.moduleIdx) && ACADEMY_MODULES[r.moduleIdx])
+                .sort((a, b) => b.total - a.total);
+
+            if (rows.length === 0) {
+                out.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Nincs a modulokhoz köthető gyűjtött hibás kérdés.</div>`;
+                return;
+            }
+
+            const maxTotal = Math.max(...rows.map(r => r.total));
+            const barsHtml = rows.map(r => {
+                const mod = ACADEMY_MODULES[r.moduleIdx];
+                const pct = maxTotal > 0 ? Math.round((r.total / maxTotal) * 100) : 0;
+                return `
+                    <div class="py-1.5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold text-white flex items-center gap-1.5"><i class="fa-solid ${escapeHtml(mod.i || 'fa-book')} text-${mod.accent || 'neon-cyan'}"></i> ${escapeHtml(mod.n)}</span>
+                            <span class="text-slate-400">${r.total} kérdés${r.due > 0 ? ` <span class="text-amber-400 font-bold">(${r.due} esedékes)</span>` : ''}</span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-dark-800 overflow-hidden">
+                            <div class="h-full bg-${mod.accent || 'neon-cyan'}" style="width:${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const totalDue = rows.reduce((a, r) => a + r.due, 0);
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 border border-rose-400/20 bg-rose-400/5 mb-1">
+                    <div class="text-[10px] text-slate-400">Ez a nézet azt mutatja, melyik tananyag-területen gyűjtöttél eddig a legtöbb hibás kérdést (a "Hibás kérdések" ismétlő rendszer alapján).</div>
+                </div>
+                ${barsHtml}
+                ${totalDue > 0 ? `<div class="text-[10px] text-amber-400 font-bold mt-2"><i class="fa-solid fa-bell"></i> Összesen ${totalDue} kérdés esedékes gyakorlásra — nyisd meg az Akadémia "Hibás kérdések" fülét!</div>` : ''}
+            `;
         }
 
         // "Utoljára aktív" frissítése a szerveren (ritkítva, ~5 percenként) —
