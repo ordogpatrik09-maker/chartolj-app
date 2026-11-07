@@ -53104,12 +53104,43 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             document.addEventListener('DOMContentLoaded', applyTerminalMode);
             document.addEventListener('DOMContentLoaded', updateLeverageDisplay);
             document.addEventListener('DOMContentLoaded', setupMobileScrollHints);
+            document.addEventListener('DOMContentLoaded', handlePwaShortcut);
         } else {
             initAuthFlow();
             applyTranslations();
             applyTerminalMode();
             updateLeverageDisplay();
             setupMobileScrollHints();
+            handlePwaShortcut();
+        }
+
+        // ÚJ FUNKCIÓ: PWA app-parancsikonok (hosszú nyomás a telefon
+        // kezdőképernyő-ikonján → manifest.webmanifest "shortcuts" tömb) —
+        // a kiválasztott parancsikon egy "?shortcut=..." query-paraméterrel
+        // nyitja meg az appot, amit itt, induláskor olvasunk ki és a már
+        // meglévő switchMobileTab()/setAcademyMode() navigációs függvényekkel
+        // ugrunk a megfelelő képernyőre. Csak a MÁR LÉTEZŐ navigációs útvonalat
+        // használja — nem hoz létre új képernyőt vagy logikát.
+        function handlePwaShortcut() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const shortcut = params.get('shortcut');
+                if (!shortcut) return;
+                if (typeof switchMobileTab !== 'function') return;
+                if (shortcut === 'trade') {
+                    switchMobileTab('trade');
+                } else if (shortcut === 'daily-drill') {
+                    switchMobileTab('academy');
+                    if (typeof setAcademyMode === 'function') setAcademyMode('drill');
+                }
+                // A query-paramétert eltávolítjuk a címsorból, hogy egy esetleges
+                // later oldal-frissítés ne navigáljon újra automatikusan oda.
+                if (window.history && window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('shortcut');
+                    window.history.replaceState({}, '', url);
+                }
+            } catch (e) {}
         }
 
         // ================= MOBIL GÖRGETÉSI JELZÉS (SCROLL HINT) =================
