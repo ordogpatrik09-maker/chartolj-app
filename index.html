@@ -37147,15 +37147,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const [balance, targetPct, dailyLimitPct, maxddPct, days, riskPct, winratePct, rr, tradesPerDay] = els.map(el => parseFloat(el.value));
 
-            if (!balance || balance <= 0 ||
-                isNaN(targetPct) || targetPct <= 0 || targetPct > 100 ||
-                isNaN(dailyLimitPct) || dailyLimitPct <= 0 || dailyLimitPct > 100 ||
-                isNaN(maxddPct) || maxddPct <= 0 || maxddPct > 100 ||
-                !days || days <= 0 ||
-                isNaN(riskPct) || riskPct <= 0 || riskPct > 100 ||
-                isNaN(winratePct) || winratePct < 0 || winratePct > 100 ||
-                isNaN(rr) || rr <= 0 ||
-                isNaN(tradesPerDay) || tradesPerDay <= 0) {
+            // JAVÍTÁS (audit): az eredeti "isNaN(...)"/"!x" minta nem fogta ki
+            // az Infinity-t (pl. a "days", "tradesPerDay" vagy "rr" mezőbe
+            // direktben begépelt "1e309" - isNaN(Infinity)===false és
+            // !Infinity===false is). A lenti verdict-szövegekben ${days},
+            // ${tradesPerDay}, ${estimatedDays}, ${estimatedTrades} és
+            // ${bufferDays} SABLON-literálként (nem toLocaleString()-tel)
+            // kerülnek beszúrásra, tehát egy ilyen Infinity érték SZÓ SZERINT
+            // "Infinity" szövegként jelent volna meg a kihívás-elemzésben.
+            if (!Number.isFinite(balance) || balance <= 0 ||
+                !Number.isFinite(targetPct) || targetPct <= 0 || targetPct > 100 ||
+                !Number.isFinite(dailyLimitPct) || dailyLimitPct <= 0 || dailyLimitPct > 100 ||
+                !Number.isFinite(maxddPct) || maxddPct <= 0 || maxddPct > 100 ||
+                !Number.isFinite(days) || days <= 0 ||
+                !Number.isFinite(riskPct) || riskPct <= 0 || riskPct > 100 ||
+                !Number.isFinite(winratePct) || winratePct < 0 || winratePct > 100 ||
+                !Number.isFinite(rr) || rr <= 0 ||
+                !Number.isFinite(tradesPerDay) || tradesPerDay <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb egyenleget, 0 és 100 közötti profit cél / napi limit / max. DD / kockázat %-ot, nullánál nagyobb napszámot, 0-100 közötti nyerési arányt, és nullánál nagyobb reward:risk / trade-per-nap értéket!</div>`;
                 return;
             }
