@@ -17683,6 +17683,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (fastPeriod >= slowPeriod) throw new Error('A gyors EMA periódusnak kisebbnek kell lennie a lassúnál.');
             if (!targetRiskPct || targetRiskPct <= 0) throw new Error('A cél-kockázat százaléknak pozitívnak kell lennie.');
             if (!minFraction || minFraction <= 0 || !maxFraction || maxFraction <= minFraction) throw new Error('Érvénytelen pozícióméret-korlátok (minimumnak pozitívnak, maximumnak a minimumnál nagyobbnak kell lennie).');
+            // JAVÍTÁS: a vt-targetrisk/vt-minfrac/vt-maxfrac/vt-equity mezőknek
+            // nincs HTML max attribútuma, így a felhasználó (a spinner-nyilakat
+            // megkerülve, billentyűzettel) egy irreálisan nagy max. méretarányt
+            // (pl. "1e8") is beírhat. Ez a lenti `fraction = Math.max(minFraction,
+            // Math.min(maxFraction, fraction))` sorban a tényleges pozícióméretet
+            // (tőke-arányt) is ennyire engedi — egy ekkora "tőkeáttétel" mellett
+            // egyetlen kedvezőtlen gyertya a `scaledRetPct`-et jóval -100% alá
+            // viheti, és a lenti `equity = equity * (1 + scaledRetPct)` sor (a már
+            // korábban, a Kelly-méretezésű backtestnél javított hibaosztályhoz
+            // hasonlóan) ekkor NEM nullázza a tőkét, hanem egy értelmezhetetlen,
+            // extrém negatív "egyenleget" számol — ami a valóságban egy
+            // margin-call/likvidáció lenne. Felső korlát a bemeneteken, PLUSZ a
+            // meglévő runKellySizedBacktest()-ben már bevált likvidáció-modellezés
+            // (equity → 0, ha a veszteség elérné/meghaladná a -100%-ot) átvétele.
+            if (!Number.isFinite(targetRiskPct) || targetRiskPct > 1e6 ||
+                !Number.isFinite(minFraction) || minFraction > 1e4 ||
+                !Number.isFinite(maxFraction) || maxFraction > 1e4 ||
+                !Number.isFinite(startEquity) || startEquity <= 0 || startEquity > 1e15) {
+                throw new Error('A megadott cél-kockázat, méretarány-korlátok vagy kezdő tőke túl szélsőségesek egy érvényes szimulációhoz!');
+            }
 
             const closes = candles.map(c => c.close);
             const n = closes.length;
@@ -17697,22 +17717,34 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let peakEquity = startEquity;
             let maxDrawdownPct = 0;
             const fractions = [];
+            let liquidated = false;
 
             for (let i = 1; i < n; i++) {
                 const ready = fastEma[i] !== null && slowEma[i] !== null && fastEma[i - 1] !== null && slowEma[i - 1] !== null;
                 const crossUp = ready && fastEma[i - 1] <= slowEma[i - 1] && fastEma[i] > slowEma[i];
                 const crossDown = ready && fastEma[i - 1] > slowEma[i - 1] && fastEma[i] <= slowEma[i];
 
-                if (!position && crossUp && atr[i] !== null && closes[i] > 0) {
+                if (!liquidated && !position && crossUp && atr[i] !== null && closes[i] > 0) {
                     const atrPct = atr[i] / closes[i] * 100;
                     let fraction = atrPct > 0 ? (targetRiskPct / atrPct) : maxFraction;
                     fraction = Math.max(minFraction, Math.min(maxFraction, fraction));
                     position = { entryPrice: closes[i], fraction };
                     fractions.push(fraction);
-                } else if (position && crossDown) {
+                } else if (!liquidated && position && crossDown) {
                     const retPct = (closes[i] - position.entryPrice) / position.entryPrice;
                     const scaledRetPct = retPct * position.fraction;
-                    equity = equity * (1 + scaledRetPct);
+                    // JAVÍTÁS: lásd a fenti bemenet-korlátozó JAVÍTÁS kommentet —
+                    // extrém (de a felső korláton belüli) maxFraction mellett is
+                    // egy szokásos áresés a scaledRetPct-et -100% alá viheti; a
+                    // runKellySizedBacktest()-nél már bevált likvidáció-modellel
+                    // konzisztensen itt is 0-ra állítjuk a tőkét -100%-nál vagy
+                    // alacsonyabbnál, helytelen negatív "egyenleg" helyett.
+                    if (scaledRetPct <= -1) {
+                        equity = 0;
+                        liquidated = true;
+                    } else {
+                        equity = equity * (1 + scaledRetPct);
+                    }
                     trades.push(scaledRetPct);
                     position = null;
                 }
@@ -17720,11 +17752,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const dd = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
                 if (dd > maxDrawdownPct) maxDrawdownPct = dd;
             }
-            if (position) {
+            if (!liquidated && position) {
                 const lastClose = closes[n - 1];
                 const retPct = (lastClose - position.entryPrice) / position.entryPrice;
                 const scaledRetPct = retPct * position.fraction;
-                equity = equity * (1 + scaledRetPct);
+                if (scaledRetPct <= -1) {
+                    equity = 0;
+                    liquidated = true;
+                } else {
+                    equity = equity * (1 + scaledRetPct);
+                }
                 trades.push(scaledRetPct);
                 if (equity > peakEquity) peakEquity = equity;
                 const dd = peakEquity > 0 ? (peakEquity - equity) / peakEquity * 100 : 0;
@@ -17735,6 +17772,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const winRatePct = trades.length ? (wins / trades.length * 100) : 0;
             const totalReturnPct = (equity - startEquity) / startEquity * 100;
             const avgFraction = fractions.length ? (fractions.reduce((a, b) => a + b, 0) / fractions.length) : 0;
+
+            // JAVÍTÁS: végső véges-ellenőrzés biztonsági hálóként, konzisztensen
+            // az app többi kalkulátorának mintájával.
+            if (![totalReturnPct, maxDrawdownPct, avgFraction].every(Number.isFinite)) {
+                throw new Error('A megadott paraméterek olyan extrém kombinációját eredményezték, hogy a szimuláció eredménye nem fejezhető ki véges számmal — adj meg reálisabb értékeket!');
+            }
             return {
                 totalReturnPct, maxDrawdownPct, tradeCount: trades.length, winRatePct,
                 finalEquity: equity, avgFraction
