@@ -3393,7 +3393,7 @@
                     <label class="text-[11px] font-semibold text-slate-400 flex items-center justify-between">
                         <span>Limit Célár (USD)</span>
                     </label>
-                    <input type="number" id="input-limit-price" value="94500" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan">
+                    <input type="number" id="input-limit-price" value="94500" min="0.01" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan">
                 </div>
 
                 <!-- Position Amount Input -->
@@ -3403,7 +3403,7 @@
                         <span class="text-neon-cyan font-mono" id="max-amount-label">Max: $100,000</span>
                     </div>
                     <div class="relative">
-                        <input type="number" id="input-trade-amount" value="1000" min="10" oninput="updateOrderCalculations()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 font-mono text-sm text-white focus:outline-none focus:border-neon-cyan">
+                        <input type="number" id="input-trade-amount" value="1000" min="10" step="1" oninput="updateOrderCalculations()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 font-mono text-sm text-white focus:outline-none focus:border-neon-cyan">
                         <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">USDT</span>
                     </div>
                     <div class="grid grid-cols-4 gap-1.5">
@@ -3440,11 +3440,11 @@
                     <div id="tpsl-inputs" class="hidden space-y-2">
                         <div>
                             <span class="text-[10px] text-neon-green font-bold block mb-1">Take Profit (USD)</span>
-                            <input type="number" id="input-tp-price" placeholder="pl. 98000" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-green">
+                            <input type="number" id="input-tp-price" placeholder="pl. 98000" min="0.01" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-green">
                         </div>
                         <div>
                             <span class="text-[10px] text-neon-red font-bold block mb-1">Stop Loss (USD)</span>
-                            <input type="number" id="input-sl-price" placeholder="pl. 92000" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red">
+                            <input type="number" id="input-sl-price" placeholder="pl. 92000" min="0.01" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red">
                         </div>
                     </div>
                 </div>
@@ -49010,16 +49010,37 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: negatív Limit/TP/SL ár eddig simán átment ide — a
+            // "parseFloat(...) || fallback" minta csak a NaN és a 0 esetét szűri ki
+            // (mindkettő falsy JS-ben), egy NEGATÍV számot (pl. a mezőbe begépelt
+            // "-100") NEM, mert az truthy. Ennek két súlyos következménye lett
+            // volna: (1) limit módban a checkPendingOrders()-ben a SHORT ágon a
+            // "price >= o.limitPrice" feltétel egy negatív limitPrice-nál MINDIG
+            // igaz (a valós ár sosem negatív) — a függő megbízás a következő
+            // ártick-en azonnal "teljesült" volna egy negatív entryPrice-szal, és
+            // az updatePositionsPnL()-ben a "diff / p.entryPrice" osztás előjelet
+            // cserélve kiszámíthatatlanul torz PnL-t adott volna; (2) negatív TP-nél
+            // a "price >= p.tp" (long) feltétel is mindig igaz, negatív SL-nél a
+            // "price >= p.sl" (short) feltétel is mindig igaz — azonnali, értelmetlen
+            // pozíciózárást okozva. Mindhárom esetben a már levont márzsa egy
+            // teljesen torz kimenetre futott volna ki. Itt, a márzsa levonása ELŐTT,
+            // egy nullánál nagyobb, véges érték hiányában ugyanúgy "nincs megadva"
+            // értékként kezeljük a bemenetet, mint eddig a NaN/0 esetén.
+            const parsePositivePriceOrNull = (id) => {
+                const v = parseFloat(document.getElementById(id).value);
+                return (Number.isFinite(v) && v > 0) ? v : null;
+            };
             const tpEnabled = document.getElementById('toggle-tpsl').checked;
-            const tpVal = parseFloat(document.getElementById('input-tp-price').value) || null;
-            const slVal = parseFloat(document.getElementById('input-sl-price').value) || null;
+            const tpVal = parsePositivePriceOrNull('input-tp-price');
+            const slVal = parsePositivePriceOrNull('input-sl-price');
 
             accountBalance -= margin;
             document.getElementById('account-balance').textContent = '$' + accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
             updateMaxAmountLabel();
 
             if (currentOrderMode === 'limit') {
-                const limitPrice = parseFloat(document.getElementById('input-limit-price').value) || currentAsset.price;
+                const rawLimitPrice = parseFloat(document.getElementById('input-limit-price').value);
+                const limitPrice = (Number.isFinite(rawLimitPrice) && rawLimitPrice > 0) ? rawLimitPrice : currentAsset.price;
                 pendingOrders.push({
                     id: Date.now(),
                     asset: currentAsset.symbol,
