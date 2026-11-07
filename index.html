@@ -38490,7 +38490,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const premium = parseFloat(premiumEl.value);
             const contracts = Math.round(parseFloat(contractsEl.value));
 
-            if (!underlying || underlying <= 0 || !strike || strike <= 0 || isNaN(premium) || premium < 0 || !contracts || contracts <= 0) {
+            // JAVÍTÁS (audit): az eredeti "!x || x <= 0" minta egy Infinity
+            // értéket (pl. a mezőbe direktben begépelt "1e400" - a HTML "max"
+            // attribútum csak a léptető nyilakat korlátozza, nem a klaviatúrás
+            // bevitelt) truthy-ként átengedett, mert Infinity > 0 igaz. Ez a
+            // kontraktusszámnál egy szélsőséges (de valós) határesetben - ha a
+            // prémium pontosan megegyezik az intrinsic értékkel egy adott
+            // ármozgásnál, azaz sellerPnlPerShare = 0 - "0 * Infinity = NaN"
+            // eredményt adott volna, amit a lenti fmt() "n || 0" mintája
+            // csendben, hibajelzés nélkül $0-ra kerekített volna. Explicit
+            // Number.isFinite ellenőrzéssel ez most ugyanazt a már meglévő,
+            // felhasználóbarát hibaüzenetet adja, mint egy érvénytelen bemenet.
+            if (!Number.isFinite(underlying) || underlying <= 0 || !Number.isFinite(strike) || strike <= 0 || !Number.isFinite(premium) || premium < 0 || !Number.isFinite(contracts) || contracts <= 0) {
                 resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb aktuális árfolyamot, egy nullánál nagyobb kötési árat, egy nemnegatív prémiumot, és legalább 1 kontraktust!</div>`;
                 return;
             }
