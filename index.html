@@ -3308,7 +3308,7 @@
 
                 <!-- Tab 2: Trade History -->
                 <div id="bottom-tab-history" class="hidden flex-grow overflow-auto p-2">
-                    <div class="flex justify-between items-center px-1 mb-1.5"><span class="text-[10px] text-slate-500">Lezárt pozíciók</span><div class="flex items-center gap-3"><button onclick="openTradeJournalDashboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-chart-pie mr-1"></i>Riport</button><button onclick="copyTradeHistoryToClipboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-copy mr-1"></i>Másolás</button></div></div>
+                    <div class="flex justify-between items-center px-1 mb-1.5"><span class="text-[10px] text-slate-500">Lezárt pozíciók</span><div class="flex items-center gap-3"><button onclick="openWhatIfSimulator()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-code-branch mr-1"></i>Mi lett volna, ha?</button><button onclick="openTradeJournalDashboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-chart-pie mr-1"></i>Riport</button><button onclick="copyTradeHistoryToClipboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-copy mr-1"></i>Másolás</button></div></div>
                     <!-- JAVÍTÁS: ugyanaz a hiba, mint a Nyitott Pozíciók táblánál — 6
                          oszlop fix szélesség nélkül mobilon egymásra/levágva jelent
                          meg (pl. "Ok / Indoklás" fejléc "Ok /"-ra vágva). Ugyanaz a
@@ -15803,6 +15803,29 @@ Mean-reversion,2.5</textarea>
             </div>
             <div id="trade-journal-content" class="flex-grow overflow-y-auto space-y-2 pr-1 font-mono text-xs"></div>
             <p class="text-[9.5px] text-slate-600 pt-2 shrink-0">A riport a demó-kereskedési fiókod SAJÁT, lezárt pozícióiból (Lezárt Pozíciók fül) készül, élőben — oktatási célra, nem valós pénzügyi teljesítmény-értékelés.</p>
+        </div>
+    </div>
+
+    <!-- ================= "MI LETT VOLNA, HA?" RETROAKTÍV SZIMULÁTOR (OKTATÁSI) =================
+         Tisztán MEGJELENÍTŐ/SZÁMOLÓ funkció: a MÁR MEGLÉVŐ tradeHistory tömböt
+         játssza le újra egy megváltoztatott pozícióméret-szorzóval (pl. "mi
+         lett volna, ha minden pozícióm fele méretű lett volna?"), és
+         összehasonlítja a tényleges és a hipotetikus végső egyenleget/max.
+         drawdown-ot. Nem módosítja a valódi tradeHistory-t vagy egyenleget —
+         csak egy "mi lett volna" számítás, perzisztencia-bővítés nélkül. -->
+    <div id="whatif-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] max-h-[85%] flex flex-col p-4">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-code-branch text-neon-cyan"></i> Mi Lett Volna, Ha?
+                </h3>
+                <button onclick="closeWhatIfSimulator()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-[10px] text-slate-400 mb-3 shrink-0">Visszamenőleg lejátssza a lezárt pozícióidat egy MÁSIK pozícióméret-szorzóval — így láthatod, mekkora különbséget jelentett volna, ha nagyobb vagy kisebb tételekkel kereskedtél volna ugyanazokon a trade-eken.</p>
+            <div id="whatif-multiplier-buttons" class="grid grid-cols-5 gap-1.5 mb-3 shrink-0"></div>
+            <div id="whatif-result" class="flex-grow overflow-y-auto font-mono text-xs space-y-2 pr-1"></div>
         </div>
     </div>
 
@@ -42892,6 +42915,107 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         // Kozmetikai jelvényfokozatok — tisztán presztízs, nincs mögötte vásárolható tartalom.
+        // ================= "MI LETT VOLNA, HA?" RETROAKTÍV SZIMULÁTOR =================
+        const WHATIF_MULTIPLIERS = [0.25, 0.5, 1, 2, 3];
+        const WHATIF_START_BALANCE = 100000; // ugyanaz, mint a resetBalance()/kezdő demó egyenleg
+        let whatIfSelectedMultiplier = 1;
+
+        function openWhatIfSimulator() {
+            document.getElementById('whatif-modal').classList.remove('hidden');
+            const btnWrap = document.getElementById('whatif-multiplier-buttons');
+            btnWrap.innerHTML = WHATIF_MULTIPLIERS.map(m => `
+                <button onclick="selectWhatIfMultiplier(${m})" id="whatif-btn-${String(m).replace('.', '_')}" class="py-1.5 rounded-lg text-[11px] font-bold border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition">${m}×</button>
+            `).join('');
+            whatIfSelectedMultiplier = 1;
+            renderWhatIfSimulator();
+        }
+        function closeWhatIfSimulator() {
+            document.getElementById('whatif-modal').classList.add('hidden');
+        }
+        function selectWhatIfMultiplier(m) {
+            whatIfSelectedMultiplier = m;
+            renderWhatIfSimulator();
+        }
+        function renderWhatIfSimulator() {
+            WHATIF_MULTIPLIERS.forEach(m => {
+                const btn = document.getElementById('whatif-btn-' + String(m).replace('.', '_'));
+                if (!btn) return;
+                const active = m === whatIfSelectedMultiplier;
+                btn.className = active
+                    ? 'py-1.5 rounded-lg text-[11px] font-bold border border-neon-cyan bg-neon-cyan/10 text-neon-cyan transition'
+                    : 'py-1.5 rounded-lg text-[11px] font-bold border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition';
+            });
+
+            const out = document.getElementById('whatif-result');
+            if (!tradeHistory || tradeHistory.length === 0) {
+                out.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Még nincs lezárt kereskedésed — nincs mit visszamenőleg lejátszani!</div>`;
+                return;
+            }
+
+            const pnls = tradeHistory.map(h => h.pnl).filter(p => Number.isFinite(p));
+            const m = whatIfSelectedMultiplier;
+
+            // Tényleges (1×) lefutás
+            let actualEquity = WHATIF_START_BALANCE, actualPeak = WHATIF_START_BALANCE, actualMaxDd = 0;
+            for (const p of pnls) {
+                actualEquity += p;
+                if (actualEquity > actualPeak) actualPeak = actualEquity;
+                const dd = actualPeak > 0 ? (actualPeak - actualEquity) / actualPeak * 100 : 0;
+                if (dd > actualMaxDd) actualMaxDd = dd;
+            }
+
+            // Hipotetikus (m×) lefutás — minden trade PnL-je a szorzóval skálázva.
+            // JAVÍTÁS: ugyanaz a likvidáció-modellezési elv, mint a Vol-Target
+            // Sized Backtestnél — ha egy szorzott veszteség önmagában elérné/
+            // meghaladná a teljes induló tőkét, az egyenleget 0-ra állítjuk,
+            // nem engedjük negatívba, mert az nem egy valós, likvidáció utáni
+            // állapotot modellezne.
+            let hypoEquity = WHATIF_START_BALANCE, hypoPeak = WHATIF_START_BALANCE, hypoMaxDd = 0, liquidated = false;
+            for (const p of pnls) {
+                if (liquidated) break;
+                const scaled = p * m;
+                hypoEquity += scaled;
+                if (hypoEquity <= 0) { hypoEquity = 0; liquidated = true; }
+                if (hypoEquity > hypoPeak) hypoPeak = hypoEquity;
+                const dd = hypoPeak > 0 ? (hypoPeak - hypoEquity) / hypoPeak * 100 : 0;
+                if (dd > hypoMaxDd) hypoMaxDd = dd;
+            }
+
+            if (![actualEquity, actualMaxDd, hypoEquity, hypoMaxDd].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A szimuláció eredménye nem fejezhető ki véges számmal — ez rendkívül szokatlan a meglévő trade-history-n, próbáld újratölteni az appot!</div>`;
+                return;
+            }
+
+            const fmtMoney = (v) => v < 0 ? ('-$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            const diff = hypoEquity - actualEquity;
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="glass-card rounded-xl p-3 border border-dark-750">
+                        <div class="text-[9px] text-slate-500 uppercase font-bold mb-1">Tényleges (1×)</div>
+                        <div class="text-sm font-extrabold ${actualEquity - WHATIF_START_BALANCE >= 0 ? 'text-neon-green' : 'text-neon-red'}">$${actualEquity.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">Max DD: ${actualMaxDd.toFixed(1)}%</div>
+                    </div>
+                    <div class="glass-card rounded-xl p-3 border ${m === 1 ? 'border-dark-750' : 'border-neon-cyan/40'}">
+                        <div class="text-[9px] text-slate-500 uppercase font-bold mb-1">Hipotetikus (${m}×)</div>
+                        <div class="text-sm font-extrabold ${hypoEquity - WHATIF_START_BALANCE >= 0 ? 'text-neon-green' : 'text-neon-red'}">$${hypoEquity.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">Max DD: ${hypoMaxDd.toFixed(1)}%</div>
+                    </div>
+                </div>
+                ${m === 1 ? `
+                <p class="text-[10px] text-slate-500 text-center py-2">Ez a tényleges lefutásod — válassz egy másik szorzót felül az összehasonlításhoz!</p>
+                ` : `
+                <div class="glass-card rounded-xl border ${diff >= 0 ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3">
+                    <div class="flex justify-between"><span class="text-slate-400">Különbség a tényleges eredményhez:</span><span class="${diff >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtMoney(diff)}</span></div>
+                    ${liquidated ? `<p class="text-[10px] text-neon-red font-semibold mt-2">⚠️ ${m}×-es pozícióméret mellett ez a trade-sorozat egy ponton TELJES TŐKEVESZTÉST (likvidációt) eredményezett volna!</p>` : ''}
+                </div>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${m > 1
+                    ? 'Nagyobb pozícióméret a nyereségeket ÉS a veszteségeket is arányosan felnagyítja — a magasabb hozam mindig magasabb drawdown-kockázattal jár együtt, ugyanazon a trade-sorozaton.'
+                    : 'Kisebb pozícióméret csökkenti a drawdown-ot, de a nyereségeket is arányosan csökkenti — ez a klasszikus kockázat/hozam csereügylet, UGYANAZON trade-döntések mellett.'}</p>
+                `}
+            `;
+        }
+
         // ================= OVERTRADING-RIASZTÁS =================
         // Minden pozíció-/limit-megbízás nyitásnál hívva. Tisztán a jelenlegi
         // session memóriájában tartott időbélyeg-tömbből él — ha az utolsó
@@ -42969,7 +43093,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             });
             const assetRows = Object.entries(byAsset).sort((a, b) => b[1].count - a[1].count).slice(0, 8);
 
-            const fmtMoney = (v) => (v >= 0 ? '+' : '') + '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            // JAVÍTÁS: v < 0 esetén a v.toLocaleString() MÁR tartalmazza a "-"
+            // előjelet, így az eredeti "'$' + v.toLocaleString(...)" egy "$-400"
+            // alakot adott (előjel a $ UTÁN, nem elé) — kozmetikai, de
+            // félrevezető/hibásnak tűnő megjelenítés. Explicit előjel-kezeléssel
+            // helyesen "-$400" / "+$400" formátumot ad.
+            const fmtMoney = (v) => v < 0 ? ('-$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
             const pfDisplay = profitFactor === null ? '∞' : profitFactor.toFixed(2);
 
             out.innerHTML = `
