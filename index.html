@@ -15770,6 +15770,7 @@ Mean-reversion,2.5</textarea>
                     <button id="rm-tab-ranks" onclick="switchRanksMissionsTab('ranks')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition">Rangok</button>
                     <button id="rm-tab-missions" onclick="switchRanksMissionsTab('missions')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Küldetések</button>
                     <button id="rm-tab-themes" onclick="switchRanksMissionsTab('themes')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Témák</button>
+                    <button id="rm-tab-achievements" onclick="switchRanksMissionsTab('achievements')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Teljesítmények</button>
                 </div>
                 <div class="flex items-center gap-1.5 font-mono text-xs shrink-0">
                     <i class="fa-solid fa-coins text-amber-400"></i>
@@ -42538,15 +42539,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const ranksBtn = document.getElementById('rm-tab-ranks');
             const missionsBtn = document.getElementById('rm-tab-missions');
             const themesBtn = document.getElementById('rm-tab-themes');
+            const achievementsBtn = document.getElementById('rm-tab-achievements');
             const activeClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
             const inactiveClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
             ranksBtn.className = ranksMissionsTab === 'ranks' ? activeClass : inactiveClass;
             missionsBtn.className = ranksMissionsTab === 'missions' ? activeClass : inactiveClass;
             themesBtn.className = ranksMissionsTab === 'themes' ? activeClass : inactiveClass;
+            if (achievementsBtn) achievementsBtn.className = ranksMissionsTab === 'achievements' ? activeClass : inactiveClass;
             document.getElementById('rm-coin-label').textContent = userCoins.toLocaleString('hu-HU');
             const listEl = document.getElementById('rm-list');
             const isRanks = ranksMissionsTab === 'ranks';
             const isThemes = ranksMissionsTab === 'themes';
+            const isAchievements = ranksMissionsTab === 'achievements';
 
             if (isRanks) {
                 const progress = academyCompleted.size;
@@ -42606,6 +42610,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                                         ? `<button onclick="activateChartTheme('${theme.id}')" class="px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase bg-dark-800 border border-dark-700 text-slate-200 hover:border-neon-cyan/40 transition">Aktiválás</button>`
                                         : `<button onclick="buyChartTheme('${theme.id}')" ${canBuy ? '' : 'disabled'} class="px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition ${canBuy ? 'bg-amber-400 text-dark-950 hover:brightness-110 active:scale-95' : 'bg-dark-800 text-slate-600 cursor-not-allowed'}">Vásárlás</button>`}
                             </div>
+                        </div>
+                    `;
+                }).join('');
+            } else if (isAchievements) {
+                const unlockedCount = ACHIEVEMENTS.filter(a => { try { return a.check(); } catch (e) { return false; } }).length;
+                listEl.innerHTML = `
+                    <div class="text-center text-[10px] text-slate-500 font-mono mb-1">${unlockedCount} / ${ACHIEVEMENTS.length} teljesítmény feloldva</div>
+                ` + ACHIEVEMENTS.map(a => {
+                    let unlocked = false;
+                    try { unlocked = !!a.check(); } catch (e) { unlocked = false; }
+                    return `
+                        <div class="glass-card rounded-xl p-3 border ${unlocked ? 'border-neon-green/30' : 'border-dark-750'} flex items-center gap-2.5">
+                            <i class="fa-solid ${a.icon} text-lg ${unlocked ? 'text-neon-green' : 'text-slate-600'} w-6 text-center"></i>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold ${unlocked ? 'text-white' : 'text-slate-500'}">${a.title}</div>
+                                <div class="text-[10px] text-slate-500 mt-0.5">${a.desc}</div>
+                            </div>
+                            ${unlocked
+                                ? `<i class="fa-solid fa-circle-check text-neon-green shrink-0"></i>`
+                                : `<i class="fa-solid fa-lock text-slate-600 shrink-0"></i>`}
                         </div>
                     `;
                 }).join('');
@@ -42836,6 +42860,54 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         // Kozmetikai jelvényfokozatok — tisztán presztízs, nincs mögötte vásárolható tartalom.
+        // ================= TELJESÍTMÉNYEK (ACHIEVEMENT GALÉRIA) =================
+        // Tisztán MEGJELENÍTŐ (read-only) funkció: minden elem a MÁR MEGLÉVŐ,
+        // futásidőben elérhető statisztikákból (tradeHistory, academyXP,
+        // academyCompleted, replayStats, dailyDrillState, tradingPlan,
+        // tradingJournal, unlockedChartThemes) van kiszámolva, élőben, minden
+        // megnyitáskor újra. SZÁNDÉKOSAN nincs itt semmilyen saját állapot-
+        // mentés (sem localStorage, sem Supabase cloud-progress payload-bővítés)
+        // — a feloldás ténye maga a már meglévő, szinkronizált adat, ezért
+        // eszközök/bejelentkezések között is automatikusan konzisztens, és
+        // nem jelent kockázatot a meglévő mentési csatornákra. Nincs jutalom/
+        // claim-mechanizmus (az ilyen jutalmaknak a cloud-progress payload
+        // bővítésére lenne szükségük, amit emulált, offline sandboxból nem
+        // lehet biztonságosan ellenőrizni egy éles Supabase RPC ellen).
+        const ACHIEVEMENTS = [
+            { id: 'a1', title: 'Első Lépés', desc: 'Fejezd be az első Akadémia leckét', icon: 'fa-seedling', check: () => (typeof academyCompleted !== 'undefined' ? academyCompleted.size : 0) >= 1 },
+            { id: 'a2', title: 'Könyvmoly', desc: 'Fejezz be 25 leckét', icon: 'fa-book', check: () => (typeof academyCompleted !== 'undefined' ? academyCompleted.size : 0) >= 25 },
+            { id: 'a3', title: 'Tudás-Gyűjtő', desc: 'Gyűjts össze 1000 XP-t', icon: 'fa-brain', check: () => (typeof academyXP !== 'undefined' ? academyXP : 0) >= 1000 },
+            { id: 'a4', title: 'Első Trade', desc: 'Zárj le legalább 1 pozíciót', icon: 'fa-flag-checkered', check: () => (typeof tradeHistory !== 'undefined' ? tradeHistory.length : 0) >= 1 },
+            { id: 'a5', title: 'Tapasztalt Kereskedő', desc: 'Zárj le legalább 50 pozíciót', icon: 'fa-chart-line', check: () => (typeof tradeHistory !== 'undefined' ? tradeHistory.length : 0) >= 50 },
+            { id: 'a6', title: 'Veterán Kereskedő', desc: 'Zárj le legalább 200 pozíciót', icon: 'fa-chess-king', check: () => (typeof tradeHistory !== 'undefined' ? tradeHistory.length : 0) >= 200 },
+            { id: 'a7', title: 'Nyereséges Sorozat', desc: 'Zárj le 5 egymást követő nyereséges tradet', icon: 'fa-fire', check: () => achievementsMaxWinStreak() >= 5 },
+            { id: 'a8', title: 'Tervező', desc: 'Hozz létre egy Kereskedési Tervet', icon: 'fa-clipboard-list', check: () => typeof tradingPlan !== 'undefined' && !!tradingPlan },
+            { id: 'a9', title: 'Naplóvezető', desc: 'Rögzíts legalább 10 napot a Kereskedési Naplóban', icon: 'fa-calendar-check', check: () => typeof tradingJournal !== 'undefined' && Object.keys(tradingJournal || {}).length >= 10 },
+            { id: 'a10', title: 'Replay Rutinos', desc: 'Fejezz be 10 Replay szimulációt', icon: 'fa-clock-rotate-left', check: () => typeof replayStats !== 'undefined' && (replayStats.sessionsCompleted || 0) >= 10 },
+            { id: 'a11', title: 'Piac-Legyőző', desc: 'Múlj felül a Buy & Hold stratégián 5 Replay-ben', icon: 'fa-trophy', check: () => typeof replayStats !== 'undefined' && (replayStats.beatBuyHoldCount || 0) >= 5 },
+            { id: 'a12', title: 'Gyakorlás Mestere', desc: 'Teljesíts 10 Napi Kihívást a Gyakorlásban', icon: 'fa-dumbbell', check: () => typeof dailyDrillState !== 'undefined' && !!(dailyDrillState && dailyDrillState.completedDates && dailyDrillState.completedDates.length >= 10) },
+            { id: 'a13', title: 'Gyűjtő', desc: 'Oldj fel legalább 3 gyertya-témát', icon: 'fa-palette', check: () => typeof unlockedChartThemes !== 'undefined' && unlockedChartThemes.size >= 3 },
+            { id: 'a14', title: 'Kitartó', desc: 'Érj el egy 7 napos bejelentkezési sorozatot', icon: 'fa-calendar-days', check: () => typeof streakState !== 'undefined' && (streakState.count || 0) >= 7 }
+        ];
+        // Segédfüggvény: a tradeHistory alapján a leghosszabb, EGYMÁST KÖVETŐ
+        // (pnl > 0) nyereséges trade-sorozat hossza — a tradeHistory legújabb
+        // elöl van (lásd closePosition()-t fentebb, unshift/push sorrend), de
+        // mivel itt csak a leghosszabb futó sorozatot keressük (sorrendtől
+        // független, amíg konzisztens), egyszerű lineáris pásztázással.
+        function achievementsMaxWinStreak() {
+            if (typeof tradeHistory === 'undefined' || !Array.isArray(tradeHistory) || tradeHistory.length === 0) return 0;
+            let best = 0, cur = 0;
+            // A tradeHistory legújabb elöl érkezik be (push az array végére minden
+            // closePosition()-nél, ugyanúgy mint egy sima kronológiai log) — a
+            // sorozat-hossz szempontjából az iterálás iránya nem változtat az
+            // eredményen, amíg egységesen egy irányba haladunk.
+            for (let i = tradeHistory.length - 1; i >= 0; i--) {
+                if (tradeHistory[i] && tradeHistory[i].pnl > 0) { cur++; if (cur > best) best = cur; }
+                else cur = 0;
+            }
+            return best;
+        }
+
         const ACADEMY_BADGES = [
             { xp: 0,    icon: 'fa-shield', color: 'text-slate-400', title: 'Kezdő Elemző' },
             { xp: 50,   icon: 'fa-medal', color: 'text-orange-400', title: 'Bronz Kereskedő' },
