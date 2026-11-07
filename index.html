@@ -19359,6 +19359,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const n = tradeReturns.length;
             if (n < 1) throw new Error('Legalább 1 trade szükséges a költség-szimulációhoz.');
             if (feePctPerSide < 0 || slippagePctPerSide < 0) throw new Error('A díj és a csúszás mértéke nem lehet negatív.');
+            // JAVÍTÁS: a feePctPerSide/slippagePctPerSide mezőket korábban csak
+            // `isNaN(...)`-tal validáltuk a hívó calcBacktestCostDrag()/
+            // calcStrategyBuilderCostDrag() függvényekben — ez egy szintaktikailag
+            // érvényes, de extrém (pl. "1e308") bemenetet nem fogott ki, mert az
+            // Infinity nem NaN. Egy ilyen díj/csúszás mellett a lenti equityDegraded
+            // ismételt szorzása egy-két trade után túlcsordul Infinity-re, és a
+            // degradedReturnPct/maxDrawdownDegradedPct/costFractionPct is szó
+            // szerint "Infinity%"-ként jelenik meg valódi hibaüzenet helyett.
+            // Felső korlát (ugyanaz a védelmi elv, mint a többi kalkulátornál).
+            if (!Number.isFinite(feePctPerSide) || feePctPerSide > 1e6 || !Number.isFinite(slippagePctPerSide) || slippagePctPerSide > 1e6) {
+                throw new Error('A díj és a csúszás mértéke túl szélsőséges egy érvényes költség-szimulációhoz!');
+            }
 
             const costFraction = 2 * (feePctPerSide + slippagePctPerSide) / 100; // round-trip (belépés+kilépés)
 
@@ -19389,6 +19401,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const idealReturnPct = (equityIdeal - startEquity) / startEquity * 100;
             const degradedReturnPct = (equityDegraded - startEquity) / startEquity * 100;
+
+            // JAVÍTÁS: a felső korlát ellenére is (sok trade × a korlát közeli
+            // díj/csúszás esetén a composite szorzás még túlcsordulhat) végső
+            // véges-ellenőrzés biztonsági hálóként, konzisztensen az app többi
+            // kalkulátorának mintájával.
+            if (![idealReturnPct, degradedReturnPct, maxDdIdeal, maxDdDegraded, costFraction].every(Number.isFinite)) {
+                throw new Error('A megadott díj/csúszás és a trade-ek kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!');
+            }
 
             return {
                 idealReturnPct, degradedReturnPct,
