@@ -3308,7 +3308,7 @@
 
                 <!-- Tab 2: Trade History -->
                 <div id="bottom-tab-history" class="hidden flex-grow overflow-auto p-2">
-                    <div class="flex justify-between items-center px-1 mb-1.5"><span class="text-[10px] text-slate-500">Lezárt pozíciók</span><button onclick="copyTradeHistoryToClipboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-copy mr-1"></i>Másolás</button></div>
+                    <div class="flex justify-between items-center px-1 mb-1.5"><span class="text-[10px] text-slate-500">Lezárt pozíciók</span><div class="flex items-center gap-3"><button onclick="openTradeJournalDashboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-chart-pie mr-1"></i>Riport</button><button onclick="copyTradeHistoryToClipboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-copy mr-1"></i>Másolás</button></div></div>
                     <!-- JAVÍTÁS: ugyanaz a hiba, mint a Nyitott Pozíciók táblánál — 6
                          oszlop fix szélesség nélkül mobilon egymásra/levágva jelent
                          meg (pl. "Ok / Indoklás" fejléc "Ok /"-ra vágva). Ugyanaz a
@@ -15781,6 +15781,31 @@ Mean-reversion,2.5</textarea>
             <p class="text-[10px] text-slate-500 pt-2 shrink-0">A Rangok a teljesített leckék száma alapján, a Küldetések mérföldkövekért adnak coint — a coinból gyertya-színtémákat vehetsz a chartra.</p>
         </div>
     </div>
+    <!-- ================= TRADE JOURNAL DASHBOARD (OKTATÁSI RIPORT) =================
+         Tisztán MEGJELENÍTŐ (read-only) funkció: a MÁR MEGLÉVŐ tradeHistory
+         tömbből él, számítás, perzisztencia-bővítés nélkül — minden
+         megnyitáskor újraszámolt összesítő a user saját demó-kereskedéseiről
+         (win rate, átlag nyereség/veszteség, profit factor, expectancy,
+         leghosszabb nyereséges/veszteséges sorozat, eszközönkénti bontás).
+         Ugyanazok a képletek, mint a már meglévő Expectancy/Breakeven-Winrate
+         kalkulátoroknál, csak itt a user VALÓDI (demó) trade-jeire alkalmazva,
+         egy helyen összefűzve, a Lezárt Pozíciók fülről nyitható "Riport"
+         gombbal. -->
+    <div id="trade-journal-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] max-h-[85%] flex flex-col p-4">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-neon-cyan"></i> Kereskedési Riport
+                </h3>
+                <button onclick="closeTradeJournalDashboard()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="trade-journal-content" class="flex-grow overflow-y-auto space-y-2 pr-1 font-mono text-xs"></div>
+            <p class="text-[9.5px] text-slate-600 pt-2 shrink-0">A riport a demó-kereskedési fiókod SAJÁT, lezárt pozícióiból (Lezárt Pozíciók fül) készül, élőben — oktatási célra, nem valós pénzügyi teljesítmény-értékelés.</p>
+        </div>
+    </div>
+
     <button id="ai-chat-launcher" onclick="toggleAiChat()" class="fixed bottom-5 left-5 z-[90] w-14 h-14 rounded-2xl bg-dark-900 border border-neon-cyan/40 flex items-center justify-center text-neon-cyan shadow-2xl hover:border-neon-cyan/70 transition group" aria-label="AI Chat megnyitása">
         <i class="fa-solid fa-robot text-lg group-hover:scale-110 transition-transform"></i>
     </button>
@@ -42860,6 +42885,91 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         // Kozmetikai jelvényfokozatok — tisztán presztízs, nincs mögötte vásárolható tartalom.
+        // ================= KERESKEDÉSI RIPORT (TRADE JOURNAL DASHBOARD) =================
+        function openTradeJournalDashboard() {
+            document.getElementById('trade-journal-modal').classList.remove('hidden');
+            renderTradeJournalDashboard();
+        }
+        function closeTradeJournalDashboard() {
+            document.getElementById('trade-journal-modal').classList.add('hidden');
+        }
+        function renderTradeJournalDashboard() {
+            const out = document.getElementById('trade-journal-content');
+            if (!out) return;
+
+            if (!tradeHistory || tradeHistory.length === 0) {
+                out.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Még nincs lezárt kereskedésed — zárj le egy demó pozíciót, hogy itt lásd az összesítő riportot!</div>`;
+                return;
+            }
+
+            const pnls = tradeHistory.map(h => h.pnl).filter(p => Number.isFinite(p));
+            const n = pnls.length;
+            const wins = pnls.filter(p => p > 0);
+            const losses = pnls.filter(p => p < 0);
+            const winRatePct = n > 0 ? (wins.length / n * 100) : 0;
+            const avgWin = wins.length ? (wins.reduce((a, b) => a + b, 0) / wins.length) : 0;
+            const avgLoss = losses.length ? Math.abs(losses.reduce((a, b) => a + b, 0) / losses.length) : 0;
+            const grossProfit = wins.reduce((a, b) => a + b, 0);
+            const grossLoss = Math.abs(losses.reduce((a, b) => a + b, 0));
+            // JAVÍTÁS: ugyanaz a "csendes rossz eredmény" hibaosztály, mint a
+            // korábban javított calcExpectancy()-nál — ha grossLoss pontosan 0
+            // (még nincs vesztes trade), a profitFactor osztás 0-val osztana,
+            // Infinity-t adna; explicit null-ra állítjuk ilyenkor, és a
+            // megjelenítésnél "∞"-ként kezeljük, nem hagyjuk szó szerint
+            // "Infinity"-ként kiírva.
+            const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss) : (grossProfit > 0 ? null : 0); // null = "∞" (nincs veszteség)
+            const netPnl = pnls.reduce((a, b) => a + b, 0);
+            const expectancy = n > 0 ? (netPnl / n) : 0;
+            const bestTrade = n > 0 ? Math.max(...pnls) : 0;
+            const worstTrade = n > 0 ? Math.min(...pnls) : 0;
+
+            // Leghosszabb nyereséges / veszteséges sorozat (kronológiai sorrendben, a tradeHistory beírási sorrendje szerint)
+            let bestWinStreak = 0, bestLossStreak = 0, curWin = 0, curLoss = 0;
+            for (const p of pnls) {
+                if (p > 0) { curWin++; curLoss = 0; if (curWin > bestWinStreak) bestWinStreak = curWin; }
+                else if (p < 0) { curLoss++; curWin = 0; if (curLoss > bestLossStreak) bestLossStreak = curLoss; }
+                else { curWin = 0; curLoss = 0; }
+            }
+
+            // Eszközönkénti bontás
+            const byAsset = {};
+            tradeHistory.forEach(h => {
+                if (!Number.isFinite(h.pnl)) return;
+                if (!byAsset[h.asset]) byAsset[h.asset] = { count: 0, pnl: 0 };
+                byAsset[h.asset].count++;
+                byAsset[h.asset].pnl += h.pnl;
+            });
+            const assetRows = Object.entries(byAsset).sort((a, b) => b[1].count - a[1].count).slice(0, 8);
+
+            const fmtMoney = (v) => (v >= 0 ? '+' : '') + '$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            const pfDisplay = profitFactor === null ? '∞' : profitFactor.toFixed(2);
+
+            out.innerHTML = `
+                <div class="grid grid-cols-2 gap-2 mb-1">
+                    <div class="glass-card rounded-xl p-2.5 border border-dark-750"><div class="text-[9px] text-slate-500 uppercase">Összes trade</div><div class="text-sm font-extrabold text-white">${n}</div></div>
+                    <div class="glass-card rounded-xl p-2.5 border border-dark-750"><div class="text-[9px] text-slate-500 uppercase">Győzelmi arány</div><div class="text-sm font-extrabold ${winRatePct >= 50 ? 'text-neon-green' : 'text-amber-400'}">${winRatePct.toFixed(1)}%</div></div>
+                    <div class="glass-card rounded-xl p-2.5 border border-dark-750"><div class="text-[9px] text-slate-500 uppercase">Nettó PnL</div><div class="text-sm font-extrabold ${netPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(netPnl)}</div></div>
+                    <div class="glass-card rounded-xl p-2.5 border border-dark-750"><div class="text-[9px] text-slate-500 uppercase">Profit Factor</div><div class="text-sm font-extrabold ${profitFactor === null || profitFactor >= 1 ? 'text-neon-green' : 'text-neon-red'}">${pfDisplay}</div></div>
+                </div>
+                <div class="glass-card rounded-xl p-3 border border-dark-750 space-y-1.5">
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos nyereség:</span><span class="text-neon-green">+$${avgWin.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos veszteség:</span><span class="text-neon-red">-$${avgLoss.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Expectancy / trade:</span><span class="${expectancy >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtMoney(expectancy)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Legjobb trade:</span><span class="text-neon-green">${fmtMoney(bestTrade)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Legrosszabb trade:</span><span class="text-neon-red">${fmtMoney(worstTrade)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Leghosszabb nyerő sorozat:</span><span class="text-neon-green">${bestWinStreak} trade</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Leghosszabb vesztő sorozat:</span><span class="text-neon-red">${bestLossStreak} trade</span></div>
+                </div>
+                ${assetRows.length ? `
+                <div class="glass-card rounded-xl p-3 border border-dark-750">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-1.5">Eszközönkénti bontás</div>
+                    ${assetRows.map(([asset, d]) => `
+                        <div class="flex justify-between py-0.5"><span class="text-slate-300">${escapeHtml(asset)} <span class="text-slate-600">(${d.count})</span></span><span class="${d.pnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(d.pnl)}</span></div>
+                    `).join('')}
+                </div>` : ''}
+            `;
+        }
+
         // ================= TELJESÍTMÉNYEK (ACHIEVEMENT GALÉRIA) =================
         // Tisztán MEGJELENÍTŐ (read-only) funkció: minden elem a MÁR MEGLÉVŐ,
         // futásidőben elérhető statisztikákból (tradeHistory, academyXP,
