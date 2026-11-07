@@ -2933,7 +2933,7 @@
                 </div>
             </div>
 
-            <button onclick="syncWithServer()" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
+            <button onclick="syncWithServer()" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition" aria-label="Szinkronizálás a szerverrel">
                 <i class="fa-solid fa-cloud"></i>
             </button>
 
@@ -2963,7 +2963,7 @@
                  #bottom-tabs-header fülsorba (lásd ott a megjegyzést) — itt
                  csak az AI-chat gomb maradt, hogy a lebegő elem minél
                  kisebb legyen, és minél kevesebb eséllyel fedjen el bármit. -->
-            <button onclick="toggleAiChat()" class="w-11 h-11 shrink-0 rounded-full bg-dark-850 border border-neon-cyan/40 shadow-lg flex items-center justify-center text-neon-cyan">
+            <button onclick="toggleAiChat()" class="w-11 h-11 shrink-0 rounded-full bg-dark-850 border border-neon-cyan/40 shadow-lg flex items-center justify-center text-neon-cyan" aria-label="AI Chat megnyitása">
                 <i class="fa-solid fa-robot"></i>
             </button>
         </div>
@@ -3184,7 +3184,7 @@
                 <div id="drawing-active-pill" class="hidden absolute top-12 left-4 px-3 py-1.5 rounded-xl glass-panel text-xs font-semibold text-neon-cyan flex items-center gap-2 shadow-lg">
                     <i class="fa-solid fa-pen-nib animate-pulse"></i>
                     <span id="active-tool-name">Rajzolás: Trendvonal</span>
-                    <button onclick="setDrawingTool('crosshair')" class="text-slate-400 hover:text-white ml-2">
+                    <button onclick="setDrawingTool('crosshair')" class="text-slate-400 hover:text-white ml-2" aria-label="Rajzolás megszakítása">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -3676,7 +3676,7 @@
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-chart-simple text-neon-cyan"></i> Indikátorok
                 </h3>
-                <button onclick="toggleModal('indicators-modal')" class="text-slate-400 hover:text-white transition">
+                <button onclick="toggleModal('indicators-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -3735,7 +3735,7 @@
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-bell text-neon-cyan"></i> Árfolyam-riasztás
                 </h3>
-                <button onclick="toggleModal('alerts-modal')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="toggleModal('alerts-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Értesítést kapsz (az appon belül, és ha engedélyezed, a böngésződtől is), ha a kiválasztott eszköz eléri a megadott árszintet. Mivel demó-adatból dolgozunk, a riasztás csak akkor néz pontos árat, ha legalább egyszer megnyitottad már azt az eszközt.</p>
 
@@ -13184,7 +13184,7 @@ Mean-reversion,2.5</textarea>
     <div id="mobile-tools-modal" class="hidden absolute inset-0 z-[85] bg-dark-950 flex flex-col">
         <div class="flex items-center justify-between p-4 border-b border-dark-750 shrink-0">
             <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-calculator text-amber-400 mr-1.5"></i>Stratégiai Kalkulátorok</h2>
-            <button onclick="closeMobileToolsModal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="closeMobileToolsModal()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="px-4 pt-3 pb-1 shrink-0">
             <div class="relative">
@@ -14705,7 +14705,7 @@ Mean-reversion,2.5</textarea>
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-font text-neon-cyan"></i> Szöveges megjegyzés
                 </h3>
-                <button onclick="cancelChartTextAnnotation()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="cancelChartTextAnnotation()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <input type="text" id="chart-text-annotation-input" maxlength="120" placeholder="Add meg a megjegyzés szövegét..."
                 class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50"
@@ -15070,15 +15070,15 @@ Mean-reversion,2.5</textarea>
                 <button onclick="exportJournalCsv()" title="Exportálás CSV-be" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
                     <i class="fa-solid fa-file-csv text-xs"></i>
                 </button>
-                <button onclick="closeTradingJournal()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="closeTradingJournal()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </div>
         <div id="journal-screen-body" class="flex-grow overflow-y-auto px-4 pb-10">
             <!-- Hónapváltó -->
             <div class="flex items-center justify-between mt-4 mb-3">
-                <button onclick="journalShiftMonth(-1)" class="w-9 h-9 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                <button onclick="journalShiftMonth(-1)" class="w-9 h-9 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition" aria-label="Előző hónap"><i class="fa-solid fa-chevron-left text-xs"></i></button>
                 <div id="journal-month-label" class="text-sm font-extrabold text-white"></div>
-                <button onclick="journalShiftMonth(1)" class="w-9 h-9 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                <button onclick="journalShiftMonth(1)" class="w-9 h-9 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 transition" aria-label="Következő hónap"><i class="fa-solid fa-chevron-right text-xs"></i></button>
             </div>
 
             <!-- Jelenlegi sorozat (minden eddigi bejegyzés alapján, nem csak a megjelenített hónap) -->
@@ -15122,7 +15122,7 @@ Mean-reversion,2.5</textarea>
             <div id="journal-entry-editor" class="hidden mt-4 glass-card rounded-xl border border-neon-cyan/30 p-4">
                 <div class="flex items-center justify-between mb-3">
                     <div id="journal-entry-date-label" class="text-xs font-extrabold text-white"></div>
-                    <button onclick="closeJournalEntryEditor()" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-xmark text-xs"></i></button>
+                    <button onclick="closeJournalEntryEditor()" class="text-slate-500 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark text-xs"></i></button>
                 </div>
                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Napi eredmény ($)</label>
                 <input type="number" id="journal-entry-pnl" step="0.01" placeholder="pl. 150 vagy -80" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50 mb-3">
@@ -15156,7 +15156,7 @@ Mean-reversion,2.5</textarea>
     <div id="trading-plan-screen" class="hidden absolute inset-0 z-[85] bg-dark-950 flex flex-col">
         <div class="flex items-center justify-between p-4 border-b border-dark-750 shrink-0">
             <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-clipboard-list text-neon-purple mr-1.5"></i>Kereskedési Terv</h2>
-            <button onclick="closeTradingPlan()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="closeTradingPlan()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="trading-plan-body" class="flex-grow overflow-y-auto px-4 pb-10">
             <p class="text-[11px] text-slate-400 leading-relaxed mt-4 mb-4">
@@ -15194,7 +15194,7 @@ Mean-reversion,2.5</textarea>
     <div id="legal-screen" class="hidden absolute inset-0 z-[85] bg-dark-950 flex flex-col">
         <div class="flex items-center justify-between p-4 border-b border-dark-750 shrink-0">
             <h2 class="text-sm font-bold text-white">Jogi tudnivalók</h2>
-            <button onclick="closeLegalScreen()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="closeLegalScreen()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="flex items-center bg-dark-900 p-1 m-3 rounded-xl border border-dark-750 shrink-0">
             <button id="legal-tab-risk" onclick="switchLegalTab('risk')" class="flex-1 py-1.5 rounded-lg text-[11px] font-bold transition">Kockázat</button>
@@ -15396,7 +15396,7 @@ Mean-reversion,2.5</textarea>
         <div id="academy-mode-sheet" class="hidden lg:hidden fixed inset-0 z-[97] bg-dark-950 flex flex-col">
             <header class="h-14 border-b border-dark-750/60 px-4 flex items-center justify-between shrink-0">
                 <h2 class="text-sm font-extrabold text-white">Válassz részt</h2>
-                <button onclick="closeAcademyModeSheet()" class="w-9 h-9 rounded-lg bg-dark-850 border border-dark-700 flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="closeAcademyModeSheet()" class="w-9 h-9 rounded-lg bg-dark-850 border border-dark-700 flex items-center justify-center text-slate-400" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
             </header>
             <div class="flex-grow overflow-y-auto p-4 space-y-5 pb-10">
                 <div>
@@ -15721,7 +15721,7 @@ Mean-reversion,2.5</textarea>
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-shield-halved text-amber-400"></i> Jelvények
                 </h3>
-                <button onclick="closeBadgesPanel()" class="text-slate-400 hover:text-white transition">
+                <button onclick="closeBadgesPanel()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -15746,7 +15746,7 @@ Mean-reversion,2.5</textarea>
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-crown text-amber-400"></i> Chartolj Prémium
                 </h3>
-                <button onclick="closePremiumModal()" class="text-slate-400 hover:text-white transition">
+                <button onclick="closePremiumModal()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -15761,7 +15761,7 @@ Mean-reversion,2.5</textarea>
 <div class="flex items-center justify-between w-full">                <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-ranking-star text-amber-400"></i> Rangok, Küldetések &amp; Témák
                 </h3><span id="rm-coin-balance" class="text-xs font-mono text-amber-400 font-bold"></span></div>
-                <button onclick="closeRanksMissionsModal()" class="text-slate-400 hover:text-white transition">
+                <button onclick="closeRanksMissionsModal()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -15780,7 +15780,7 @@ Mean-reversion,2.5</textarea>
             <p class="text-[10px] text-slate-500 pt-2 shrink-0">A Rangok a teljesített leckék száma alapján, a Küldetések mérföldkövekért adnak coint — a coinból gyertya-színtémákat vehetsz a chartra.</p>
         </div>
     </div>
-    <button id="ai-chat-launcher" onclick="toggleAiChat()" class="fixed bottom-5 left-5 z-[90] w-14 h-14 rounded-2xl bg-dark-900 border border-neon-cyan/40 flex items-center justify-center text-neon-cyan shadow-2xl hover:border-neon-cyan/70 transition group">
+    <button id="ai-chat-launcher" onclick="toggleAiChat()" class="fixed bottom-5 left-5 z-[90] w-14 h-14 rounded-2xl bg-dark-900 border border-neon-cyan/40 flex items-center justify-center text-neon-cyan shadow-2xl hover:border-neon-cyan/70 transition group" aria-label="AI Chat megnyitása">
         <i class="fa-solid fa-robot text-lg group-hover:scale-110 transition-transform"></i>
     </button>
 
@@ -15799,7 +15799,7 @@ Mean-reversion,2.5</textarea>
                 <button onclick="clearAiChat()" title="Beszélgetés törlése" class="text-slate-400 hover:text-neon-red transition">
                     <i class="fa-solid fa-trash-can text-xs"></i>
                 </button>
-                <button onclick="toggleAiChat()" class="text-slate-400 hover:text-white transition">
+                <button onclick="toggleAiChat()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -15812,7 +15812,7 @@ Mean-reversion,2.5</textarea>
         <div class="p-3 border-t border-dark-750/60 shrink-0">
             <div class="flex items-center gap-2">
                 <input type="text" id="ai-chat-input" placeholder="Kérdezz a kereskedésről..." onkeydown="if(event.key==='Enter')sendAiChatMessage()" class="flex-grow bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <button onclick="sendAiChatMessage()" class="w-9 h-9 rounded-xl bg-neon-cyan text-dark-950 flex items-center justify-center shrink-0 hover:brightness-110 transition">
+                <button onclick="sendAiChatMessage()" class="w-9 h-9 rounded-xl bg-neon-cyan text-dark-950 flex items-center justify-center shrink-0 hover:brightness-110 transition" aria-label="Üzenet küldése">
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
             </div>
@@ -16284,7 +16284,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div class="text-[10px] ${a.triggered ? 'text-neon-green' : 'text-slate-500'}">${a.triggered ? 'Kiváltva ✓' : 'Figyelés alatt'}</div>
                         </div>
                     </div>
-                    <button onclick="deletePriceAlert('${a.id}')" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-neon-red transition">
+                    <button onclick="deletePriceAlert('${a.id}')" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-neon-red transition" aria-label="Riasztás törlése">
                         <i class="fa-solid fa-trash text-xs"></i>
                     </button>
                 </div>`;
@@ -18417,7 +18417,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                                 <div class="text-[11px] font-bold text-white truncate">${s.entryLabel} <i class="fa-solid fa-arrow-right text-[8px] text-slate-500 mx-0.5"></i> ${s.exitLabel} ${isBest ? '<span class="text-amber-400">★ Legjobb</span>' : ''}</div>
                                 <div class="text-[9.5px] text-slate-500">${s.asset} · ${s.tradeCount} trade · ${new Date(s.savedAt).toLocaleDateString('hu-HU')}</div>
                             </div>
-                            <button onclick="deleteSbSavedStrategy('${s.id}')" class="text-slate-600 hover:text-neon-red transition shrink-0"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            <button onclick="deleteSbSavedStrategy('${s.id}')" class="text-slate-600 hover:text-neon-red transition shrink-0" aria-label="Stratégia törlése"><i class="fa-solid fa-trash text-[10px]"></i></button>
                         </div>
                         <div class="flex items-center gap-3 mt-1.5 font-mono text-[10px]">
                             <span class="${isPositive ? 'text-neon-green' : 'text-neon-red'} font-bold">${s.totalReturnPct >= 0 ? '+' : ''}${s.totalReturnPct.toFixed(2)}%</span>
@@ -43399,7 +43399,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             body.innerHTML = `
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-[11px] font-bold text-slate-400">Kérdés ${certExamIndex + 1} / ${certExamQuestions.length}</span>
-                    <button onclick="document.getElementById('certification-modal').classList.add('hidden')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                    <button onclick="document.getElementById('certification-modal').classList.add('hidden')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="w-full h-1 rounded-full bg-dark-800 mb-4 overflow-hidden"><div class="h-full bg-amber-400" style="width:${(certExamIndex / certExamQuestions.length) * 100}%"></div></div>
                 <h3 class="text-sm font-bold text-white mb-4 leading-relaxed">${q.q}</h3>
@@ -43470,7 +43470,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             body.innerHTML = `
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-[11px] font-bold text-slate-400">Igazolás</span>
-                    <button onclick="document.getElementById('certification-modal').classList.add('hidden')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                    <button onclick="document.getElementById('certification-modal').classList.add('hidden')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="rounded-2xl p-5 text-center" style="background: radial-gradient(circle at top, rgba(251,191,36,0.12), transparent 70%); border: 1px solid rgba(251,191,36,0.4);">
                     <div class="text-3xl mb-2">🎓</div>
@@ -46717,7 +46717,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     <span class="text-xs font-mono font-bold text-amber-400">${r.xp.toLocaleString('hu-HU')} XP</span>
-                                    ${!r.isMe ? `<button onclick="removeFriend('${r.id}')" class="text-slate-600 hover:text-neon-red transition"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
+                                    ${!r.isMe ? `<button onclick="removeFriend('${r.id}')" class="text-slate-600 hover:text-neon-red transition" aria-label="Barát eltávolítása"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
                                 </div>
                             </div>`;
                         }).join('');
@@ -46748,7 +46748,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="text-xs font-mono font-bold text-amber-400">${r.xp.toLocaleString('hu-HU')} XP</span>
-                        ${!r.isMe ? `<button onclick="removeFriend(${origIdx})" class="text-slate-600 hover:text-neon-red transition"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
+                        ${!r.isMe ? `<button onclick="removeFriend(${origIdx})" class="text-slate-600 hover:text-neon-red transition" aria-label="Barát eltávolítása"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -49412,7 +49412,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // nem felhasználói bevitel, ezért azokat nem kell escapelni —
                 // csak a note-ot, a már meglévő escapeHtml() segítségével.
                 const noteRow = h.note
-                    ? `<tr class="bg-dark-900/40"><td colspan="7" class="pb-2 pt-0"><div class="flex items-start gap-1.5 text-[10px] text-slate-400 italic max-w-[340px]"><i class="fa-solid fa-note-sticky text-amber-400/70 mt-0.5 shrink-0"></i><span class="truncate">${escapeHtml(h.note)}</span><button onclick="editTradeNote('${h.id}')" class="shrink-0 text-slate-500 hover:text-neon-cyan not-italic ml-1"><i class="fa-solid fa-pen text-[9px]"></i></button></div></td></tr>`
+                    ? `<tr class="bg-dark-900/40"><td colspan="7" class="pb-2 pt-0"><div class="flex items-start gap-1.5 text-[10px] text-slate-400 italic max-w-[340px]"><i class="fa-solid fa-note-sticky text-amber-400/70 mt-0.5 shrink-0"></i><span class="truncate">${escapeHtml(h.note)}</span><button onclick="editTradeNote('${h.id}')" class="shrink-0 text-slate-500 hover:text-neon-cyan not-italic ml-1" aria-label="Jegyzet szerkesztése"><i class="fa-solid fa-pen text-[9px]"></i></button></div></td></tr>`
                     : '';
                 return `
                     <tr class="hover:bg-dark-850/50 transition">
