@@ -30370,8 +30370,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const size = parseFloat(sizeEl.value);
             const count = parseFloat(countEl.value);
 
-            if ([bid, ask, size, count].some(v => isNaN(v))) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+            if ([bid, ask, size, count].some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat minden mezőben!</div>`;
                 return;
             }
             if (ask <= bid) {
@@ -30388,6 +30388,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const spreadPct = (spread / mid) * 100;
             const costPerTrade = spread * size;
             const totalCost = costPerTrade * count;
+
+            if (![spread, mid, spreadPct, costPerTrade, totalCost].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak/méret/darabszám együttesen túl szélsőséges értéket eredményeznek — adj meg reálisabb nagyságrendű számokat!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (spreadPct > 0.5) {
@@ -32069,14 +32074,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const trendDir = trendEl.value;
             const volRatio = parseFloat(volEl.value);
 
-            if ([prevClose, openPrice, atr, volRatio].some(v => isNaN(v)) || atr <= 0 || volRatio < 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden árnak/ATR-nek pozitívnak kell lennie, és a volumen-aránynak nem lehet negatív!</div>`;
+            if ([prevClose, openPrice, atr, volRatio].some(v => !Number.isFinite(v)) || atr <= 0 || volRatio < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden árnak/ATR-nek véges és pozitívnak kell lennie, és a volumen-aránynak nem lehet negatív!</div>`;
                 return;
             }
 
             const gap = openPrice - prevClose;
             const gapAbs = Math.abs(gap);
+            if (!Number.isFinite(gapAbs)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A nyitó és az előző záróár közötti különbség túl nagy a pontos számításhoz — adj meg kisebb nagyságrendű árakat!</div>`;
+                return;
+            }
             const gapATR = atr > 0 ? gapAbs / atr : 0;
+            if (!Number.isFinite(gapATR)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A rés/ATR arány a megadott ATR mellett túl szélsőséges — adj meg reálisabb nagyságrendű ATR-t!</div>`;
+                return;
+            }
             const direction = gap > 0 ? 'UP' : (gap < 0 ? 'DOWN' : 'NONE');
 
             let gapType;
@@ -32232,8 +32245,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const currentPrice = parseFloat(currentEl.value);
             const daysToClose = parseFloat(daysEl.value);
 
-            if ([preAnnounce, offerPrice, currentPrice, daysToClose].some(v => isNaN(v)) || preAnnounce <= 0 || offerPrice <= 0 || currentPrice <= 0 || daysToClose <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden árnak és napszámnak pozitívnak kell lennie!</div>`;
+            if ([preAnnounce, offerPrice, currentPrice, daysToClose].some(v => !Number.isFinite(v)) || preAnnounce <= 0 || offerPrice <= 0 || currentPrice <= 0 || daysToClose <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden árnak és napszámnak véges, nullánál nagyobb számnak kell lennie!</div>`;
                 return;
             }
             if (offerPrice === preAnnounce) {
@@ -32249,6 +32262,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const spreadPct = (offerPrice - currentPrice) / currentPrice * 100;
             const annualizedPct = spreadPct * (365 / daysToClose);
             const impliedProb = (currentPrice - preAnnounce) / (offerPrice - preAnnounce) * 100;
+
+            if (![premiumPct, spreadPct, annualizedPct, impliedProb].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak/napszám együttesen túl szélsőséges arányt eredményeznek — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
 
             let probNote;
             if (impliedProb >= 85) probNote = 'A piac nagy biztonsággal (≥85%) árazza be az ügylet sikeres lezárását.';
@@ -34763,14 +34781,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const capital = parseFloat(capitalEl.value);
             const betSize = parseFloat(betSizeEl.value);
 
-            if (isNaN(winPct) || winPct < 0 || winPct > 100 || !capital || capital <= 0 || !betSize || betSize <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy 0 és 100 közötti nyerési esélyt, egy nullánál nagyobb tőkét, és egy nullánál nagyobb tétméretet!</div>`;
+            if (!Number.isFinite(winPct) || winPct < 0 || winPct > 100 || !Number.isFinite(capital) || capital <= 0 || !Number.isFinite(betSize) || betSize <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy 0 és 100 közötti nyerési esélyt, egy véges, nullánál nagyobb tőkét, és egy véges, nullánál nagyobb tétméretet!</div>`;
                 return;
             }
 
             const p = winPct / 100;
             const q = 1 - p;
             const units = capital / betSize;
+            const betSizePctOfCapital = (betSize / capital) * 100;
+
+            if (!Number.isFinite(units) || !Number.isFinite(betSizePctOfCapital)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A tőke/tétméret arány túl szélsőséges — adj meg reálisabb nagyságrendű tőkét és tétméretet!</div>`;
+                return;
+            }
 
             let ruinProbability;
             if (p <= 0.5) {
@@ -34796,7 +34820,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Tétméret / tőke:</span><span class="text-white">${(betSize / capital * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Tétméret / tőke:</span><span class="text-white">${betSizePctOfCapital.toFixed(2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">"Egységnyi" tétek száma a tőkében:</span><span class="text-white">${units.toFixed(1)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ruin Probability (csőd-valószínűség):</span><span class="font-extrabold ${colorClass} text-sm">${(ruinProbability * 100).toPrecision(3)}%</span></div>
                 </div>
@@ -35057,8 +35081,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const fraction = parseFloat(fractionEl.value);
 
-            if (isNaN(fraction) || fraction < 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb vagy nulla Kelly-frakciót!</div>`;
+            if (!Number.isFinite(fraction) || fraction < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy véges, nullánál nagyobb vagy nulla Kelly-frakciót!</div>`;
                 return;
             }
 
@@ -36153,10 +36177,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const [volume, makerRatioRaw, makerFeePct, takerFeePct] = els.map(el => parseFloat(el.value));
 
-            if (!volume || volume <= 0 ||
-                isNaN(makerRatioRaw) || makerRatioRaw < 0 || makerRatioRaw > 100 ||
-                isNaN(makerFeePct) || isNaN(takerFeePct)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb havi volument, egy 0 és 100 közötti maker arányt, és érvényes maker/taker díjakat!</div>`;
+            if (!Number.isFinite(volume) || volume <= 0 ||
+                !Number.isFinite(makerRatioRaw) || makerRatioRaw < 0 || makerRatioRaw > 100 ||
+                !Number.isFinite(makerFeePct) || !Number.isFinite(takerFeePct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy véges, nullánál nagyobb havi volument, egy 0 és 100 közötti maker arányt, és érvényes, véges maker/taker díjakat!</div>`;
                 return;
             }
 
@@ -36167,6 +36191,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const allTakerCost = volume * (takerFeePct / 100);
             const allMakerCost = volume * (makerFeePct / 100);
             const savingsVsAllTaker = allTakerCost - blendedCost;
+
+            if (![blendedRatePct, blendedCost, allTakerCost, allMakerCost, savingsVsAllTaker].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott volumen/díjak együttesen túl szélsőséges értéket eredményeznek — adj meg reálisabb nagyságrendű számokat!</div>`;
+                return;
+            }
 
             const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
             const fmtBps = (pct) => `${(pct * 100).toFixed(2)} bps`;
@@ -37203,8 +37232,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const maxPct = parseFloat(maxPctEl.value);
             const planned = parseFloat(plannedEl.value);
 
-            if (!adv || adv <= 0 || !maxPct || maxPct <= 0 || isNaN(planned) || planned < 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb ADV-t és max. %-ot, valamint egy nullánál nem kisebb tervezett pozícióméretet!</div>`;
+            if (!Number.isFinite(adv) || adv <= 0 || !Number.isFinite(maxPct) || maxPct <= 0 || !Number.isFinite(planned) || planned < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, nullánál nagyobb ADV-t és max. %-ot, valamint egy véges, nullánál nem kisebb tervezett pozícióméretet!</div>`;
                 return;
             }
 
@@ -37212,6 +37241,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const plannedPctOfAdv = (planned / adv) * 100;
             const isWithinLimit = planned <= maxRecommended;
             const excessAmount = planned - maxRecommended;
+
+            if (![maxRecommended, plannedPctOfAdv, excessAmount].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott ADV/%/pozícióméret együttesen túl szélsőséges értéket eredményeznek — adj meg reálisabb nagyságrendű számokat!</div>`;
+                return;
+            }
 
             const fmt = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -40463,21 +40497,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const floatShares = parseFloat(floatEl.value);
             const adv = parseFloat(advEl.value);
 
-            if (isNaN(shortShares) || shortShares < 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, nullánál nem kisebb short interest (shortolt részvényszám) értéket!</div>`;
+            if (!Number.isFinite(shortShares) || shortShares < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, véges, nullánál nem kisebb short interest (shortolt részvényszám) értéket!</div>`;
                 return;
             }
-            if (isNaN(floatShares) || floatShares <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, nullánál nagyobb float (szabadon kereskedhető részvényszám) értéket!</div>`;
+            if (!Number.isFinite(floatShares) || floatShares <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, véges, nullánál nagyobb float (szabadon kereskedhető részvényszám) értéket!</div>`;
                 return;
             }
-            if (isNaN(adv) || adv <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, nullánál nagyobb átlagos napi forgalom értéket!</div>`;
+            if (!Number.isFinite(adv) || adv <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, véges, nullánál nagyobb átlagos napi forgalom értéket!</div>`;
                 return;
             }
 
             const siPctFloat = (shortShares / floatShares) * 100;
             const daysToCover = shortShares / adv;
+
+            if (!Number.isFinite(siPctFloat) || !Number.isFinite(daysToCover)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott short interest/float/napi forgalom együttesen túl szélsőséges arányt eredményeznek — adj meg reálisabb nagyságrendű számokat!</div>`;
+                return;
+            }
 
             const LEVEL_LABELS = ['Alacsony', 'Mérsékelt', 'Emelt', 'Magas', 'Extrém'];
             function siLevel(pct) {
