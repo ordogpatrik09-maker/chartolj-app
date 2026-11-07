@@ -50107,7 +50107,27 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 parts.push(`<span class="${over ? 'text-neon-red font-bold' : 'text-slate-300'}">Ez az ügylet: ${riskPct.toFixed(1)}% az egyenlegből (limit: ${tradingPlan.maxRisk}%)</span>`);
             }
             if (tradingPlan.maxTrades) {
-                const todayCount = typeof tradeHistory !== 'undefined' ? tradeHistory.length : 0;
+                // JAVÍTÁS (audit): a fenti komment ("hány trade-et nyitott már
+                // MA") szerinti szándékkal szemben ez korábban a tradeHistory
+                // TELJES (minden idők) hosszát használta "mai" trade-számként -
+                // a tradeHistory bejegyzések csak egy óra:perc:másodperc
+                // STRINGET ("time": new Date().toLocaleToTimeString()) tárolnak
+                // dátum nélkül, tehát nem volt könnyen kiszűrhető a "mai" rész.
+                // A "th_<epochMs>_<rand>" ID-formátumból (lásd closePosition())
+                // visszanyerhető a valódi, pontos lezárási időbélyeg, amivel
+                // most helyesen csak a mai (helyi éjfél utáni) zárásokat
+                // számoljuk - ha a tradeHistory valamiért korábbi napokról is
+                // tartalmaz bejegyzést (pl. hosszan nyitva hagyott böngészőlap
+                // éjfél-váltáson át), azok nem torzítják a "mai limit" jelzést.
+                const todayStartMs = new Date(); todayStartMs.setHours(0, 0, 0, 0);
+                const todayCount = (typeof tradeHistory !== 'undefined' ? tradeHistory : []).filter(h => {
+                    const m = /^th_(\d+)_/.exec(String(h.id));
+                    // Ha az id valamiért nem a megszokott formátumú (pl. jövőbeli
+                    // módosítás), biztonságból "ma" történtnek vesszük - inkább
+                    // túlszámoljunk egy limitnél, mint hogy hibásan kihagyjunk
+                    // egy valódi mai trade-et a saját önfegyelmi eszközéből.
+                    return !m || Number(m[1]) >= todayStartMs.getTime();
+                }).length;
                 const over = todayCount >= tradingPlan.maxTrades;
                 parts.push(`<span class="${over ? 'text-neon-red font-bold' : 'text-slate-300'}">Mai trade-ek: ${todayCount} / ${tradingPlan.maxTrades}</span>`);
             }
