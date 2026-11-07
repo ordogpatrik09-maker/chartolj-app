@@ -49879,31 +49879,122 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const order = pendingOrders.find(p => p.id === id);
             if (!order) return;
             if (!confirm("Törlöd a függő " + order.side.toUpperCase() + " megbízást (" + order.asset + (order.price ? " @ " + order.price.toFixed(2) : "") + ")?")) return;
-            const idx = pendingOrders.findIndex(p => p.id === id);
-            if (idx !== -1) {
-                const p = pendingOrders[idx];
-                accountBalance += p.margin;
-                document.getElementById('account-balance').textContent = '$' + accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
-                updateMaxAmountLabel();
-                pendingOrders.splice(idx, 1);
-                renderPositions();
-                showNotification('Függő megbízás törölve, margó visszatérítve.');
-                addSystemLog(`Függő megbízás törölve: ${p.side.toUpperCase()} ${p.asset} @ $${p.limitPrice.toFixed(2)}.`);
+            cancelPendingOrderSilent(id);
+            showNotification('Függő megbízás törölve, margó visszatérítve.');
+            addSystemLog(`Függő megbízás törölve: ${order.side.toUpperCase()} ${order.asset} @ $${order.limitPrice.toFixed(2)}.`);
+            // ÚJ FUNKCIÓ: OCO (One-Cancels-Other) pár — ha ennek a megbízásnak
+            // van ocoGroupId-ja, a PÁRJÁT (ugyanazzal az ocoGroupId-vel, de más
+            // id-vel) is automatikusan töröljük, margó-visszatérítéssel. Ez a
+            // lényege az OCO-nak: a kettő közül bármelyik törlése/teljesülése
+            // automatikusan érvényteleníti a másikat.
+            if (order.ocoGroupId) {
+                const siblings = pendingOrders.filter(p => p.ocoGroupId === order.ocoGroupId && p.id !== id);
+                siblings.forEach(s => {
+                    cancelPendingOrderSilent(s.id);
+                    showNotification(`OCO-pár: a kapcsolt megbízás (${s.side.toUpperCase()} ${s.asset} @ $${s.limitPrice.toFixed(2)}) is automatikusan törölve.`);
+                    addSystemLog(`OCO-pár miatt automatikusan törölve: ${s.side.toUpperCase()} ${s.asset} @ $${s.limitPrice.toFixed(2)}.`, 'TRADE');
+                });
             }
+            renderPositions();
+        }
+        // Belső segédfüggvény: egy függő megbízás törlése megerősítő dialógus és
+        // UI-frissítés NÉLKÜL — a cancelPendingOrder() (felhasználói kattintás)
+        // ÉS az OCO-pár automatikus törlése/a checkPendingOrders() (limit-
+        // teljesülés) egyaránt ezt hívja, hogy a margó-visszatérítés logika
+        // egy helyen legyen, duplikáció nélkül.
+        function cancelPendingOrderSilent(id) {
+            const idx = pendingOrders.findIndex(p => p.id === id);
+            if (idx === -1) return null;
+            const p = pendingOrders[idx];
+            accountBalance += p.margin;
+            document.getElementById('account-balance').textContent = '$' + accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            updateMaxAmountLabel();
+            pendingOrders.splice(idx, 1);
+            return p;
+        }
+
+        // ================= OCO (ONE-CANCELS-OTHER) MEGBÍZÁSPÁR LÉTREHOZÁSA =================
+        function promptLinkOco(id) {
+            const order = pendingOrders.find(p => p.id === id);
+            if (!order) return;
+            const candidates = pendingOrders.filter(p => p.id !== id && !p.ocoGroupId);
+            if (candidates.length === 0) {
+                showNotification('Nincs másik, még nem párosított függő megbízás, amivel OCO-párt alkothatnál!');
+                return;
+            }
+            const list = candidates.map((c, i) => `${i + 1}. ${c.side.toUpperCase()} ${c.asset} @ $${c.limitPrice.toFixed(2)}`).join('\n');
+            const input = prompt(`Melyik függő megbízással kapcsolod össze OCO-párba ezt a megbízást (${order.side.toUpperCase()} ${order.asset} @ $${order.limitPrice.toFixed(2)})? Írd be a sorszámát:\n\n${list}`, '1');
+            if (input === null) return;
+            const choice = parseInt(input, 10);
+            if (!Number.isInteger(choice) || choice < 1 || choice > candidates.length) {
+                showNotification('Érvénytelen választás!');
+                return;
+            }
+            const partner = candidates[choice - 1];
+            const groupId = 'oco_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            order.ocoGroupId = groupId;
+            partner.ocoGroupId = groupId;
+            renderPositions();
+            showNotification(`OCO-pár létrehozva: ha bármelyik megbízás teljesül vagy törlődik, a másik is automatikusan törlődik.`);
+            addSystemLog(`OCO-pár létrehozva: ${order.side.toUpperCase()} ${order.asset} @ $${order.limitPrice.toFixed(2)} ↔ ${partner.side.toUpperCase()} ${partner.asset} @ $${partner.limitPrice.toFixed(2)}.`, 'TRADE');
         }
 
         function checkPendingOrders() {
             if (pendingOrders.length === 0) return;
             const price = currentAsset.price;
-            const stillPending = [];
 
+            // Első kör: mely megbízások teljesültek most? (A tömb csak ezután,
+            // egy második körben változik — így egy OCO-pár MÁSIK lába, ami még
+            // NEM teljesült ebben a tick-ben, is helyesen azonosítható és
+            // törölhető/visszatéríthető, függetlenül attól, hogy a tömbben előtte
+            // vagy utána van a teljesült lábnak.)
+            const triggeredIds = new Set();
             pendingOrders.forEach(o => {
                 const triggered = o.asset === currentAsset.symbol && (
                     (o.side === 'long' && price <= o.limitPrice) ||
                     (o.side === 'short' && price >= o.limitPrice)
                 );
+                if (triggered) triggeredIds.add(o.id);
+            });
+            if (triggeredIds.size === 0) return;
 
-                if (triggered) {
+            // JAVÍTÁS: ha egy áreséssel/ugrással EGYSZERRE mindkét OCO-láb
+            // feltétele teljesül ugyanabban a tick-ben (pl. egy nagy, egy
+            // tick alatt mindkét szintet átlépő árugrásnál), az eredeti
+            // logika mindkettőt lezárta volna pozícióvá — pont az ELLENKEZŐJE
+            // annak, amit az OCO ("One-Cancels-Other") jelent. Csak az első
+            // (a pendingOrders tömbben korábbi indexű) lábat engedjük
+            // teljesülni egy csoportból, a többit a csoportból töröljük,
+            // még ha önmagában is "teljesült volna".
+            const seenOcoGroupFirstId = {};
+            pendingOrders.forEach(o => {
+                if (triggeredIds.has(o.id) && o.ocoGroupId && !(o.ocoGroupId in seenOcoGroupFirstId)) {
+                    seenOcoGroupFirstId[o.ocoGroupId] = o.id;
+                }
+            });
+            pendingOrders.forEach(o => {
+                if (triggeredIds.has(o.id) && o.ocoGroupId && seenOcoGroupFirstId[o.ocoGroupId] !== o.id) {
+                    triggeredIds.delete(o.id); // ez a láb NEM teljesül, a csoport másik, elsőként talált lába már igen
+                }
+            });
+
+            // ÚJ FUNKCIÓ: OCO (One-Cancels-Other) — egy teljesült láb automatikusan
+            // törli (margó-visszatérítéssel) a PÁRJÁT is, ha van.
+            const triggeredOcoGroupIds = new Set(
+                pendingOrders.filter(o => triggeredIds.has(o.id) && o.ocoGroupId).map(o => o.ocoGroupId)
+            );
+            const cancelledSiblingIds = new Set();
+            if (triggeredOcoGroupIds.size > 0) {
+                pendingOrders.forEach(o => {
+                    if (!triggeredIds.has(o.id) && o.ocoGroupId && triggeredOcoGroupIds.has(o.ocoGroupId)) {
+                        cancelledSiblingIds.add(o.id);
+                    }
+                });
+            }
+
+            const stillPending = [];
+            pendingOrders.forEach(o => {
+                if (triggeredIds.has(o.id)) {
                     positions.push({
                         id: o.id,
                         asset: o.asset,
@@ -49919,15 +50010,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     });
                     showNotification(`Limit megbízás teljesült: ${o.side.toUpperCase()} ${o.asset} @ $${o.limitPrice.toFixed(2)}`);
                     addSystemLog(`LIMIT megbízás teljesült: ${o.side.toUpperCase()} ${o.asset} @ $${o.limitPrice.toFixed(2)} → pozíció megnyitva.`, 'TRADE');
+                } else if (cancelledSiblingIds.has(o.id)) {
+                    accountBalance += o.margin;
+                    showNotification(`OCO-pár: a kapcsolt megbízás (${o.side.toUpperCase()} ${o.asset} @ $${o.limitPrice.toFixed(2)}) teljesülés miatt automatikusan törölve, margó visszatérítve.`);
+                    addSystemLog(`OCO-pár miatt automatikusan törölve (teljesülés): ${o.side.toUpperCase()} ${o.asset} @ $${o.limitPrice.toFixed(2)}.`, 'TRADE');
                 } else {
                     stillPending.push(o);
                 }
             });
 
-            if (stillPending.length !== pendingOrders.length) {
-                pendingOrders = stillPending;
-                renderPositions();
-            }
+            pendingOrders = stillPending;
+            document.getElementById('account-balance').textContent = '$' + accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            updateMaxAmountLabel();
+            renderPositions();
         }
 
         let closeReasonPendingId = null;
@@ -50305,11 +50400,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2.5 font-bold text-white">${o.asset}</td>
                         <td class="py-2.5">${sideBadge}</td>
                         <td class="py-2.5">$${o.limitPrice.toFixed(2)}</td>
-                        <td class="py-2.5"><span class="px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/30 font-bold text-[10px]">FÜGGŐBEN</span></td>
+                        <td class="py-2.5"><span class="px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/30 font-bold text-[10px]">FÜGGŐBEN</span>${o.ocoGroupId ? ' <span class="px-1.5 py-0.5 rounded bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 font-bold text-[9px]" title="OCO pár: ha ez vagy a párja teljesül/törlődik, a másik is automatikusan törlődik."><i class="fa-solid fa-link"></i> OCO</span>' : ''}</td>
                         <td class="py-2.5">$${o.amount.toFixed(2)}</td>
                         <td class="py-2.5">${o.leverage}x</td>
                         <td class="py-2.5 text-slate-500">--</td>
-                        <td class="py-2.5 text-right">
+                        <td class="py-2.5 text-right whitespace-nowrap">
+                            ${!o.ocoGroupId ? `<button onclick="promptLinkOco(${o.id})" title="OCO-pár létrehozása egy másik függő megbízással" class="px-2 py-1 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded text-[10px] font-bold transition mr-1"><i class="fa-solid fa-link"></i></button>` : ''}
                             <button onclick="cancelPendingOrder(${o.id})" class="px-2 py-1 bg-dark-800 hover:bg-dark-750 text-slate-300 border border-dark-700 rounded text-[10px] font-bold transition">
                                 Törlés
                             </button>
