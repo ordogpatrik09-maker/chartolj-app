@@ -24044,6 +24044,51 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         });
 
+        // ÚJ FUNKCIÓ: desktop billentyűparancsok a gyors kereskedéshez.
+        // SZÁNDÉKOSAN csak desktop nézetben (>=1024px, a meglévő lg: töréspont)
+        // aktív — mobilon/tableten nincs fizikai billentyűzet, és a lg:hidden
+        // mobil-eszköztár gombsor amúgy is más elérési utat ad. Csak akkor
+        // sül el, ha a fókusz NEM szöveges/szám bemeneten/textarea-n/select-en
+        // van (hogy gépelés közben a "l"/"s" betűk sose váltsák át a Long/Short
+        // oldalt), és ha egyetlen nyitott modal/kalkulátor sincs (hogy a
+        // kalkulátorokban beírt "l"/"s" karakterek is érintetlenek maradjanak).
+        // L = Long, S = Short, Ctrl/Cmd+Enter = megbízás végrehajtása — a Trade
+        // képernyő és a core kereskedési motor MEGLÉVŐ, változatlan
+        // setTradeSide()/executeOrder() függvényeit hívja, nem új logikát.
+        document.addEventListener('keydown', function(e) {
+            if (window.innerWidth < 1024) return; // csak desktop
+            const target = e.target;
+            const tag = target && target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (target && target.isContentEditable)) return;
+            // Ha bármelyik modal/tool-sheet/kalkulátor nyitva van, ne zavarjuk bele.
+            const anyModalOpen = _getToolModalIds().some(id => {
+                const el = document.getElementById(id);
+                return el && !el.classList.contains('hidden');
+            }) || Object.keys(_escClosableOtherModals).some(id => {
+                const el = document.getElementById(id);
+                return el && !el.classList.contains('hidden');
+            });
+            if (anyModalOpen) return;
+
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                const btn = document.getElementById('btn-execute-order');
+                if (btn && !btn.disabled && _isElementVisible(btn, document.body)) {
+                    e.preventDefault();
+                    btn.click();
+                }
+                return;
+            }
+            if (e.ctrlKey || e.metaKey || e.altKey) return; // Ctrl/Cmd/Alt+L/S böngésző-parancsokba ne szóljunk bele
+            const key = e.key.toLowerCase();
+            if (key === 'l' || key === 's') {
+                const btn = document.getElementById(key === 'l' ? 'side-long-btn' : 'side-short-btn');
+                if (btn && _isElementVisible(btn, document.body)) {
+                    e.preventDefault();
+                    setTradeSide(key === 'l' ? 'long' : 'short');
+                }
+            }
+        });
+
         // --- Pozícióméret kalkulátor ---
         function calcPositionSize() {
             const bal = parseFloat(document.getElementById('ps-balance').value) || 0;
