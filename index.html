@@ -15178,6 +15178,11 @@ Mean-reversion,2.5</textarea>
                 <div id="accent-theme-picker" class="flex items-center gap-2.5"></div>
                 <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">A kiemelő szín (gombok, kijelölések) személyre szabása — a kereskedési chartot nem érinti.</p>
             </div>
+            <div class="glass-card rounded-xl p-3">
+                <div class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-text-height mr-2 text-slate-500"></i>Szövegméret</div>
+                <div id="text-size-picker" class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750"></div>
+                <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">A teljes felület méretezése akadálymentesítési céllal. Csak erre a munkamenetre vonatkozik.</p>
+            </div>
             <button onclick="toggleProfileDiagnostics()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
                 <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-screwdriver-wrench text-slate-500 mr-2"></i><span data-i18n="profile_diagnostics">Speciális / Diagnosztika</span></span>
                 <i id="profile-diagnostics-chevron" class="fa-solid fa-chevron-down text-slate-500 text-xs"></i>
@@ -16463,6 +16468,39 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </button>
             `).join('');
         }
+
+        const TEXT_SIZES = { small: { label: 'Kicsi', zoom: 0.9 }, normal: { label: 'Normál', zoom: 1 }, large: { label: 'Nagy', zoom: 1.15 } };
+        let currentTextSize = 'normal';
+        function setTextSize(size) {
+            if (!TEXT_SIZES[size]) return;
+            currentTextSize = size;
+            const wrapper = document.getElementById('app-scale-wrapper');
+            if (wrapper) {
+                const zoom = TEXT_SIZES[size].zoom;
+                if (zoom === 1) {
+                    wrapper.style.zoom = '';
+                    wrapper.style.height = '';
+                } else {
+                    wrapper.style.zoom = zoom;
+                    wrapper.style.height = (window.innerHeight / zoom) + 'px';
+                }
+            }
+            renderTextSizePicker();
+        }
+        function renderTextSizePicker() {
+            const container = document.getElementById('text-size-picker');
+            if (!container) return;
+            container.innerHTML = Object.keys(TEXT_SIZES).map(s => `
+                <button onclick="setTextSize('${s}')" aria-pressed="${s === currentTextSize}" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition ${s === currentTextSize ? 'bg-neon-cyan/15 text-neon-cyan' : 'text-slate-400'}">${TEXT_SIZES[s].label}</button>
+            `).join('');
+        }
+        window.addEventListener('resize', () => {
+            const wrapper = document.getElementById('app-scale-wrapper');
+            if (wrapper && currentTextSize !== 'normal') {
+                const zoom = TEXT_SIZES[currentTextSize].zoom;
+                wrapper.style.height = (window.innerHeight / zoom) + 'px';
+            }
+        });
 
         function setLanguage(lang) {
             if (!TRANSLATIONS[lang]) return;
@@ -48458,6 +48496,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         function renderProfileScreen() {
             renderAccentThemePicker();
+            renderTextSizePicker();
             const nameEl = document.getElementById('profile-name');
             const emailEl = document.getElementById('profile-email');
             const premStatusEl = document.getElementById('profile-premium-status');
