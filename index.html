@@ -16311,7 +16311,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 academy_tab_whatif: 'Mi lenne, ha...', academy_tab_drill: 'Chart Drill',
                 academy_tab_replay: 'Replay Szimulátor', academy_tab_mistakes: 'Hibás kérdések',
                 academy_tab_ai_analyzer: 'AI Chart Elemző', academy_tab_hungarian: 'Magyar Piac',
-                academy_new_badge: 'Új'
+                academy_new_badge: 'Új',
+                greeting_night_guest: 'Jó éjt!', greeting_night_user: 'Jó éjt, {name}!',
+                greeting_morning_guest: 'Jó reggelt!', greeting_morning_user: 'Jó reggelt, {name}!',
+                greeting_day_guest: 'Jó napot!', greeting_day_user: 'Jó napot, {name}!',
+                greeting_evening_guest: 'Jó estét!', greeting_evening_user: 'Jó estét, {name}!'
             },
             en: {
                 nav_home: 'Home', nav_trade: 'Trade', nav_academy: 'Academy',
@@ -16336,7 +16340,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 academy_tab_whatif: 'What If...', academy_tab_drill: 'Chart Drill',
                 academy_tab_replay: 'Replay Simulator', academy_tab_mistakes: 'Mistake Bank',
                 academy_tab_ai_analyzer: 'AI Chart Analyzer', academy_tab_hungarian: 'Hungarian Market',
-                academy_new_badge: 'New'
+                academy_new_badge: 'New',
+                greeting_night_guest: 'Good night!', greeting_night_user: 'Good night, {name}!',
+                greeting_morning_guest: 'Good morning!', greeting_morning_user: 'Good morning, {name}!',
+                greeting_day_guest: 'Good afternoon!', greeting_day_user: 'Good afternoon, {name}!',
+                greeting_evening_guest: 'Good evening!', greeting_evening_user: 'Good evening, {name}!'
             }
         };
 
@@ -47477,9 +47485,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const greetingEl = document.getElementById('home-greeting');
             if (greetingEl) {
                 const _hr = new Date().getHours();
-                const _tod = _hr < 5 ? 'Jó éjt' : _hr < 12 ? 'Jó reggelt' : _hr < 18 ? 'Jó napot' : 'Jó estét';
+                // JAVÍTÁS (audit, lokalizáció): a napszak-köszöntés korábban
+                // mindig hardcode-olt magyar szöveg volt (pl. "Jó reggelt"),
+                // függetlenül a currentLang/T() nyelvválasztó rendszertől — egy
+                // angolra váltott felhasználó is mindig magyarul látta ezt a
+                // Home képernyő tetején. A greeting_<napszak>_guest/user
+                // kulcsokon keresztül mostantól a T() fordítást használja,
+                // ugyanúgy, mint a többi lokalizált UI-szöveg.
+                const _todKey = _hr < 5 ? 'night' : _hr < 12 ? 'morning' : _hr < 18 ? 'day' : 'evening';
                 const _gname = currentUser && !currentUser.guest && currentUser.name ? currentUser.name : null;
-                greetingEl.textContent = _gname ? _tod + ', ' + _gname + '!' : _tod + '!';
+                greetingEl.textContent = _gname
+                    ? T('greeting_' + _todKey + '_user', { name: _gname })
+                    : T('greeting_' + _todKey + '_guest');
                 const _qEl = document.getElementById('home-quote');
                 if (_qEl) _qEl.textContent = '"' + DAILY_QUOTES[new Date().getDate() % DAILY_QUOTES.length] + '"';
                 // Simplified streak display
