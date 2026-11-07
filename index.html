@@ -30305,8 +30305,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const high = parseFloat(highEl.value);
             const current = parseFloat(currentEl.value);
 
-            if ([low, high, current].some(v => isNaN(v))) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+            // JAVÍTÁS: a korábbi isNaN()-os ellenőrzés nem fogta ki az Infinity
+            // bemenetet (pl. "1e400" a Range teteje mezőben) — az Infinity nem
+            // NaN, így átment a validáción, majd a range = high - low kivonás
+            // Infinity-t eredményezett, ami a Célár/Range mezőkben szó szerint
+            // "∞" karakterként jelent meg (lásd a korábbi hasonló javítási
+            // köröket, pl. Fib Retracement, Likvidációs Ár Vizualizáció).
+            if ([low, high, current].some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat minden mezőben!</div>`;
                 return;
             }
             if (high <= low) {
@@ -30315,6 +30321,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const range = high - low;
+            // JAVÍTÁS: egyenként véges low/high is adhat túlcsordult (Infinity)
+            // range-et, ha EGYÜTT szélsőségesek (pl. high=1.7e308, low=-1.7e308)
+            // — ugyanaz a "kombinált szélsőség" minta, amit korábban több más
+            // kalkulátorban is javítottunk. Végső véges-ellenőrzés a kivonás
+            // eredményén, mielőtt bármit megjelenítenénk.
+            if (!Number.isFinite(range)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott Range tető/alj kombinációja túl szélsőséges egy érvényes számításhoz!</div>`;
+                return;
+            }
             const breakoutUp = current > high;
             const breakoutDown = current < low;
 
@@ -30332,6 +30347,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             } else {
                 verdict = 'Az ár még az Opening Range-en belül van — nincs megerősített kitörés, várj a tartomány határának áttörésére.';
                 colorClass = 'text-slate-400';
+            }
+
+            // JAVÍTÁS: a target = high + range / low - range összeadás/kivonás
+            // két véges, de egyenként is nagy (pl. ~1e308 nagyságrendű) szám
+            // esetén még túlcsordulhat Infinity-re — végső véges-ellenőrzés
+            // a megjelenítés előtt.
+            if (target !== null && !Number.isFinite(target)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak túl szélsőségesek egy érvényes célár-számításhoz!</div>`;
+                return;
             }
 
             out.innerHTML = `
