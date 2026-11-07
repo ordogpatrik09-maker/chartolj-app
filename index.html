@@ -23570,8 +23570,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const size = parseFloat(document.getElementById('rr-size').value) || 0;
             const out = document.getElementById('rr-result');
 
-            if (entry <= 0 || stop <= 0 || target <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes árakat!</div>`;
+            if (entry <= 0 || stop <= 0 || target <= 0 || !Number.isFinite(entry) || !Number.isFinite(stop) || !Number.isFinite(target) || !Number.isFinite(size)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges árakat és tételméretet!</div>`;
                 return;
             }
 
@@ -23591,6 +23591,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const riskPct = (riskPerUnit / entry) * 100;
             const totalRisk = riskPerUnit * size;
             const totalReward = rewardPerUnit * size;
+
+            // JAVÍTÁS: entry/stop/target egyenként véges, de a directionValid
+            // ellenőrzésen átcsúszó extrém kombinációja (pl. short pozíciónál
+            // egy irreálisan nagy, de a "stop > entry" feltételt kielégítő
+            // stop-loss) a belőlük számolt riskPerUnit/rewardPerUnit/ratio/
+            // riskPct/totalRisk/totalReward értékeket Infinity-re
+            // csordíthatja túl — ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál (pl. calcADLine, calcPivotPoints).
+            if (![riskPerUnit, rewardPerUnit, ratio, riskPct, totalRisk, totalReward].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak/tételméret túl szélsőségesek érvényes Risk/Reward-számításhoz!</div>`;
+                return;
+            }
 
             let verdict, verdictColor;
             if (ratio >= 2) { verdict = 'Kiváló arány'; verdictColor = 'text-neon-green'; }
@@ -36664,13 +36676,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A sorozat csak "W" (nyertes) és "L" (vesztes) jeleket tartalmazhat, vesszővel elválasztva!</div>`;
                 return;
             }
-            if (!startCapital || startCapital <= 0 || !baseBet || baseBet <= 0 || baseBet > startCapital) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív kezdő tőkét és egy ennél kisebb vagy egyenlő alap tétnagyságot!</div>`;
+            if (!startCapital || startCapital <= 0 || !baseBet || baseBet <= 0 || baseBet > startCapital || !Number.isFinite(startCapital) || !Number.isFinite(baseBet)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív, véges kezdő tőkét és egy ennél kisebb vagy egyenlő alap tétnagyságot!</div>`;
                 return;
             }
 
             const mart = simulateBetStrategy(outcomes, startCapital, baseBet, 'martingale');
             const anti = simulateBetStrategy(outcomes, startCapital, baseBet, 'antimartingale');
+
+            // JAVÍTÁS: startCapital/baseBet egyenként véges, de egy nagyon
+            // hosszú (pl. több száz egymást követő "W" jelet tartalmazó)
+            // sorozat mellett az Anti-Martingale ág tétje (bet *= 1.5
+            // minden győzelemnél) több száz iteráció után Infinity-re
+            // csordulhat túl, ami onnantól NaN-t okoz (Infinity - Infinity
+            // jellegű lépéseknél) — ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál, csak itt iteratív felhalmozódásból.
+            if (!Number.isFinite(mart.finalCapital) || !Number.isFinite(mart.maxBet) || !Number.isFinite(anti.finalCapital) || !Number.isFinite(anti.maxBet)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott tőke/tétnagyság és a sorozat hossza mellett a szimuláció túlcsordul — adj meg reálisabb nagyságrendű értékeket vagy rövidebb sorozatot!</div>`;
+                return;
+            }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl border ${mart.ruined ? 'border-neon-red/30 bg-neon-red/[0.05]' : (mart.finalCapital >= startCapital ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]')} p-3 mb-3">
@@ -39572,8 +39596,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const avgLoss = parseFloat(document.getElementById('exp-avgloss').value);
             const out = document.getElementById('expectancy-result');
 
-            if (!winRatePct || winRatePct <= 0 || winRatePct >= 100 || !avgWin || avgWin <= 0 || !avgLoss || avgLoss <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%) és pozitív átlagos nyereség/veszteség értékeket!</div>`;
+            // JAVÍTÁS: a winRatePct>=100 feltétel már kifogja az Infinity
+            // találati arányt, de az avgWin/avgLoss <=0 feltételek önmagukban
+            // NEM fogják ki az Infinity bemenetet (az Infinity sem nem 0,
+            // sem nem negatív) — ez korábban Infinity/NaN-szivárgást okozott
+            // az expectancyDollar/rrRatio/breakEvenWinRate mezőkben, ugyanaz
+            // a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!winRatePct || winRatePct <= 0 || winRatePct >= 100 || !avgWin || avgWin <= 0 || !avgLoss || avgLoss <= 0 || !Number.isFinite(avgWin) || !Number.isFinite(avgLoss)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%) és pozitív, véges átlagos nyereség/veszteség értékeket!</div>`;
                 return;
             }
 
