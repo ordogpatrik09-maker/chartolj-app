@@ -23807,6 +23807,78 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         }
 
+        // ÚJ FUNKCIÓ: letölthető/megosztható "eredmény-kártya" egy lezárt,
+        // nyereséges kereskedésről — ugyanazzal a canvas.toDataURL()+<a download>
+        // mintával, mint a már meglévő takeSnapshot() grafikon-képernyőkép.
+        // SZÁNDÉKOSAN csak saját, lokálisan Canvas API-val rajzolt kártya
+        // (nincs külső html2canvas-szerű függőség, nincs hálózati hívás) —
+        // ez a projekt eddigi "nincs extra csomag" mintáját követi.
+        function shareTradeCard(tradeId) {
+            const h = tradeHistory.find(t => t.id === tradeId);
+            if (!h) return;
+            try {
+                const W = 1080, H = 1080; // négyzetes, közösségi médiára optimális arány
+                const cv = document.createElement('canvas');
+                cv.width = W; cv.height = H;
+                const ctx = cv.getContext('2d');
+
+                // Háttér — sötét, finom gradienssel, az app alap színvilágához igazítva.
+                const bg = ctx.createLinearGradient(0, 0, 0, H);
+                bg.addColorStop(0, '#0a0e14');
+                bg.addColorStop(1, '#05070a');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, W, H);
+
+                // Finom keret.
+                ctx.strokeStyle = 'rgba(0, 242, 254, 0.25)';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(24, 24, W - 48, H - 48);
+
+                // Brand.
+                ctx.fillStyle = '#00f2fe';
+                ctx.font = 'bold 44px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Chartolj!', 64, 120);
+                ctx.fillStyle = 'rgba(148, 163, 184, 0.8)';
+                ctx.font = '26px sans-serif';
+                ctx.fillText('Demó kereskedési eredmény', 64, 160);
+
+                // Eszköz + irány.
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 52px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(h.asset, W / 2, 400);
+                ctx.fillStyle = h.side === 'long' ? '#00e676' : '#ff3b5c';
+                ctx.font = 'bold 32px sans-serif';
+                ctx.fillText(h.side === 'long' ? 'LONG' : 'SHORT', W / 2, 450);
+
+                // PnL — a legnagyobb, legfontosabb elem.
+                ctx.fillStyle = h.pnl >= 0 ? '#00e676' : '#ff3b5c';
+                ctx.font = 'bold 120px sans-serif';
+                ctx.fillText(formatPnl(h.pnl), W / 2, 620);
+
+                // Záróár + dátum.
+                ctx.fillStyle = 'rgba(148, 163, 184, 0.9)';
+                ctx.font = '28px sans-serif';
+                ctx.fillText(`Záróár: $${h.closePrice.toFixed(2)}`, W / 2, 700);
+                ctx.fillText(h.time, W / 2, 740);
+
+                // Lábléc — egyértelmű jelzés, hogy ez demó/oktatási eredmény, nem
+                // valódi pénzügyi tanácsadás vagy valós tőzsdei eredmény.
+                ctx.fillStyle = 'rgba(100, 116, 139, 0.7)';
+                ctx.font = '22px sans-serif';
+                ctx.fillText('Szimulált demó-kereskedés — nem valódi pénzügyi eredmény', W / 2, H - 70);
+
+                const link = document.createElement('a');
+                link.download = `chartolj-eredmeny-${h.asset.replace('/', '')}-${Date.now()}.png`;
+                link.href = cv.toDataURL('image/png');
+                link.click();
+                showNotification('Eredmény-kártya letöltve — megoszthatod!');
+            } catch (e) {
+                showNotification('Hiba történt a kártya generálásakor.');
+            }
+        }
+
         /* ================= MODALS ================= */
         function toggleModal(id) {
             const modal = document.getElementById(id);
@@ -51211,7 +51283,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2">$${h.closePrice.toFixed(2)}</td>
                         <td class="py-2 font-bold ${pnlColor}">${formatPnl(h.pnl)}</td>
                         <td class="py-2 text-[10px] text-slate-400">${h.reason || 'Manuális zárás'}</td>
-                        <td class="py-2 text-right">${h.note ? '' : `<button onclick="editTradeNote('${h.id}')" title="Jegyzet hozzáadása" aria-label="Jegyzet hozzáadása" class="text-slate-600 hover:text-neon-cyan transition"><i class="fa-regular fa-note-sticky text-xs"></i></button>`}</td>
+                        <td class="py-2 text-right whitespace-nowrap">
+                            ${h.pnl > 0 ? `<button onclick="shareTradeCard('${h.id}')" title="Eredmény megosztása képként" aria-label="Eredmény megosztása képként" class="text-slate-600 hover:text-amber-400 transition mr-2"><i class="fa-solid fa-share-nodes text-xs"></i></button>` : ''}
+                            ${h.note ? '' : `<button onclick="editTradeNote('${h.id}')" title="Jegyzet hozzáadása" aria-label="Jegyzet hozzáadása" class="text-slate-600 hover:text-neon-cyan transition"><i class="fa-regular fa-note-sticky text-xs"></i></button>`}
+                        </td>
                     </tr>
                     ${noteRow}
                 `;
