@@ -16687,6 +16687,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         let positions = [];
         let pendingOrders = [];
         let tradeHistory = [];
+        // ================= OVERTRADING-RIASZTÁS (OKTATÁSI, SESSION-ALAPÚ) =================
+        // Csak a jelenlegi böngésző-sessionre vonatkozó, memóriában tartott idősor
+        // (NEM mentett/szinkronizált állapot — session-váltás vagy frissítés után
+        // nullázódik, szándékosan, hogy ne kelljen új perzisztencia-csatornát
+        // nyitni egy puhán figyelmeztető, nem blokkoló oktatási funkcióhoz).
+        let sessionTradeOpenTimestamps = [];
+        let overtradingAlertShownAt = 0;
         let drawings = [];
         let selectedDrawingIndex = -1;
         let isDraggingDrawing = false;
@@ -42885,6 +42892,27 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         // Kozmetikai jelvényfokozatok — tisztán presztízs, nincs mögötte vásárolható tartalom.
+        // ================= OVERTRADING-RIASZTÁS =================
+        // Minden pozíció-/limit-megbízás nyitásnál hívva. Tisztán a jelenlegi
+        // session memóriájában tartott időbélyeg-tömbből él — ha az utolsó
+        // OVERTRADING_WINDOW_MS ablakban legalább OVERTRADING_THRESHOLD új
+        // kereskedés nyílt, egy nem-blokkoló, oktatási figyelmeztetést ad
+        // (nem tiltja le a kereskedést — a cél a tudatosítás, nem a kényszer),
+        // legfeljebb percenként egyszer, hogy ne legyen idegesítő/spam-szerű.
+        const OVERTRADING_WINDOW_MS = 5 * 60 * 1000;
+        const OVERTRADING_THRESHOLD = 5;
+        const OVERTRADING_ALERT_COOLDOWN_MS = 60 * 1000;
+        function checkOvertradingAlert() {
+            const now = Date.now();
+            sessionTradeOpenTimestamps.push(now);
+            sessionTradeOpenTimestamps = sessionTradeOpenTimestamps.filter(t => now - t <= OVERTRADING_WINDOW_MS);
+            if (sessionTradeOpenTimestamps.length >= OVERTRADING_THRESHOLD && (now - overtradingAlertShownAt) >= OVERTRADING_ALERT_COOLDOWN_MS) {
+                overtradingAlertShownAt = now;
+                showNotification(`⚠️ ${sessionTradeOpenTimestamps.length} kereskedés nyílt az utóbbi 5 percben — ez gyakran impulzív/emocionális ("overtrading") kereskedés jele. Érdemes lehet szünetet tartani és átnézni a Kereskedési Tervet!`);
+                addSystemLog(`Overtrading-riasztás: ${sessionTradeOpenTimestamps.length} kereskedés 5 percen belül.`, 'TRADE');
+            }
+        }
+
         // ================= KERESKEDÉSI RIPORT (TRADE JOURNAL DASHBOARD) =================
         function openTradeJournalDashboard() {
             document.getElementById('trade-journal-modal').classList.remove('hidden');
@@ -49342,6 +49370,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 renderPositions();
                 showNotification(`Függő ${currentTradeSide.toUpperCase()} limit megbízás létrehozva: $${limitPrice.toFixed(2)}`);
                 addSystemLog(`Új függő LIMIT megbízás: ${currentTradeSide.toUpperCase()} ${currentAsset.symbol} @ $${limitPrice.toFixed(2)}, méret $${amount}.`, 'TRADE');
+                checkOvertradingAlert();
                 return;
             }
 
@@ -49366,6 +49395,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             addSystemLog(`Pozíció nyitva: ${currentTradeSide.toUpperCase()} ${currentAsset.symbol} @ $${currentAsset.price.toFixed(2)}, ${lev}x tőkeáttét, méret $${amount}.`, 'TRADE');
             logEvent('demo_trade_executed');
             if (typeof bumpDailyProgress === 'function') bumpDailyProgress('trades', 1);
+            checkOvertradingAlert();
         }
 
         function cancelPendingOrder(id) {
