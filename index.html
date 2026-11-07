@@ -25780,8 +25780,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const spreadNow = parseFloat(els['fg-spreadnow'].value);
             const spreadAvg = parseFloat(els['fg-spreadavg'].value);
 
+            // JAVÍTÁS (audit): ua. a hibaosztály, mint több másik kalkulátornál
+            // - isNaN(Infinity) === false. Ha PÉLDÁUL a price ÉS az sma125 mező
+            // is túlcsordulna (pl. mindkettőbe "1e309"-et írva), a momentumPct
+            // "(Infinity-Infinity)/Infinity" kifejezése NaN-t adna, amit a clamp()
+            // (Math.max/Math.min NaN-nal) továbbenged NaN-ként a kompozit
+            // pontszámba - LÁTHATÓ "NaN" lenne a végeredmény.
             const vals = [price, sma125, volNow, volAvg, breadth, stockRet, bondRet, spreadNow, spreadAvg];
-            if (vals.some(v => isNaN(v))) {
+            if (vals.some(v => !Number.isFinite(v))) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden mezőt számmal kell kitölteni!</div>`;
                 return;
             }
@@ -27858,15 +27864,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const risk = parseFloat(riskEl.value);
             const maxLossPct = parseFloat(maxLossEl.value);
 
-            if (isNaN(equity) || equity <= 0) {
+            // JAVÍTÁS (audit): ua. a hibaosztály, mint több másik kalkulátornál
+            // - isNaN(Infinity) === false. Ha az equity mezőbe túlcsordult érték
+            // kerül (pl. "1e309"), a "risk > equity" ellenőrzés nem fogja el
+            // (semmilyen véges risk nem nagyobb Infinity-nél), és a lenti
+            // "tradesToMaxLoss = Math.ceil(lossBudget / risk)" Infinity lesz -
+            // amit a verdict sablonsztring ${tradesToMaxLoss} formában SZÓ
+            // SZERINT "Infinity" szövegként jelenítene meg a felhasználónak
+            // (a template literal toString()-et használ, nem toLocaleString()-et,
+            // ami "∞"-ot adna).
+            if (!Number.isFinite(equity) || equity <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb számla tőkét!</div>`;
                 return;
             }
-            if (isNaN(risk) || risk <= 0) {
+            if (!Number.isFinite(risk) || risk <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, pozitív kockáztatott összeget!</div>`;
                 return;
             }
-            if (isNaN(maxLossPct) || maxLossPct <= 0) {
+            if (!Number.isFinite(maxLossPct) || maxLossPct <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb elviselhető maximum össz-veszteség %-ot!</div>`;
                 return;
             }
@@ -30796,7 +30811,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const l = parseFloat(lowEl.value);
             const c = parseFloat(closeEl.value);
 
-            if ([o, h, l, c].some(v => isNaN(v))) {
+            // JAVÍTÁS (audit): ua. a hibaosztály, mint a Fib Retracement/Fib
+            // Fan kalkulátoroknál - isNaN(Infinity) === false, egy direktben
+            // begépelt túlcsordult érték (pl. "1e309" a High mezőben) átment
+            // volna ezen, majd "range = h - l" is Infinity lett volna, amin
+            // keresztül upperPct = (Infinity/Infinity)*100 LÁTHATÓ "NaN"-t,
+            // a lowerPct/bodyPct pedig "véges/Infinity = 0" csendben HAMIS
+            // 0%-ot adott volna (miközben valójában nincs is érvényes adat).
+            if ([o, h, l, c].some(v => !Number.isFinite(v))) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
                 return;
             }
