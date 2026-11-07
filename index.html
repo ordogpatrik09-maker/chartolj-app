@@ -23322,7 +23322,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         });
 
+        // FÓKUSZ-KEZELÉS eszköz-kalkulátor modaloknál (billentyűzet/screen
+        // reader-barát UX, az ESC-bezárás és Enter-kiszámolás párja — eddig
+        // a modal megnyitása NEM mozgatta a fókuszt a dialógusba: a
+        // billentyűzettel navigáló vagy screen readert használó felhasználó
+        // fókusza a háttérben, a megnyitó gombon maradt, miközben vizuálisan
+        // egy új dialógus jelent meg fölötte; bezáráskor pedig a fókusz nem
+        // tért vissza a megnyitó gombra, hanem elveszett/a body-ra ugrott).
+        // Megnyitáskor a dialógus-doboz (a modal gyökér-div első gyermeke,
+        // amin a látható glass-dropdown/glass-card keret van) kap egyszeri
+        // tabindex="-1"-et és fókuszt, hogy a screen reader azonnal a
+        // dialógus tartalmát jelentse be; bezáráskor a fókusz visszatér a
+        // megnyitást kiváltó elemre (ha az még létezik és fókuszálható).
+        let _toolModalTriggers = {};
         function openToolModal(id) {
+            _toolModalTriggers[id] = document.activeElement;
             if (id === 'poscalc-modal') {
                 document.getElementById('ps-balance').value = Math.round(accountBalance);
                 document.getElementById('ps-result').innerHTML = '';
@@ -23363,11 +23377,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const el = document.getElementById('sb-entry-inputs') || document.getElementById('sb-exit-inputs');
                 if (el && !el.children.length && typeof renderStrategyBuilderInputs === 'function') renderStrategyBuilderInputs();
             }
-            document.getElementById(id).classList.remove('hidden');
+            const modalEl = document.getElementById(id);
+            modalEl.classList.remove('hidden');
+            const dialogBox = modalEl.firstElementChild;
+            if (dialogBox) {
+                if (!dialogBox.hasAttribute('tabindex')) dialogBox.setAttribute('tabindex', '-1');
+                dialogBox.style.outline = 'none';
+                dialogBox.focus({ preventScroll: true });
+            }
         }
 
         function closeToolModal(id) {
             document.getElementById(id).classList.add('hidden');
+            const trigger = _toolModalTriggers[id];
+            delete _toolModalTriggers[id];
+            if (trigger && trigger !== document.body && typeof trigger.focus === 'function' && document.body.contains(trigger)) {
+                trigger.focus({ preventScroll: true });
+            }
         }
 
         // ESC billentyű zárja a jelenleg nyitott eszköz-kalkulátor modalt
