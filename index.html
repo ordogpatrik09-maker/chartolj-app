@@ -22879,11 +22879,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // kereskedési motort (azt, hogy mikor zár le valójában egy pozíciót)
                 // ez a funkció nem módosítja.
                 if (Number.isFinite(p.margin) && Number.isFinite(p.amount) && Number.isFinite(p.leverage) && p.amount > 0 && p.leverage > 0) {
-                    const liqFraction = p.margin / (p.amount * p.leverage);
-                    if (Number.isFinite(liqFraction) && liqFraction > 0 && liqFraction < 1) {
+                    // JAVÍTÁS (audit, a Funding-Ráta Szimuláció és a Likvidációs
+                    // Ár Vizualizáció kölcsönhatása): az eredeti liqFraction
+                    // (margin / (amount*leverage)) a fundingAccrued bevezetése
+                    // ELŐTTI, funding nélküli PnL-képletet tükrözte. Mivel az
+                    // updatePositionsPnL() mostantól "pnl = amount*pct*leverage +
+                    // fundingAccrued"-ot számol, egy felhalmozott funding díjjal
+                    // terhelt pozíciónál a VALÓS likvidációs pont már közelebb
+                    // (LONG-nál, mert fizet) vagy távolabb (SHORT-nál, mert kap)
+                    // van, mint amit a régi formula mutatott — a vonal
+                    // MEGTÉVESZTŐ biztonsági távolságot jelezhetett. Az
+                    // "adjFraction" a margin ÉS a fundingAccrued együttes
+                    // figyelembevételével fejti vissza a liquidation pontot
+                    // (fundingAccrued undefined esetén "+ 0", byte-pontosan az
+                    // eredeti formulát adja vissza — nulla hatású a session
+                    // többi, funding nélküli pozíciójára).
+                    const adjFraction = (p.margin + (p.fundingAccrued || 0)) / (p.amount * p.leverage);
+                    if (Number.isFinite(adjFraction) && adjFraction > 0 && adjFraction < 1) {
                         const liqPrice = p.side === 'long'
-                            ? p.entryPrice * (1 - liqFraction)
-                            : p.entryPrice * (1 + liqFraction);
+                            ? p.entryPrice * (1 - adjFraction)
+                            : p.entryPrice * (1 + adjFraction);
                         if (Number.isFinite(liqPrice) && liqPrice > 0) {
                             const yLiq = getY(liqPrice);
                             ctx.strokeStyle = 'rgba(255, 145, 0, 0.55)';
