@@ -31794,7 +31794,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // miatt NEM változtatja meg az értéket, így a ciklusfeltétel örökké igaz marad és a
             // böngészőlap lefagy. Explicit, 1000-es abszolút felső korlát (konzisztensen az
             // input mezők "max" HTML-attribútumával) kizárja ezt a magnitúdót.
-            if ([numWindows, inSamplePct, fastMin, fastMax, slowMin, slowMax, startEquity].some(v => isNaN(v)) ||
+            if ([numWindows, inSamplePct, fastMin, fastMax, slowMin, slowMax, startEquity].some(v => !Number.isFinite(v)) ||
                 numWindows < 2 || numWindows > 10 || inSamplePct <= 0 || inSamplePct >= 100 ||
                 fastMin < 2 || fastMax < fastMin || slowMin < 2 || slowMax < slowMin || startEquity <= 0 ||
                 fastMax > 1000 || slowMax > 1000) {
@@ -32086,7 +32086,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // miatt a "combos" szorzat kis értéket mutat, míg a VALÓS `for` ciklus a
             // `fast++`/`slow++` lépés no-op-pá válása miatt SOHA nem áll le (böngészőlap-
             // lefagyás). Explicit 1000-es abszolút felső korlát zárja ki ezt a magnitúdót.
-            if ([fastMin, fastMax, slowMin, slowMax, splitPct, startEquity].some(v => isNaN(v)) ||
+            if ([fastMin, fastMax, slowMin, slowMax, splitPct, startEquity].some(v => !Number.isFinite(v)) ||
                 fastMin < 2 || fastMax < fastMin || slowMin < 2 || slowMax < slowMin ||
                 fastMax > 1000 || slowMax > 1000 ||
                 splitPct <= 0 || splitPct >= 100 || startEquity <= 0) {
@@ -32193,7 +32193,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // miatt a "combos" szorzat kis értéket mutat, míg a VALÓS `for` ciklus a
             // `fast++`/`slow++` lépés no-op-pá válása miatt SOHA nem áll le (böngészőlap-
             // lefagyás). Explicit 1000-es abszolút felső korlát zárja ki ezt a magnitúdót.
-            if ([fastMin, fastMax, slowMin, slowMax, inSamplePct, startEquity].some(v => isNaN(v)) ||
+            if ([fastMin, fastMax, slowMin, slowMax, inSamplePct, startEquity].some(v => !Number.isFinite(v)) ||
                 fastMin < 2 || fastMax < fastMin || slowMin < 2 || slowMax < slowMin ||
                 fastMax > 1000 || slowMax > 1000 ||
                 inSamplePct <= 0 || inSamplePct >= 100 || startEquity <= 0) {
@@ -32363,7 +32363,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const maxFrac = parseFloat(document.getElementById('vt-maxfrac').value);
             const startEquity = parseFloat(document.getElementById('vt-equity').value);
 
-            if ([fast, slow, atrPeriod, targetRisk, minFrac, maxFrac, startEquity].some(v => isNaN(v)) ||
+            if ([fast, slow, atrPeriod, targetRisk, minFrac, maxFrac, startEquity].some(v => !Number.isFinite(v)) ||
                 fast < 2 || slow <= fast || atrPeriod < 2 || targetRisk <= 0 ||
                 minFrac <= 0 || maxFrac <= minFrac || startEquity <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — a gyors EMA legyen kisebb a lassúnál, a max. méretarány nagyobb a minimumnál, a többi érték pozitív!</div>`;
@@ -32407,7 +32407,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const startEquity = parseFloat(document.getElementById('ls-equity').value);
             const levelsRaw = document.getElementById('ls-levels').value;
 
-            if ([fast, slow, startEquity].some(v => isNaN(v)) || fast < 2 || slow <= fast || startEquity <= 0) {
+            if ([fast, slow, startEquity].some(v => !Number.isFinite(v)) || fast < 2 || slow <= fast || startEquity <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméterek — a gyors EMA legyen kisebb a lassúnál, a tőke pozitív!</div>`;
                 return;
             }
