@@ -43605,10 +43605,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const paidReward = applyPremiumCoinBonus(rank.reward);
             userCoins += paidReward;
             saveAcademyState();
-            showNotification(rank.icon + ' Rang átvéve: ' + rank.name + ' — +' + paidReward + ' coin!');
             updateCoinDisplay();
             renderRanksMissionsModal();
-            showNotification(`Rang jutalom átvéve: ${rank.name} — +${paidReward} coin`);
+            // JAVÍTÁS: korábban KÉTSZER hívtuk meg a showNotification()-t ugyanarra
+            // az eseményre (egy ikon+" Rang átvéve"-vel kezdődő, majd egy "Rang
+            // jutalom átvéve"-vel kezdődő, lényegében azonos üzenettel) — a
+            // felhasználó két egymást követő toast-ot látott egyetlen rang-átvétel
+            // után. A claimMission() (lásd lejjebb) ugyanezt helyesen, EGYETLEN
+            // showNotification()-nel csinálja — most claimRank() is ugyanazt a
+            // mintát követi.
+            showNotification(`${rank.icon} Rang jutalom átvéve: ${rank.name} — +${paidReward} coin`);
             addSystemLog(`Akadémia: Rang jutalom átvéve — ${rank.name} (+${paidReward} coin).`, 'TRADE');
         }
 
