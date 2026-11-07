@@ -50484,6 +50484,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             p.amount *= remainingFraction;
             p.margin *= remainingFraction;
             p.pnl *= remainingFraction;
+            // JAVÍTÁS (audit, a Funding-Ráta Szimuláció és a Részleges Zárás
+            // funkció kölcsönhatása): ha a pozíciónak van felhalmozott funding
+            // díja (p.fundingAccrued - lásd az applyFundingTick() funkciót),
+            // azt itt EDDIG nem arányosítottuk a visszamaradó pozícióra. A fenti
+            // "realizedPnl = p.pnl * fraction" már helyesen a funding díj
+            // ARÁNYOS részét is realizálta, de a visszamaradó p.fundingAccrued
+            // változatlanul a TELJES (nem arányosított) összeg maradt - a
+            // legközelebbi updatePositionsPnL() tick-nél ez a csökkentett
+            // amount-tal együtt a funding díjat effektíve DUPLÁN (realizált
+            // rész + teljes maradék) vette volna figyelembe, 100%-nál több
+            // funding-expozíciót eredményezve. Explicit arányosítással ez most
+            // pontosan összesen 100%-ra jön ki a realizált és a maradék rész
+            // között.
+            if (Number.isFinite(p.fundingAccrued)) {
+                p.fundingAccrued *= remainingFraction;
+            }
 
             renderPositions();
             renderHistory();
