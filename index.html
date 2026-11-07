@@ -39380,7 +39380,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let totalUnits = 0;
             let totalInvested = 0;
             for (let m = 0; m < months; m++) {
-                const price = months === 1 ? startPrice : startPrice + (endPrice - startPrice) * (m / (months - 1));
+                // JAVÍTÁS: a korábbi `startPrice + (endPrice - startPrice) * (m / (months - 1))`
+                // interpolációs képlet az UTOLSÓ hónapnál (m === months - 1, ahol a törtrész
+                // pontosan 1) lebegőpontos KIOLTÁSI hibának volt kitéve: ha startPrice sok
+                // nagyságrenddel nagyobb endPrice-nál (pl. startPrice=100, endPrice=1e-15), az
+                // (endPrice - startPrice) kerekítve pontosan -startPrice-ra esik (endPrice
+                // elvész a double-precizitás alatt), és a visszaadás utáni startPrice + (-startPrice)
+                // MATEMATIKAILAG endPrice-ot adna, de lebegőpontosan PONTOSAN 0-t ad — ami egy
+                // nullával osztást (monthly / price) és onnan Infinity-szivárgást okozott a teljes
+                // eredménybe, pedig endPrice önmagában érvényes, nullánál nagyobb bemenet volt.
+                // Most a két végpont (első és utolsó hónap) ára explicit, kerekítési hibától
+                // mentes módon pontosan startPrice / endPrice — a formula csak a közbenső
+                // hónapoknál interpolál, ahol a törtrész sosem éri el a teljes kioltást okozó 1-et.
+                const price = months === 1 ? startPrice
+                    : m === 0 ? startPrice
+                    : m === months - 1 ? endPrice
+                    : startPrice + (endPrice - startPrice) * (m / (months - 1));
                 totalUnits += monthly / price;
                 totalInvested += monthly;
             }
@@ -39391,6 +39406,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lumpSumValue = lumpSumUnits * endPrice;
             const profit = finalValue - totalInvested;
             const profitPct = (profit / totalInvested) * 100;
+
+            // JAVÍTÁS: záró védőháló — ha bármilyen más, előre nem látott extrém
+            // bemenet-kombináció (pl. nagyon sok hónap + nagyon kis árfolyam együtt)
+            // mégis NaN/Infinity-t termelne a fenti lépések valamelyikében, itt egy
+            // érthető hibaüzenettel állunk meg, mielőtt a szivárgó érték megjelenne.
+            if (![totalUnits, totalInvested, finalValue, avgCostPerUnit, lumpSumUnits, lumpSumValue, profit, profitPct].every(Number.isFinite)) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">A megadott árfolyam- és időszak-kombináció túl szélsőséges egy értelmes szimulációhoz. Próbálj reálisabb kezdő/végső árfolyamot vagy rövidebb időszakot!</div>`;
+                return;
+            }
 
             const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
