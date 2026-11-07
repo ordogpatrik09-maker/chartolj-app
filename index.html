@@ -31245,7 +31245,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const shortYield = parseFloat(shortEl.value);
             const longYield = parseFloat(longEl.value);
 
-            if (isNaN(shortYield) || isNaN(longYield)) {
+            // JAVÍTÁS: az isNaN()-ellenőrzés önmagában nem fogja ki a végtelen (Infinity /
+            // -Infinity) bemenetet, mert isNaN(Infinity) === false. Ha mindkét mező "Infinity"
+            // értéket kapott, a spread (Infinity - Infinity) csendben NaN-t adott, amit a
+            // kimenet szó szerint "NaN%"-ként jelenített meg; ha csak az egyik mező volt
+            // végtelen, a spread "∞%"-ként jelent meg, ami félrevezető egy hozamspread-nél.
+            // Az isFinite()-ellenőrzés mindkét esetet kizárja.
+            if (!isFinite(shortYield) || !isFinite(longYield)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat mindkét mezőben!</div>`;
                 return;
             }
@@ -37936,7 +37942,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // ciklussal LEFAGYASZTOTTA, miközben a mezőn látható "max" HTML-attribútum (20)
             // CSAK a spinner-nyilakra hat, a billentyűzettel beírt értéket NEM korlátozza. Most
             // explicit felső korlátot kapott, konzisztensen a mező HTML max="20" attribútumával.
-            if (!totalSize || totalSize <= 0 || !startPrice || startPrice <= 0 || !endPrice || endPrice <= 0 || !numTranches || numTranches < 2 || numTranches > 20) {
+            //
+            // JAVÍTÁS #2: a totalSize/startPrice/endPrice mezők "Infinity" bemenetre korábban
+            // átcsúsztak a validáción — a `!x || x <= 0` ág az Infinity-t IGAZ (pozitív, nem-nulla)
+            // értéknek látja. Az Infinity ezután a sizePerTranche/costAtStartOnly/costAtAvg
+            // számításokba szivárgott, és a kimeneten látható "∞" vagy (Infinity - Infinity miatt)
+            // "NaN" eredményt adott a tranche-sorok és a megtakarítás/többlet mezőben. Explicit
+            // isFinite()-ellenőrzés zárja ki a végtelen (és -Infinity) bemenetet is.
+            if (!isFinite(totalSize) || totalSize <= 0 || !isFinite(startPrice) || startPrice <= 0 || !isFinite(endPrice) || endPrice <= 0 || !numTranches || numTranches < 2 || numTranches > 20) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb pozícióméretet, mindkét árszintet, és egy 2 és 20 közötti tranche-számot!</div>`;
                 return;
             }
