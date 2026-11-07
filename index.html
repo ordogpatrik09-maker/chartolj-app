@@ -36606,7 +36606,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hibás sor: "${escapeHtml(line)}" — a formátum "eredmény,kockázat" legyen, a kockázat pozitív szám!</div>`;
                     return;
                 }
-                rValues.push(parts[0] / parts[1]);
+                const rValue = parts[0] / parts[1];
+                // JAVÍTÁS: egyenként véges, de EGYÜTT szélsőséges (pl. nagyon
+                // nagy eredmény egy nagyon kicsi kockázattal osztva) "eredmény,
+                // kockázat" sor esetén az R-érték túlcsordulhat Infinity-re —
+                // innentől az összes aggregátum (átlag, összeg, szórás,
+                // legjobb/legrosszabb) is szennyezett lenne és "InfinityR"/
+                // "NaNR" szivárogna ki. Ugyanaz a hibaosztály, mint a korábban
+                // javított kalkulátoroknál — itt is a sor-szintű hibajelzést
+                // használjuk, mielőtt beengednénk az aggregátumokba.
+                if (!Number.isFinite(rValue)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Hibás sor: "${escapeHtml(line)}" — az eredmény és a kockázat együtt túl szélsőséges, az R-érték túlcsordul (nem fejezhető ki véges számmal)!</div>`;
+                    return;
+                }
+                rValues.push(rValue);
             }
 
             const n = rValues.length;
