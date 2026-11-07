@@ -15716,7 +15716,10 @@ Mean-reversion,2.5</textarea>
             <section id="academy-lesson-list-panel" class="w-80 border-r border-dark-750/50 flex flex-col shrink-0 overflow-hidden">
                 <button type="button" class="academy-module-collapse-bar" onclick="setAcademyModuleChosen(false)"><i class="fa-solid fa-chevron-left"></i> Modul váltása</button>
                 <div class="px-4 py-3 border-b border-dark-750/40 shrink-0">
-                    <h2 id="academy-module-title" class="text-sm font-bold text-white flex items-center gap-2"></h2>
+                    <div class="flex items-center justify-between gap-2">
+                        <h2 id="academy-module-title" class="text-sm font-bold text-white flex items-center gap-2 min-w-0"></h2>
+                        <button id="academy-roadmap-toggle" type="button" onclick="toggleAcademyRoadmapView()" title="Útvonal nézet" aria-label="Útvonal nézet váltása" class="shrink-0 w-7 h-7 rounded-lg border border-dark-750 bg-dark-850/60 text-slate-400 hover:text-neon-cyan hover:border-neon-cyan/40 transition flex items-center justify-center"><i class="fa-solid fa-route text-[11px]"></i></button>
+                    </div>
                     <p id="academy-module-subtitle" class="text-[10px] text-slate-400 mt-0.5"></p>
                 <div id="lesson-bm-filter" data-active="0" onclick="this.dataset.active=this.dataset.active==='1'?'0':'1';renderAcademyLessonList();" style="display:none" class="items-center gap-1 text-[10px] font-bold text-amber-400 cursor-pointer mt-1"><i class="fa-solid fa-bookmark mr-0.5"></i><span id="lesson-bm-count">0</span> könyvjelző</div>
                 </div>
@@ -49498,6 +49501,59 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             setAcademyModuleChosen(true);
         }
 
+        // Akadémia útvonal-nézet (opcionális, a sima lista mellett): egy
+        // kanyargó, Duolingo-stílusú vizuális "tanulási út" az aktuális
+        // modul leckéiről, nem perzisztált (visszaáll lista-nézetre minden
+        // Akadémia-megnyitáskor) — csak egy másik megjelenítési mód
+        // UGYANAHHOZ az adathoz, semmilyen állapotot nem módosít.
+        let academyRoadmapViewActive = false;
+        function toggleAcademyRoadmapView() {
+            academyRoadmapViewActive = !academyRoadmapViewActive;
+            const btn = document.getElementById('academy-roadmap-toggle');
+            if (btn) {
+                btn.classList.toggle('bg-neon-cyan/15', academyRoadmapViewActive);
+                btn.classList.toggle('border-neon-cyan/40', academyRoadmapViewActive);
+                btn.classList.toggle('text-neon-cyan', academyRoadmapViewActive);
+            }
+            renderAcademyLessonList();
+        }
+        function renderAcademyRoadmap(indices) {
+            const listEl = document.getElementById('academy-lesson-list');
+            if (indices.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-slate-600 text-xs py-8">Nincs találat.</div>`;
+                return;
+            }
+            listEl.innerHTML = `
+                <div class="relative py-4 px-2">
+                    <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-dark-750" style="transform:translateX(-50%)"></div>
+                    <div class="relative space-y-4">
+                        ${indices.map((i, pos) => {
+                            const l = LESSONS_DATA[i];
+                            const done = academyCompleted.has(i);
+                            const locked = isLessonLocked(l);
+                            const accent = academyAccentColor(l.c);
+                            const activeRow = i === academyLessonIdx;
+                            const side = pos % 2 === 0 ? 'justify-start' : 'justify-end';
+                            const nodeColor = done ? 'bg-neon-green border-neon-green text-dark-950' : locked ? 'bg-dark-850 border-dark-700 text-amber-400' : activeRow ? 'bg-' + accent + '/20 border-' + accent + ' text-' + accent : 'bg-dark-850 border-dark-600 text-slate-300';
+                            return `
+                                <div class="relative flex items-center ${side}">
+                                    <button onclick="openAcademyLesson(${i})" class="group flex items-center gap-2 ${pos % 2 === 0 ? '' : 'flex-row-reverse'} w-[calc(50%+18px)] ${pos % 2 === 0 ? 'pr-2' : 'pl-2'}">
+                                        <span class="shrink-0 w-9 h-9 rounded-full border-2 ${nodeColor} flex items-center justify-center font-mono text-[11px] font-extrabold relative z-10 transition group-hover:scale-105">
+                                            ${done ? '<i class="fa-solid fa-check"></i>' : locked ? '<i class="fa-solid fa-lock text-[10px]"></i>' : (pos + 1)}
+                                        </span>
+                                        <span class="min-w-0 text-left ${pos % 2 === 0 ? '' : 'text-right'} bg-dark-850/70 border border-dark-750 rounded-lg px-2.5 py-1.5 ${activeRow ? 'border-neon-cyan/40' : ''}">
+                                            <span class="block text-[11px] font-bold ${done ? 'text-slate-400 line-through decoration-neon-green/60' : 'text-white'} truncate max-w-[150px]">${l.t}</span>
+                                            <span class="block text-[9px] text-slate-500 truncate max-w-[150px]">${l.prem ? (locked ? '🔒 PRO' : 'PRO') : (l.cards.length + ' kártya')}</span>
+                                        </span>
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         function renderAcademyLessonList() {
             const searchTerm = document.getElementById('academy-search').value.trim().toLowerCase();
             const titleEl = document.getElementById('academy-module-title');
@@ -49528,8 +49584,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 subtitleEl.textContent = `${indices.length} lecke ebben a modulban`;
             }
 
+            // Az útvonal-nézet csak modul-nézetben értelmezhető (keresési
+            // találatoknál a sorrend nem a tanulási útvonalat tükrözi), így
+            // kereséskor a gomb elrejtésre kerül, és automatikusan listára váltunk.
+            const roadmapToggleBtn = document.getElementById('academy-roadmap-toggle');
+            if (roadmapToggleBtn) roadmapToggleBtn.style.display = searchTerm ? 'none' : 'flex';
+
             if (indices.length === 0) {
                 listEl.innerHTML = `<div class="text-center text-slate-600 text-xs py-8">Nincs találat.</div>`;
+                return;
+            }
+
+            if (academyRoadmapViewActive && !searchTerm) {
+                renderAcademyRoadmap(indices);
                 return;
             }
 
