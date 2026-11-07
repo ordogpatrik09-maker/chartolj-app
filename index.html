@@ -3540,7 +3540,9 @@
     <div id="close-reason-modal" class="hidden fixed inset-0 z-[97] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
         <div class="glass-dropdown rounded-2xl w-full max-w-sm p-5">
             <h3 class="text-sm font-bold text-white mb-1">Miért zárod most a pozíciót?</h3>
-            <p class="text-[11px] text-slate-500 mb-4">Ez segít utólag megérteni a döntéseidet a naplóban — nem kötelező.</p>
+            <p class="text-[11px] text-slate-500 mb-3">Ez segít utólag megérteni a döntéseidet a naplóban — nem kötelező.</p>
+            <label class="text-[11px] font-semibold text-slate-400">Zárás mértéke</label>
+            <div id="close-reason-pct-buttons" class="grid grid-cols-4 gap-1.5 mt-1 mb-4"></div>
             <div class="space-y-1.5 mb-3">
                 <button onclick="confirmCloseWithReason('Elértem a célom')" class="w-full text-left px-3 py-2 rounded-lg bg-dark-850/60 border border-dark-750 hover:border-neon-cyan/40 text-xs text-slate-200 transition">🎯 Elértem a célom</button>
                 <button onclick="confirmCloseWithReason('Megváltozott a piaci kép')" class="w-full text-left px-3 py-2 rounded-lg bg-dark-850/60 border border-dark-750 hover:border-neon-cyan/40 text-xs text-slate-200 transition">🔄 Megváltozott a piaci kép</button>
@@ -49583,12 +49585,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         let closeReasonPendingId = null;
+        let closeReasonPendingPct = 100; // 100 = teljes zárás (meglévő, változatlan viselkedés); 25/50/75 = részleges zárás
 
+        const CLOSE_REASON_PCT_OPTIONS = [25, 50, 75, 100];
         function openCloseReasonModal(id) {
             closeReasonPendingId = id;
+            closeReasonPendingPct = 100;
             const noteEl = document.getElementById('close-reason-note');
             if (noteEl) noteEl.value = '';
+            renderCloseReasonPctButtons();
             document.getElementById('close-reason-modal').classList.remove('hidden');
+        }
+        function renderCloseReasonPctButtons() {
+            const wrap = document.getElementById('close-reason-pct-buttons');
+            if (!wrap) return;
+            wrap.innerHTML = CLOSE_REASON_PCT_OPTIONS.map(pct => {
+                const active = pct === closeReasonPendingPct;
+                return `<button onclick="selectCloseReasonPct(${pct})" class="py-1.5 rounded-lg text-[11px] font-bold border transition ${active ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan' : 'border-dark-750 text-slate-300 hover:border-neon-cyan/40'}">${pct === 100 ? 'Teljes' : pct + '%'}</button>`;
+            }).join('');
+        }
+        function selectCloseReasonPct(pct) {
+            closeReasonPendingPct = pct;
+            renderCloseReasonPctButtons();
         }
 
         function confirmCloseWithReason(reason) {
@@ -49596,8 +49614,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const note = noteEl ? noteEl.value.trim() : '';
             document.getElementById('close-reason-modal').classList.add('hidden');
             if (closeReasonPendingId !== null) {
-                closePosition(closeReasonPendingId, reason, note);
+                if (closeReasonPendingPct >= 100) {
+                    closePosition(closeReasonPendingId, reason, note);
+                } else {
+                    closePositionPartial(closeReasonPendingId, closeReasonPendingPct, reason, note);
+                }
                 closeReasonPendingId = null;
+                closeReasonPendingPct = 100;
             }
         }
 
@@ -49635,6 +49658,67 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 showNotification(reason ? `Pozíció lezárva (${reason})!` : 'Pozíció lezárva!');
                 addSystemLog(`Pozíció zárva: ${p.side.toUpperCase()} ${p.asset} @ $${currentAsset.price.toFixed(2)}, PnL: ${formatPnl(p.pnl)} (${reason || 'Manuális zárás'}).`, p.pnl >= 0 ? 'TRADE' : 'ERROR');
             }
+        }
+
+        // ================= RÉSZLEGES POZÍCIÓZÁRÁS (ÚJ FUNKCIÓ) =================
+        // A pozíció egy RÉSZÉT (25/50/75%) zárja le, realizálva az arányos
+        // margin+PnL részt az egyenlegbe és egy tradeHistory-bejegyzésbe,
+        // a maradék pozíciót pedig (ugyanazzal az entryPrice-szal és
+        // leverage-dzsel, csak kisebb amount/margin-nal) NYITVA hagyja. A
+        // meglévő, teljes zárásra épülő closePosition()-t SZÁNDÉKOSAN nem
+        // módosítottuk — ez egy teljesen KÜLÖN, additív útvonal, a 100%-os
+        // zárás (a modal alapértelmezett, változatlan viselkedése) továbbra
+        // is a már bevált closePosition()-t hívja.
+        function closePositionPartial(id, pct, reason, note) {
+            const idx = positions.findIndex(p => p.id === id);
+            if (idx === -1) return;
+            const p = positions[idx];
+
+            if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) {
+                // Érvénytelen vagy 100%-os (illetve afölötti) arány — essünk
+                // vissza a már bevált, teljes zárásra, ne hagyjunk egy
+                // "majdnem nulla" dust-pozíciót nyitva.
+                closePosition(id, reason, note);
+                return;
+            }
+            const fraction = pct / 100;
+
+            const realizedAmount = p.amount * fraction;
+            const realizedMargin = p.margin * fraction;
+            const realizedPnl = p.pnl * fraction;
+
+            accountBalance += realizedMargin + realizedPnl;
+            document.getElementById('account-balance').textContent = '$' + accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            updateMaxAmountLabel();
+
+            tradeHistory.push({
+                id: 'th_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                time: new Date().toLocaleTimeString(),
+                asset: p.asset,
+                side: p.side,
+                closePrice: p.currentPrice ?? currentAsset.price,
+                pnl: realizedPnl,
+                reason: (reason || 'Manuális zárás') + ` (${pct}% részleges)`,
+                note: note || ''
+            });
+
+            // A maradék (nyitva tartott) pozíció arányosan kisebb amount/
+            // margin-nal — entryPrice/leverage VÁLTOZATLAN marad (nem egy új
+            // pozíció, csak kisebb méretű ugyanaz), a pnl-t a már meglévő
+            // updatePositionsPnL() a legközelebbi tick-nél újraszámolja a
+            // csökkentett amount alapján, de itt is azonnal arányosan
+            // csökkentjük, hogy a táblázat ne mutasson pillanatnyi
+            // inkonzisztenciát a következő tick-ig.
+            const remainingFraction = 1 - fraction;
+            p.amount *= remainingFraction;
+            p.margin *= remainingFraction;
+            p.pnl *= remainingFraction;
+
+            renderPositions();
+            renderHistory();
+            drawChart();
+            showNotification(`Pozíció ${pct}%-a lezárva${reason ? ' (' + reason + ')' : ''}! Realizált PnL: ${formatPnl(realizedPnl)}`);
+            addSystemLog(`Pozíció RÉSZLEGESEN zárva (${pct}%): ${p.side.toUpperCase()} ${p.asset} @ $${currentAsset.price.toFixed(2)}, realizált PnL: ${formatPnl(realizedPnl)} (${reason || 'Manuális zárás'}).`, realizedPnl >= 0 ? 'TRADE' : 'ERROR');
         }
 
         function updatePositionsPnL() {
