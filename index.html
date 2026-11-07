@@ -36095,12 +36095,31 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const [notional, feePct, tradesRaw, probPct, slipPct] = els.map(el => parseFloat(el.value));
             const trades = Math.max(1, Math.round(tradesRaw || 0));
 
-            if (!notional || notional <= 0 ||
+            // JAVÍTÁS: a notional mezőt korábban csak `!notional || notional <= 0`
+            // validálta — ez a nem-numerikus/0/negatív bemenetet kifogta, de egy
+            // billentyűzettel beírható, a double tartományát túllépő, de
+            // szintaktikailag érvényes értéket (pl. "1e309", ami parseFloat-tal
+            // PONTOSAN Infinity-re kerekedik) NEM, mert az Infinity truthy és nem
+            // <=0 (ellentétben a feePct/probPct/slipPct mezőkkel, amiket a 0-100
+            // felső korlátjuk már eddig is kifogott egy Infinity bemenetre).
+            // Az Infinity innen a costPerTradeGSL/expectedSlippagePerTrade
+            // szorzásokon végigterjedt, és Infinity − Infinity = NaN-t adott a
+            // netPerTrade/netTotal mezőknél — ez a fmtMoney()-n keresztül szó
+            // szerinti "$Infinity"/"$NaN" szöveget jelenített volna meg, miközben
+            // a döntési logika (netTotal > 0 / >= -0.5×totalGSLCost) hamis "🚨 a
+            // GSL jelentősen veszteséges" verdiktet adott volna egy valójában
+            // kiértékelhetetlen bemenetre. Number.isFinite()-ra váltva és egy
+            // explicit felső korláttal (max 1 billió), konzisztensen az app többi
+            // "pénzösszeg" mezőjével (lásd calcBetaBalancedSizing,
+            // calcVolatilityBasedSizing), plusz egy végső véges-ellenőrzés
+            // biztonsági hálóként lejjebb, ugyanúgy mint a hasonló, korábban
+            // javított kalkulátoroknál.
+            if (!Number.isFinite(notional) || notional <= 0 || notional > 1e12 ||
                 isNaN(feePct) || feePct < 0 || feePct > 100 ||
                 !Number.isFinite(tradesRaw) || tradesRaw < 1 ||
                 isNaN(probPct) || probPct < 0 || probPct > 100 ||
                 isNaN(slipPct) || slipPct < 0 || slipPct > 100) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb névleges értéket, legalább 1 trade-et, és 0-100 közötti felár / esély / csúszás %-okat!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, 1 billiónál kisebb, véges névleges értéket, legalább 1 trade-et, és 0-100 közötti felár / esély / csúszás %-okat!</div>`;
                 return;
             }
 
@@ -36115,6 +36134,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const totalGSLCost = costPerTradeGSL * trades;
             const totalExpectedSlippage = expectedSlippagePerTrade * trades;
             const netTotal = totalExpectedSlippage - totalGSLCost;
+
+            // JAVÍTÁS: végső véges-ellenőrzés biztonsági hálóként — a fenti
+            // explicit notional-korlát a konkrét, azonosított forrást fedi le, de
+            // ez egy második védelmi réteget ad bármilyen más, előre nem látott
+            // extrém bemenet-kombináció ellen is, konzisztensen az app többi
+            // kalkulátorának mintájával.
+            if (![costPerTradeGSL, expectedSlippagePerTrade, netPerTrade, totalGSLCost, totalExpectedSlippage, netTotal].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott névleges érték, díjak és trade-szám kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             const breakEvenProbPct = slipFrac > 0 ? (feeFrac / slipFrac) * 100 : Infinity;
             const breakEvenSlipPct = probFrac > 0 ? (feeFrac / probFrac) * 100 : Infinity;
