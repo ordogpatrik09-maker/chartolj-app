@@ -39746,6 +39746,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes találati arányt (1-99%) és pozitív, véges átlagos nyereség/veszteség értékeket!</div>`;
                 return;
             }
+            // JAVÍTÁS (2026-11-07, audit — csendes, NEM Infinity/NaN-ként
+            // megjelenő hiba): a mezőknek nincs HTML max attribútuma SEM, így
+            // egy extrém (pl. "1e308") avgWin/avgLoss nem bukik el a fenti
+            // Number.isFinite() ellenőrzésen (a bemenet ÖNMAGÁBAN véges), de
+            // a lenti breakEvenWinRate = avgLoss / (avgWin + avgLoss) * 100
+            // nevezőjében az avgWin+avgLoss összeadás TÚLCSORDUL Infinity-re,
+            // és avgLoss/Infinity*100 CSENDESEN 0.0%-ot ad — ami nem Infinity/
+            // NaN, hanem egy plauzibilisnek tűnő, de VALÓTLAN eredmény, ráadásul
+            // az expectancyDollar.toFixed(2) is tudományos jelölésben (pl.
+            // "+$3.99...e+307") jelenik meg egy dollár-összegnél. Egy ésszerű
+            // felső korlát (1 milliárd/trade, minden reális oktatási szcenáriót
+            // bőven lefedve) garantáltan elkerüli mindkét problémát.
+            if (avgWin > 1e9 || avgLoss > 1e9) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az átlagos nyereség/veszteség legfeljebb 1 000 000 000 (egységenként) lehet egy reális számításhoz!</div>`;
+                return;
+            }
 
             const W = winRatePct / 100;
             const L = 1 - W;
