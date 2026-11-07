@@ -50402,7 +50402,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function cancelPendingOrder(id) {
             const order = pendingOrders.find(p => p.id === id);
             if (!order) return;
-            if (!confirm("Törlöd a függő " + order.side.toUpperCase() + " megbízást (" + order.asset + (order.price ? " @ " + order.price.toFixed(2) : "") + ")?")) return;
+            // JAVÍTÁS: a megerősítő párbeszéd korábban "order.price"-ot olvasott,
+            // de a függő megbízás objektumon ez a mező soha nem létezett (csak
+            // "order.limitPrice" van rá feltöltve lentebb) — ezért az ár MINDIG
+            // kimaradt a megerősítésből, bármennyire is úgy nézett ki a kód,
+            // mintha meg kellene jelennie.
+            if (!confirm("Törlöd a függő " + order.side.toUpperCase() + " megbízást (" + order.asset + (order.limitPrice ? " @ " + order.limitPrice.toFixed(2) : "") + ")?")) return;
             cancelPendingOrderSilent(id);
             showNotification('Függő megbízás törölve, margó visszatérítve.');
             addSystemLog(`Függő megbízás törölve: ${order.side.toUpperCase()} ${order.asset} @ $${order.limitPrice.toFixed(2)}.`);
