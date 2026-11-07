@@ -23640,9 +23640,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         });
 
-        // ESC-bezárás kiterjesztése négy ÚJABB, egyedi nyitási logikájú
-        // app-modalra (badges-modal, trade-journal-modal, whatif-modal,
-        // close-reason-modal) — ezek a fenti, openToolModal()-alapú ESC-
+        // ESC-bezárás kiterjesztése egyedi nyitási logikájú app-modalokra
+        // (badges-modal, trade-journal-modal, whatif-modal, close-reason-modal,
+        // majd később logout-confirm-modal, reset-balance-confirm-modal,
+        // delete-account-modal, ranks-missions-modal, mobile-tools-modal,
+        // certification-modal) — ezek a fenti, openToolModal()-alapú ESC-
         // mechanizmus bevezetése UTÁN készültek, ezért korábban kimaradtak
         // belőle (nincsenek az "openToolModal(" onclick-mintából épülő
         // ID-gyorsítótárban), pedig a többi dialógussal azonos UX-et
@@ -23654,11 +23656,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // ugyanazt csinálja, mint a meglévő "Kihagyás — csak zárás" gomb
         // (confirmCloseWithReason(null)), nem hagyja a pozíciót félig
         // lezárt, inkonzisztens állapotban nyitva.
+        // A logout-confirm-modal és a reset-balance-confirm-modal esetén az
+        // ESC a "Mégse" gombbal EGYEZŐ, biztonságos (nem-destruktív) útvonalat
+        // hívja — SOHA nem a megerősítő/destruktív gombot. A delete-account-modal
+        // és a ranks-missions-modal/mobile-tools-modal/certification-modal saját
+        // close* függvényét hívja, ami pontosan azt csinálja, mint a modal X
+        // gombja. SZÁNDÉKOSAN KIMARADT ebből a listából: auth-modal (nincs
+        // "mégse" útja — bejelentkezés/regisztráció nélkül nem zárható),
+        // onboarding-modal (kényszerített, egyszeri választás, nincs "kihagyás"
+        // gomb) és new-password-modal (jelszó-visszaállító email linkről
+        // nyílik, nincs "mégse" — a felhasználónak be KELL állítania az új
+        // jelszót a folytatáshoz).
         const _escClosableOtherModals = {
             'badges-modal': () => closeBadgesPanel(),
             'trade-journal-modal': () => closeTradeJournalDashboard(),
             'whatif-modal': () => closeWhatIfSimulator(),
-            'close-reason-modal': () => confirmCloseWithReason(null)
+            'close-reason-modal': () => confirmCloseWithReason(null),
+            'logout-confirm-modal': () => document.getElementById('logout-confirm-modal').classList.add('hidden'),
+            'reset-balance-confirm-modal': () => document.getElementById('reset-balance-confirm-modal').classList.add('hidden'),
+            'delete-account-modal': () => closeDeleteAccountModal(),
+            'ranks-missions-modal': () => closeRanksMissionsModal(),
+            'mobile-tools-modal': () => closeMobileToolsModal(),
+            'certification-modal': () => document.getElementById('certification-modal').classList.add('hidden')
         };
         document.addEventListener('keydown', function(e) {
             if (e.key !== 'Escape') return;
