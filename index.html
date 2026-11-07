@@ -1432,7 +1432,7 @@
                     <span class="text-[9px] text-slate-400 block font-semibold leading-none uppercase">Demó Egyenleg</span>
                     <span id="account-balance" class="font-mono text-xs font-bold text-white leading-tight">$100,000.00</span>
                 </div>
-                <button onclick="requestResetBalance()" title="Egyenleg visszaállítása" class="ml-1 text-slate-400 hover:text-neon-cyan text-xs transition">
+                <button onclick="requestResetBalance()" title="Egyenleg visszaállítása" aria-label="Egyenleg visszaállítása" class="ml-1 text-slate-400 hover:text-neon-cyan text-xs transition">
                     <i class="fa-solid fa-arrows-rotate"></i>
                 </button>
             </div>
@@ -2899,7 +2899,7 @@
                  desktopon is) nem volt hozzá másik útvonal. Ez egy második,
                  gyors belépési pont: ugyanaz a switchMobileTab('profile')
                  hívás, amit az alsó navigáció gombja is használ. -->
-            <button id="header-profile-btn" onclick="if(typeof switchMobileTab==='function') switchMobileTab('profile')" title="Profil" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
+            <button id="header-profile-btn" onclick="if(typeof switchMobileTab==='function') switchMobileTab('profile')" title="Profil" aria-label="Profil" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
                 <i class="fa-solid fa-user-gear"></i>
             </button>
 
@@ -2937,7 +2937,7 @@
                 <i class="fa-solid fa-cloud"></i>
             </button>
 
-            <button id="fullscreen-toggle-btn" onclick="toggleFullscreen()" title="Teljes képernyő" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
+            <button id="fullscreen-toggle-btn" onclick="toggleFullscreen()" title="Teljes képernyő" aria-label="Teljes képernyő" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
                 <i class="fa-solid fa-expand"></i>
             </button>
         </div>
@@ -3094,13 +3094,13 @@
 
                 <!-- Chart Type Selector -->
                 <div class="flex items-center gap-1">
-                    <button onclick="setChartType('candles')" id="chart-type-candles" class="p-1.5 rounded-md bg-dark-800 text-neon-cyan border border-dark-700 transition" title="Gyertyatartó Grafikon">
+                    <button onclick="setChartType('candles')" id="chart-type-candles" class="p-1.5 rounded-md bg-dark-800 text-neon-cyan border border-dark-700 transition" title="Gyertyatartó Grafikon" aria-label="Gyertyatartó Grafikon">
                         <i class="fa-solid fa-chart-gantt"></i>
                     </button>
-                    <button onclick="setChartType('line')" id="chart-type-line" class="p-1.5 rounded-md hover:bg-dark-800 text-slate-400 hover:text-white transition" title="Vonalgrafikon">
+                    <button onclick="setChartType('line')" id="chart-type-line" class="p-1.5 rounded-md hover:bg-dark-800 text-slate-400 hover:text-white transition" title="Vonalgrafikon" aria-label="Vonalgrafikon">
                         <i class="fa-solid fa-chart-line"></i>
                     </button>
-                    <button onclick="setChartType('area')" id="chart-type-area" class="p-1.5 rounded-md hover:bg-dark-800 text-slate-400 hover:text-white transition" title="Területgrafikon">
+                    <button onclick="setChartType('area')" id="chart-type-area" class="p-1.5 rounded-md hover:bg-dark-800 text-slate-400 hover:text-white transition" title="Területgrafikon" aria-label="Területgrafikon">
                         <i class="fa-solid fa-chart-area"></i>
                     </button>
                 </div>
@@ -14794,7 +14794,7 @@ Mean-reversion,2.5</textarea>
             <div class="glass-card rounded-xl p-4">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-xs font-bold text-slate-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-satellite-dish text-neon-green text-[10px]"></i> Élő Piaci Árfolyam</h3>
-                    <button onclick="fetchLivePrices()" title="Frissítés" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-rotate text-[11px]"></i></button>
+                    <button onclick="fetchLivePrices()" title="Frissítés" aria-label="Frissítés" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-rotate text-[11px]"></i></button>
                 </div>
                 <div id="live-price-widget" class="space-y-1.5">
                     <div class="text-[11px] text-slate-500 text-center py-2">Betöltés...</div>
@@ -14920,7 +14920,7 @@ Mean-reversion,2.5</textarea>
                             <i id="profile-avatar-placeholder-icon" class="fa-solid fa-user text-slate-500 text-lg"></i>
                             <img id="profile-avatar-img" class="hidden w-full h-full object-cover" alt="Profilkép">
                         </div>
-                        <button onclick="document.getElementById('avatar-file-input').click()" title="Profilkép módosítása" class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-neon-cyan text-dark-950 flex items-center justify-center text-[9px] hover:brightness-110 transition">
+                        <button onclick="document.getElementById('avatar-file-input').click()" title="Profilkép módosítása" aria-label="Profilkép módosítása" class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-neon-cyan text-dark-950 flex items-center justify-center text-[9px] hover:brightness-110 transition">
                             <i class="fa-solid fa-camera"></i>
                         </button>
                         <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleAvatarSelect(event)">
@@ -15069,7 +15069,7 @@ Mean-reversion,2.5</textarea>
         <div class="flex items-center justify-between p-4 border-b border-dark-750 shrink-0">
             <h2 class="text-sm font-bold text-white"><i class="fa-solid fa-calendar-day text-neon-green mr-1.5"></i>Kereskedési Napló</h2>
             <div class="flex items-center gap-2">
-                <button onclick="exportJournalCsv()" title="Exportálás CSV-be" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
+                <button onclick="exportJournalCsv()" title="Exportálás CSV-be" aria-label="Exportálás CSV-be" class="w-8 h-8 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 flex items-center justify-center text-slate-400 hover:text-white transition">
                     <i class="fa-solid fa-file-csv text-xs"></i>
                 </button>
                 <button onclick="closeTradingJournal()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
@@ -15283,7 +15283,7 @@ Mean-reversion,2.5</textarea>
                 <div class="w-28 h-1.5 rounded-full bg-dark-800 overflow-hidden hidden lg:block">
                     <div id="academy-progress-bar" class="h-full bg-gradient-to-r from-neon-purple to-neon-cyan transition-all" style="width:0%"></div>
                 </div>
-                <button onclick="closeAcademy()" class="micro-icon-btn !w-9 !h-9" title="Vissza a terminálhoz">
+                <button onclick="closeAcademy()" class="micro-icon-btn !w-9 !h-9" title="Vissza a terminálhoz" aria-label="Vissza a terminálhoz">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -15847,7 +15847,7 @@ Mean-reversion,2.5</textarea>
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="clearAiChat()" title="Beszélgetés törlése" class="text-slate-400 hover:text-neon-red transition">
+                <button onclick="clearAiChat()" title="Beszélgetés törlése" aria-label="Beszélgetés törlése" class="text-slate-400 hover:text-neon-red transition">
                     <i class="fa-solid fa-trash-can text-xs"></i>
                 </button>
                 <button onclick="toggleAiChat()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
@@ -16201,10 +16201,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         </div>
                     </button>
                     <span class="text-xs font-mono text-neon-green shrink-0 mr-1">${priceStr}</span>
-                    <button onclick="openAlertsModal('${asset.symbol}', event)" title="Árfolyam-riasztás erre az eszközre" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition text-slate-600 hover:text-neon-cyan">
+                    <button onclick="openAlertsModal('${asset.symbol}', event)" title="Árfolyam-riasztás erre az eszközre" aria-label="Árfolyam-riasztás erre az eszközre" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition text-slate-600 hover:text-neon-cyan">
                         <i class="fa-regular fa-bell text-xs"></i>
                     </button>
-                    <button onclick="toggleWatchlist('${asset.symbol}', event)" title="${starActive ? 'Eltávolítás a figyelőlistából' : 'Hozzáadás a figyelőlistához'}" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition ${starActive ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'}">
+                    <button onclick="toggleWatchlist('${asset.symbol}', event)" title="${starActive ? 'Eltávolítás a figyelőlistából' : 'Hozzáadás a figyelőlistához'}" aria-label="${starActive ? 'Eltávolítás a figyelőlistából' : 'Hozzáadás a figyelőlistához'}" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition ${starActive ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'}">
                         <i class="fa-${starActive ? 'solid' : 'regular'} fa-star text-xs"></i>
                     </button>
                 </div>`;
@@ -44741,7 +44741,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <button onclick="startMistakePractice()" class="px-8 py-3 rounded-xl text-sm font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                             <i class="fa-solid fa-play mr-1.5"></i> Gyakorlás indítása (${due})
                         </button>
-                        <button onclick="renderMistakeBankStats()" title="Statisztika" class="w-11 h-11 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 hover:text-white transition flex items-center justify-center">
+                        <button onclick="renderMistakeBankStats()" title="Statisztika" aria-label="Statisztika" class="w-11 h-11 rounded-xl bg-dark-850 border border-dark-750 text-slate-300 hover:border-neon-cyan/40 hover:text-white transition flex items-center justify-center">
                             <i class="fa-solid fa-chart-pie"></i>
                         </button>
                     </div>
@@ -49952,7 +49952,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2">$${h.closePrice.toFixed(2)}</td>
                         <td class="py-2 font-bold ${pnlColor}">${formatPnl(h.pnl)}</td>
                         <td class="py-2 text-[10px] text-slate-400">${h.reason || 'Manuális zárás'}</td>
-                        <td class="py-2 text-right">${h.note ? '' : `<button onclick="editTradeNote('${h.id}')" title="Jegyzet hozzáadása" class="text-slate-600 hover:text-neon-cyan transition"><i class="fa-regular fa-note-sticky text-xs"></i></button>`}</td>
+                        <td class="py-2 text-right">${h.note ? '' : `<button onclick="editTradeNote('${h.id}')" title="Jegyzet hozzáadása" aria-label="Jegyzet hozzáadása" class="text-slate-600 hover:text-neon-cyan transition"><i class="fa-regular fa-note-sticky text-xs"></i></button>`}</td>
                     </tr>
                     ${noteRow}
                 `;
