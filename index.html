@@ -22694,6 +22694,34 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ctx.fillStyle = '#ff1744';
                     ctx.fillText('SL $' + p.sl.toFixed(2), 6, ySL - 4);
                 }
+
+                // ÚJ FUNKCIÓ: likvidációs ár vonala a charton. A liqFraction a
+                // motor MÁR MEGLÉVŐ, változatlan PnL-képletéből (updatePositionsPnL:
+                // pnl = amount * pct * leverage, margin = amount / leverage)
+                // visszafejtett érték — pontosan az az ár-elmozdulás-arány, amelynél
+                // a pozíció pnl-je elérné a -margin-t (teljes tőkevesztés). Ez NEM
+                // egy új, külön likvidációs mechanizmus — csak egy VIZUÁLIS jelző,
+                // ami a motor saját, már meglévő PnL-logikáját tükrözi; magát a
+                // kereskedési motort (azt, hogy mikor zár le valójában egy pozíciót)
+                // ez a funkció nem módosítja.
+                if (Number.isFinite(p.margin) && Number.isFinite(p.amount) && Number.isFinite(p.leverage) && p.amount > 0 && p.leverage > 0) {
+                    const liqFraction = p.margin / (p.amount * p.leverage);
+                    if (Number.isFinite(liqFraction) && liqFraction > 0 && liqFraction < 1) {
+                        const liqPrice = p.side === 'long'
+                            ? p.entryPrice * (1 - liqFraction)
+                            : p.entryPrice * (1 + liqFraction);
+                        if (Number.isFinite(liqPrice) && liqPrice > 0) {
+                            const yLiq = getY(liqPrice);
+                            ctx.strokeStyle = 'rgba(255, 145, 0, 0.55)';
+                            ctx.setLineDash([1, 4]);
+                            ctx.lineWidth = 1;
+                            ctx.beginPath(); ctx.moveTo(0, yLiq); ctx.lineTo(chartWidth, yLiq); ctx.stroke();
+                            ctx.setLineDash([]);
+                            ctx.fillStyle = '#ff9100';
+                            ctx.fillText('LIKVIDÁCIÓ $' + liqPrice.toFixed(2), 6, yLiq - 4);
+                        }
+                    }
+                }
             });
 
             /* 7. Interactive Crosshair Overlay */
