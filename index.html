@@ -49749,6 +49749,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }
                 academyStage = 'quiz';
                 academyQuizQueue = l.qs.map((_, i) => i);
+                // ADAPTÍV KVÍZ NEHÉZSÉG: a kérdések bemutatási sorrendje nem
+                // mindig a szerzői (fix) sorrendet követi — azok a kérdések,
+                // amelyeknél EZ a felhasználó a Mistake Bank szerint korábban
+                // már hibázott ebben a leckében, előre kerülnek a sorban, hogy
+                // frissebb figyelemmel foglalkozzon a számára SZEMÉLY SZERINT
+                // nehezebb anyagrésszel, míg a számára már biztosan ismert
+                // kérdések később jönnek. A kérdések száma, a kvíz hossza, a
+                // pontozás és a teljesítési küszöb NEM változik — csak a
+                // bemutatás sorrendje, stabil rendezéssel (a saját korábban
+                // hibázott/nem hibázott csoporton belüli eredeti sorrend
+                // megmarad).
+                academyQuizQueue.sort((a, b) => {
+                    const aWrong = academyMistakes.has(mistakeKey(academyLessonIdx, a)) ? 1 : 0;
+                    const bWrong = academyMistakes.has(mistakeKey(academyLessonIdx, b)) ? 1 : 0;
+                    return bWrong - aWrong;
+                });
                 academyQuizScore = { correct: 0, total: 0 };
             }
             renderAcademyViewer();
