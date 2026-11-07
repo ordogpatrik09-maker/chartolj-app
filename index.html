@@ -50254,7 +50254,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 let diff = price - p.entryPrice;
                 if (p.side === 'short') diff = -diff;
                 let pct = diff / p.entryPrice;
-                p.pnl = (p.amount * pct) * p.leverage;
+                // JAVÍTÁS: a "+ (p.fundingAccrued || 0)" rész ÚJ (lásd lejjebb a
+                // Funding-Ráta Szimuláció funkciót) — minden MÁR MEGLÉVŐ pozíciónál
+                // p.fundingAccrued undefined, tehát "undefined || 0" = 0, ami
+                // byte-pontosan az EREDETI (funding nélküli) pnl-t adja. Csak azoknál
+                // a pozícióknál van bármilyen hatása, amik legalább egy szimulált
+                // funding-elszámoláson átmentek.
+                p.pnl = (p.amount * pct) * p.leverage + (p.fundingAccrued || 0);
                 p.currentPrice = price;
             });
 
@@ -50378,7 +50384,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2.5">$${p.currentPrice.toFixed(2)}</td>
                         <td class="py-2.5">$${p.amount.toFixed(2)}</td>
                         <td class="py-2.5">${p.leverage}x</td>
-                        <td class="py-2.5 font-bold ${pnlColor}">${formatPnl(p.pnl)}</td><td class="py-2.5 text-right text-[10px] text-slate-500 font-mono">${p.margin?"$"+p.margin.toFixed(0):"-"}</td>
+                        <td class="py-2.5 font-bold ${pnlColor}" ${p.fundingAccrued ? `title="Tartalmaz felhalmozott funding-díjat: ${p.fundingAccrued < 0 ? '-$' + Math.abs(p.fundingAccrued).toFixed(2) : '+$' + p.fundingAccrued.toFixed(2)}"` : ''}>${formatPnl(p.pnl)}${p.fundingAccrued ? '<i class="fa-solid fa-coins text-amber-400/70 ml-1 text-[9px]"></i>' : ''}</td><td class="py-2.5 text-right text-[10px] text-slate-500 font-mono">${p.margin?"$"+p.margin.toFixed(0):"-"}</td>
                         <td class="py-2.5 text-right whitespace-nowrap">
                             <button onclick="promptAddToPosition(${p.id})" title="Átlagold be a pozíciót (DCA)" class="px-2 py-1 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded text-[10px] font-bold transition mr-1">
                                 <i class="fa-solid fa-plus"></i>
@@ -51805,6 +51811,43 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
 
         // 3. védelmi réteg: időzített biztonsági mentés, HA van el nem mentett változás.
         setInterval(() => { if (cloudProgressDirty) saveCloudProgress(); updateMistakeBankBadge(); }, 20000);
+
+        // ================= FUNDING-RÁTA SZIMULÁCIÓ ÉLŐ POZÍCIÓKON (ÚJ FUNKCIÓ) =================
+        // Oktatási célra szimulál egy periodikus funding-elszámolást (ugyanaz a
+        // koncepció, mint a már meglévő, önálló Funding-Költség kalkulátor: pozitív
+        // rátánál a LONG fizet a SHORT-nak, negatívnál fordítva), de FELGYORSÍTVA
+        // (45 másodpercenként egy "elszámolás", nem a valós 8 óránkénti ütemben),
+        // hogy egy normál oktatási demó-session alatt is érzékelhető legyen a hatása.
+        // A felhalmozott funding a p.fundingAccrued mezőben gyűlik, amit a
+        // updatePositionsPnL() ÚJONNAN hozzáad a price-alapú PnL-hez (lásd a fenti
+        // JAVÍTÁS kommentet) — minden más pozíciónál (amíg ez a mező undefined)
+        // nulla a hatás, byte-pontosan a korábbi viselkedést adva.
+        const FUNDING_SIM_RATE_PCT = 0.015; // % / elszámolás (reális kripto funding-ráta nagyságrend)
+        const FUNDING_SIM_INTERVAL_MS = 45000;
+        function applyFundingTick() {
+            if (!positions || positions.length === 0) return;
+            let totalLongPaid = 0, totalShortReceived = 0, affectedCount = 0;
+            positions.forEach(p => {
+                if (!Number.isFinite(p.amount) || p.amount <= 0) return;
+                const fundingAmount = p.amount * (FUNDING_SIM_RATE_PCT / 100);
+                if (!Number.isFinite(fundingAmount)) return;
+                if (p.side === 'long') {
+                    p.fundingAccrued = (p.fundingAccrued || 0) - fundingAmount;
+                    totalLongPaid += fundingAmount;
+                } else {
+                    p.fundingAccrued = (p.fundingAccrued || 0) + fundingAmount;
+                    totalShortReceived += fundingAmount;
+                }
+                affectedCount++;
+            });
+            if (affectedCount === 0) return;
+            updatePositionsPnL();
+            renderPositions();
+            if (typeof addSystemLog === 'function') {
+                addSystemLog(`Funding-elszámolás: ${affectedCount} nyitott pozíció érintett (LONG fizetett: $${totalLongPaid.toFixed(2)}, SHORT kapott: $${totalShortReceived.toFixed(2)}).`, 'TRADE');
+            }
+        }
+        setInterval(applyFundingTick, FUNDING_SIM_INTERVAL_MS);
 
         // "Utoljára aktív" frissítése a szerveren (ritkítva, ~5 percenként) —
         // ez táplálja a send-daily-reminders cron-függvényt, hogy pontosan
