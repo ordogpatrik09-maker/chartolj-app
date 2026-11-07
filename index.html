@@ -50974,6 +50974,30 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 p.currentPrice = price;
             });
 
+            // ÚJ FUNKCIÓ: auto-likvidáció. A chart már régóta kirajzolta a
+            // "LIKVIDÁCIÓ $X" árszintet minden nyitott pozícióhoz (lásd a
+            // drawChart()-beli liqPrice-számítást — adjFraction = (margin +
+            // fundingAccrued) / (amount * leverage)), és van hozzá egy külön
+            // oktatási kalkulátor is, DE eddig ez a szint pusztán vizuális
+            // volt — a VALÓS, élő pozíciókra soha nem érvényesült: a
+            // veszteség korlátlanul a margó alá eshetett, ellentétben a
+            // valódi tőzsdei viselkedéssel és azzal, amit a chart-vonal
+            // sugallt. A liqPrice-képlet pnl = -margin esetén adja ki pontosan
+            // ezt a szintet (levezetés: pnl = amount*pct*leverage + funding =
+            // -margin → pct = -(margin+funding)/(amount*leverage) = pontosan
+            // az adjFraction, entry*(1∓adjFraction)-ként a chart-vonallal).
+            // Ezért a "p.pnl <= -p.margin" feltétel BYTE-PONTOSAN ugyanazt a
+            // pillanatot ragadja meg, amit a chart-vonal már eddig is
+            // mutatott — nem új küszöb, csak a már látható ígéret betartása.
+            // A veszteség a margóra korlátozódik (nem mehet az alá), majd a
+            // pozíció a meglévő closePosition()-nel zár, 'Likvidáció' okkal.
+            [...positions].forEach(p => {
+                if (Number.isFinite(p.margin) && p.margin > 0 && p.pnl <= -p.margin) {
+                    p.pnl = -p.margin;
+                    closePosition(p.id, 'Likvidáció');
+                }
+            });
+
             // TP / SL automatikus kiváltás
             [...positions].forEach(p => {
                 if (p.asset !== currentAsset.symbol) return;
