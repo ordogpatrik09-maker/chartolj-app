@@ -9240,7 +9240,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
 
     <!-- ================= FIX VS SZÁZALÉKOS JUTALÉK ÖSSZEHASONLÍTÓ (OKTATÁSI) =================
          Két alapvető bróker díjazási modell: a FIX jutalék ugyanannyi minden
-         trade-nél a pozícióméret méretétől függetlenül, a SZÁZALÉKOS jutalék a
+         trade-nél a pozíció méretétől függetlenül, a SZÁZALÉKOS jutalék a
          pozíció értékének adott hányada. Van egy pontos breakeven pozícióméret,
          ahol a két modell költsége megegyezik:
            breakEvenPosition = flatFeePerSide / (pctFeePerSide/100)
@@ -10208,7 +10208,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                 </div>
                 <div>
                     <label class="text-[11px] font-semibold text-slate-400" for="emv-divisor">Volumen skála</label>
-                    <input type="number" id="emv-divisor" value="1000000" step="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-purple-400/50">
+                    <input type="number" id="emv-divisor" value="1000000" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-purple-400/50">
                 </div>
             </div>
 
@@ -30184,7 +30184,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const period = parseInt(periodEl.value, 10);
-            const divisor = parseFloat(divisorEl.value) || 1;
+            const divisor = parseFloat(divisorEl.value);
             const n = candles.length;
 
             // JAVÍTÁS: a period mezőt korábban `parseInt(...) || 1` eséssel olvastuk —
@@ -30200,6 +30200,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // kalkulátorának input-validációs mintájával.
             if (!Number.isFinite(period) || period < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A simítási periódusnak egy érvényes, legalább 1 értékű egész számnak kell lennie!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS: a divisor (volumen-osztó) mezőt korábban `parseFloat(...) || 1`
+            // eséssel olvastuk — ez csak a nem-numerikus/0 bemenetet fogta ki (hibaüzenet
+            // nélkül csendben 1-re cserélve), egy NEGATÍV osztó (a mezőnek nem volt HTML
+            // "min" attribútuma sem) truthy számként simán átment a validáción. A `volume /
+            // divisor` számítás negatív osztóval egy ÉRTELMETLEN, előjel-fordított "box
+            // ratio"-t és EMV-eredményt adott, hibaüzenet nélkül. Explicit, pozitív-szám
+            // ellenőrzés zárja ki ezt, konzisztensen a fenti period-mező és a session többi
+            // kalkulátorának input-validációs mintájával.
+            if (!Number.isFinite(divisor) || divisor <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A volumen-osztónak egy érvényes, nullánál nagyobb számnak kell lennie!</div>`;
                 return;
             }
 
@@ -30247,11 +30260,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
-            const period = parseInt(periodEl.value, 10) || 2;
+            // JAVÍTÁS: a periódus mezőt korábban `parseInt(...) || 2` eséssel olvastuk —
+            // ez a nem-numerikus/üres bemenetet ÉS a kifejezetten beírt "0" értéket is
+            // csendben, hibaüzenet nélkül 2-re cserélte (mivel a NaN és a 0 egyaránt
+            // falsy), ahelyett hogy a lenti, ugyanerre az esetre már létező validációs
+            // üzenetet mutatta volna — eltérve az app többi kalkulátorának konzisztens
+            // mintájától (explicit hibaüzenet minden érvénytelen bemenetre, sosem csendes
+            // korrekció). Most a NaN (nem-numerikus/üres mező) ugyanazt az explicit
+            // hibaüzenetet kapja, mint a túl kicsi/negatív periódus.
+            const period = parseInt(periodEl.value, 10);
             const n = closes.length;
 
-            if (period < 2) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A periódus legalább 2 kell legyen — negatív vagy 1-nél kisebb periódussal a Fisher Transform nem számolható!</div>`;
+            if (!Number.isFinite(period) || period < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A periódus legalább 2 kell legyen — negatív, 1-nél kisebb vagy nem érvényes periódussal a Fisher Transform nem számolható!</div>`;
                 return;
             }
 
