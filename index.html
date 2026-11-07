@@ -16351,7 +16351,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // felhasználó tudta/hozzájárulása nélkül a készüléken.
         (function purgeLegacyLocalStorage() {
             try {
-                ['chartoljAcademyState', 'chartoljLang', 'chartoljGuestChoice'].forEach(k => localStorage.removeItem(k));
+                // JAVÍTÁS (audit, önkorrekció): a 'chartolj_accent_theme' egy
+                // korábbi (ebben a munkamenetben épített) verzióban rövid ideig
+                // localStorage-ba íródott, mielőtt kiderült, hogy ez nem
+                // konzisztens ezzel a szabállyal — a már élesben lévő néhány
+                // perces ablakban esetlegesen elmentett érték törlése itt.
+                ['chartoljAcademyState', 'chartoljLang', 'chartoljGuestChoice', 'chartolj_accent_theme'].forEach(k => localStorage.removeItem(k));
             } catch (e) { /* localStorage nem elérhető — nincs mit törölni */ }
         })();
 
@@ -16368,15 +16373,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         // ================= AKCENTSZÍN-TÉMA (UI téma-bővítés) =================
-        // Tiszta kozmetikai, nem fiók/progress-adat beállítás (hasonlóan a
-        // már meglévő, pre-existáló localStorage-ban tárolt napi-sorozat/
-        // napi-kihívás állapothoz) - NEM a Supabase progress-szinkronba
-        // tartozó adat, nem érinti a "az app nem ír localStorage-ba
-        // fiók/progress adatot" szabályt. Csak a `--accent-rgb`/`--accent-hex`
-        // CSS-változókat módosítja a <html data-accent="..."> attribútum
-        // útján - a kereskedési chart/canvas rajzolása szándékosan NEM
-        // reagál erre (lásd a <style id="accent-theme-vars"> fölötti
-        // megjegyzést).
+        // JAVÍTÁS (audit, önkorrekció): a funkció ELSŐ verziója localStorage-ban
+        // perzisztálta a választott témát — ez NEM konzisztens a fentebbi
+        // T()/currentLang mellett dokumentált, tudatos szabállyal: még a NYELV-
+        // választás (ami ennél is alapvetőbb beállítás) sem kerül localStorage-ba,
+        // amíg nincs Adatkezelési Tájékoztató a Google Play beküldéshez (lásd a
+        // purgeLegacyLocalStorage() megjegyzését feljebb). Az akcentszín ennél
+        // még kevésbé "fontos" adat, de a KÖVETKEZETESSÉG kedvéért ugyanazt az
+        // elvet követi: csak a munkamenet idejére érvényes, minden induláskor
+        // ciánkék (alapértelmezett) az induló állapot, localStorage-írás nélkül.
+        // Csak a `--accent-rgb`/`--accent-hex` CSS-változókat módosítja a
+        // <html data-accent="..."> attribútum útján - a kereskedési
+        // chart/canvas rajzolása szándékosan NEM reagál erre (lásd a
+        // <style id="accent-theme-vars"> fölötti megjegyzést).
         const ACCENT_THEMES = ['cyan', 'purple', 'green', 'amber'];
         function setAccentTheme(theme) {
             if (!ACCENT_THEMES.includes(theme)) return;
@@ -16385,16 +16394,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             } else {
                 document.documentElement.setAttribute('data-accent', theme);
             }
-            try { localStorage.setItem('chartolj_accent_theme', theme); } catch (e) {}
             renderAccentThemePicker();
-        }
-        function loadAccentTheme() {
-            let theme = 'cyan';
-            try {
-                const saved = localStorage.getItem('chartolj_accent_theme');
-                if (saved && ACCENT_THEMES.includes(saved)) theme = saved;
-            } catch (e) {}
-            if (theme !== 'cyan') document.documentElement.setAttribute('data-accent', theme);
         }
         function renderAccentThemePicker() {
             const container = document.getElementById('accent-theme-picker');
@@ -52737,7 +52737,6 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             document.addEventListener('DOMContentLoaded', refreshMobileChatLauncherVisibility);
             document.addEventListener('DOMContentLoaded', checkDailyReminderOnLoad);
             document.addEventListener('DOMContentLoaded', loadDailyAndStreakState);
-            document.addEventListener('DOMContentLoaded', loadAccentTheme);
             document.addEventListener('DOMContentLoaded', registerServiceWorker);
             document.addEventListener('DOMContentLoaded', () => {
                 // Ha korábban már bekapcsolta a napi emlékeztetőt és be van
