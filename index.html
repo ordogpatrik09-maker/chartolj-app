@@ -3242,6 +3242,9 @@
                         <button onclick="openPortfolioOverview()" id="tab-btn-portfolio" class="ml-auto text-slate-400 hover:text-neon-cyan py-1 transition whitespace-nowrap">
                             <i class="fa-solid fa-layer-group mr-1"></i><span class="hidden lg:inline">Portfólió</span>
                         </button>
+                        <button onclick="openHistoricalEventSimulator()" id="tab-btn-historical-event" class="text-slate-400 hover:text-amber-400 py-1 transition whitespace-nowrap">
+                            <i class="fa-solid fa-clock-rotate-left mr-1"></i><span class="hidden lg:inline">Esemény</span>
+                        </button>
                     </div>
                     <!-- JAVÍTÁS (felhasználói visszajelzés: "ne legyen minden
                          egybe/egymáson, legyen több fül"): az Eszközök és
@@ -15894,6 +15897,31 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
+    <!-- ================= TÖRTÉNELMI ESEMÉNY SZIMULÁTOR (OKTATÁSI) =================
+         Tisztán MEGJELENÍTŐ/SZÁMOLÓ funkció: egy híres piaci esemény (pl. COVID
+         crash, LUNA összeomlás) százalékos árelmozdulását alkalmazza HIPOTETIKUSAN
+         a jelenleg NYITOTT pozíciókra, ugyanazzal a motor-saját PnL-képlettel
+         (updatePositionsPnL: pnl = amount*pct*leverage, pct = diff/entryPrice,
+         diff sign-flipped shortnál) és ugyanazzal a likvidáció-modellezési
+         elvvel, mint a What-If Szimulátor és a Vol-Target Sized Backtest
+         (equity nem mehet -margin alá, 0-ra/-margin-ra clampelve). NEM módosítja
+         a valódi positions tömböt, p.pnl-t vagy p.currentPrice-ot — csak egy
+         különálló másolaton számol. Nincs saját állapot-mentés. -->
+    <div id="historical-event-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] max-h-[85%] flex flex-col p-4">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Történelmi Esemény Szimulátor
+                </h3>
+                <button onclick="closeHistoricalEventSimulator()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="historical-event-buttons" class="grid grid-cols-2 gap-1.5 mb-3 shrink-0"></div>
+            <div id="historical-event-result" class="flex-grow overflow-y-auto space-y-2 pr-1 font-mono text-xs"></div>
+        </div>
+    </div>
+
     <!-- ================= "MI LETT VOLNA, HA?" RETROAKTÍV SZIMULÁTOR (OKTATÁSI) =================
          Tisztán MEGJELENÍTŐ/SZÁMOLÓ funkció: a MÁR MEGLÉVŐ tradeHistory tömböt
          játssza le újra egy megváltoztatott pozícióméret-szorzóval (pl. "mi
@@ -23696,6 +23724,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             'trade-journal-modal': () => closeTradeJournalDashboard(),
             'whatif-modal': () => closeWhatIfSimulator(),
             'portfolio-modal': () => closePortfolioOverview(),
+            'historical-event-modal': () => closeHistoricalEventSimulator(),
             'close-reason-modal': () => confirmCloseWithReason(null),
             'logout-confirm-modal': () => document.getElementById('logout-confirm-modal').classList.add('hidden'),
             'reset-balance-confirm-modal': () => document.getElementById('reset-balance-confirm-modal').classList.add('hidden'),
@@ -51848,6 +51877,124 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             }
         }
         setInterval(applyFundingTick, FUNDING_SIM_INTERVAL_MS);
+
+        // ÚJ FUNKCIÓ: Történelmi Esemény Szimulátor — lásd a historical-event-modal
+        // HTML-kommentjét a fájlban fentebb a teljes magyarázatért. Minden esemény
+        // egy globális, piac-szintű %-os árelmozdulást ír le (oktatási egyszerűsítés:
+        // minden nyitott pozícióra alkalmazzuk, függetlenül attól, melyik eszközön
+        // van nyitva — ez NEM eszköz-specifikus historikus adat, csak illusztráció).
+        const HISTORICAL_EVENTS = [
+            { id: 'covid2020', name: 'COVID Crash (2020. márc.)', desc: 'Néhány nap alatt a piacok ~40%-ot zuhantak a világjárvány bejelentésekor.', pctChange: -40 },
+            { id: 'luna2022', name: 'LUNA/UST összeomlás (2022)', desc: 'A Terra/LUNA és az UST stablecoin napok alatt majdnem nullára esett.', pctChange: -99 },
+            { id: 'ftx2022', name: 'FTX összeomlás (2022)', desc: 'A tőzsde csődje pánikot és erős eladási hullámot indított el a piacon.', pctChange: -25 },
+            { id: 'blackmonday1987', name: 'Fekete Hétfő (1987)', desc: 'A részvénypiacok egyetlen nap alatt ~22%-ot zuhantak világszerte.', pctChange: -22 },
+            { id: 'flashcrash2010', name: 'Flash Crash (2010)', desc: 'Percek alatt hirtelen, majd gyorsan visszapattanó ~9%-os esés.', pctChange: -9 },
+            { id: 'bullrun2017', name: 'BTC Bull Run (2017)', desc: 'Egy tartós, eufórikus emelkedő trend az év végéig, kb. +400%.', pctChange: 400 },
+        ];
+        let historicalEventSelectedId = HISTORICAL_EVENTS[0].id;
+        function openHistoricalEventSimulator() {
+            document.getElementById('historical-event-modal').classList.remove('hidden');
+            const btnWrap = document.getElementById('historical-event-buttons');
+            btnWrap.innerHTML = HISTORICAL_EVENTS.map(ev => `
+                <button onclick="selectHistoricalEvent('${ev.id}')" id="historical-event-btn-${ev.id}" class="py-1.5 px-1.5 rounded-lg text-[10px] font-bold border border-dark-750 text-slate-300 hover:border-amber-400/40 transition text-left leading-tight">${escapeHtml(ev.name)}</button>
+            `).join('');
+            historicalEventSelectedId = HISTORICAL_EVENTS[0].id;
+            renderHistoricalEventSimulator();
+        }
+        function closeHistoricalEventSimulator() {
+            document.getElementById('historical-event-modal').classList.add('hidden');
+        }
+        function selectHistoricalEvent(id) {
+            historicalEventSelectedId = id;
+            renderHistoricalEventSimulator();
+        }
+        function renderHistoricalEventSimulator() {
+            HISTORICAL_EVENTS.forEach(ev => {
+                const btn = document.getElementById('historical-event-btn-' + ev.id);
+                if (!btn) return;
+                const active = ev.id === historicalEventSelectedId;
+                btn.className = active
+                    ? 'py-1.5 px-1.5 rounded-lg text-[10px] font-bold border border-amber-400 bg-amber-400/10 text-amber-400 transition text-left leading-tight'
+                    : 'py-1.5 px-1.5 rounded-lg text-[10px] font-bold border border-dark-750 text-slate-300 hover:border-amber-400/40 transition text-left leading-tight';
+            });
+
+            const out = document.getElementById('historical-event-result');
+            const ev = HISTORICAL_EVENTS.find(e => e.id === historicalEventSelectedId);
+            if (!ev) { out.innerHTML = ''; return; }
+
+            const fmtMoney = (v) => v < 0 ? ('-$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+
+            const header = `
+                <div class="glass-card rounded-xl p-3 border border-amber-400/30 bg-amber-400/5">
+                    <div class="text-[11px] font-bold text-amber-400 mb-1">${escapeHtml(ev.name)}</div>
+                    <div class="text-[10px] text-slate-400">${escapeHtml(ev.desc)}</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Szimulált piaci elmozdulás: <span class="font-bold ${ev.pctChange < 0 ? 'text-neon-red' : 'text-neon-green'}">${ev.pctChange > 0 ? '+' : ''}${ev.pctChange}%</span></div>
+                </div>
+            `;
+
+            if (!positions || positions.length === 0) {
+                out.innerHTML = header + `<div class="text-center text-xs text-slate-500 py-6">Nincs nyitott pozíciód — nincs mire alkalmazni a hipotetikus eseményt!</div>`;
+                return;
+            }
+
+            let totalCurrentPnl = 0, totalHypoPnl = 0, liquidatedCount = 0;
+            const rows = positions.map(p => {
+                if (!Number.isFinite(p.amount) || !Number.isFinite(p.entryPrice) || !Number.isFinite(p.leverage) || !Number.isFinite(p.currentPrice) || p.entryPrice === 0) {
+                    return null;
+                }
+                const hypoPrice = p.currentPrice * (1 + ev.pctChange / 100);
+                let diff = hypoPrice - p.entryPrice;
+                if (p.side === 'short') diff = -diff;
+                const pct = diff / p.entryPrice;
+                let hypoPnl = (p.amount * pct) * p.leverage + (p.fundingAccrued || 0);
+                let liquidated = false;
+                if (Number.isFinite(p.margin) && hypoPnl <= -p.margin) {
+                    hypoPnl = -p.margin;
+                    liquidated = true;
+                    liquidatedCount++;
+                }
+                if (!Number.isFinite(hypoPnl)) return null;
+                totalCurrentPnl += Number.isFinite(p.pnl) ? p.pnl : 0;
+                totalHypoPnl += hypoPnl;
+                return `
+                    <div class="flex items-center justify-between py-1.5 border-b border-dark-800">
+                        <div>
+                            <div class="font-bold text-white">${escapeHtml(p.asset)} <span class="${p.side === 'long' ? 'text-neon-green' : 'text-neon-red'}">${p.side === 'long' ? 'LONG' : 'SHORT'}</span></div>
+                            ${liquidated ? '<div class="text-[9px] text-neon-red font-bold"><i class="fa-solid fa-triangle-exclamation"></i> LIKVIDÁLÓDNA</div>' : ''}
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[9px] text-slate-500">most: ${fmtMoney(Number.isFinite(p.pnl) ? p.pnl : 0)}</div>
+                            <div class="font-bold ${hypoPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(hypoPnl)}</div>
+                        </div>
+                    </div>
+                `;
+            }).filter(Boolean);
+
+            if (rows.length === 0 || ![totalCurrentPnl, totalHypoPnl].every(Number.isFinite)) {
+                out.innerHTML = header + `<div class="text-xs text-neon-red font-semibold py-4">A szimuláció eredménye nem fejezhető ki véges számmal ezen a pozíció-együttesen.</div>`;
+                return;
+            }
+
+            const diffTotal = totalHypoPnl - totalCurrentPnl;
+            out.innerHTML = header + `
+                <div class="space-y-0.5">${rows.join('')}</div>
+                <div class="glass-card rounded-xl p-3 border border-dark-750 mt-2">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400">Jelenlegi összes nem realizált PnL</span>
+                        <span class="font-bold ${totalCurrentPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(totalCurrentPnl)}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] mt-1">
+                        <span class="text-slate-400">Hipotetikus összes PnL az esemény után</span>
+                        <span class="font-bold ${totalHypoPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(totalHypoPnl)}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] mt-1 pt-1 border-t border-dark-800">
+                        <span class="text-slate-400">Különbség</span>
+                        <span class="font-bold ${diffTotal >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtMoney(diffTotal)}</span>
+                    </div>
+                    ${liquidatedCount > 0 ? `<div class="text-[10px] text-neon-red font-bold mt-2"><i class="fa-solid fa-triangle-exclamation"></i> ${liquidatedCount} pozíció likvidálódna ennél az eseménynél.</div>` : ''}
+                </div>
+            `;
+        }
 
         // "Utoljára aktív" frissítése a szerveren (ritkítva, ~5 percenként) —
         // ez táplálja a send-daily-reminders cron-függvényt, hogy pontosan
