@@ -25827,9 +25827,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const price = parseFloat(priceEl.value);
             const netIncome = parseFloat(netIncomeEl.value);
             const shares = parseFloat(sharesEl.value);
-            const industryAvg = parseFloat(industryAvgEl.value) || 0;
+            const industryAvgRaw = parseFloat(industryAvgEl.value);
+            const industryAvg = Number.isFinite(industryAvgRaw) ? industryAvgRaw : 0;
 
-            if (!price || price <= 0 || isNaN(netIncome) || !shares || shares <= 0) {
+            if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(netIncome) || !Number.isFinite(shares) || shares <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb részvényárat, egy érvényes nettó nyereséget, és egy nullánál nagyobb részvényszámot!</div>`;
                 return;
             }
@@ -30022,8 +30023,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const height = parseFloat(heightEl.value);
             const direction = directionEl.value;
 
-            if (isNaN(breakout) || isNaN(height)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat mindkét mezőben!</div>`;
+            if (!Number.isFinite(breakout) || !Number.isFinite(height)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat mindkét mezőben!</div>`;
                 return;
             }
             if (height < 0) {
@@ -30033,6 +30034,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const sign = direction === 'up' ? 1 : -1;
             const target = breakout + sign * height;
+
+            if (!Number.isFinite(target)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékek túl szélsőségesek — a célár kiszámítása túlcsordul. Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
             const colorClass = sign > 0 ? 'text-neon-green' : 'text-neon-red';
             const verdict = sign > 0
                 ? 'Felfelé irányuló mért mozgás — a célár a kitörési/nyakvonal ár felett, az alakzat magasságával megegyező távolságra van.'
@@ -32956,7 +32962,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const Rf = parseFloat(riskfreeEl.value);
             const Rm = parseFloat(benchReturnEl.value);
 
-            if (isNaN(Rp) || isNaN(sigmaM) || isNaN(Rf) || !sigmaP || sigmaP <= 0 || sigmaM < 0) {
+            if (!Number.isFinite(Rp) || !Number.isFinite(sigmaM) || !Number.isFinite(Rf) || !Number.isFinite(sigmaP) || sigmaP <= 0 || sigmaM < 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes hozam/szórás/kockázatmentes ráta értékeket — a portfólió és a benchmark szórása sem lehet negatív, a portfólió szórásának pozitívnak kell lennie!</div>`;
                 return;
             }
@@ -37381,7 +37387,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const contracts = parseFloat(contractsEl.value);
             const direction = directionEl.value;
 
-            if ([entry, exit, tickSize, tickDollar, contracts].some(v => isNaN(v))) {
+            if ([entry, exit, tickSize, tickDollar, contracts].some(v => !Number.isFinite(v))) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
                 return;
             }
