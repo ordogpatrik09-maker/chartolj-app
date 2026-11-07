@@ -49961,6 +49961,70 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             addSystemLog(`Pozíció RÉSZLEGESEN zárva (${pct}%): ${p.side.toUpperCase()} ${p.asset} @ $${currentAsset.price.toFixed(2)}, realizált PnL: ${formatPnl(realizedPnl)} (${reason || 'Manuális zárás'}).`, realizedPnl >= 0 ? 'TRADE' : 'ERROR');
         }
 
+        // ================= POZÍCIÓ-ÁTLAGOLÁS (DCA ÉLŐ POZÍCIÓBA, ÚJ FUNKCIÓ) =================
+        // A pozíció MÉRETÉT növeli a jelenlegi (eszköz-specifikus) árfolyamon,
+        // és az entryPrice-t a két rész súlyozott átlagára állítja — ugyanúgy,
+        // mint egy valódi tőzsdén az "átlagolás". A meglévő closePosition()/
+        // closePositionPartial() útvonalakat nem érinti, teljesen KÜLÖN,
+        // additív belépési pont.
+        function promptAddToPosition(id) {
+            const p = positions.find(p => p.id === id);
+            if (!p) return;
+            const input = prompt(`Mennyi tőkével (margin nélkül, a tényleges pozícióméret $-ban) szeretnéd növelni ezt a ${p.side.toUpperCase()} ${p.asset} pozíciót a jelenlegi árfolyamon?`, '100');
+            if (input === null) return; // megszakítva
+            const additionalAmount = parseFloat(input);
+            if (!Number.isFinite(additionalAmount) || additionalAmount < 10) {
+                showNotification('Hiba: A hozzáadott méretnek legalább $10-nak kell lennie!');
+                return;
+            }
+            addToPosition(id, additionalAmount);
+        }
+        function addToPosition(id, additionalAmount) {
+            const idx = positions.findIndex(p => p.id === id);
+            if (idx === -1) return;
+            const p = positions[idx];
+
+            if (!Number.isFinite(additionalAmount) || additionalAmount <= 0 || additionalAmount > 1e12) {
+                showNotification('Hiba: érvénytelen összeg!');
+                return;
+            }
+
+            const additionalMargin = additionalAmount / p.leverage;
+            if (additionalMargin > accountBalance) {
+                showNotification('Hiba: Nincs elegendő demó egyenleg az átlagoláshoz!');
+                return;
+            }
+
+            // Ugyanaz az eszköz-specifikus ár-forrás, mint az updatePositionsPnL()-ben
+            // (a már korábban javított cross-asset PnL-hibaosztály mintájával
+            // konzisztensen) — NEM feltétlenül a charton éppen megjelenített eszköz ára.
+            const currentPriceForAsset = (p.asset === currentAsset.symbol) ? currentAsset.price : (livePrices[p.asset] ?? p.currentPrice ?? p.entryPrice);
+
+            const oldAmount = p.amount;
+            const newAmount = oldAmount + additionalAmount;
+            // Súlyozott átlag belépő ár — ugyanaz a képlet, amit egy valós
+            // tőzsdei "average down/up" is használ.
+            const newEntryPrice = (p.entryPrice * oldAmount + currentPriceForAsset * additionalAmount) / newAmount;
+
+            if (!Number.isFinite(newEntryPrice) || newEntryPrice <= 0 || !Number.isFinite(newAmount)) {
+                showNotification('Hiba: a megadott összeg szélsőséges, nem lehet átlagolni!');
+                return;
+            }
+
+            accountBalance -= additionalMargin;
+            p.amount = newAmount;
+            p.margin = (p.margin || 0) + additionalMargin;
+            p.entryPrice = newEntryPrice;
+
+            document.getElementById('account-balance').textContent = '$' + accountBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            updateMaxAmountLabel();
+            updatePositionsPnL(); // újraszámolja p.pnl-t az új amount/entryPrice alapján, a meglévő, érintetlen képlettel
+            renderPositions();
+            drawChart();
+            showNotification(`Pozíció átlagolva: új belépő ár $${newEntryPrice.toFixed(2)}, új méret $${newAmount.toFixed(2)}.`);
+            addSystemLog(`Pozíció ÁTLAGOLVA: ${p.side.toUpperCase()} ${p.asset}, +$${additionalAmount.toFixed(2)} @ $${currentPriceForAsset.toFixed(2)}, új belépő: $${newEntryPrice.toFixed(2)}.`, 'TRADE');
+        }
+
         function updatePositionsPnL() {
             // JAVÍTÁS (2026-10-31, mobil UX audit — valódi PnL-korrupciós hiba):
             // ez korábban MINDEN nyitott pozícióra a currentAsset.price-t
@@ -50114,7 +50178,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2.5">$${p.amount.toFixed(2)}</td>
                         <td class="py-2.5">${p.leverage}x</td>
                         <td class="py-2.5 font-bold ${pnlColor}">${formatPnl(p.pnl)}</td><td class="py-2.5 text-right text-[10px] text-slate-500 font-mono">${p.margin?"$"+p.margin.toFixed(0):"-"}</td>
-                        <td class="py-2.5 text-right">
+                        <td class="py-2.5 text-right whitespace-nowrap">
+                            <button onclick="promptAddToPosition(${p.id})" title="Átlagold be a pozíciót (DCA)" class="px-2 py-1 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded text-[10px] font-bold transition mr-1">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
                             <button onclick="openCloseReasonModal(${p.id})" class="px-2 py-1 bg-neon-red/20 hover:bg-neon-red/30 text-neon-red border border-neon-red/40 rounded text-[10px] font-bold transition">
                                 Zárás
                             </button>
