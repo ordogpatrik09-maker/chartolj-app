@@ -48677,11 +48677,45 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // aránya és átlagos mérete. Ezek pontosan azok a mutatók, amiket a
         // profi kereskedők a saját "edge"-ük objektív felméréséhez néznek —
         // nem csak azt, hogy "most pluszban vagyok-e".
+        // ÚJ FUNKCIÓ: heti/havi/mindenkori időszak-váltó a haladó statisztikákhoz.
+        // Nem perzisztált (ugyanaz a szabály, mint minden egyéb preferenciánál
+        // ebben az appban) — minden megnyitáskor "Mindenkori"-ra áll vissza.
+        let journalStatsPeriod = 'all'; // 'week' | 'month' | 'all'
+        function setJournalStatsPeriod(period) {
+            journalStatsPeriod = period;
+            renderJournalAdvancedStats();
+        }
+        function _journalKeysInPeriod(period) {
+            const allKeys = Object.keys(tradingJournal).sort();
+            if (period === 'all') return allKeys;
+            const now = new Date();
+            const cutoff = new Date(now);
+            if (period === 'week') cutoff.setDate(cutoff.getDate() - 7);
+            else cutoff.setDate(cutoff.getDate() - 30); // 'month' ~ gördülő 30 nap, konzisztensen a tanulási napló 30 napos ablakával
+            const cutoffKey = journalDateKey(cutoff);
+            return allKeys.filter(k => k >= cutoffKey);
+        }
+
         function renderJournalAdvancedStats() {
             const wrap = document.getElementById('journal-advanced-stats-wrap');
-            const keys = Object.keys(tradingJournal).sort();
-            if (keys.length < 3) { wrap.classList.add('hidden'); return; }
+            const allKeys = Object.keys(tradingJournal).sort();
+            if (allKeys.length < 3) { wrap.classList.add('hidden'); return; }
             wrap.classList.remove('hidden');
+            const keys = _journalKeysInPeriod(journalStatsPeriod);
+
+            if (keys.length < 2) {
+                const pBtns = _journalStatsPeriodButtonsHTML();
+                wrap.innerHTML = `
+                    <div class="glass-card rounded-xl p-3">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="text-[9px] text-slate-500 uppercase font-bold">Haladó statisztikák</div>
+                            ${pBtns}
+                        </div>
+                        <p class="text-[10px] text-slate-500">Nincs elég bejegyzés ebben az időszakban (legalább 2 nap szükséges) — válassz hosszabb időszakot.</p>
+                    </div>
+                `;
+                return;
+            }
 
             const pnls = keys.map(k => Number(tradingJournal[k].pnl) || 0);
             const winDays = pnls.filter(p => p > 0);
@@ -48709,9 +48743,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const pfDisplay = profitFactor === Infinity ? '∞' : profitFactor.toFixed(2);
             const pfColorClass = profitFactor >= 1.5 ? 'text-neon-green' : profitFactor >= 1 ? 'text-amber-400' : 'text-neon-red';
 
+            // ÚJ FUNKCIÓ: a mistake bankból (amit a Chart Drill és a What-If
+            // szimulátor már tölt, lásd getWeakestPatterns()) a leggyakrabban
+            // elrontott alakzatot is kiírjuk itt — nem új adatforrás, csak egy
+            // meglévő, máshol (Drill intro) már megjelenített érték újrahasznosítása.
+            const weakest = (typeof getWeakestPatterns === 'function') ? getWeakestPatterns(1) : [];
+            const weakestHTML = weakest.length
+                ? `<p class="text-[10px] text-slate-400 mt-2"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1"></i>Leggyakrabban elrontott alakzat: <span class="font-bold text-white">${escapeHtml(weakest[0].name)}</span> (${weakest[0].misses}×)</p>`
+                : '';
+
             wrap.innerHTML = `
                 <div class="glass-card rounded-xl p-3">
-                    <div class="text-[9px] text-slate-500 uppercase font-bold mb-2.5">Haladó statisztikák (mindenkori)</div>
+                    <div class="flex items-center justify-between mb-2.5">
+                        <div class="text-[9px] text-slate-500 uppercase font-bold">Haladó statisztikák</div>
+                        ${_journalStatsPeriodButtonsHTML()}
+                    </div>
                     <div class="grid grid-cols-2 gap-2.5 mb-2.5">
                         <div class="bg-dark-900 rounded-lg p-2 text-center">
                             <div class="text-[9px] text-slate-500 uppercase mb-0.5">Profit Factor</div>
@@ -48734,8 +48780,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         </div>
                     </div>
                     <p class="text-[9.5px] text-slate-500 leading-relaxed">Profit Factor = összes nyereség / összes veszteség (nap-szinten). 1.0 alatt hosszú távon veszítesz, 1.5+ felett egészséges a stratégiád. A Max visszaesés azt mutatja, mennyit bírna el a fegyelmed, ha a csúcsról a legnagyobb mélypontig esnél.</p>
+                    ${weakestHTML}
                 </div>
             `;
+        }
+
+        function _journalStatsPeriodButtonsHTML() {
+            const periods = [['week', 'Hét'], ['month', 'Hónap'], ['all', 'Mindenkori']];
+            return `<div class="flex gap-1">` + periods.map(([id, label]) =>
+                `<button onclick="setJournalStatsPeriod('${id}')" class="px-2 py-1 rounded-md text-[9px] font-bold uppercase transition ${journalStatsPeriod === id ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/40' : 'bg-dark-900 text-slate-500 border border-dark-750 hover:text-slate-300'}">${label}</button>`
+            ).join('') + `</div>`;
         }
 
         // CSV-exportálás: az ÖSSZES rögzített nap (nem csak a megjelenített
