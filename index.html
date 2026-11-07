@@ -1599,6 +1599,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyi biztos hozam ér annyit, mint a szóródó?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('downdev-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-rose-400/10 text-rose-400 border border-rose-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-trend-down"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Downside Deviation Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Csak a lefelé irányuló szórás — 2 stratégia összevetve</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('calmar-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-mountain"></i></span>
                             <div>
@@ -4338,6 +4345,56 @@
 
             <div id="certeq-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél nagyobb A, annál inkább "levon" a kalkulátor a várható hozamból a szóródás (variancia) büntetéseként. Ha a CE a várható hozam alá, akár NEGATÍVBA fordul, miközben a várható hozam pozitív, az azt jelzi: egy kockázatkerülő döntéshozó inkább egy biztos, akár alacsonyabb hozamot választana, mint ezt a szóródó sorozatot. Az A kockázatkerülési együttható szubjektív — minden kereskedő máshogy ítéli meg a saját kockázatvállalási hajlandóságát.</p>
+        </div>
+    </div>
+
+    <!-- ================= DOWNSIDE DEVIATION KALKULÁTOR (OKTATÁSI) =================
+         A Sortino Ráta kalkulátor (lásd sortino-modal) a downside deviationt
+         már KISZÁMOLJA belsőleg, de csak egy arányszám (a Sortino-ráta)
+         nevezőjeként jeleníti meg — SOHA nem mutatja meg önmagában a
+         teljes szórással egy táblázatban összevetve, és nem enged két
+         stratégiát EGYMÁS MELLETT nézni. Ez a hiányzó tanulási lépés: a
+         megfelelő tanulsága ("Downside Deviation — A Sortino Alapját Adó
+         Számítás" és a hozzá tartozó "Két Hasonló Stratégiánál" esettanulmány)
+         pontosan azt mutatja be, hogy KÉT, azonos TELJES szórású sorozat
+         teljesen eltérő downside deviationt (lefelé irányuló kockázatot)
+         rejthet — ezt a jelenséget csak egy 2-stratégiás, side-by-side
+         összehasonlító nézet tudja valóban szemléltetni, egy egyszerű
+         arányszám nem. Formula (population momentumok, pontosan a Sortino
+         kalkulátorral azonos "teljes mintaszámra vonatkozó" definíció):
+         átlag = (1/n) × Σ r_i, teljes szórás = sqrt((1/n) × Σ (r_i - átlag)²),
+         downside deviation (küszöb = MAR) = sqrt((1/n) × Σ min(0, r_i - MAR)²).
+         A "downside arány" (downside deviation / teljes szórás) megmutatja,
+         a teljes ingadozás hány százaléka számít valóban "rossz" (lefelé
+         irányuló) kockázatnak — minél alacsonyabb, annál inkább felfelé
+         "aszimmetrikus" (kedvező) a volatilitás. Ez ÖNÁLLÓ kalkulátor,
+         saját számítással — NEM hívja a calcSortino() függvényt, és nem
+         módosít semmilyen már létező mutatót vagy állapotot. -->
+    <div id="downdev-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-trend-down text-rose-400"></i> Downside Deviation Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('downdev-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A teljes szórás EGYFORMÁN bünteti a felfelé és lefelé irányuló ingadozást — a downside deviation CSAK a küszöb (MAR) alatti hozamokat nézi. Add meg az "A" stratégia hozamait, opcionálisan egy "B" stratégiáét is (azonos küszöbbel összevetve), hogy lásd: azonos teljes szórás mögött mennyire eltérő lehet a valós, lefelé irányuló kockázat.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="downdev-returns-a">"A" stratégia időszaki hozamai (%, vesszővel elválasztva)</label>
+            <textarea id="downdev-returns-a" rows="3" placeholder="pl. 3.0, -3.0, 3.0, -3.0, 3.0, -3.0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">3.0, -3.0, 3.0, -3.0, 3.0, -3.0, 3.0, -3.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="downdev-returns-b">"B" stratégia időszaki hozamai (%, opcionális — hagyd üresen, ha csak "A"-t nézed)</label>
+            <textarea id="downdev-returns-b" rows="3" placeholder="pl. 0.86, 0.86, 0.86, 0.86, 0.86, 0.86, 0.86, -8.21" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">0.86, 0.86, 0.86, 0.86, 0.86, 0.86, 0.86, -8.21</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="downdev-mar">Küszöb / MAR (%, az "elfogadhatónak" tekintett minimum időszaki hozam)</label>
+            <input type="number" id="downdev-mar" value="0" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">
+
+            <button onclick="calcDownsideDeviation()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-rose-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="downdev-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A "downside arány" (downside deviation / teljes szórás) mutatja, a teljes ingadozás hány százaléka számít lefelé irányuló kockázatnak — 100% közeli érték esetén a volatilitás túlnyomó része "rossz" (veszteség-jellegű), alacsony érték esetén inkább "jó" (nyereség-jellegű) kilengésekből áll. Ez pontosan az a mutató, ami a Sortino Ráta nevezőjében rejtőzik — itt önmagában, két sorozat közt összevetve látható.</p>
         </div>
     </div>
 
@@ -13495,6 +13552,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Bizonyossági Egyenérték (CE) Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Mennyi biztos hozam ér annyit, mint a szóródó?</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('downdev-modal')" data-tool-title="downside deviation kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrow-trend-down"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Downside Deviation Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Csak a lefelé irányuló szórás — 2 stratégia összevetve</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('calmar-modal')" data-tool-title="calmar ratio kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -25148,6 +25212,109 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${verdictColor}">${verdict}</p>
             `;
+        }
+
+        // ================= DOWNSIDE DEVIATION KALKULÁTOR (OKTATÁSI) =================
+        // Egyetlen stratégiára (vagy opcionálisan két stratégiára, egymás
+        // mellett) kiszámolja a TELJES (populációs) szórást ÉS a downside
+        // deviationt (csak a MAR alatti hozamok négyzetes eltérése, n-nel
+        // osztva — pontosan ugyanaz a definíció, mint a calcSortino()
+        // függvényben, de ITT nem hívjuk azt, önálló, saját számítás).
+        // A cél a tanulási anyag (lásd a "Downside Deviation — A Sortino
+        // Alapját Adó Számítás" leckét és a hozzá tartozó esettanulmányt)
+        // konkrét demonstrálása: két, akár AZONOS teljes szórású sorozat
+        // downside deviationja jelentősen eltérhet, ha az egyik volatilitása
+        // inkább felfelé, a másiké inkább lefelé aszimmetrikus.
+        function _computeDownsideStats(raw, mar) {
+            const n = raw.length;
+            const mean = raw.reduce((a, b) => a + b, 0) / n;
+            const variance = raw.reduce((acc, r) => acc + Math.pow(r - mean, 2), 0) / n;
+            const stdDev = Math.sqrt(variance);
+            const sumSquaredDownside = raw.reduce((acc, r) => acc + Math.pow(Math.min(0, r - mar), 2), 0);
+            const downsideDeviation = Math.sqrt(sumSquaredDownside / n);
+            const downsidePeriods = raw.filter(r => r < mar).length;
+            const downsideRatio = stdDev > 0 ? (downsideDeviation / stdDev) * 100 : null;
+            return { n, mean, stdDev, downsideDeviation, downsidePeriods, downsideRatio };
+        }
+
+        function _renderDownsideStatsBlock(label, stats, accentClass) {
+            const ratioText = stats.downsideRatio === null ? 'n/a (szórás = 0)' : `${stats.downsideRatio.toFixed(1)}%`;
+            return `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-[11px]">
+                    <div class="text-[10px] font-extrabold uppercase ${accentClass} mb-1">${label}</div>
+                    <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${stats.n}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos hozam:</span><span class="${stats.mean >= 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.mean >= 0 ? '+' : ''}${stats.mean.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes szórás:</span><span class="text-white">${stats.stdDev.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Downside deviation:</span><span class="font-extrabold ${accentClass}">${stats.downsideDeviation.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">MAR alatti időszakok:</span><span class="text-white">${stats.downsidePeriods} / ${stats.n}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Downside arány:</span><span class="font-extrabold ${accentClass}">${ratioText}</span></div>
+                </div>
+            `;
+        }
+
+        function calcDownsideDeviation() {
+            const aEl = document.getElementById('downdev-returns-a');
+            const bEl = document.getElementById('downdev-returns-b');
+            const marEl = document.getElementById('downdev-mar');
+            const out = document.getElementById('downdev-result');
+            if (!aEl || !bEl || !marEl || !out) return;
+
+            const rawA = aEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
+            const rawB = bEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
+            const mar = parseFloat(marEl.value);
+
+            if (rawA.length < 2 || isNaN(mar)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott időszaki hozamot az "A" stratégiához és egy érvényes MAR-t!</div>`;
+                return;
+            }
+            // A "B" mező opcionális: vagy teljesen üres (csak "A"-t nézzük),
+            // vagy ha ki van töltve, legalább 2 érvényes értéket kell
+            // tartalmazzon — egyetlen, félreírt számmal nem indítjuk el a
+            // kétoszlopos összehasonlítást egy értelmezhetetlen "B"-vel.
+            const bProvided = bEl.value.trim().length > 0;
+            if (bProvided && rawB.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "B" stratégia mezője ki van töltve, de nincs benne legalább 2 érvényes, vesszővel elválasztott szám — vagy javítsd ki, vagy ürítsd ki teljesen, ha csak "A"-t akarod nézni!</div>`;
+                return;
+            }
+
+            const statsA = _computeDownsideStats(rawA, mar);
+            const statsB = bProvided ? _computeDownsideStats(rawB, mar) : null;
+
+            const allFiniteA = [statsA.mean, statsA.stdDev, statsA.downsideDeviation].every(Number.isFinite);
+            const allFiniteB = !statsB || [statsB.mean, statsB.stdDev, statsB.downsideDeviation].every(Number.isFinite);
+            if (!allFiniteA || !allFiniteB) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok és/vagy a MAR érték túl szélsőségesek érvényes számításhoz — a köztes eredmény (szórás vagy downside deviation) túlcsordul!</div>`;
+                return;
+            }
+
+            let blocksHtml = _renderDownsideStatsBlock(bProvided ? 'A stratégia' : 'Eredmény', statsA, 'text-rose-400');
+            let verdictHtml = '';
+
+            if (statsB) {
+                blocksHtml += _renderDownsideStatsBlock('B stratégia', statsB, 'text-neon-cyan');
+
+                const stdDevDiffPct = statsA.stdDev > 0 ? Math.abs(statsA.stdDev - statsB.stdDev) / statsA.stdDev * 100 : null;
+                const similarTotalVol = stdDevDiffPct !== null && stdDevDiffPct < 15;
+                const worseLabel = statsA.downsideDeviation > statsB.downsideDeviation ? 'A' : (statsB.downsideDeviation > statsA.downsideDeviation ? 'B' : null);
+
+                if (similarTotalVol && worseLabel) {
+                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ A két stratégia TELJES szórása közel azonos (≈${stdDevDiffPct.toFixed(0)}% eltérés), mégis a "${worseLabel}" stratégia downside deviationja magasabb — ez pontosan az a jelenség, amit a teljes szórás önmagában elrejt: azonos "zajszint" mögött eltérő lehet a valós, lefelé irányuló kockázat.</p>`;
+                } else if (worseLabel) {
+                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-cyan">A "${worseLabel}" stratégia downside deviationja a magasabb — ennek lefelé irányuló kockázata nagyobb a megadott MAR mellett.</p>`;
+                } else {
+                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">A két stratégia downside deviationja megegyezik a megadott MAR mellett.</p>`;
+                }
+            } else if (statsA.downsideRatio !== null) {
+                if (statsA.downsideRatio >= 80) {
+                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-red">🚨 A teljes ingadozás túlnyomó része (${statsA.downsideRatio.toFixed(0)}%) lefelé irányuló — a volatilitás elsősorban veszteség-jellegű kilengésekből áll.</p>`;
+                } else if (statsA.downsideRatio >= 50) {
+                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ A teljes ingadozás kb. fele (${statsA.downsideRatio.toFixed(0)}%) lefelé irányuló kockázat.</p>`;
+                } else {
+                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A teljes ingadozásnak csak ${statsA.downsideRatio.toFixed(0)}%-a lefelé irányuló — a volatilitás inkább "kedvező" (felfelé) aszimmetrikus.</p>`;
+                }
+            }
+
+            out.innerHTML = `<div class="${statsB ? 'grid grid-cols-1 gap-2' : ''}">${blocksHtml}</div>${verdictHtml}`;
         }
 
         // ================= CALMAR RATIO KALKULÁTOR (OKTATÁSI) =================
@@ -49300,6 +49467,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             285: { tool: 'corrshift-modal', cta: 'Futtasd le élesben a Korrelációs Rezsim-Váltás Monitort, hogy számokban lásd, mennyit változott a korreláció az idő során' },
             396: { tool: 'corrshift-modal', cta: 'Számold ki élesben a gördülő korrelációt, és nézd meg, hol lépte át a küszöböt — ez a "minden korrelál egyhez" jelenség számszerűsítve' },
             416: { tool: 'corrshift-modal', cta: 'Próbáld ki élesben Bence esetét: futtasd a Korrelációs Rezsim-Váltás Monitort egy korábban alacsony korrelációjú, majd stressz idején összeszorult eszközpáron' },
+            476: { tool: 'downdev-modal', cta: 'Számold ki élesben a downside deviationt, és vesd össze a teljes szórással' },
+            482: { tool: 'downdev-modal', cta: 'Próbáld ki élesben Levente két stratégiáját: azonos teljes szórás, mennyire eltérő downside deviation?' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -49319,7 +49488,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
