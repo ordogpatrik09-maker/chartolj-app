@@ -28059,6 +28059,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const current = coppock[coppock.length - 1];
             const previous = coppock.length >= 2 ? coppock[coppock.length - 2] : null;
 
+            // JAVÍTÁS: a `validCoppock.length >= 1` ellenőrzés csak azt
+            // garantálja, hogy VALAHOL a tömbben van érvényes érték — nem azt,
+            // hogy pont a LEGUTÓBBI (`current`) is érvényes. Ha a záróár-sorban
+            // egy nulla (vagy más, `rocAt`-ot null-ra vezető) érték épp a sor
+            // VÉGÉHEZ közel van, `current` null lehet, miközben korábbi pontok
+            // még érvényesek voltak — a null-t eddig változatlanul beadtuk a
+            // `current.toFixed(3)`-nak, ami kivételt dobott ("Cannot read
+            // properties of null (reading 'toFixed')") és üresen hagyta a
+            // kalkulátort. Itt, a többi "nincs elég/érvényes adat" ághoz
+            // hasonlóan, barátságos üzenetet adunk helyette.
+            if (current === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A legutóbbi Coppock Curve-érték nem számítható ki a megadott záróárakból (pl. egy nulla vagy érvénytelen köztes záróár miatt) — adj meg más, érvényes záróár-sorozatot!</div>`;
+                return;
+            }
+
             let crossover = null;
             if (current !== null && previous !== null) {
                 if (previous < 0 && current >= 0) crossover = 'bullish';
