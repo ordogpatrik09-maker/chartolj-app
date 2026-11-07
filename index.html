@@ -3245,6 +3245,9 @@
                         <button onclick="openHistoricalEventSimulator()" id="tab-btn-historical-event" class="text-slate-400 hover:text-amber-400 py-1 transition whitespace-nowrap">
                             <i class="fa-solid fa-clock-rotate-left mr-1"></i><span class="hidden lg:inline">Esemény</span>
                         </button>
+                        <button onclick="openProgressExport()" id="tab-btn-progress-export" class="text-slate-400 hover:text-emerald-400 py-1 transition whitespace-nowrap">
+                            <i class="fa-solid fa-image mr-1"></i><span class="hidden lg:inline">Export</span>
+                        </button>
                     </div>
                     <!-- JAVÍTÁS (felhasználói visszajelzés: "ne legyen minden
                          egybe/egymáson, legyen több fül"): az Eszközök és
@@ -15922,6 +15925,32 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
+    <!-- ================= HALADÁS EXPORTÁLÁSA KÉPKÉNT (OKTATÁSI) =================
+         Tisztán MEGJELENÍTŐ funkció: a MÁR MEGLÉVŐ academyXP/userCoins/
+         academyCompleted/TRADE_RANKS/tradeHistory állapotból egy <canvas>-ra
+         kirajzol egy megosztható "haladás-kártyát", amit a felhasználó PNG-ként
+         letölthet (canvas.toDataURL + átmeneti <a download>). Nincs szerverre
+         küldött adat, nincs új localStorage/Supabase mező — a kép csak a
+         böngészőben, kliens-oldalon generálódik a meglévő in-memory állapotból. -->
+    <div id="progress-export-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] max-h-[85%] flex flex-col p-4">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-image text-emerald-400"></i> Haladás Exportálása
+                </h3>
+                <button onclick="closeProgressExport()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="flex-grow overflow-y-auto flex flex-col items-center gap-3">
+                <canvas id="progress-export-canvas" width="640" height="360" class="w-full rounded-xl border border-dark-750"></canvas>
+                <button onclick="downloadProgressExport()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-emerald-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                    <i class="fa-solid fa-download mr-1"></i> Letöltés PNG-ként
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= "MI LETT VOLNA, HA?" RETROAKTÍV SZIMULÁTOR (OKTATÁSI) =================
          Tisztán MEGJELENÍTŐ/SZÁMOLÓ funkció: a MÁR MEGLÉVŐ tradeHistory tömböt
          játssza le újra egy megváltoztatott pozícióméret-szorzóval (pl. "mi
@@ -23725,6 +23754,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             'whatif-modal': () => closeWhatIfSimulator(),
             'portfolio-modal': () => closePortfolioOverview(),
             'historical-event-modal': () => closeHistoricalEventSimulator(),
+            'progress-export-modal': () => closeProgressExport(),
             'close-reason-modal': () => confirmCloseWithReason(null),
             'logout-confirm-modal': () => document.getElementById('logout-confirm-modal').classList.add('hidden'),
             'reset-balance-confirm-modal': () => document.getElementById('reset-balance-confirm-modal').classList.add('hidden'),
@@ -51994,6 +52024,112 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
                     ${liquidatedCount > 0 ? `<div class="text-[10px] text-neon-red font-bold mt-2"><i class="fa-solid fa-triangle-exclamation"></i> ${liquidatedCount} pozíció likvidálódna ennél az eseménynél.</div>` : ''}
                 </div>
             `;
+        }
+
+        // ÚJ FUNKCIÓ: Haladás Exportálása Képként — lásd a progress-export-modal
+        // HTML-kommentjét fentebb a teljes magyarázatért. Tisztán a MÁR MEGLÉVŐ
+        // academyXP/userCoins/academyCompleted/TRADE_RANKS/tradeHistory
+        // állapotból rajzol egy <canvas>-ra, amit a felhasználó PNG-ként
+        // letölthet. Semmilyen adatot nem küld szerverre, nem ír új mezőt.
+        function openProgressExport() {
+            document.getElementById('progress-export-modal').classList.remove('hidden');
+            renderProgressExport();
+        }
+        function closeProgressExport() {
+            document.getElementById('progress-export-modal').classList.add('hidden');
+        }
+        function renderProgressExport() {
+            const canvas = document.getElementById('progress-export-canvas');
+            if (!canvas || !canvas.getContext) return;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+
+            // Háttér-gradiens
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#0a0e1a');
+            bg.addColorStop(1, '#101830');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            // Meglévő, egyébként is olvasott állapot — nem módosítjuk, csak kirajzoljuk.
+            const safeXp = Number.isFinite(academyXP) ? academyXP : 0;
+            const safeCoins = Number.isFinite(userCoins) ? userCoins : 0;
+            const lessonsDone = (academyCompleted && academyCompleted.size) ? academyCompleted.size : 0;
+            const reachedRanks = (typeof TRADE_RANKS !== 'undefined' ? TRADE_RANKS : []).filter(r => lessonsDone >= r.need);
+            const currentRank = reachedRanks.length ? reachedRanks[reachedRanks.length - 1] : null;
+
+            const pnls = (tradeHistory || []).map(h => h.pnl).filter(p => Number.isFinite(p));
+            const n = pnls.length;
+            const wins = pnls.filter(p => p > 0).length;
+            const winRatePct = n > 0 ? (wins / n * 100) : 0;
+
+            // Fejléc
+            ctx.fillStyle = '#22d3ee';
+            ctx.font = 'bold 26px sans-serif';
+            ctx.fillText('Chartolj!', 28, 48);
+            ctx.fillStyle = '#64748b';
+            ctx.font = '13px sans-serif';
+            ctx.fillText('Kereskedési tanulás — haladás', 28, 70);
+
+            // Rang-sor
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 20px sans-serif';
+            const rankLabel = currentRank ? (currentRank.icon + '  ' + currentRank.name) : 'Még nincs rang';
+            ctx.fillText(rankLabel, 28, 118);
+
+            // Statisztika-kártyák
+            const stats = [
+                { label: 'XP', value: safeXp.toLocaleString('hu-HU') },
+                { label: 'Coin', value: safeCoins.toLocaleString('hu-HU') },
+                { label: 'Befejezett lecke', value: String(lessonsDone) },
+                { label: 'Lezárt kereskedés', value: String(n) },
+                { label: 'Nyerési arány', value: n > 0 ? (winRatePct.toFixed(1) + '%') : 'N/A' },
+            ];
+            const cardW = (W - 28 * 2 - 4 * 12) / 5;
+            stats.forEach((s, i) => {
+                const x = 28 + i * (cardW + 12);
+                const y = 150;
+                const cardH = 100;
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 1;
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, cardW, cardH, 10);
+                    ctx.fill();
+                    ctx.stroke();
+                } else {
+                    ctx.fillRect(x, y, cardW, cardH);
+                    ctx.strokeRect(x, y, cardW, cardH);
+                }
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(s.value, x + cardW / 2, y + 48);
+                ctx.fillStyle = '#64748b';
+                ctx.font = '10px sans-serif';
+                ctx.fillText(s.label, x + cardW / 2, y + 72);
+                ctx.textAlign = 'left';
+            });
+
+            ctx.fillStyle = '#334155';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('Oktatási demó szimuláció — nem valódi pénzügyi eredmény.', 28, H - 20);
+        }
+        function downloadProgressExport() {
+            const canvas = document.getElementById('progress-export-canvas');
+            if (!canvas) return;
+            try {
+                const dataUrl = canvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = 'chartolj-haladas.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch (e) {
+                showNotification('A kép letöltése nem sikerült ebben a böngészőben.');
+            }
         }
 
         // "Utoljára aktív" frissítése a szerveren (ritkítva, ~5 percenként) —
