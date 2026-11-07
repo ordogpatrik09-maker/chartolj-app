@@ -3342,8 +3342,14 @@
                                          left:0" miatt ez a szöveg MINDIG a látható, bal
                                          oldali képernyőrészhez van rögzítve, görgetéstől
                                          függetlenül teljesen olvasható marad. -->
+                                    <!-- JAVÍTÁS: a szöveg korábban mindig a "jobb oldali
+                                         panelt" emlegette, de lg: töréspont alatt (mobil/
+                                         tablet, <1024px) nincs látható jobb oldali panel —
+                                         ott a fenti "Kereskedés" gombbal lehet kereskedni.
+                                         Ezért most lg:hidden/hidden lg:inline párral a
+                                         nézethez illő szöveg jelenik meg. -->
                                     <div style="position: sticky; left: 0; max-width: 340px; white-space: normal;">
-                                        Nincs aktív nyitott pozíció. Használd a jobb oldali panelt a kereskedéshez!
+                                        Nincs aktív nyitott pozíció. <span class="lg:hidden">Használd a "Kereskedés" gombot a kereskedéshez!</span><span class="hidden lg:inline">Használd a jobb oldali panelt a kereskedéshez!</span>
                                     </div>
                                 </td>
                             </tr>
@@ -50893,11 +50899,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // függvény) — ugyanaz a "position:sticky;left:0" trükk kell
                 // ide is, különben a széles, görgethető táblázatban a
                 // középre igazított szöveg jobbra kilógott mobilon.
+                // JAVÍTÁS: lg: töréspont alatt (mobil/tablet) nincs látható
+                // jobb oldali panel, ott a "Kereskedés" gombbal lehet
+                // kereskedni — a szöveg most lg:hidden/hidden lg:inline
+                // párral a nézethez illő változatot mutatja.
                 tbody.innerHTML = `
                     <tr id="no-positions-row">
                         <td colspan="8" class="py-6 text-left text-slate-500 font-sans text-xs">
                             <div style="position: sticky; left: 0; max-width: 340px; white-space: normal;">
-                                Nincs aktív nyitott pozíció. Használd a jobb oldali panelt a kereskedéshez!
+                                Nincs aktív nyitott pozíció. <span class="lg:hidden">Használd a "Kereskedés" gombot a kereskedéshez!</span><span class="hidden lg:inline">Használd a jobb oldali panelt a kereskedéshez!</span>
                             </div>
                         </td>
                     </tr>`;
