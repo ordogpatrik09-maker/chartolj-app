@@ -452,6 +452,15 @@
                 position: relative;
                 min-height: 56px;
             }
+            /* ÚJ FUNKCIÓ: első-indításos bevezető tour kiemelő gyűrűje — a
+               kiemelt gomb z-index-e a dim overlay (z-[96]) FÖLÉ kerül, így
+               az áttűnik a sötétítésen, a többi gomb pedig elhomályosul. */
+            #mobile-bottom-nav button.onboarding-tour-highlight {
+                z-index: 97;
+                border-radius: 12px;
+                box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.6), 0 0 16px rgba(0, 242, 254, 0.5);
+                background: rgba(0, 242, 254, 0.08);
+            }
             #mobile-bottom-nav button i {
                 font-size: 16px;
                 transition: transform 0.15s ease;
@@ -16141,6 +16150,34 @@ Mean-reversion,2.5</textarea>
     <!-- Modals & Toasts Container -->
     <div id="offline-banner" style="display:none" class="fixed top-0 left-0 right-0 z-[200] bg-amber-500 text-dark-950 text-[11px] font-bold text-center py-1.5">⚠️ Offline mód — a haladás lokálisan mentődik</div>
     <div id="toast-container" class="fixed bottom-5 right-5 z-[90] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ÚJ FUNKCIÓ: első-indításos, interaktív bevezető "spotlight" tour.
+         CSAK egy ÚJ, önálló overlay réteg — a Home/Progress/Profile
+         képernyők saját render-függvényeit (renderHomeScreen() stb.) NEM
+         módosítja, csak a MÁR LÉTEZŐ, mindig-azonos #navbtn-* alsó
+         navigációs gombokra mutat rá kívülről. Csak mobil nézetben
+         (<1024px) jelenik meg (lásd showOnboardingTourIfMobile()), mert az
+         alsó navigáció desktopon maga is display:none. -->
+    <div id="onboarding-tour-overlay" class="hidden fixed inset-0 z-[96]" role="dialog" aria-modal="true">
+        <div class="absolute inset-0 bg-black/70"></div>
+        <!-- JAVÍTÁS: a pozicionáláshoz és mérethez SZÁNDÉKOSAN inline style-t
+             használunk Tailwind "bottom-[84px]"/"w-[260px]"/"max-w-[88vw]"
+             szögletes-zárójeles osztályok helyett — az app CSS-e statikusan
+             előre lett lefordítva (nincs runtime JIT), ezért egy ilyen,
+             korábban sehol nem használt bracket-osztály NEM LÉTEZNE a
+             betöltött stíluslapban, és némán hatástalan maradna (a tooltip a
+             konténer tetejére esett volna vissza, messze a kiemelt gombtól). -->
+        <div id="onboarding-tour-tooltip" class="absolute left-1/2 -translate-x-1/2 glass-card rounded-xl border border-neon-cyan/40 p-3.5 shadow-2xl" style="bottom: 84px; width: 260px; max-width: 88vw;">
+            <div id="onboarding-tour-text" class="text-xs text-slate-200 leading-relaxed mb-3"></div>
+            <div class="flex items-center justify-between">
+                <button onclick="endOnboardingTour()" class="text-[10px] text-slate-500 hover:text-slate-300 transition">Kihagyás</button>
+                <div class="flex items-center gap-2">
+                    <span id="onboarding-tour-step-label" class="text-[9px] text-slate-500 font-mono"></span>
+                    <button onclick="onboardingTourNext()" id="onboarding-tour-next-btn" class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-neon-cyan text-dark-950">Tovább</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     </div><!-- /#app-scale-wrapper -->
 </div><!-- /#viewport-stage -->
@@ -51887,6 +51924,55 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
                 lastUnfinishedLessonIdx = firstSuggestionLessonIdx;
             }
             if (typeof switchMobileTab === 'function') switchMobileTab('trade');
+
+            // ÚJ FUNKCIÓ: első-indításos, interaktív bevezető tour — csak itt,
+            // VALÓDI regisztráció utáni első onboarding-válasznál indul el
+            // (ugyanaz az egyszeri belépési pont, mint maga az onboarding-modal,
+            // lásd a 23940. sor körüli kommentet), nem minden appnyitáskor.
+            setTimeout(startOnboardingTour, 500);
+        }
+
+        // ÚJ FUNKCIÓ: első-indításos, interaktív bevezető "spotlight" tour a
+        // négy fő alsó navigációs fülhöz. Kizárólag a MÁR LÉTEZŐ, mindig-
+        // azonos #navbtn-* gombokra mutat rá és a MÁR LÉTEZŐ switchMobileTab()
+        // függvényt hívja — a Home/Progress/Profile képernyők saját render-
+        // logikáját (renderHomeScreen() stb.) EGYÁLTALÁN NEM módosítja, csak
+        // kívülről, egy önálló overlay-rétegként húzza rá a kiemelést.
+        // Csak mobil nézetben (<1024px) fut, mert az alsó navigáció desktopon
+        // eleve nem látszik (lásd a #mobile-bottom-nav CSS-t) — a Desktop
+        // nézet ezzel a funkcióval egyáltalán nem érintett.
+        const ONBOARDING_TOUR_STEPS = [
+            { tab: 'home', navId: 'navbtn-home', text: 'Itt a Kezdőlapon találod a napi összefoglalót, a folytatható leckét és az aktuális statisztikáidat.' },
+            { tab: 'trade', navId: 'navbtn-trade', text: 'A Kereskedés fülön demó-egyenleggel gyakorolhatsz valódi piaci grafikonokon, kockázat nélkül.' },
+            { tab: 'academy', navId: 'navbtn-academy', text: 'Az Akadémia leckéi és a Chart Drill itt találhatók — ide térj vissza a napi gyakorláshoz.' },
+            { tab: 'progress', navId: 'navbtn-progress', text: 'A Fejlődés fülön követheted az XP-det, a rangjaidat és a kitűzött céljaidat.' }
+        ];
+        let onboardingTourStepIdx = 0;
+        function startOnboardingTour() {
+            if (window.innerWidth >= 1024) return; // desktopon nincs alsó nav, nincs tour
+            onboardingTourStepIdx = 0;
+            document.getElementById('onboarding-tour-overlay').classList.remove('hidden');
+            renderOnboardingTourStep();
+        }
+        function renderOnboardingTourStep() {
+            const step = ONBOARDING_TOUR_STEPS[onboardingTourStepIdx];
+            if (typeof switchMobileTab === 'function') switchMobileTab(step.tab);
+            document.querySelectorAll('.onboarding-tour-highlight').forEach(el => el.classList.remove('onboarding-tour-highlight'));
+            const target = document.getElementById(step.navId);
+            if (target) target.classList.add('onboarding-tour-highlight');
+            document.getElementById('onboarding-tour-text').textContent = step.text;
+            document.getElementById('onboarding-tour-step-label').textContent = (onboardingTourStepIdx + 1) + ' / ' + ONBOARDING_TOUR_STEPS.length;
+            document.getElementById('onboarding-tour-next-btn').textContent = onboardingTourStepIdx === ONBOARDING_TOUR_STEPS.length - 1 ? 'Befejezés' : 'Tovább';
+        }
+        function onboardingTourNext() {
+            onboardingTourStepIdx++;
+            if (onboardingTourStepIdx >= ONBOARDING_TOUR_STEPS.length) { endOnboardingTour(); return; }
+            renderOnboardingTourStep();
+        }
+        function endOnboardingTour() {
+            document.getElementById('onboarding-tour-overlay').classList.add('hidden');
+            document.querySelectorAll('.onboarding-tour-highlight').forEach(el => el.classList.remove('onboarding-tour-highlight'));
+            if (typeof switchMobileTab === 'function') switchMobileTab('home');
         }
 
         function updateAuthHeader() {
