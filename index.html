@@ -38977,6 +38977,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — Infinity-szivárgás): a trade-eknek korábban nem
+            // volt felső nagyságrendi korlátja. Egyenként véges, de SZÉLSŐSÉGESEN
+            // eltérő nagyságrendű trade-ek esetén (pl. egy "1.7e308"-hoz közeli
+            // nyertes trade és egy apró, pl. "-0.0001"-es legnagyobb veszteség)
+            // a lenti `-trade / biggestLoss` osztás már egyedi lépésben
+            // túlcsordulhat Infinity-re (két egyenként véges szám osztása is
+            // adhat Infinity-t, ha a hányados a double tartományon kívül esik),
+            // ami a `twr` szorzaton keresztül a bestTwr-be és a
+            // geometricGrowthPerTrade-be is beszivárog, és a kimeneten szó
+            // szerint "Infinity%"-ként jelenne meg valódi hibaüzenet helyett —
+            // ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál
+            // (pl. Expectancy, Piramizálás). Egy reális, 1 milliárd/trade felső
+            // korlát bőven elegendő minden oktatási szcenárióhoz, és garantáltan
+            // elkerüli ezt a túlcsordulást.
+            if (trades.some(t => Math.abs(t) > 1e9)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden trade P&L legfeljebb 1 000 000 000 (abszolút értékben) lehet egy reális számításhoz!</div>`;
+                return;
+            }
+
             const biggestLoss = Math.min(...trades);
             if (biggestLoss >= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A trade-sorozatban nincs egyetlen veszteséges (negatív) trade sem — az Optimal f formula ilyenkor nem értelmezhető (a nevező nulla/pozitív lenne)!</div>`;
@@ -39002,6 +39021,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // hány %-kal nő a tőke optimális méretezés mellett.
             const geometricGrowthPerTrade = Math.pow(bestTwr, 1 / n) - 1;
             const impliedRiskAmount = Math.abs(biggestLoss) * bestF;
+
+            // JAVÍTÁS (audit — Infinity-szivárgás): a fenti 1 milliárdos korlát
+            // kizárja a leggyakoribb túlcsordulási esetet, de egy végső,
+            // megjelenítés előtti véges-ellenőrzés biztonsági hálóként itt is
+            // konzisztens az app többi kalkulátorával (pl. ha a biggestLoss
+            // nagyon közel van 0-hoz, a hányados még az 1 milliárdos korláton
+            // belül is extrém nagy lehet).
+            if (!Number.isFinite(bestTwr) || !Number.isFinite(geometricGrowthPerTrade) || !Number.isFinite(impliedRiskAmount)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott trade-sorozat kombinációja (pl. egy nagyon kicsi legnagyobb veszteség más, jóval nagyobb trade-ek mellett) olyan extrém, hogy az Optimal f nem fejezhető ki véges számmal — adj meg reálisabb nagyságrendű trade P&L-eket!</div>`;
+                return;
+            }
 
             const wins = trades.filter(t => t > 0).length;
             const winRatePct = (wins / n) * 100;
