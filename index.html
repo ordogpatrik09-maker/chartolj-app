@@ -33243,7 +33243,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             const candles = lines.map(l => l.split(',').map(v => parseFloat(v.trim()))).filter(a => a.length === 3 && a.every(v => Number.isFinite(v)));
-            const numBins = parseInt(binsEl.value, 10) || 10;
+            const numBins = parseInt(binsEl.value, 10);
 
             // JAVÍTÁS: a numBins mezőnek korábban EGYÁLTALÁN nem volt felső korlátja (HTML
             // "max" attribútuma sem) — közvetlenül egy, a gyertyák számával is SZORZÓDÓ
@@ -33251,7 +33251,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // érték a böngészőlapot a főszálon futó, gyakorlatilag véget nem érő ciklussal
             // LEFAGYASZTOTTA. Most explicit felső korlátot kapott (200 sáv bőven elég a
             // volumenprofil-elemzéshez), és a HTML mezőre is felkerült a max="200" attribútum.
-            if (candles.length < 1 || numBins < 2 || numBins > 200) {
+            // JAVÍTÁS 2: korábban a `parseInt(binsEl.value, 10) || 10` minta egy törölt,
+            // nem-numerikus vagy nulla sávszám-bemenetet csendben 10-re cserélt, MIELŐTT a
+            // lenti tartomány-ellenőrzés lefutott volna — így egy érvénytelen bemenet nem az
+            // explicit piros hibaüzenetet, hanem egy hibaüzenet nélküli, alapértékkel futó
+            // (félrevezető) eredményt adott. Most a Number.isFinite(numBins) ellenőrzés is
+            // bekerült a tartomány-feltételbe, konzisztensen az EMV/Fisher Transform mezőknél
+            // már javított mintával.
+            if (candles.length < 1 || !Number.isFinite(numBins) || numBins < 2 || numBins > 200) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 gyertya (Magas,Alacsony,Volumen), és egy 2 és 200 közötti sávszám szükséges!</div>`;
                 return;
             }
