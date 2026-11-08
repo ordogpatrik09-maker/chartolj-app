@@ -3485,7 +3485,7 @@
                         <span class="text-neon-cyan font-mono" id="max-amount-label">Max: $100,000</span>
                     </div>
                     <div class="relative">
-                        <input type="number" id="input-trade-amount" value="1000" min="10" step="1" oninput="updateOrderCalculations()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 font-mono text-sm text-white focus:outline-none focus:border-neon-cyan">
+                        <input type="number" id="input-trade-amount" value="1000" min="10" step="1" oninput="updateOrderCalculations()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 font-mono text-sm text-white focus:outline-none focus:border-neon-cyan" aria-label="Pozíció Méret (USDT)">
                         <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">USDT</span>
                     </div>
                     <div class="grid grid-cols-4 gap-1.5">
@@ -3502,7 +3502,7 @@
                         <span class="text-slate-400">Tőkeáttétel (Leverage)</span>
                         <span id="leverage-display" class="font-mono text-neon-cyan font-bold text-xs">10x</span>
                     </div>
-                    <input type="range" id="leverage-slider" min="1" max="100" value="10" oninput="updateLeverageDisplay()" class="w-full">
+                    <input type="range" id="leverage-slider" min="1" max="100" value="10" oninput="updateLeverageDisplay()" class="w-full" aria-label="Tőkeáttétel (Leverage)">
                     <div id="leverage-risk-warning" class="hidden text-[10px] font-semibold text-amber-400 -mt-0.5"></div>
                     <div class="flex justify-between text-[9px] font-mono text-slate-500">
                         <span>1x</span>
@@ -3516,7 +3516,7 @@
                 <div class="space-y-3 pt-2 border-t border-dark-750/50">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-slate-300">TP / SL Beállítások</span>
-                        <input type="checkbox" id="toggle-tpsl" onchange="toggleTPSLInputs()" class="rounded bg-dark-800 border-dark-700 text-neon-cyan">
+                        <input type="checkbox" id="toggle-tpsl" onchange="toggleTPSLInputs()" class="rounded bg-dark-800 border-dark-700 text-neon-cyan" aria-label="TP / SL Beállítások be- vagy kikapcsolása">
                     </div>
 
                     <div id="tpsl-inputs" class="hidden space-y-2">
@@ -5178,9 +5178,9 @@
 
             <label class="text-[11px] font-semibold text-slate-400">MACD gyors / lassú / szignál periódus</label>
             <div class="flex gap-2 mt-1 mb-4">
-                <input type="number" id="elderimpulse-fast" value="12" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
-                <input type="number" id="elderimpulse-slow" value="26" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
-                <input type="number" id="elderimpulse-signal" value="9" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+                <input type="number" id="elderimpulse-fast" value="12" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50" aria-label="MACD gyors periódus">
+                <input type="number" id="elderimpulse-slow" value="26" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50" aria-label="MACD lassú periódus">
+                <input type="number" id="elderimpulse-signal" value="9" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50" aria-label="MACD szignál periódus">
             </div>
 
             <button onclick="calcElderImpulseSystem()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
@@ -5708,8 +5708,8 @@ Kripto: 15000, 20</textarea>
 
             <label class="text-[11px] font-semibold text-slate-400">ATR periódus (klasszikusan 10) / szorzó (klasszikusan 2)</label>
             <div class="flex gap-2 mt-1 mb-4">
-                <input type="number" id="keltner-atrperiod" value="10" step="1" min="2" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
-                <input type="number" id="keltner-mult" value="2" step="0.1" min="0.1" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                <input type="number" id="keltner-atrperiod" value="10" step="1" min="2" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50" aria-label="ATR periódus">
+                <input type="number" id="keltner-mult" value="2" step="0.1" min="0.1" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50" aria-label="ATR szorzó">
             </div>
 
             <button onclick="calcKeltnerChannel()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
@@ -5824,9 +5824,9 @@ Kripto: 15000, 20</textarea>
 
             <label class="text-[11px] font-semibold text-slate-400">Gyors EMA / Lassú EMA / Ciklushossz (klasszikusan 23 / 50 / 10)</label>
             <div class="flex gap-2 mt-1 mb-4">
-                <input type="number" id="stc-fast" value="23" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                <input type="number" id="stc-slow" value="50" step="1" min="3" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                <input type="number" id="stc-cycle" value="10" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                <input type="number" id="stc-fast" value="23" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="Gyors EMA periódus">
+                <input type="number" id="stc-slow" value="50" step="1" min="3" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="Lassú EMA periódus">
+                <input type="number" id="stc-cycle" value="10" step="1" min="2" class="w-1/3 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="Ciklushossz">
             </div>
 
             <button onclick="calcSchaffTrendCycle()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
@@ -5881,8 +5881,8 @@ Kripto: 15000, 20</textarea>
 
             <label class="text-[11px] font-semibold text-slate-400">Periódus (klasszikusan 22) / ATR szorzó (klasszikusan 3)</label>
             <div class="flex gap-2 mt-1 mb-4">
-                <input type="number" id="chandelier-period" value="20" step="1" min="2" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
-                <input type="number" id="chandelier-mult" value="3" step="0.1" min="0.1" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                <input type="number" id="chandelier-period" value="20" step="1" min="2" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50" aria-label="Periódus">
+                <input type="number" id="chandelier-mult" value="3" step="0.1" min="0.1" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50" aria-label="ATR szorzó">
             </div>
 
             <button onclick="calcChandelierExit()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
@@ -5928,8 +5928,8 @@ Kripto: 15000, 20</textarea>
 
             <label class="text-[11px] font-semibold text-slate-400">ATR periódus (klasszikusan 10) / szorzó (klasszikusan 3)</label>
             <div class="flex gap-2 mt-1 mb-4">
-                <input type="number" id="supertrend-period" value="10" step="1" min="2" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
-                <input type="number" id="supertrend-mult" value="3" step="0.1" min="0.1" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                <input type="number" id="supertrend-period" value="10" step="1" min="2" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50" aria-label="ATR periódus">
+                <input type="number" id="supertrend-mult" value="3" step="0.1" min="0.1" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50" aria-label="ATR szorzó">
             </div>
 
             <button onclick="calcSupertrend()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
@@ -8043,19 +8043,19 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
                     <span>Eszköz</span><span>Súly %</span><span>Éves hozam %</span>
                 </div>
                 <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
-                    <input type="text" id="port-a1-name" value="Részvény ETF" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a1-weight" value="60" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a1-return" value="8" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="text" id="port-a1-name" value="Részvény ETF" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="1. Eszköz neve">
+                    <input type="number" id="port-a1-weight" value="60" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="1. Eszköz súlya százalékban">
+                    <input type="number" id="port-a1-return" value="8" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="1. Eszköz éves hozama százalékban">
                 </div>
                 <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
-                    <input type="text" id="port-a2-name" value="Állampapír" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a2-weight" value="30" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a2-return" value="6" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="text" id="port-a2-name" value="Állampapír" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="2. Eszköz neve">
+                    <input type="number" id="port-a2-weight" value="30" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="2. Eszköz súlya százalékban">
+                    <input type="number" id="port-a2-return" value="6" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="2. Eszköz éves hozama százalékban">
                 </div>
                 <div class="grid grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
-                    <input type="text" id="port-a3-name" value="Kripto (BTC)" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a3-weight" value="10" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                    <input type="number" id="port-a3-return" value="15" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50">
+                    <input type="text" id="port-a3-name" value="Kripto (BTC)" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="3. Eszköz neve">
+                    <input type="number" id="port-a3-weight" value="10" step="1" min="0" max="100" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="3. Eszköz súlya százalékban">
+                    <input type="number" id="port-a3-return" value="15" step="0.5" class="w-full min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-purple/50" aria-label="3. Eszköz éves hozama százalékban">
                 </div>
             </div>
             <div id="port-weight-warning" class="hidden text-[10px] text-amber-400 font-bold mb-2"></div>
@@ -10759,8 +10759,8 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                 <div>
                     <label class="text-[11px] font-semibold text-slate-400">OS / OB küszöb</label>
                     <div class="flex gap-1 mt-1">
-                        <input type="number" id="mtfrsi-oversold" value="30" step="1" min="1" max="99" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50">
-                        <input type="number" id="mtfrsi-overbought" value="70" step="1" min="1" max="99" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50">
+                        <input type="number" id="mtfrsi-oversold" value="30" step="1" min="1" max="99" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50" aria-label="Túladott (oversold) küszöb">
+                        <input type="number" id="mtfrsi-overbought" value="70" step="1" min="1" max="99" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50" aria-label="Túlvett (overbought) küszöb">
                     </div>
                 </div>
             </div>
@@ -11630,7 +11630,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                 <div class="border border-dark-750 rounded-xl p-2.5">
                     <div class="flex items-center justify-between mb-1.5">
                         <span class="text-[11px] font-bold text-neon-cyan">1. Stratégia</span>
-                        <input type="number" id="ptf-weight-1" value="50" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-neon-cyan/50">
+                        <input type="number" id="ptf-weight-1" value="50" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-neon-cyan/50" aria-label="1. Stratégia súlya százalékban">
                     </div>
                     <select id="ptf-type-1" onchange="ptfUpdateParamFields(1)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-neon-cyan/50">
                         <option value="ema" selected>EMA-keresztezés</option>
@@ -11643,7 +11643,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                 <div class="border border-dark-750 rounded-xl p-2.5">
                     <div class="flex items-center justify-between mb-1.5">
                         <span class="text-[11px] font-bold text-amber-400">2. Stratégia</span>
-                        <input type="number" id="ptf-weight-2" value="50" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-amber-400/50">
+                        <input type="number" id="ptf-weight-2" value="50" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-amber-400/50" aria-label="2. Stratégia súlya százalékban">
                     </div>
                     <select id="ptf-type-2" onchange="ptfUpdateParamFields(2)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-amber-400/50">
                         <option value="ema">EMA-keresztezés</option>
@@ -11655,7 +11655,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                 </div>
                 <div class="border border-dark-750 rounded-xl p-2.5">
                     <div class="flex items-center justify-between mb-1.5">
-                        <label class="flex items-center gap-1.5 text-[11px] font-bold text-fuchsia-400" for="ptf-weight-3"><input type="checkbox" id="ptf-enable-3" onchange="ptfUpdateParamFields(3)"> 3. Stratégia (opcionális)</label>
+                        <label class="flex items-center gap-1.5 text-[11px] font-bold text-fuchsia-400" for="ptf-weight-3"><input type="checkbox" id="ptf-enable-3" onchange="ptfUpdateParamFields(3)" aria-label="3. Stratégia bekapcsolása (opcionális)"> 3. Stratégia (opcionális)</label>
                         <input type="number" id="ptf-weight-3" value="0" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-fuchsia-400/50">
                     </div>
                     <select id="ptf-type-3" onchange="ptfUpdateParamFields(3)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-fuchsia-400/50">
@@ -11718,7 +11718,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                     <div id="pwo-params-2" class="grid grid-cols-2 gap-1.5"></div>
                 </div>
                 <div class="border border-dark-750 rounded-xl p-2.5">
-                    <label class="flex items-center gap-1.5 text-[11px] font-bold text-fuchsia-400" for="pwo-type-3"><input type="checkbox" id="pwo-enable-3" onchange="pwoUpdateParamFields(3)"> 3. Stratégia (opcionális)</label>
+                    <label class="flex items-center gap-1.5 text-[11px] font-bold text-fuchsia-400" for="pwo-type-3"><input type="checkbox" id="pwo-enable-3" onchange="pwoUpdateParamFields(3)" aria-label="3. Stratégia bekapcsolása (opcionális)"> 3. Stratégia (opcionális)</label>
                     <select id="pwo-type-3" onchange="pwoUpdateParamFields(3)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 mb-1.5 text-[11px] text-white focus:outline-none focus:border-fuchsia-400/50">
                         <option value="ema">EMA-keresztezés</option>
                         <option value="rsi">RSI mean-reversion</option>
@@ -15327,7 +15327,7 @@ Mean-reversion,2.5</textarea>
                         <button onclick="document.getElementById('avatar-file-input').click()" title="Profilkép módosítása" aria-label="Profilkép módosítása" class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-neon-cyan text-dark-950 flex items-center justify-center text-[9px] hover:brightness-110 transition">
                             <i class="fa-solid fa-camera"></i>
                         </button>
-                        <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleAvatarSelect(event)">
+                        <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleAvatarSelect(event)" aria-label="Profilkép feltöltése">
                     </div>
                     <div class="min-w-0 flex-grow">
                         <div id="profile-name" class="text-sm font-bold text-white truncate">Vendég</div>
@@ -46707,7 +46707,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
                     <div id="ai-analyzer-upload-zone" class="relative rounded-2xl border-2 border-dashed border-dark-700 hover:border-neon-cyan/50 transition-colors bg-dark-850/40 p-10 text-center cursor-pointer mb-5"
                          onclick="document.getElementById('ai-analyzer-file-input').click()">
-                        <input type="file" id="ai-analyzer-file-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleChartImageSelect(event)">
+                        <input type="file" id="ai-analyzer-file-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleChartImageSelect(event)" aria-label="Diagram kép feltöltése elemzéshez">
                         <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-500 mb-3"></i>
                         <p class="text-sm font-semibold text-slate-300">Kattints ide, vagy húzz ide egy képet</p>
                         <p class="text-[11px] text-slate-500 mt-1">JPEG, PNG vagy WebP, max. 5 MB</p>
