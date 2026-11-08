@@ -40932,12 +40932,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!lossEl || !resultEl) return;
 
             const rawLoss = parseFloat(lossEl.value);
-            if (isNaN(rawLoss)) {
-                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg érvényes veszteség %-ot!</div>`;
+            // JAVÍTÁS: a korábbi verzió a 0-nál kisebb/egyenlő és a 100%-nál
+            // nagyobb/egyenlő (illetve Infinity) bemeneteket csendben
+            // 0,1%-ra/99,9%-ra szorította (Math.min/Math.max clamp) hibaüzenet
+            // nélkül — ez ugyanaz a "néma clamp" hibaosztály, amit a korábbi
+            // javítási körök (pl. Volume Profile sávszám mező) már kiküszö-
+            // böltek máshol. Egy negatív vagy 100%+ "veszteség" értelmetlen
+            // (a lenti 1-lossFrac osztó 100%-nál nullára/negatívba fordulna),
+            // ezért explicit, a mező min/max attribútumával (0,1-99,9) egyező
+            // tartomány-ellenőrzés kell, hibaüzenettel — formulaváltozás nélkül.
+            if (!Number.isFinite(rawLoss) || rawLoss < 0.1 || rawLoss > 99.9) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg egy érvényes, 0,1% és 99,9% közötti veszteség %-ot!</div>`;
                 return;
             }
 
-            const lossPct = Math.min(99.9, Math.max(0.1, rawLoss));
+            const lossPct = rawLoss;
             const lossFrac = lossPct / 100;
             const requiredGainFrac = lossFrac / (1 - lossFrac);
             const requiredGainPct = requiredGainFrac * 100;
