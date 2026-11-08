@@ -24075,12 +24075,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // (badges-modal, trade-journal-modal, whatif-modal, close-reason-modal,
         // majd később logout-confirm-modal, reset-balance-confirm-modal,
         // delete-account-modal, ranks-missions-modal, mobile-tools-modal,
-        // certification-modal) — ezek a fenti, openToolModal()-alapú ESC-
-        // mechanizmus bevezetése UTÁN készültek, ezért korábban kimaradtak
-        // belőle (nincsenek az "openToolModal(" onclick-mintából épülő
-        // ID-gyorsítótárban), pedig a többi dialógussal azonos UX-et
-        // érdemelnek. Minden esetben a modal MÁR MEGLÉVŐ, saját bezáró
-        // útvonalát hívja — semmilyen új viselkedést nem vezet be.
+        // certification-modal, legutóbb premium-modal) — ezek a fenti,
+        // openToolModal()-alapú ESC-mechanizmus bevezetése UTÁN készültek,
+        // ezért korábban kimaradtak belőle (nincsenek az "openToolModal("
+        // onclick-mintából épülő ID-gyorsítótárban), pedig a többi
+        // dialógussal azonos UX-et érdemelnek. Minden esetben a modal MÁR
+        // MEGLÉVŐ, saját bezáró útvonalát hívja — semmilyen új viselkedést
+        // nem vezet be.
         // A close-reason-modalnál NINCS valódi "mégse" út: a pozíció
         // zárása már a modal megnyitásakor eldöntött tény, a modal csak a
         // zárás OKÁT (opcionálisan) kérdezi — ezért az ESC itt pontosan
@@ -24112,7 +24113,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             'delete-account-modal': () => closeDeleteAccountModal(),
             'ranks-missions-modal': () => closeRanksMissionsModal(),
             'mobile-tools-modal': () => closeMobileToolsModal(),
-            'certification-modal': () => document.getElementById('certification-modal').classList.add('hidden')
+            'certification-modal': () => document.getElementById('certification-modal').classList.add('hidden'),
+            'premium-modal': () => closePremiumModal()
         };
         document.addEventListener('keydown', function(e) {
             if (e.key !== 'Escape') return;
