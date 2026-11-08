@@ -24309,10 +24309,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // certification-modal, legutóbb premium-modal) — ezek a fenti,
         // openToolModal()-alapú ESC-mechanizmus bevezetése UTÁN készültek,
         // ezért korábban kimaradtak belőle (nincsenek az "openToolModal("
-        // onclick-mintából épülő ID-gyorsítótárban), pedig a többi
-        // dialógussal azonos UX-et érdemelnek. Minden esetben a modal MÁR
-        // MEGLÉVŐ, saját bezáró útvonalát hívja — semmilyen új viselkedést
-        // nem vezet be.
+        // onclick-mintából épülő ID-gyorsítótárból). Majd ÚJABB ellenőrzés
+        // (teljes modal-id lista a toggleModal()-alapú és egyedi
+        // nyitási-logikájú dialógusokra) 3 további, ugyanígy kimaradt
+        // modalt talált: indicators-modal, alerts-modal,
+        // chart-text-annotation-modal — ezek sem az "openToolModal("
+        // mintát, sem a korábbi egyedi listát nem használták, pedig a
+        // többi dialógussal azonos UX-et érdemelnek. Minden esetben a
+        // modal MÁR MEGLÉVŐ, saját bezáró útvonalát hívja — semmilyen új
+        // viselkedést nem vezet be.
         // A close-reason-modalnál NINCS valódi "mégse" út: a pozíció
         // zárása már a modal megnyitásakor eldöntött tény, a modal csak a
         // zárás OKÁT (opcionálisan) kérdezi — ezért az ESC itt pontosan
@@ -24324,12 +24329,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // hívja — SOHA nem a megerősítő/destruktív gombot. A delete-account-modal
         // és a ranks-missions-modal/mobile-tools-modal/certification-modal saját
         // close* függvényét hívja, ami pontosan azt csinálja, mint a modal X
-        // gombja. SZÁNDÉKOSAN KIMARADT ebből a listából: auth-modal (nincs
-        // "mégse" útja — bejelentkezés/regisztráció nélkül nem zárható),
-        // onboarding-modal (kényszerített, egyszeri választás, nincs "kihagyás"
-        // gomb) és new-password-modal (jelszó-visszaállító email linkről
-        // nyílik, nincs "mégse" — a felhasználónak be KELL állítania az új
-        // jelszót a folytatáshoz).
+        // gombja. Az indicators-modal és az alerts-modal a saját X gombjukkal
+        // AZONOS toggleModal(id)-t hívja (nincs bennük semmilyen destruktív
+        // vagy el nem mentett állapot — a checkbox-ok/riasztás-mentés
+        // azonnal, onchange-re történik). A chart-text-annotation-modal a
+        // saját "Mégse" gombjával EGYEZŐ cancelChartTextAnnotation()-t hívja
+        // (nem a "Hozzáadás" gombot) — ESC itt sem menti el a félig beírt
+        // szöveges megjegyzést. SZÁNDÉKOSAN KIMARADT ebből a listából:
+        // auth-modal (nincs "mégse" útja — bejelentkezés/regisztráció
+        // nélkül nem zárható), onboarding-modal (kényszerített, egyszeri
+        // választás, nincs "kihagyás" gomb) és new-password-modal
+        // (jelszó-visszaállító email linkről nyílik, nincs "mégse" — a
+        // felhasználónak be KELL állítania az új jelszót a folytatáshoz).
         const _escClosableOtherModals = {
             'badges-modal': () => closeBadgesPanel(),
             'trade-journal-modal': () => closeTradeJournalDashboard(),
@@ -24345,7 +24356,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             'ranks-missions-modal': () => closeRanksMissionsModal(),
             'mobile-tools-modal': () => closeMobileToolsModal(),
             'certification-modal': () => document.getElementById('certification-modal').classList.add('hidden'),
-            'premium-modal': () => closePremiumModal()
+            'premium-modal': () => closePremiumModal(),
+            'indicators-modal': () => toggleModal('indicators-modal'),
+            'alerts-modal': () => toggleModal('alerts-modal'),
+            'chart-text-annotation-modal': () => cancelChartTextAnnotation()
         };
         document.addEventListener('keydown', function(e) {
             if (e.key !== 'Escape') return;
