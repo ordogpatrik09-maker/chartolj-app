@@ -1964,6 +1964,13 @@
                                 <div class="text-[10px] text-slate-400">Gyertyatestek irányának mozgóátlaga</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('awesome-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bolt"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Awesome Oscillator (AO) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Bill Williams: SMA(5) − SMA(34) a medián áron</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('bop-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
                             <div>
@@ -12761,6 +12768,73 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
         </div>
     </div>
 
+    <!-- ================= AWESOME OSCILLATOR (AO) KALKULÁTOR (OKTATÁSI) =================
+         Bill Williams indikátora: MP_i = (Magas_i + Alacsony_i) / 2 (medián ár),
+         AO = SMA(MP, 5) − SMA(MP, 34). Nem a záróárat, hanem a gyertya
+         közepét használja, és csak két egyszerű mozgóátlag különbsége —
+         ezért gyorsabban reagál, mint az EMA-alapú MACD/PPO család, de a
+         hirtelen H/L-kilengésekre is érzékenyebb. -->
+    <div id="awesome-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> Awesome Oscillator (AO) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('awesome-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Bill Williams momentum-oszcillátora a gyertyák medián árára (Magas+Alacsony)/2) épül, nem a záróárra: AO = SMA(Medián, 5) − SMA(Medián, 34). A két egyszerű mozgóátlag különbsége azt méri, a rövid-távú momentum hogyan áll a hosszabb-távú momentumhoz képest. A hisztogram-sáv színe (emelkedő/csökkenő az előző sávhoz képest) és a nulla vonal keresztezése a két leggyakrabban figyelt jelzés. Add meg a gyertyákat (Magas,Alacsony) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="awesome-candles">Gyertyák: Magas,Alacsony (soronként egy, legalább 35 db)</label>
+            <textarea id="awesome-candles" rows="8" placeholder="100.49,99.89" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">100.49,99.89
+100.8,100.01
+101.06,100.12
+101.27,100.27
+101.45,100.49
+101.56,100.72
+101.55,100.9
+101.63,100.89
+101.79,100.88
+102.01,101.02
+102.25,101.26
+102.41,101.53
+102.5,101.79
+102.64,101.96
+102.89,102.03
+103.06,102.09
+103.13,102.14
+103.16,102.24
+103.22,102.46
+103.4,102.77
+103.74,102.93
+104,103.05
+104.15,103.15
+104.25,103.3
+104.31,103.5
+104.32,103.69
+104.46,103.69
+104.65,103.73
+104.9,103.91
+105.16,104.19
+105.33,104.47
+105.37,104.69
+105.48,104.76
+105.73,104.85
+106.05,105.06
+106.37,105.38
+106.71,105.81
+107.16,106.42
+107.79,107.13
+108.63,107.79</textarea>
+
+            <button onclick="calcAwesomeOscillator()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="awesome-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az AO-t elsősorban a nulla vonal keresztezésére és a hisztogram-sáv saját korábbi értékéhez viszonyított irányára érdemes figyelni, nem abszolút szintekre. Bill Williams további (ún. "Saucer" és "Twin Peaks") mintázatokat is definiált rá, ezek felismerése vizuális chart-elemzést igényel, nem csak egy számértéket.</p>
+        </div>
+    </div>
+
     <div id="bop-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
         <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
@@ -13987,6 +14061,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Qstick Indikátor</div>
                             <div class="text-[10px] text-slate-400">Gyertyatestek irányának mozgóátlaga</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('awesome-modal')" data-tool-title="awesome oscillator (ao) kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-bolt"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Awesome Oscillator (AO) Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Bill Williams: SMA(5) − SMA(34) a medián áron</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('bop-modal')" data-tool-title="balance of power (bop)" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -34353,6 +34434,107 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Qstick:</span><span class="${colorClass} font-extrabold text-sm">${lastQstick >= 0 ? '+' : ''}${lastQstick.toFixed(4)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+                ${crossNote}
+            `;
+        }
+
+        // ================= AWESOME OSCILLATOR (AO) KALKULÁTOR (OKTATÁSI) =================
+        // MP_i = (Magas_i + Alacsony_i) / 2 (medián ár).
+        // AO = SMA(MP, 5) − SMA(MP, 34). A sma() segédfüggvény null-t ad
+        // vissza a még nem elérhető (túl rövid ablak) vagy túlcsordult
+        // pontokra — ugyanaz a konvenció, mint a KST/DPO kalkulátoroknál.
+        function calcAwesomeOscillator() {
+            const candlesEl = document.getElementById('awesome-candles');
+            const out = document.getElementById('awesome-result');
+            if (!candlesEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
+                    candles.push({ high: parts[0], low: parts[1] });
+                }
+            }
+
+            const n = candles.length;
+            const minNeeded = 35; // SMA(34) első érvényes pontja (34. gyertya) + még 1, hogy legyen előző AO-sáv az irány-összehasonlításhoz
+
+            if (n < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} érvényes gyertya (Magas,Alacsony formátumban) szükséges az Awesome Oscillator kiszámításához — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            const invalidIdx = candles.findIndex(c => c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas érték kisebb, mint az Alacsony — ellenőrizd a bemenetet!</div>`;
+                return;
+            }
+
+            const median = candles.map(c => (c.high + c.low) / 2);
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony bemenetnél
+            // a (Magas+Alacsony) összeg túlcsordulhat Infinity-re — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (median.some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a medián ár számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
+            function sma(series, period) {
+                const r = new Array(series.length).fill(null);
+                for (let i = period - 1; i < series.length; i++) {
+                    const window = series.slice(i - period + 1, i + 1);
+                    const avg = window.reduce((a, b) => a + b, 0) / period;
+                    if (Number.isFinite(avg)) r[i] = avg;
+                }
+                return r;
+            }
+
+            const sma5 = sma(median, 5);
+            const sma34 = sma(median, 34);
+
+            const ao = new Array(n).fill(null);
+            for (let i = 0; i < n; i++) {
+                if (sma5[i] === null || sma34[i] === null) continue;
+                const val = sma5[i] - sma34[i];
+                if (Number.isFinite(val)) ao[i] = val;
+            }
+
+            const lastAO = ao[n - 1];
+            const prevAO = ao[n - 2];
+
+            if (lastAO === null || prevAO === null) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nem sikerült kiszámolni az Awesome Oscillatort — adj meg több adatot!</div>`;
+                return;
+            }
+
+            const rising = lastAO > prevAO;
+            const zeroPositive = lastAO >= 0;
+            const histColor = rising ? 'text-neon-green' : 'text-neon-red';
+            const zeroColorClass = zeroPositive ? 'text-neon-green' : 'text-neon-red';
+
+            let verdict;
+            if (zeroPositive && rising) verdict = 'Nulla vonal felett ÉS emelkedő hisztogram-sáv — erősödő bullish momentum.';
+            else if (zeroPositive && !rising) verdict = 'Nulla vonal felett, de csökkenő hisztogram-sáv — a bullish momentum gyengül, óvatosság indokolt.';
+            else if (!zeroPositive && !rising) verdict = 'Nulla vonal alatt ÉS csökkenő hisztogram-sáv — erősödő bearish momentum.';
+            else verdict = 'Nulla vonal alatt, de emelkedő hisztogram-sáv — a bearish momentum gyengül, lehetséges fordulat közeleg.';
+
+            let crossNote = '';
+            if (prevAO < 0 && lastAO >= 0) {
+                crossNote = '<p class="text-[10px] font-bold text-neon-green mt-2">⚡ Nulla vonal felfelé keresztezés — klasszikus bullish AO-jelzés.</p>';
+            } else if (prevAO >= 0 && lastAO < 0) {
+                crossNote = '<p class="text-[10px] font-bold text-neon-red mt-2">⚡ Nulla vonal lefelé keresztezés — klasszikus bearish AO-jelzés.</p>';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3 font-mono text-xs space-y-2">
+                    <div class="flex justify-between"><span class="text-slate-400">Feldolgozott gyertyák:</span><span class="text-white">${n}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző AO-sáv:</span><span class="text-slate-300">${prevAO >= 0 ? '+' : ''}${prevAO.toLocaleString(undefined, { maximumFractionDigits: 5 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">AO (utolsó sáv):</span><span class="${zeroColorClass} font-extrabold text-sm">${lastAO >= 0 ? '+' : ''}${lastAO.toLocaleString(undefined, { maximumFractionDigits: 5 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Hisztogram iránya:</span><span class="${histColor} font-bold">${rising ? 'Emelkedő (zöld sáv)' : 'Csökkenő (piros sáv)'}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${zeroColorClass}">${verdict}</p>
                 ${crossNote}
             `;
         }
