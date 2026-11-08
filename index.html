@@ -2265,6 +2265,13 @@
                                 <div class="text-[10px] text-slate-400">%K és %D vonalak kiszámítása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('stochrsi-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gauge-high"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Stochastic RSI Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">A Stochastic formula a RSI-sorozatra, %K/%D vonalakkal</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('bbwidth-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrows-left-right-to-line"></i></span>
                             <div>
@@ -6951,6 +6958,95 @@ Kripto: 15000, 20</textarea>
 
             <div id="stochastic-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A %D kiszámításához a %K periódusnál (%K periódus + %D periódus - 1) gyertya szükséges, mert a %D a %K sorozat egy mozgóátlaga, nem csak egyetlen pont.</p>
+        </div>
+    </div>
+
+    <!-- ================= STOCHASTIC RSI KALKULÁTOR (OKTATÁSI) =================
+         A Stochastic RSI a Stochastic Oscillator formuláját alkalmazza nem
+         az árra, hanem a (Wilder-simítású) RSI-sorozatra: ez egy "oszcillátor
+         oszcillátora", ezért a hagyományos Stochasticnál sokkal érzékenyebb,
+         gyakrabban és korábban jelez túlvett/túladott állapotot.
+         StochRSI_i = (RSI_i - LegalacsonyabbRSI_N) / (LegmagasabbRSI_N - LegalacsonyabbRSI_N) × 100,
+         a RSI-sorozat utolsó N (Stochastic periódus) érvényes elemén számolva.
+         %K = a StochRSI-sorozat utolsó %K-simítási periódusának SMA-ja.
+         %D = a %K-sorozat utolsó %D-simítási periódusának SMA-ja (jelvonal). -->
+    <div id="stochrsi-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high text-neon-cyan"></i> Stochastic RSI Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('stochrsi-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Stochastic RSI (StochRSI) a Stochastic formulát nem az árra, hanem a RSI-sorozatra alkalmazza: megméri, a RSI hol helyezkedik el a saját közelmúltbeli (N periódusos) tartományán belül. Mivel egy már simított oszcillátorra épül, sokkal érzékenyebb és gyakrabban éri el a 0/100 szélsőértékeket, mint a sima RSI vagy Stochastic. 80 fölött hagyományosan túlvett, 20 alatt túladott állapotot jelez. Add meg a záróárakat soronként egyet, időrendben (legrégebbi elől).</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="stochrsi-prices">Záróárak (soronként egy, időrendben)</label>
+            <textarea id="stochrsi-prices" rows="7" placeholder="150.55&#10;149.56&#10;149.2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-[10px] text-white focus:outline-none focus:border-neon-cyan/50">150.55
+149.56
+149.2
+148.71
+149.5
+150.14
+151.32
+150.49
+150.49
+149.52
+149.01
+149.23
+148.24
+147.69
+148.26
+148.58
+148.08
+148.5
+149.48
+148.44
+149.41
+150.1
+149.9
+149.24
+150.58
+150.38
+149.56
+148.75
+149.82
+150.28
+151.24
+152.02
+152.31
+153.69
+153.59
+153.92
+154.94
+155.44
+156.54
+156.94
+157.65
+156.71</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="stochrsi-rsiperiod">RSI periódus</label>
+            <input type="number" id="stochrsi-rsiperiod" value="14" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400" for="stochrsi-stochperiod">Stochastic periódus (a RSI-sorozaton)</label>
+            <input type="number" id="stochrsi-stochperiod" value="14" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[10px] font-semibold text-slate-400" for="stochrsi-smoothk">%K simítás</label>
+                    <input type="number" id="stochrsi-smoothk" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-slate-400" for="stochrsi-smoothd">%D simítás</label>
+                    <input type="number" id="stochrsi-smoothd" value="3" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <button onclick="calcStochRSI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="stochrsi-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A StochRSI "oszcillátor az oszcillátoron" jellege miatt zajosabb és hamisabb jelzésekre is hajlamosabb, mint az alap RSI vagy Stochastic — sokan ezért trendirány-szűrővel (pl. hosszabb idősíkú trend) kombinálva használják, nem önállóan.</p>
         </div>
     </div>
 
@@ -13998,6 +14094,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Stochastic Oscillator Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">%K és %D vonalak kiszámítása</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('stochrsi-modal')" data-tool-title="stochastic rsi kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-high"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Stochastic RSI Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">A Stochastic formula a RSI-sorozatra, %K/%D vonalakkal</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('bbwidth-modal')" data-tool-title="bollinger band width kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -27596,6 +27699,116 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">%D (lassú, simított vonal):</span>
+                        <span class="font-extrabold text-white text-sm">${dValue.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">%K vs %D:</span>
+                        <span class="font-extrabold ${kValue >= dValue ? 'text-neon-green' : 'text-neon-red'} text-sm">${kValue >= dValue ? '%K a %D fölött' : '%K a %D alatt'}</span>
+                    </div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= STOCHASTIC RSI KALKULÁTOR (OKTATÁSI) =================
+        // StochRSI_i = (RSI_i - LegalacsonyabbRSI_N) / (LegmagasabbRSI_N - LegalacsonyabbRSI_N) × 100,
+        // a (Wilder-simítású) RSI-sorozat utolsó N (Stochastic periódus) érvényes
+        // elemén számolva. %K = a StochRSI-sorozat utolsó %K-simítási periódusának
+        // SMA-ja. %D = a %K-sorozat utolsó %D-simítási periódusának SMA-ja.
+        // A RSI-sorozatot a chart-oldali calcRSISeries()-szel számoljuk, hogy a
+        // Wilder-simítás logikája egy helyen éljen az appban.
+        function calcStochRSI() {
+            const pricesEl = document.getElementById('stochrsi-prices');
+            const rsiPeriodEl = document.getElementById('stochrsi-rsiperiod');
+            const stochPeriodEl = document.getElementById('stochrsi-stochperiod');
+            const smoothKEl = document.getElementById('stochrsi-smoothk');
+            const smoothDEl = document.getElementById('stochrsi-smoothd');
+            const out = document.getElementById('stochrsi-result');
+            if (!pricesEl || !rsiPeriodEl || !stochPeriodEl || !smoothKEl || !smoothDEl || !out) return;
+
+            const lines = pricesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const prices = [];
+            for (const line of lines) {
+                const v = parseFloat(line.replace(',', '.'));
+                if (Number.isFinite(v)) prices.push(v);
+            }
+
+            const rsiPeriod = parseInt(rsiPeriodEl.value);
+            const stochPeriod = parseInt(stochPeriodEl.value);
+            const smoothK = parseInt(smoothKEl.value);
+            const smoothD = parseInt(smoothDEl.value);
+
+            if (!rsiPeriod || rsiPeriod < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az RSI periódusnak legalább 2-nek kell lennie!</div>`;
+                return;
+            }
+            if (!stochPeriod || stochPeriod < 1 || !smoothK || smoothK < 1 || !smoothD || smoothD < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A Stochastic periódusnak és a %K/%D simítási periódusoknak legalább 1-nek kell lenniük!</div>`;
+                return;
+            }
+
+            const neededPrices = rsiPeriod + stochPeriod + smoothK + smoothD - 2;
+            if (prices.length < neededPrices) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${neededPrices} záróár szükséges ezekkel a periódusokkal (RSI periódus + Stochastic periódus + %K simítás + %D simítás − 2), jelenleg ${prices.length} van megadva!</div>`;
+                return;
+            }
+
+            const rsiSeries = calcRSISeries(prices, rsiPeriod);
+            const validRsi = rsiSeries.filter(v => v !== null && Number.isFinite(v));
+            if (validRsi.length < stochPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég érvényes RSI-érték a Stochastic RSI kiszámításához — adj meg több záróárat!</div>`;
+                return;
+            }
+
+            const stochRsiValues = [];
+            for (let i = stochPeriod - 1; i < validRsi.length; i++) {
+                const window = validRsi.slice(i - stochPeriod + 1, i + 1);
+                const hh = Math.max(...window);
+                const ll = Math.min(...window);
+                stochRsiValues.push(hh === ll ? 50 : ((validRsi[i] - ll) / (hh - ll)) * 100);
+            }
+
+            if (stochRsiValues.length < smoothK) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég Stochastic RSI-érték a %K simításhoz — adj meg több záróárat!</div>`;
+                return;
+            }
+
+            const kSeries = [];
+            for (let i = smoothK - 1; i < stochRsiValues.length; i++) {
+                const window = stochRsiValues.slice(i - smoothK + 1, i + 1);
+                kSeries.push(window.reduce((a, b) => a + b, 0) / smoothK);
+            }
+
+            if (kSeries.length < smoothD) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég %K-érték a %D simításhoz — adj meg több záróárat!</div>`;
+                return;
+            }
+
+            const lastKValues = kSeries.slice(-smoothD);
+            const dValue = lastKValues.reduce((a, b) => a + b, 0) / smoothD;
+            const kValue = kSeries[kSeries.length - 1];
+
+            // JAVÍTÁS-mintájú védelem: szélsőséges, de egyenként véges árbemenetnél
+            // a RSI/Stochastic számítási lánc túlcsordulhat Infinity/NaN-re —
+            // ugyanaz a hibaosztály, mint a többi, korábban javított kalkulátornál.
+            if (!Number.isFinite(kValue) || !Number.isFinite(dValue)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — a Stochastic RSI számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
+            let colorClass, verdict;
+            if (kValue > 80) { colorClass = 'text-neon-red'; verdict = 'Túlvett zóna (%K 80 fölött) — a RSI a saját közelmúltbeli tartományának tetején van, erős túlvett momentum.'; }
+            else if (kValue < 20) { colorClass = 'text-neon-green'; verdict = 'Túladott zóna (%K 20 alatt) — a RSI a saját közelmúltbeli tartományának alján van, erős túladott momentum.'; }
+            else { colorClass = 'text-slate-300'; verdict = 'Neutrális zóna — nincs extrém túlvett/túladott jelzés.'; }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.05] p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1">%K (simított Stochastic RSI)</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${kValue.toFixed(2)}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">%D (jelvonal):</span>
                         <span class="font-extrabold text-white text-sm">${dValue.toFixed(2)}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
