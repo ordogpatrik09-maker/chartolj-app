@@ -41364,8 +41364,38 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kezdeti befizetés értéke pozitív szám legyen!</div>`;
                 return;
             }
+            // JAVÍTÁS (audit — Infinity-szivárgás): a kezdeti befizetés mezőnek
+            // sincs HTML max attribútuma. Egy extrém nagyságrendű (pl. "1e300")
+            // befizetés a lenti `deposit * sqrtK` / `(deposit/2)*(1+k)`
+            // szorzásokon keresztül önmagában is túlcsordulhat Infinity-re, még
+            // a fenti árarány-korlát betartása mellett is. Egy 1 billiárd (1e15)
+            // dolláros felső korlát bőven elegendő minden oktatási szcenárióhoz.
+            if (deposit > 1e15) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kezdeti befizetés legfeljebb 1 000 000 000 000 000 ($) lehet egy reális számításhoz!</div>`;
+                return;
+            }
             if (!isFinite(feesPct) || feesPct < 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A díjbevétel nem lehet negatív! (0 = nincs díjbevétel)</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — Infinity-szivárgás): a belépéskori és a végső ár
+            // mezőnek (il-price0/il-price1) nincs HTML max attribútuma, csak a
+            // pozitivitást ellenőriztük fent. Egyenként véges, de EGYMÁSHOZ
+            // KÉPEST szélsőségesen eltérő nagyságrendű árak esetén (pl.
+            // price0 = "1e-200", price1 = "1e200") a lenti `price1 / price0`
+            // osztás már egyetlen lépésben túlcsordulhat Infinity-re (két
+            // egyenként véges szám hányadosa is adhat Infinity-t, ha a hányados
+            // a double tartományon kívül esik), ami a sqrtK/hodlValue/poolValue
+            // láncon keresztül NaN/Infinity-ként jelenne meg a kimeneten, valódi
+            // hibaüzenet helyett — ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál (pl. Optimal f, GSL Díj vs. Megtakarítás).
+            // Egy reális, 1 millió-szoros árarány bőven elegendő minden
+            // oktatási szcenárióhoz (ennél extrémebb árarány nem fordulhat elő
+            // valódi piacon két, azonos pool-ban párosított eszköz között).
+            const priceRatioRaw = price1 / price0;
+            if (!Number.isFinite(priceRatioRaw) || priceRatioRaw > 1e6 || priceRatioRaw < 1e-6) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A belépéskori és a jelenlegi/végső ár aránya túl szélsőséges egy reális számításhoz — adj meg egymáshoz közelebbi (legfeljebb kb. 1 millió-szoros eltérésű) árakat!</div>`;
                 return;
             }
 
@@ -41376,6 +41406,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const poolValue = deposit * sqrtK;
             const ilPct = (poolValue / hodlValue - 1) * 100; // <= 0
             const ilAbs = poolValue - hodlValue; // <= 0
+
+            // JAVÍTÁS (audit — Infinity-szivárgás): a fenti árarány- és
+            // befizetés-korlátok kizárják a leggyakoribb túlcsordulási eseteket,
+            // de egy végső, megjelenítés előtti véges-ellenőrzés biztonsági
+            // hálóként itt is konzisztens az app többi kalkulátorával.
+            if (![k, hodlValue, poolValue, ilPct, ilAbs].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékekkel a számítás nem adott érvényes eredményt — próbálj reálisabb árakat/befizetést megadni!</div>`;
+                return;
+            }
 
             const feesValue = deposit * (feesPct / 100);
             const netPoolValue = poolValue + feesValue;
