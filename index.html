@@ -3529,11 +3529,11 @@
                     <div id="tpsl-inputs" class="hidden space-y-2">
                         <div>
                             <span class="text-[10px] text-neon-green font-bold block mb-1">Take Profit (USD)</span>
-                            <input type="number" id="input-tp-price" placeholder="pl. 98000" min="0.01" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-green">
+                            <input type="number" id="input-tp-price" placeholder="pl. 98000" min="0.01" step="0.01" aria-label="Take Profit ár (USD)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-green">
                         </div>
                         <div>
                             <span class="text-[10px] text-neon-red font-bold block mb-1">Stop Loss (USD)</span>
-                            <input type="number" id="input-sl-price" placeholder="pl. 92000" min="0.01" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red">
+                            <input type="number" id="input-sl-price" placeholder="pl. 92000" min="0.01" step="0.01" aria-label="Stop Loss ár (USD)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red">
                         </div>
                     </div>
                 </div>
@@ -3687,8 +3687,8 @@
             <h3 class="text-sm font-bold text-white mb-1">Új jelszó beállítása</h3>
             <p class="text-[11px] text-slate-500 mb-4">Válassz egy új jelszót a fiókodhoz (legalább 6 karakter).</p>
             <div class="space-y-3">
-                <input type="password" id="new-password-input" onkeydown="if(event.key==='Enter')document.getElementById('new-password-confirm').focus()" placeholder="Új jelszó" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="password" id="new-password-confirm" onkeydown="if(event.key==='Enter')submitNewPassword()" placeholder="Új jelszó mégegyszer" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="new-password-input" onkeydown="if(event.key==='Enter')document.getElementById('new-password-confirm').focus()" placeholder="Új jelszó" aria-label="Új jelszó" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="new-password-confirm" onkeydown="if(event.key==='Enter')submitNewPassword()" placeholder="Új jelszó mégegyszer" aria-label="Új jelszó megerősítése" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <div id="new-password-error" class="hidden text-[11px] text-neon-red"></div>
                 <button id="new-password-submit-btn" onclick="submitNewPassword()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 hover:brightness-110 transition">Jelszó mentése</button>
             </div>
@@ -3714,8 +3714,8 @@
 
             <!-- Login Form -->
             <div id="auth-form-login" class="space-y-3">
-                <input type="email" id="login-email" onkeydown="if(event.key==='Enter')submitLogin()" placeholder="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="password" id="login-password" onkeydown="if(event.key==='Enter')submitLogin()" placeholder="Jelszó" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="email" id="login-email" onkeydown="if(event.key==='Enter')submitLogin()" placeholder="Email cím" aria-label="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="login-password" onkeydown="if(event.key==='Enter')submitLogin()" placeholder="Jelszó" aria-label="Jelszó" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <div class="text-right -mt-1">
                     <button onclick="showPasswordResetForm()" class="text-[10px] text-slate-500 hover:text-neon-cyan transition">Elfelejtetted a jelszavad?</button>
                 </div>
@@ -3728,7 +3728,7 @@
             <!-- Jelszó-visszaállítás kérése (156. pont) -->
             <div id="auth-form-password-reset" class="hidden space-y-3">
                 <p class="text-[11px] text-slate-400">Add meg a fiókodhoz tartozó email címet — küldünk egy linket, amivel új jelszót állíthatsz be.</p>
-                <input type="email" id="password-reset-email" onkeydown="if(event.key==='Enter')requestPasswordReset()" placeholder="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="email" id="password-reset-email" onkeydown="if(event.key==='Enter')requestPasswordReset()" placeholder="Email cím" aria-label="Email cím a jelszó-visszaállításhoz" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <div id="password-reset-message" class="hidden text-[11px]"></div>
                 <button id="password-reset-submit-btn" onclick="requestPasswordReset()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                     Visszaállító link küldése
@@ -3740,10 +3740,10 @@
 
             <!-- Register Form -->
             <div id="auth-form-register" class="hidden space-y-3">
-                <input type="text" id="register-name" placeholder="Név / Felhasználónév" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="email" id="register-email" onkeydown="if(event.key==='Enter')submitRegister()" placeholder="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="password" id="register-password" placeholder="Jelszó (min. 6 karakter)" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="password" id="register-password-confirm" placeholder="Jelszó megerősítése" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="text" id="register-name" placeholder="Név / Felhasználónév" aria-label="Név / Felhasználónév" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="email" id="register-email" onkeydown="if(event.key==='Enter')submitRegister()" placeholder="Email cím" aria-label="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="register-password" placeholder="Jelszó (min. 6 karakter)" aria-label="Jelszó (min. 6 karakter)" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="register-password-confirm" placeholder="Jelszó megerősítése" aria-label="Jelszó megerősítése" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <div id="auth-register-error" class="hidden text-[11px] text-neon-red"></div>
                 <label class="flex items-start gap-2 text-[10px] text-slate-400 leading-relaxed cursor-pointer">
                     <input type="checkbox" id="register-legal-accept" class="mt-0.5 accent-neon-green">
@@ -11674,7 +11674,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                         <span class="text-[11px] font-bold text-neon-cyan">1. Stratégia</span>
                         <input type="number" id="ptf-weight-1" value="50" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-neon-cyan/50" aria-label="1. Stratégia súlya százalékban">
                     </div>
-                    <select id="ptf-type-1" onchange="ptfUpdateParamFields(1)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-neon-cyan/50">
+                    <select id="ptf-type-1" onchange="ptfUpdateParamFields(1)" aria-label="1. Stratégia típusa" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-neon-cyan/50">
                         <option value="ema" selected>EMA-keresztezés</option>
                         <option value="rsi">RSI mean-reversion</option>
                         <option value="boll">Bollinger mean-reversion</option>
@@ -11687,7 +11687,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                         <span class="text-[11px] font-bold text-amber-400">2. Stratégia</span>
                         <input type="number" id="ptf-weight-2" value="50" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-amber-400/50" aria-label="2. Stratégia súlya százalékban">
                     </div>
-                    <select id="ptf-type-2" onchange="ptfUpdateParamFields(2)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-amber-400/50">
+                    <select id="ptf-type-2" onchange="ptfUpdateParamFields(2)" aria-label="2. Stratégia típusa" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-amber-400/50">
                         <option value="ema">EMA-keresztezés</option>
                         <option value="rsi" selected>RSI mean-reversion</option>
                         <option value="boll">Bollinger mean-reversion</option>
@@ -11700,7 +11700,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                         <label class="flex items-center gap-1.5 text-[11px] font-bold text-fuchsia-400" for="ptf-weight-3"><input type="checkbox" id="ptf-enable-3" onchange="ptfUpdateParamFields(3)" aria-label="3. Stratégia bekapcsolása (opcionális)"> 3. Stratégia (opcionális)</label>
                         <input type="number" id="ptf-weight-3" value="0" step="1" min="0" max="100" class="w-16 bg-dark-850 border border-dark-750 rounded-lg px-2 py-1 font-mono text-[11px] text-white text-right focus:outline-none focus:border-fuchsia-400/50">
                     </div>
-                    <select id="ptf-type-3" onchange="ptfUpdateParamFields(3)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-fuchsia-400/50">
+                    <select id="ptf-type-3" onchange="ptfUpdateParamFields(3)" aria-label="3. Stratégia típusa" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mb-1.5 text-[11px] text-white focus:outline-none focus:border-fuchsia-400/50">
                         <option value="ema">EMA-keresztezés</option>
                         <option value="rsi">RSI mean-reversion</option>
                         <option value="boll" selected>Bollinger mean-reversion</option>
@@ -11741,7 +11741,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
             <div class="space-y-3 mb-3">
                 <div class="border border-dark-750 rounded-xl p-2.5">
                     <span class="text-[11px] font-bold text-neon-cyan">1. Stratégia</span>
-                    <select id="pwo-type-1" onchange="pwoUpdateParamFields(1)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 mb-1.5 text-[11px] text-white focus:outline-none focus:border-neon-cyan/50">
+                    <select id="pwo-type-1" onchange="pwoUpdateParamFields(1)" aria-label="1. Stratégia típusa" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 mb-1.5 text-[11px] text-white focus:outline-none focus:border-neon-cyan/50">
                         <option value="ema" selected>EMA-keresztezés</option>
                         <option value="rsi">RSI mean-reversion</option>
                         <option value="boll">Bollinger mean-reversion</option>
@@ -11751,7 +11751,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                 </div>
                 <div class="border border-dark-750 rounded-xl p-2.5">
                     <span class="text-[11px] font-bold text-amber-400">2. Stratégia</span>
-                    <select id="pwo-type-2" onchange="pwoUpdateParamFields(2)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 mb-1.5 text-[11px] text-white focus:outline-none focus:border-amber-400/50">
+                    <select id="pwo-type-2" onchange="pwoUpdateParamFields(2)" aria-label="2. Stratégia típusa" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-1 mb-1.5 text-[11px] text-white focus:outline-none focus:border-amber-400/50">
                         <option value="ema">EMA-keresztezés</option>
                         <option value="rsi" selected>RSI mean-reversion</option>
                         <option value="boll">Bollinger mean-reversion</option>
@@ -13602,7 +13602,7 @@ Mean-reversion,2.5</textarea>
         <div class="px-4 pt-3 pb-1 shrink-0">
             <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                <input type="text" id="mobile-tools-search" oninput="filterMobileToolsList()" placeholder="Keress a kalkulátorok között..." class="w-full bg-dark-850 border border-dark-750 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="text" id="mobile-tools-search" oninput="filterMobileToolsList()" placeholder="Keress a kalkulátorok között..." aria-label="Eszközök keresése" class="w-full bg-dark-850 border border-dark-750 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
             </div>
         </div>
         <div id="mobile-tools-list" class="flex-grow overflow-y-auto px-4 py-3 space-y-2">
@@ -15163,6 +15163,7 @@ Mean-reversion,2.5</textarea>
                 <button onclick="cancelChartTextAnnotation()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <input type="text" id="chart-text-annotation-input" maxlength="120" placeholder="Add meg a megjegyzés szövegét..."
+                aria-label="Megjegyzés szövege"
                 class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50"
                 onkeydown="if(event.key==='Enter') confirmChartTextAnnotation();">
             <div class="flex items-center gap-2 mt-3">
@@ -15322,7 +15323,7 @@ Mean-reversion,2.5</textarea>
                 <div id="leaderboard-friends-panel" class="hidden">
                     <div id="friends-list" class="space-y-1.5"></div>
                     <div class="flex items-center gap-2 mt-3">
-                        <input type="text" id="friend-name-input" maxlength="30" placeholder="Barát meghívókódja (pl. CHRT-AB12CD)" class="flex-grow bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50">
+                        <input type="text" id="friend-name-input" maxlength="30" placeholder="Barát meghívókódja (pl. CHRT-AB12CD)" aria-label="Barát meghívókódja" class="flex-grow bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50">
                         <button onclick="addFriendByCode()" class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-dark-800 text-neon-cyan hover:bg-dark-750 transition shrink-0">+ Hozzáad</button>
                     </div>
                     <p id="friends-demo-note" class="text-[9.5px] text-slate-600 mt-3 leading-relaxed">Jelentkezz be, és kérd el a barátod meghívókódját (Meghívás gomb) — utána mindkettőtöknél valódi, megosztott XP-verseny jelenik meg.</p>
@@ -15389,7 +15390,7 @@ Mean-reversion,2.5</textarea>
                 <div id="profile-sync-status" class="text-[10px] text-slate-500 mt-1"></div>
                 <div class="flex items-center gap-2 mt-2">
                     <span class="text-[11px] text-slate-500">Napi cél:</span>
-                    <select id="daily-lesson-goal" onchange="dailyLessonGoal=parseInt(this.value);showNotification('Napi cél: '+this.value+' lecke');" class="text-[11px] bg-dark-800 rounded px-1 py-0.5 text-slate-300 border border-dark-750">
+                    <select id="daily-lesson-goal" onchange="dailyLessonGoal=parseInt(this.value);showNotification('Napi cél: '+this.value+' lecke');" aria-label="Napi lecke-cél kiválasztása" class="text-[11px] bg-dark-800 rounded px-1 py-0.5 text-slate-300 border border-dark-750">
                         <option value="1">1 lecke</option>
                         <option value="3" selected>3 lecke</option>
                         <option value="5">5 lecke</option>
@@ -15399,7 +15400,7 @@ Mean-reversion,2.5</textarea>
                 <button onclick="changePasswordInProfile()" class="text-[11px] font-bold text-slate-500 hover:text-neon-cyan transition mt-1"><i class="fa-solid fa-key mr-1"></i>Jelszó módosítása</button>
                 <button id="profile-auth-btn" onclick="openAuthModal()" class="w-full mt-3 py-2 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 hover:brightness-110 transition">Bejelentkezés</button>
                 <div id="profile-name-edit" class="hidden mt-3 flex items-center gap-2">
-                    <input type="text" id="profile-name-input" onkeydown="if(event.key==='Enter')updateDisplayName()" maxlength="40" placeholder="Megjelenített neved" class="flex-grow bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                    <input type="text" id="profile-name-input" onkeydown="if(event.key==='Enter')updateDisplayName()" maxlength="40" placeholder="Megjelenített neved" aria-label="Megjelenített név" class="flex-grow bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                     <button onclick="updateDisplayName()" class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-dark-800 text-neon-cyan hover:bg-dark-750 transition">Mentés</button>
                 </div>
                 <div id="profile-name-error" class="hidden text-[10px] text-neon-red mt-1"></div>
@@ -15718,7 +15719,7 @@ Mean-reversion,2.5</textarea>
             <div class="flex-1 max-w-md mx-6 flex items-center gap-2">
                 <div class="relative flex-1 hidden lg:block">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                    <input type="text" id="academy-search" oninput="renderAcademyLessonList()" placeholder="Keress lecke cím alapján..."
+                    <input type="text" id="academy-search" oninput="renderAcademyLessonList()" aria-label="Lecke keresése cím alapján" placeholder="Keress lecke cím alapján..."
                         class="w-full bg-dark-850 border border-dark-750 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 </div>
             </div>
@@ -16029,8 +16030,8 @@ Mean-reversion,2.5</textarea>
                     </h2>
                     <p class="text-[10px] text-slate-400 mt-0.5">Megrajzolt, bejelölt gyertyás példák + konkrét stratégia</p>
                 </div>
-                <div class="px-2 pt-2 pb-2 shrink-0 border-b border-dark-750/40 space-y-1.5"><select id="gallery-cat-filter" onchange="renderChartStrategiesList()" aria-label="Kategória szűrő" class="w-full bg-dark-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-neon-cyan/40"><option value="">Minden típus</option><option value="forduló">Forduló alakzatok</option><option value="folytató">Folytató alakzatok</option><option value="ék">Ék alakzatok</option><option value="egyéb">Egyéb</option></select><select id="gallery-sort" onchange="renderChartStrategiesList()" class="w-full bg-dark-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none mb-1"><option value="name">Név szerint</option><option value="cat">Kategória szerint</option></select>
-                <input type="text" id="gallery-search" oninput="renderChartStrategiesList()" placeholder="Szűrés..." class="w-full bg-dark-800 rounded-lg px-2 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-neon-cyan/40"></div>
+                <div class="px-2 pt-2 pb-2 shrink-0 border-b border-dark-750/40 space-y-1.5"><select id="gallery-cat-filter" onchange="renderChartStrategiesList()" aria-label="Kategória szűrő" class="w-full bg-dark-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-neon-cyan/40"><option value="">Minden típus</option><option value="forduló">Forduló alakzatok</option><option value="folytató">Folytató alakzatok</option><option value="ék">Ék alakzatok</option><option value="egyéb">Egyéb</option></select><select id="gallery-sort" onchange="renderChartStrategiesList()" aria-label="Rendezés" class="w-full bg-dark-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none mb-1"><option value="name">Név szerint</option><option value="cat">Kategória szerint</option></select>
+                <input type="text" id="gallery-search" oninput="renderChartStrategiesList()" placeholder="Szűrés..." aria-label="Alakzatok szűrése" class="w-full bg-dark-800 rounded-lg px-2 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-neon-cyan/40"></div>
                 <div id="chart-strategies-list" class="flex-grow overflow-y-auto p-2 space-y-1.5"></div>
             </section>
 
@@ -16131,7 +16132,7 @@ Mean-reversion,2.5</textarea>
                     <p class="text-[11px] text-slate-500 mt-1 leading-relaxed mb-3">Minden fontosabb kereskedési fogalom egy helyen, amit az appban és a leckékben használunk — kereshetően.</p>
                     <div class="relative mb-2">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input type="text" id="glossary-search-input" oninput="renderGlossaryList()" placeholder="Keress egy fogalomra… pl. 'spread', 'stop-loss'" class="w-full bg-dark-850 border border-dark-750 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50">
+                        <input type="text" id="glossary-search-input" oninput="renderGlossaryList()" placeholder="Keress egy fogalomra… pl. 'spread', 'stop-loss'" aria-label="Fogalom keresése" class="w-full bg-dark-850 border border-dark-750 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50">
                     </div>
                     <div id="glossary-cat-filters" class="flex flex-wrap gap-1.5"></div>
                 </div>
@@ -16433,7 +16434,7 @@ Mean-reversion,2.5</textarea>
 
         <div class="p-3 border-t border-dark-750/60 shrink-0">
             <div class="flex items-center gap-2">
-                <input type="text" id="ai-chat-input" placeholder="Kérdezz a kereskedésről..." onkeydown="if(event.key==='Enter')sendAiChatMessage()" class="flex-grow bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="text" id="ai-chat-input" placeholder="Kérdezz a kereskedésről..." aria-label="Kérdés a kereskedésről" onkeydown="if(event.key==='Enter')sendAiChatMessage()" class="flex-grow bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <button onclick="sendAiChatMessage()" class="w-9 h-9 rounded-xl bg-neon-cyan text-dark-950 flex items-center justify-center shrink-0 hover:brightness-110 transition" aria-label="Üzenet küldése">
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
