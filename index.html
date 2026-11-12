@@ -39691,7 +39691,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const positionRaw = parseFloat(positionEl.value);
             const feePctRaw = parseFloat(pctEl.value);
-            const trades = Math.max(1, Math.round(parseFloat(tradesEl.value) || 0));
+            const tradesRaw = parseFloat(tradesEl.value);
 
             // JAVÍTÁS: korábban a feePctPerSide Math.max(0, parseFloat(...) || 0)-dal
             // volt olvasva — egy törölt/nem-numerikus vagy negatív díj% mező csendben
@@ -39700,12 +39700,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // mintha a felhasználó egy valódi 0%-os (díjmentes) brókert adott volna meg.
             // Most explicit, piros hibaüzenetet kap, konzisztensen a fájl többi
             // kalkulátorának validációs mintájával (pl. calcOptionPayoff).
-            if (!Number.isFinite(positionRaw) || positionRaw <= 0 || !Number.isFinite(feePctRaw) || feePctRaw < 0) {
-                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret legyen nullánál nagyobb, a díj% pedig ne legyen negatív!</div>`;
+            //
+            // JAVÍTÁS #2: a "trades" (tradek száma) mező ugyanezt a már kijavított
+            // csendes-visszaesés hibát hordozta tovább — egy törölt/nem-numerikus,
+            // nulla vagy negatív érték Math.max(1, ... || 0)-val némán 1 trade-re
+            // esett vissza, így a felhasználó egy valósnak kinéző "Összes díj (1
+            // trade)" eredményt kapott, miközben a tényleges bemenete el lett
+            // dobva. Most ez is explicit, piros hibaüzenetet kap.
+            if (!Number.isFinite(positionRaw) || positionRaw <= 0 || !Number.isFinite(feePctRaw) || feePctRaw < 0 || !Number.isFinite(tradesRaw) || tradesRaw < 1) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret legyen nullánál nagyobb, a díj% pedig ne legyen negatív, a tradek száma pedig legalább 1!</div>`;
                 return;
             }
             const position = positionRaw;
             const feePctPerSide = feePctRaw;
+            const trades = Math.round(tradesRaw);
 
             const feePerSide = position * (feePctPerSide / 100);
             const roundTripFee = feePerSide * 2;
