@@ -2741,6 +2741,13 @@
                                 <div class="text-[10px] text-slate-400">Kontraktus-görgetés kontangó/backwardation hatása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('settlement-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-calendar-check"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">T+n Elszámolási Nap Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Mikor számol el (settle) tényleg egy kötés?</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('circuitbreaker-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-traffic-light"></i></span>
                             <div>
@@ -8401,6 +8408,41 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="rollover-result" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Long pozíciónál a görgetés nettó cash flow-ja a közeli ár MÍNUSZ a távoli ár (eladod a közelit, megveszed a távolit) — kontangóban (távoli > közeli) ez veszteség. Short pozíciónál pont fordítva: a távoli ár MÍNUSZ a közeli ár — kontangóban ez nyereség. Az évesített % a jelenlegi görgetési ciklust feltételezi minden lejáratkor ismétlődve, ami csak közelítés — a valódi kontangó/backwardation mértéke lejáratonként változhat.</p>
+        </div>
+    </div>
+
+    <!-- ================= T+n ELSZÁMOLÁSI NAP KALKULÁTOR (OKTATÁSI) =================
+         A 339. lecke ("Elszámolás és Klíring — Mi Történik a Kötés Után")
+         elmagyarázza a T+1/T+2 settlement fogalmát, de eddig csak elméleti
+         szinten — nem volt hozzá konkrét, kiszámolható eszköz, ami megmutatja,
+         egy adott kötés pontosan MELYIK naptári napon számol el. -->
+    <div id="settlement-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-check text-neon-cyan"></i> T+n Elszámolási Nap Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('settlement-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Egy kötés (trade) nem azonnal "számol el" — a tulajdonjog és a pénz tényleges átadása (elszámolás/settlement) a piactól függően 0-3 munkanapot vehet igénybe. Add meg a kötés dátumát és a piac elszámolási ciklusát, és a kalkulátor kiszámolja a pontos elszámolási dátumot, hétvégéket átugorva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="settlement-trade-date">Kötés (trade) dátuma</label>
+            <input type="date" id="settlement-trade-date" aria-label="Kötés dátuma" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400" for="settlement-cycle">Piac / elszámolási ciklus</label>
+            <select id="settlement-cycle" aria-label="Elszámolási ciklus" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                <option value="0">T+0 — Kriptó spot (azonnali)</option>
+                <option value="1" selected>T+1 — US részvény/ETF (2024 óta)</option>
+                <option value="2">T+2 — EU/UK részvény (legacy ciklus)</option>
+                <option value="3">T+3 — Egyes kötvénypiacok / legacy ciklusok</option>
+            </select>
+
+            <button onclick="calcSettlementDate()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="settlement-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A kalkulátor csak a hétvégéket (szombat/vasárnap) ugorja át munkanapként — tőzsdei/nemzeti munkaszüneti napokat (pl. karácsony, Thanksgiving) NEM veszi figyelembe, ezért egy valódi piaci munkaszüneti nap körül a tényleges elszámolás akár 1 nappal később is csúszhat. T+0-nál a "piac" maga a kriptó spot-piac, ahol nincs hagyományos elszámolási késleltetés.</p>
         </div>
     </div>
 
@@ -14893,6 +14935,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Rollover Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Kontraktus-görgetés kontangó/backwardation hatása</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('settlement-modal')" data-tool-title="t+n elszámolási nap kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-calendar-check"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">T+n Elszámolási Nap Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Mikor számol el (settle) tényleg egy kötés?</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('circuitbreaker-modal')" data-tool-title="circuit breaker &amp; luld szint kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -24215,6 +24264,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 document.getElementById('ps-result').innerHTML = '';
             }
             if (id === 'rr-modal') document.getElementById('rr-result').innerHTML = '';
+            if (id === 'settlement-modal') {
+                const dEl = document.getElementById('settlement-trade-date');
+                if (dEl && !dEl.value) {
+                    const now = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    dEl.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+                }
+                document.getElementById('settlement-result').innerHTML = '';
+            }
             if (id === 'dailylimit-modal') {
                 document.getElementById('dl-balance').value = Math.round(accountBalance);
                 document.getElementById('dl-result').innerHTML = '';
@@ -39917,6 +39975,94 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= T+n ELSZÁMOLÁSI NAP KALKULÁTOR MOTORJA =================
+        function calcSettlementDate() {
+            const dateEl = document.getElementById('settlement-trade-date');
+            const cycleEl = document.getElementById('settlement-cycle');
+            const resultEl = document.getElementById('settlement-result');
+            if (!dateEl || !cycleEl || !resultEl) return;
+
+            const dateStr = dateEl.value;
+            const cycleDays = parseInt(cycleEl.value, 10);
+
+            if (!dateStr || !Number.isFinite(cycleDays) || cycleDays < 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes kötés-dátumot!</div>`;
+                return;
+            }
+
+            // A <input type="date"> értéke "YYYY-MM-DD" formátumú. Szándékosan
+            // NEM new Date(dateStr)-tel parsoljuk: az ISO-dátum-string
+            // argumentumos new Date() UTC éjfélként értelmezi a dátumot, de a
+            // getDate()/getDay() a BÖNGÉSZŐ LOKÁLIS időzónájában olvasná ki
+            // vissza — egy UTC-tól keletre eső időzónában (pl. Budapest) ez
+            // visszafelé csúsztatná a napot egy nappal. Ehelyett manuálisan
+            // szétszedjük, és UTC délben (12:00) konstruáljuk a Date-et, majd
+            // kizárólag UTC-alapú get/set függvényeket használunk — így a
+            // kiszámolt nap SOHA nem csúszhat át a felhasználó időzónája miatt.
+            const parts = dateStr.split('-').map(Number);
+            if (parts.length !== 3 || parts.some(p => !Number.isFinite(p))) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen dátum formátum!</div>`;
+                return;
+            }
+            const tradeDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0));
+            if (isNaN(tradeDate.getTime())) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen dátum!</div>`;
+                return;
+            }
+
+            const tradeDow = tradeDate.getUTCDay();
+            const tradeIsWeekend = (tradeDow === 0 || tradeDow === 6);
+
+            // Munkanapok hozzáadása (T+0 esetén a ciklus 0, a ciklus nélkül
+            // marad az eredeti dátum) — hétvégét (szombat/vasárnap) sosem
+            // számol munkanapnak, csak átugorja.
+            let settleDate = new Date(tradeDate.getTime());
+            let addedBusinessDays = 0;
+            let weekendDaysSkipped = 0;
+            while (addedBusinessDays < cycleDays) {
+                settleDate.setUTCDate(settleDate.getUTCDate() + 1);
+                const dow = settleDate.getUTCDay();
+                if (dow === 0 || dow === 6) {
+                    weekendDaysSkipped++;
+                } else {
+                    addedBusinessDays++;
+                }
+            }
+
+            const calendarDays = Math.round((settleDate.getTime() - tradeDate.getTime()) / 86400000);
+
+            const dayNames = ['vasárnap', 'hétfő', 'kedd', 'szerda', 'csütörtök', 'péntek', 'szombat'];
+            const fmtDate = (d) => `${d.getUTCFullYear()}. ${String(d.getUTCMonth() + 1).padStart(2, '0')}. ${String(d.getUTCDate()).padStart(2, '0')}. (${dayNames[d.getUTCDay()]})`;
+
+            resultEl.innerHTML = `
+                <div class="rounded-xl bg-neon-cyan/5 border border-neon-cyan/30 p-3 mb-3">
+                    <div class="text-[10px] text-neon-cyan uppercase font-bold mb-1">Elszámolás (settlement) dátuma</div>
+                    <div class="text-lg font-extrabold text-white">${fmtDate(settleDate)}</div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Kötés dátuma:</span>
+                    <span class="font-bold text-white">${fmtDate(tradeDate)}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Elszámolási ciklus:</span>
+                    <span class="font-bold text-white">T+${cycleDays}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Naptári napok a kötés és elszámolás között:</span>
+                    <span class="font-bold text-white">${calendarDays}</span>
+                </div>
+                ${weekendDaysSkipped > 0 ? `
+                <div class="flex items-center justify-between font-mono text-xs mb-1.5">
+                    <span class="text-slate-400">Átugrott hétvégi nap(ok):</span>
+                    <span class="font-bold text-amber-400">${weekendDaysSkipped}</span>
+                </div>` : ''}
+                ${tradeIsWeekend ? `
+                <div class="mt-3 rounded-lg bg-amber-400/10 border border-amber-400/30 p-2 text-[10px] text-amber-300 leading-relaxed">
+                    Figyelem: a megadott kötés-dátum hétvégére esik — a hagyományos piacokon (részvény, határidős) ezen a napon nincs kereskedés, ez az eredmény csak demonstrációs célú.
+                </div>` : ''}
+            `;
+        }
+
         // ================= CIRCUIT BREAKER & LULD SZINT KALKULÁTOR MOTORJA =================
         let currentCbMode = 'mwcb';
 
@@ -50394,6 +50540,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            339: { tool: 'settlement-modal', cta: 'Számold ki élesben egy kötés pontos T+n elszámolási (settlement) dátumát, hétvégéket átugorva' },
             85: { tool: 'hedgeratio-modal', cta: 'Számold ki élesben a minimum-varianciájú fedezeti arányt egy korrelált eszközzel' },
             111: { tool: 'gsl-modal', cta: 'Számold ki élesben, várható értékben megéri-e a Garantált Stop-Loss (GSL) felára a gap-kockázat ellen' },
             541: { tool: 'l2fee-modal', cta: 'Számold ki élesben, mennyit spórolnál egy Layer 2-n, és hány tranzakció után térülne meg a bridge-díj' },
@@ -50781,7 +50928,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
