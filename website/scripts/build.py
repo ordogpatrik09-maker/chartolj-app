@@ -103,9 +103,29 @@ def head(page, extra_ld=''):
 ''' % dict(page=page, title=esc(hu('meta.%s.title' % page)), desc=esc(hu('meta.%s.desc' % page)), canon=canon, ld=extra_ld, skip=esc(hu('common.skip')))
 
 def navlinks(cur, cls=''):
-    items = [('index.html#platform', 'nav.platform', 'home'), ('markets.html', 'nav.markets', 'markets'), ('academy.html', 'nav.learning', 'academy'),
+    items = [('markets.html', 'nav.markets', 'markets'), ('academy.html', 'nav.learning', 'academy'),
              ('tools.html', 'nav.tools', 'tools'), ('premium.html', 'nav.pricing', 'premium'), ('about.html', 'nav.about', 'about')]
-    return ''.join('<a %shref="%s"%s>%s</a>' % ('class="dl" ' if cls else '', h, ' aria-current="page"' if p == cur and p != 'home' else '', tx(k)) for h, k, p in items)
+    if not cls:
+        return ''
+    return ''.join('<a class="dl" href="%s"%s>%s</a>' % (h, ' aria-current="page"' if p == cur else '', tx(k)) for h, k, p in [('index.html#platform', 'nav.platform', 'home')] + items)
+
+def mega(btn_key, cols, cta=True):
+    inner = ''.join('<div><h5>%s</h5>%s</div>' % (tx(t), ''.join('<a href="%s">%s%s</a>' % (h, tx(k), ('<small>%s</small>' % tx(d)) if d else '') for h, k, d in links)) for t, links in cols)
+    if cta:
+        inner += '<div class="mega-cta"><b>%s</b><p>%s</p><a class="btn btn-primary btn-sm" data-app href="app/index.html">%s</a></div>' % (tx('mega.cta.t'), tx('mega.cta.d'), tx('nav.start'))
+    return '<div class="has-mega"><button type="button" aria-haspopup="true">%s</button><div class="mega"><div class="container">%s</div></div></div>' % (tx(btn_key), inner)
+
+def desktop_menu(cur):
+    m1 = mega('mega.platform', [('mega.col.trade', [('app/index.html', 'mega.t1', 'mega.t1d'), ('app/index.html', 'mega.t2', None), ('app/index.html', 'mega.t3', None)]),
+                                ('mega.col.analysis', [('tools.html', 'mega.a1', None), ('tools.html', 'mega.a2', None), ('markets.html', 'mega.a3', None)]),
+                                ('mega.col.tools', [('tools.html', 'mega.all', None), ('index.html#platform', 'nav.platform', None)])])
+    m2 = mega('mega.markets', [('mega.col.cat', [('markets.html', 'market.cat.forex', None), ('markets.html', 'market.cat.stocks', None), ('markets.html', 'market.cat.indices', None)]),
+                               ('mega.col.cat', [('markets.html', 'market.cat.commodities', None), ('markets.html', 'market.cat.crypto', None), ('markets.html', 'market.cat.etf', None)]),
+                               ('mega.col.start', [('markets.html', 'mega.allm', None)])])
+    m3 = mega('mega.learn', [('mega.col.acad', [('academy.html', 'nav.learning', None), ('academy.html', 'mega.alla', None)]),
+                             ('mega.col.tools', [('tools.html', 'mega.all', None), ('faq.html', 'footer.faq', None)])])
+    plain = ''.join('<a href="%s"%s>%s</a>' % (h, ' aria-current="page"' if p == cur else '', tx(k)) for h, k, p in [('premium.html', 'nav.pricing', 'premium'), ('about.html', 'nav.about', 'about')])
+    return m1 + m2 + m3 + plain
 
 def header(page):
     return '''<header class="nav" role="banner">
@@ -124,12 +144,12 @@ def header(page):
 </header>
 <div class="drawer" id="drawer">%(dlinks)s<div class="drawer-cta"><a class="btn btn-ghost btn-lg" data-app href="app/index.html">%(login)s</a><a class="btn btn-primary btn-lg" data-app href="app/index.html">%(start)s</a></div></div>
 <main id="main">
-''' % dict(strip=tx('strip.risk'), stripmore=tx('strip.more'), links=navlinks(page), dlinks=navlinks(page, 'dl'), login=tx('nav.login', 'span'), start=tx('nav.start', 'span'), la=attrs(aria_label='common.langlabel'), ma=attrs(aria_label='common.menu'), gl='<span class="sr-only">%s</span>' % esc(hu('common.langlabel')))
+''' % dict(strip=tx('strip.risk'), stripmore=tx('strip.more'), links=desktop_menu(page), dlinks=navlinks(page, 'dl'), login=tx('nav.login', 'span'), start=tx('nav.start', 'span'), la=attrs(aria_label='common.langlabel'), ma=attrs(aria_label='common.menu'), gl='<span class="sr-only">%s</span>' % esc(hu('common.langlabel')))
 
 def footer():
     col = lambda title, items: '<div><h4>%s</h4><ul>%s</ul></div>' % (tx(title), ''.join('<li><a href="%s">%s</a></li>' % (h, tx(k)) for h, k in items))
     return '''</main>
-<footer class="footer"><div class="container">
+<footer class="footer dark"><div class="container">
   <div class="foot-grid">
     <div><a class="brand" href="index.html"><img src="assets/logo-64.png" width="30" height="30" alt="" style="border-radius:8px"><span>CHARTOLJ<b>!</b></span></a><p>%(tag)s</p></div>
     %(c1)s%(c2)s%(c3)s
@@ -148,10 +168,10 @@ def footer():
            c3=col('footer.legal', [('privacy.html', 'footer.privacy'), ('terms.html', 'footer.terms'), ('risk.html', 'footer.risk'), ('cookies.html', 'footer.cookies')]))
 
 def cta_band():
-    return '<section class="section"><div class="container"><div class="cta-band reveal"><div>%s<p style="color:var(--c-text-2);margin-top:12px;max-width:520px">%s</p></div><a class="btn btn-primary btn-lg" data-app href="app/index.html">%s</a></div></div></section>' % (tx('cta.title', 'h2'), tx('cta.sub'), tx('cta.btn'))
+    return '<section class="section"><div class="container"><div class="cta-band dark reveal"><div>%s<p style="color:var(--c-text-2);margin-top:12px;max-width:520px">%s</p></div><a class="btn btn-primary btn-lg" data-app href="app/index.html">%s</a></div></div></section>' % (tx('cta.title', 'h2'), tx('cta.sub'), tx('cta.btn'))
 
 def page_hero(page, title_key, sub_key, wide=False, eyebrow=None):
-    return '<section class="page-hero%s"><div class="container">%s%s%s</div></section>' % (' wide' if wide else '', ('<div class="eyebrow">%s</div>' % tx(eyebrow)) if eyebrow else '', tx(title_key, 'h1'), tx(sub_key, 'p'))
+    return '<section class="page-hero dark%s"><div class="container">%s%s%s</div></section>' % (' wide' if wide else '', ('<div class="eyebrow">%s</div>' % tx(eyebrow)) if eyebrow else '', tx(title_key, 'h1'), tx(sub_key, 'p'))
 
 def close(): return '\n</body>\n</html>\n'
 
@@ -180,7 +200,7 @@ def page_home():
     wl = ''.join('<div class="wl-row"><span>%s</span><span class="num" data-wl>+0,00%%</span></div>' % s for s in ['BTC/USDT', 'EUR/USD', 'XAU/USD', 'SPX'])
     tfs = ''.join('<button type="button" class="%s" data-seed="%d" data-vol="%s">%s</button>' % ('active' if t == 'H1' else '', sd, vol, t) for t, sd, vol in [('M15', 21, '1.0'), ('H1', 7, '1.5'), ('D1', 63, '2.6')])
     tabs = [('trade', 'hero2.tab1', 'app-desktop.webp', 1440, 900), ('academy', 'hero2.tab2', 'app-academy.webp', 780, 1688), ('progress', 'hero2.tab3', 'app-progress.webp', 780, 1688)]
-    h += '''<section class="hero hero-c"><canvas class="hero-bg" id="hero-bg" aria-hidden="true"></canvas><div class="container hero-center">
+    h += '''<section class="hero hero-c dark"><canvas class="hero-bg" id="hero-bg" aria-hidden="true"></canvas><div class="container hero-center">
   <div class="eyebrow">%(eb)s</div>
   <h1>%(title)s</h1>
   <p class="lead">%(sub)s</p>
@@ -203,7 +223,7 @@ def page_home():
 <section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(oe)s</div>%(ot)s%(os)s</div>
   <div class="grid grid-3 reveal">%(ocards)s</div></div></section>
 
-<section class="band"><div class="container"><div class="band-head reveal"><div><div class="eyebrow">%(be)s</div>%(bt)s<p>%(bs)s</p></div><a class="btn btn-ghost" href="markets.html">%(bc)s</a></div>
+<section class="band dark"><div class="container"><div class="band-head reveal"><div><div class="eyebrow">%(be)s</div>%(bt)s<p>%(bs)s</p></div><a class="btn btn-ghost" href="markets.html">%(bc)s</a></div>
   <div class="ticker reveal" aria-label="%(bsimlbl)s"><div class="ticker-track">%(tick)s%(tick)s</div></div>
   <div class="catgrid reveal">%(cats)s</div></div></section>
 
@@ -233,14 +253,14 @@ def page_home():
   <div class="showcase split reveal"><div>
       <div class="icon-box">%(i1)s</div>%(f1t)s<p class="lead" style="margin-top:12px">%(f1d)s</p>
       <div style="height:20px"></div><div class="icon-box purple">%(i2)s</div>%(f2t)s<p class="lead" style="margin-top:12px">%(f2d)s</p></div>
-    <div class="panel"><div class="panel-title"><span>%(simlbl)s</span><span class="badge badge-sim">%(simbadge)s</span></div>
+    <div class="panel dark"><div class="panel-title"><span>%(simlbl)s</span><span class="badge badge-sim">%(simbadge)s</span></div>
       <div class="toggles" role="group">%(tf)s%(modes)s</div>
       <div class="toggles" role="group">%(inds)s</div>
       <div class="detail-chart" style="height:340px"><canvas id="showcase-chart" role="img" aria-label="%(simlbl)s"></canvas></div></div></div>
 
   <div class="showcase split reverse reveal"><div>
       <div class="icon-box">%(i3)s</div>%(f3t)s<p class="lead" style="margin-top:12px">%(f3d)s</p>%(f3b)s<p style="margin-top:24px"><a class="link-arrow" href="markets.html">%(f3c)s</a></p></div>
-    <div class="panel"><div class="panel-title"><span>%(wlt)s</span><span class="badge badge-sim">%(demo)s</span></div>%(rows)s<p class="calc-note" style="margin-top:12px">%(simlbl)s</p></div></div>
+    <div class="panel dark"><div class="panel-title"><span>%(wlt)s</span><span class="badge badge-sim">%(demo)s</span></div>%(rows)s<p class="calc-note" style="margin-top:12px">%(simlbl)s</p></div></div>
 
   <div class="showcase split reveal"><div>
       <div class="icon-box">%(i5)s</div>%(f5t)s<p class="lead" style="margin-top:12px">%(f5d)s</p>
@@ -288,6 +308,10 @@ def page_home():
 ''' % (tx('nav.learning'), tx('academy.title', 'h2'), tx('academy.paths.d', 'p'),
        ''.join('<div class="path-col"><span class="level l%d">%s</span>%s</div>' % (n, tx('level.%d' % n), ''.join('<div class="course"><h4>%s</h4><div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span></div></div>' % (tx('mod.%d.n' % m), academy[m]['lessons'], tx('course.lessons'), academy[m]['questions'], tx('course.quiz')) for m in ms)) for n, ms in lv), tx('academy.cta'))
 
+    # pricing teaser
+    h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p style="text-align:center;margin-top:32px"><a class="btn btn-primary" href="premium.html">%s</a></p></div></section>' % (
+        tx('price.eyebrow'), tx('price.title', 'h2'), tx('price.sub', 'p'),
+        ''.join('<div class="card"><h3>%s</h3><p style="color:var(--c-text-2);margin-top:8px">%s</p></div>' % (tx(a_), tx(b_)) for a_, b_ in [('plan.free', 'plan.free.d'), ('plan.month', 'plan.month.d'), ('plan.year', 'plan.year.d')]), tx('price.cta'))
     # trust
     h += '<section class="section"><div class="container"><div class="section-head reveal"><div class="eyebrow">%s</div>%s</div><div class="grid grid-3">%s</div></div></section>' % (
         tx('trust.eyebrow'), tx('trust.title', 'h2'), ''.join('<div class="card reveal"><div class="icon-box">%s</div>%s%s</div>' % (icon(i), tx('trust.%d.t' % n, 'h3'), tx('trust.%d.d' % n, 'p')) for n, i in [(1, 'shield'), (2, 'globe'), (3, 'scale')]))
