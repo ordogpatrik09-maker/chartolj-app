@@ -29665,6 +29665,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: minden egyes "Jelenlegi Érték" önmagában véges volt
+            // (pl. egyenként "1e308"), de TÖBB ilyen extrém sor ÖSSZEGE
+            // (total) már túllépheti az IEEE754 double tartományát
+            // (~1.8e308) és Infinity-re csordul — ezt a fenti "total <= 0"
+            // ellenőrzés NEM fogja ki (Infinity > 0 és nem negatív). Ugyanaz
+            // a hibaosztály, mint a korábban javított kalkulátoroknál (pl.
+            // Sharpe-ráta, Treynor/Jensen's Alpha).
+            if (!Number.isFinite(total)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott "Jelenlegi Érték" sorok összege túl nagy — a portfólió teljes értéke túllépi a lebegőpontos tartományt. Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
             const targetPctSum = assets.reduce((s, a) => s + a.targetPct, 0);
             const targetSumOff = Math.abs(targetPctSum - 100);
 
@@ -29679,6 +29691,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             });
             turnover = turnover / 2;
             const turnoverPct = (turnover / total) * 100;
+
+            // JAVÍTÁS: a fenti "total" véges-ellenőrzés a legnyilvánvalóbb
+            // forrást fedi le, de egy extrém, ám véges Cél-Súly% (pl. egy
+            // sornál elgépelt "1e307") és egy nagy, de véges "total" szorzata
+            // (targetValue = célSúly/100 × total) önmagában is túlcsordulhat
+            // Infinity-re — egy nulla Cél-Súly%-ú sornál ez egy 0 × Infinity
+            // kombinációt is adhatna, ami NaN. Ez a trade/drift/turnover/
+            // turnoverPct értékeken keresztül egy megtévesztő "Infinity"/
+            // "NaN" kereskedési javaslatként (pl. "VEGYÉL +Infinity")
+            // jelenne meg valódi hibaüzenet helyett. Egy végső, az összes
+            // származtatott értéken végzett véges-ellenőrzés zárja le ezt,
+            // konzisztensen az app többi kalkulátorának biztonsági-háló
+            // mintájával.
+            const allFinite = Number.isFinite(turnover) && Number.isFinite(turnoverPct) &&
+                rows.every(r => Number.isFinite(r.currentPct) && Number.isFinite(r.targetValue) && Number.isFinite(r.trade) && Number.isFinite(r.drift));
+            if (!allFinite) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékek kombinációja olyan extrém, hogy a rebalancing-számítás (turnover, kereskedési javaslatok) nem fejezhető ki véges számmal. Adj meg reálisabb nagyságrendű "Jelenlegi Érték" és "Cél-Súly%" értékeket!</div>`;
+                return;
+            }
 
             const maxDriftRow = rows.reduce((max, r) => Math.abs(r.drift) > Math.abs(max.drift) ? r : max, rows[0]);
 
