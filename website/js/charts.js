@@ -2,7 +2,7 @@
    + sparkline helper. Data passed in is either real (Binance klines) or clearly labelled simulated. */
 (function () {
   'use strict';
-  const C = { up: '#00F5A0', down: '#FF007A', grid: 'rgba(255,255,255,.055)', text: '#66727F', ema: '#FFB020', ema2: '#6EC1FF', bb: 'rgba(165,92,255,.85)', bbFill: 'rgba(127,0,255,.07)', macd: '#6EC1FF', sig: '#FFB020', rsi: '#A55CFF' };
+  const C = { up: '#00F5A0', down: '#A0AAB8', grid: 'rgba(255,255,255,.055)', text: '#66727F', ema: '#F5F7FA', ema2: '#A0AAB8', bb: 'rgba(245,247,250,.85)', bbFill: 'rgba(0,245,160,.07)', macd: '#A0AAB8', sig: '#F5F7FA', rsi: '#A55CFF' };
 
   const fp = (v, d) => (window.CT && CT.fmt ? CT.fmt(v, d) : v.toFixed(d));
   function rng(seed) { // mulberry32
@@ -84,14 +84,14 @@
       slice.forEach((_, i) => { const b = bb[start + i]; if (!b) return; ctx[i === 0 || !bb[start + i - 1] ? 'moveTo' : 'lineTo'](x(i), y(b.up)); });
       for (let i = slice.length - 1; i >= 0; i--) { const b = bb[start + i]; if (b) ctx.lineTo(x(i), y(b.lo)); }
       ctx.closePath(); ctx.fillStyle = C.bbFill; ctx.fill();
-      ['up', 'lo', 'mid'].forEach(k => { ctx.beginPath(); let s = false; slice.forEach((_, i) => { const b = bb[start + i]; if (!b) return; ctx[s ? 'lineTo' : 'moveTo'](x(i), y(b[k])); s = true; }); ctx.strokeStyle = k === 'mid' ? 'rgba(165,92,255,.4)' : C.bb; ctx.lineWidth = 1; ctx.stroke(); });
+      ['up', 'lo', 'mid'].forEach(k => { ctx.beginPath(); let s = false; slice.forEach((_, i) => { const b = bb[start + i]; if (!b) return; ctx[s ? 'lineTo' : 'moveTo'](x(i), y(b[k])); s = true; }); ctx.strokeStyle = k === 'mid' ? 'rgba(245,247,250,.4)' : C.bb; ctx.lineWidth = 1; ctx.stroke(); });
     }
     // series
     if (o.mode === 'line') {
       ctx.beginPath(); slice.forEach((c, i) => ctx[i ? 'lineTo' : 'moveTo'](x(i), y(c.c)));
       const up = slice[slice.length - 1].c >= slice[0].c; ctx.strokeStyle = up ? C.up : C.down; ctx.lineWidth = 1.8; ctx.stroke();
       ctx.lineTo(x(slice.length - 1), padT + mainH); ctx.lineTo(x(0), padT + mainH); ctx.closePath();
-      const g = ctx.createLinearGradient(0, padT, 0, padT + mainH); g.addColorStop(0, up ? 'rgba(0,245,160,.22)' : 'rgba(255,0,122,.22)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fill();
+      const g = ctx.createLinearGradient(0, padT, 0, padT + mainH); g.addColorStop(0, up ? 'rgba(0,245,160,.22)' : 'rgba(160,170,184,.22)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fill();
     } else {
       slice.forEach((c, i) => {
         const col = c.c >= c.o ? C.up : C.down; ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1;
@@ -118,7 +118,7 @@
       ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.strokeRect(.5, top + .5, plotW - 1, subH - 1);
       if (kind === 'vol') {
         const mx = Math.max.apply(null, slice.map(c => c.v || 0)) || 1;
-        slice.forEach((c, i) => { ctx.fillStyle = c.c >= c.o ? 'rgba(0,245,160,.45)' : 'rgba(255,0,122,.45)'; const hh = (c.v || 0) / mx * (subH - 6); ctx.fillRect(x(i) - bw / 2, top + subH - hh - 2, bw, hh); });
+        slice.forEach((c, i) => { ctx.fillStyle = c.c >= c.o ? 'rgba(0,245,160,.45)' : 'rgba(160,170,184,.45)'; const hh = (c.v || 0) / mx * (subH - 6); ctx.fillRect(x(i) - bw / 2, top + subH - hh - 2, bw, hh); });
         label('VOL', top);
       } else if (kind === 'rsi') {
         const r = M.rsi(closes, 14); const ry = v => top + (100 - v) / 100 * subH;
@@ -128,7 +128,7 @@
       } else if (kind === 'macd') {
         const m = M.macd(closes); const vals = slice.map((_, i) => [m.line[start + i], m.signal[start + i], m.hist[start + i]]);
         const ext = Math.max.apply(null, vals.flat().map(Math.abs)) || 1; const my = v => top + subH / 2 - v / ext * (subH / 2 - 4);
-        vals.forEach((v, i) => { ctx.fillStyle = v[2] >= 0 ? 'rgba(0,245,160,.5)' : 'rgba(255,0,122,.5)'; const y0 = my(0), y1 = my(v[2]); ctx.fillRect(x(i) - bw / 2, Math.min(y0, y1), bw, Math.max(1, Math.abs(y1 - y0))); });
+        vals.forEach((v, i) => { ctx.fillStyle = v[2] >= 0 ? 'rgba(0,245,160,.5)' : 'rgba(160,170,184,.5)'; const y0 = my(0), y1 = my(v[2]); ctx.fillRect(x(i) - bw / 2, Math.min(y0, y1), bw, Math.max(1, Math.abs(y1 - y0))); });
         [[0, C.macd], [1, C.sig]].forEach(([k, col]) => { ctx.beginPath(); vals.forEach((v, i) => ctx[i ? 'lineTo' : 'moveTo'](x(i), my(v[k]))); ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.stroke(); });
         label('MACD 12·26·9', top);
       }
