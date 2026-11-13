@@ -1586,6 +1586,13 @@
                                 <div class="text-[10px] text-slate-400">A visszaesés mélységét ÉS hosszát is bünteti</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('martin-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-heart-pulse"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Martin Ratio Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Hozam az Ulcer Indexre (gyötrelemre) viszonyítva</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('vwap-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
                             <div>
@@ -4190,6 +4197,64 @@
 
             <div id="ulcer-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél alacsonyabb az Ulcer Index, annál "simább" volt az út a hozamig — kevesebb és/vagy rövidebb visszaesésekkel. Két hasonló végső hozamú stratégia közül jellemzően az alacsonyabb Ulcer Indexű a kevésbé stresszes, kiszámíthatóbb választás.</p>
+        </div>
+    </div>
+
+    <!-- ================= MARTIN RATIO / ULCER PERFORMANCE INDEX KALKULÁTOR (OKTATÁSI) =================
+         A fenti Ulcer Index ÖNMAGÁBAN csak a "gyötrelmet" (a visszaesés
+         mélységét ÉS hosszát) méri, a hozamot nem. A Martin Ratio — más
+         néven Ulcer Performance Index (UPI), Peter G. Martin nevéhez
+         köthető — ezt a két dolgot kapcsolja össze: a Sharpe-rátához
+         hasonlóan egy kockázatmentes ráta feletti TÖBBLETHOZAMOT osztja
+         egy kockázatmutatóval, de itt a kockázatmutató NEM a szórás,
+         hanem az Ulcer Index. Formula: Martin Ratio = (évesített hozam −
+         kockázatmentes ráta) / Ulcer Index. Mivel az Ulcer Index a
+         visszaesések HOSSZÁT is bünteti (nem csak a mélységét, mint a
+         Calmar-ráta a Maximum Drawdownnal), két azonos hozamú és azonos
+         Max Drawdownú stratégia közül az, amelyik GYORSABBAN tért vissza
+         a csúcsra, magasabb Martin Ratiót kap. Az Ulcer Index
+         kiszámítása SZÁNDÉKOSAN ugyanazt a futó-csúcstól-mért, négyzetes
+         átlagolt drawdown-formulát használja, mint a fenti, önálló Ulcer
+         Index kalkulátor (UI = sqrt((1/n) × Σ drawdown_i²)) — a két
+         eszköz bemenete (árfolyam/egyenleg-sorozat) és a belső számítás
+         egy pontja közös, de ez ÖNÁLLÓ kalkulátor, nem módosítja és nem
+         hívja meg a calcUlcerIndex()-et. Az évesített hozamot és a
+         kockázatmentes rátát — a meglévő Sharpe-ráta kalkulátorral
+         megegyező UX-mintát követve — külön mezőben, közvetlenül kéri a
+         felhasználótól (nem próbálja a sorozatból kitalálni, mert az
+         évesítéshez ismerni kellene a sorozat időszakának hosszát/
+         gyakoriságát, amit a nyers ár/egyenleg-sorozat önmagában nem ad
+         meg egyértelműen). Ha a sorozatban SOHA nem volt a futó csúcs
+         alatt az érték (monoton növekvő sorozat), az Ulcer Index 0, és a
+         ráta nem fejezhető ki véges számmal (végtelenhez tart) — ugyanaz
+         a hibaosztály, mint a Sortino-ráta nulla downside deviation
+         esetén, itt is explicit, nem-Infinity/NaN-szivárgó üzenettel
+         kezelve. -->
+    <div id="martin-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-heart-pulse text-fuchsia-400"></i> Martin Ratio Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('martin-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Martin Ratio (Ulcer Performance Index) a Sharpe-rátához hasonlóan a kockázatmentes ráta feletti többlethozamot méri, de a kockázatmutató itt NEM a szórás, hanem az Ulcer Index — így a hosszan tartó, bár nem feltétlenül mély visszaeséseket is bünteti. Add meg az árfolyam/egyenleg-sorozatot az Ulcer Index kiszámításához, valamint az évesített hozamot és a kockázatmentes rátát.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="martin-series">Árfolyam / egyenleg sorozat (vesszővel elválasztva)</label>
+            <textarea id="martin-series" rows="3" placeholder="pl. 100, 105, 102, 98, 95, 97, 101, 108" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">100, 105, 102, 98, 95, 97, 101, 108, 112, 109, 104, 110</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="martin-return">Évesített hozam (%, pl. CAGR)</label>
+            <input type="number" id="martin-return" value="18" step="0.5" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+
+            <label class="text-[11px] font-semibold text-slate-400" for="martin-riskfree">Kockázatmentes ráta (%, pl. állampapír hozam)</label>
+            <input type="number" id="martin-riskfree" value="4" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+
+            <button onclick="calcMartinRatio()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-fuchsia-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="martin-result" role="status" aria-live="polite" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Mivel az Ulcer Index a visszaesés HOSSZÁT is bünteti (nem csak a mélységét, mint a Maximum Drawdown a Calmar-rátánál), a Martin Ratio két azonos hozamú és azonos legnagyobb visszaesésű stratégia közül azt díjazza magasabb értékkel, amelyik gyorsabban épült fel a mélypontról. Ha a sorozatban soha nem volt visszaesés a futó csúcshoz képest, az Ulcer Index 0, és a ráta nem definiálható (végtelenhez tart).</p>
         </div>
     </div>
 
@@ -13974,6 +14039,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Ulcer Index Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">A visszaesés mélységét ÉS hosszát is bünteti</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('martin-modal')" data-tool-title="martin ratio kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-heart-pulse"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Martin Ratio Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Hozam az Ulcer Indexre (gyötrelemre) viszonyítva</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('omega-modal')" data-tool-title="omega ratio kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -25581,6 +25653,101 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Átlagos drawdown (minden ponton):</span><span class="text-white">-${avgDrawdownPct.toFixed(2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Visszaesésben töltött pontok:</span><span class="text-white">${periodsUnderwater} / ${n}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ulcer Index:</span><span class="font-extrabold ${colorClass} text-sm">${ulcerIndex.toFixed(2)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= MARTIN RATIO / ULCER PERFORMANCE INDEX KALKULÁTOR (OKTATÁSI) =================
+        // Martin Ratio (UPI) = (évesített hozam - kockázatmentes ráta) / Ulcer Index.
+        // Az Ulcer Index kiszámítása SZÁNDÉKOSAN ugyanaz a futó-csúcstól mért,
+        // négyzetesen átlagolt drawdown-formula, mint a fenti calcUlcerIndex()-ben
+        // (UI = sqrt((1/n) × Σ drawdown_i²)), de ez a függvény NEM hívja meg és
+        // NEM módosítja azt — önálló, a saját "martin-*" mezőit olvasó számítás.
+        function calcMartinRatio() {
+            const seriesEl = document.getElementById('martin-series');
+            const returnEl = document.getElementById('martin-return');
+            const riskFreeEl = document.getElementById('martin-riskfree');
+            const out = document.getElementById('martin-result');
+            if (!seriesEl || !returnEl || !riskFreeEl || !out) return;
+
+            const values = seriesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n) && n > 0);
+
+            if (values.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, nullánál nagyobb, vesszővel elválasztott értéket!</div>`;
+                return;
+            }
+
+            const annualReturn = parseFloat(returnEl.value);
+            const riskFree = parseFloat(riskFreeEl.value);
+            if (!Number.isFinite(annualReturn) || !Number.isFinite(riskFree)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes évesített hozamot és kockázatmentes rátát!</div>`;
+                return;
+            }
+
+            const n = values.length;
+            let runningPeak = values[0];
+            let sumSquaredDrawdown = 0;
+            let maxDrawdownPct = 0;
+            for (let i = 0; i < n; i++) {
+                if (values[i] > runningPeak) runningPeak = values[i];
+                const drawdownPct = (runningPeak - values[i]) / runningPeak * 100;
+                sumSquaredDrawdown += drawdownPct * drawdownPct;
+                if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
+            }
+            const ulcerIndex = Math.sqrt(sumSquaredDrawdown / n);
+            const excessReturn = annualReturn - riskFree;
+
+            // JAVÍTÁS: rendkívül szélsőséges (pl. túl nagy) bemenet mellett a
+            // négyzetösszeg önmagában is túlcsordulhat Infinity-re, még az
+            // Ulcer Index gyökvonása ELŐTT — ugyanaz a hibaosztály, mint a
+            // korábban javított kalkulátoroknál (pl. Omega Ratio, Gain-to-Pain
+            // Ratio, Information Ratio).
+            if (!Number.isFinite(ulcerIndex)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott sorozat túl szélsőséges érvényes Martin Ratio számításához!</div>`;
+                return;
+            }
+
+            if (ulcerIndex === 0) {
+                out.innerHTML = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Évesített hozam − kockázatmentes ráta:</span><span class="text-white">${excessReturn.toFixed(2)}%</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ulcer Index:</span><span class="text-white">0.00</span></div>
+                    </div>
+                    <p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A sorozat soha nem volt a futó csúcs alatt (monoton növekvő) — az Ulcer Index 0, így a Martin Ratio nem fejezhető ki véges számmal (végtelenhez tart).</p>
+                `;
+                return;
+            }
+
+            const martinRatio = excessReturn / ulcerIndex;
+            if (!Number.isFinite(martinRatio)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott bemenet túl szélsőséges érvényes Martin Ratio számításához!</div>`;
+                return;
+            }
+
+            let colorClass, verdict;
+            if (martinRatio < 0) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Negatív Martin Ratio: az évesített hozam a kockázatmentes ráta ALATT volt — a vállalt "gyötrelem" (visszaesés mélysége és hossza) nem térült meg.';
+            } else if (martinRatio < 2) {
+                colorClass = 'text-amber-400';
+                verdict = '⚠️ Alacsony Martin Ratio — a többlethozam viszonylag sok és/vagy hosszan tartó visszaeséssel járt.';
+            } else if (martinRatio < 5) {
+                colorClass = 'text-neon-cyan';
+                verdict = 'Jó Martin Ratio — a többlethozam a vállalt "gyötrelemhez" (visszaesés mélysége és hossza) képest kedvező.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Kiemelkedően magas Martin Ratio — a stratégia gyorsan és/vagy enyhén épült csak vissza a visszaesésekből, a hozamhoz képest.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-neon-red">-${maxDrawdownPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Évesített hozam − kockázatmentes ráta:</span><span class="text-white">${excessReturn.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Ulcer Index:</span><span class="text-white">${ulcerIndex.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Martin Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${martinRatio.toFixed(2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -51705,7 +51872,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
