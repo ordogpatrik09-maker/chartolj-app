@@ -21,11 +21,11 @@
   function size() { const d = Math.min(devicePixelRatio || 1, 2), r = cv.getBoundingClientRect(); W = Math.round(r.width * d); cv.width = W; cv.height = W; }
   function draw() {
     ctx.clearRect(0, 0, W, W); const R = W * .38, cx = W / 2, cy = W * .43, c = Math.cos(rot), s = Math.sin(rot);
-    const g = ctx.createRadialGradient(cx, cy, R * .95, cx, cy, R * 1.05); g.addColorStop(0, 'rgba(0,245,160,0)'); g.addColorStop(.93, 'rgba(127,0,255,.35)'); g.addColorStop(.965, 'rgba(0,245,160,.55)'); g.addColorStop(1, 'rgba(127,0,255,0)');
+    const g = ctx.createRadialGradient(cx, cy, R * .95, cx, cy, R * 1.05); g.addColorStop(0, 'rgba(127,0,255,0)'); g.addColorStop(.93, 'rgba(127,0,255,.35)'); g.addColorStop(.965, 'rgba(181,140,255,.7)'); g.addColorStop(1, 'rgba(127,0,255,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.05, 0, 7); ctx.fill();
     ctx.fillStyle = '#04060a'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
     for (const p of pts) { const x = p[0] * c + p[2] * s, z = -p[0] * s + p[2] * c; if (z < -.05) continue; const lit = Math.max(0, (-x * .45 + p[1] * .5 + z * .6)); const a = .18 + .82 * Math.min(1, lit + .1);
-      ctx.fillStyle = 'rgba(' + (170 - lit * 170 | 0) + ',' + (110 + lit * 135 | 0) + ',' + (255 - lit * 95 | 0) + ',' + a.toFixed(2) + ')'; ctx.fillRect(cx + x * R, cy - p[1] * R, W / 900 * (.8 + z), W / 900 * (.8 + z)); }
+      ctx.fillStyle = 'rgba(' + (127 + lit * 54 | 0) + ',' + (lit * 140 | 0) + ',' + (255) + ',' + a.toFixed(2) + ')'; ctx.fillRect(cx + x * R, cy - p[1] * R, W / 900 * (.8 + z), W / 900 * (.8 + z)); }
   }
   size(); addEventListener('resize', size);
   new IntersectionObserver(e => { vis = e[0].isIntersecting; }, { rootMargin: '100px' }).observe(cv);
