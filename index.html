@@ -27068,12 +27068,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }
             }
 
+            // Minden mező egyedileg véges (Number.isFinite), de typical*volume
+            // szélsőséges nagyságrendek mellett túlcsordulhat Infinity-be, amiből
+            // Infinity/Infinity = NaN adódna — explicit ellenőrzés, hogy ne egy
+            // megtévesztő, hamisan magabiztos verdikt jelenjen meg NaN helyett.
+            if (!Number.isFinite(positiveSum) || !Number.isFinite(negativeSum)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak/volumenek túl szélsőségesek — a pénzáramlás-összegek túlcsordulnak. Adj meg reálisabb nagyságrendű árakat/volumeneket!</div>`;
+                return;
+            }
+
             let mfi;
             if (negativeSum === 0) {
                 mfi = 100;
             } else {
                 const moneyFlowRatio = positiveSum / negativeSum;
                 mfi = 100 - (100 / (1 + moneyFlowRatio));
+            }
+
+            if (!Number.isFinite(mfi)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott bemenetek kombinációja olyan extrém, hogy az MFI nem fejezhető ki véges számmal — adj meg reálisabb nagyságrendű árakat/volumeneket!</div>`;
+                return;
             }
 
             let colorClass, verdict;
