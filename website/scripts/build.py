@@ -8,7 +8,13 @@ sys.path.insert(0, os.path.dirname(__file__))
 from strings import S
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-SITE_URL = os.environ.get('SITE_URL', '').rstrip('/')
+ARTICLES = json.load(open(os.path.join(ROOT, 'data/articles.json'), encoding='utf-8'))
+for _a in ARTICLES:
+    S['art.%s.t' % _a['slug']] = tuple(_a['t'])
+    S['art.%s.d' % _a['slug']] = (_a['d'], _a['d'], _a['d'])
+    S['meta.a-%s.title' % _a['slug']] = tuple(x + ' – Chartolj!' for x in _a['t'])
+    S['meta.a-%s.desc' % _a['slug']] = (_a['d'], _a['d'], _a['d'])
+SITE_URL = os.environ.get('SITE_URL', 'https://ordogpatrik09-maker.github.io/chartolj-app/website').rstrip('/')
 LANGS = ['hu', 'en', 'de']
 
 # ---------------------------------------------------------------- i18n validation + locales.js
@@ -68,7 +74,7 @@ def icon(name):
 
 # ---------------------------------------------------------------- shared partials
 PAGES = [('index.html', 'home'), ('markets.html', 'markets'), ('academy.html', 'academy'), ('tools.html', 'tools'), ('premium.html', 'premium'),
-         ('about.html', 'about'), ('faq.html', 'faq'), ('contact.html', 'contact'), ('privacy.html', 'privacy'), ('terms.html', 'terms'), ('risk.html', 'risk'), ('cookies.html', 'cookies')]
+         ('about.html', 'about'), ('faq.html', 'faq'), ('contact.html', 'contact'), ('privacy.html', 'privacy'), ('terms.html', 'terms'), ('risk.html', 'risk'), ('cookies.html', 'cookies'), ('learn.html', 'learn')] + [('learn-%s.html' % a['slug'], 'a-' + a['slug']) for a in ARTICLES]
 
 def head(page, extra_ld=''):
     fn = [f for f, p in PAGES if p == page][0]
@@ -87,8 +93,11 @@ def head(page, extra_ld=''):
 <meta property="og:site_name" content="Chartolj!">
 <meta property="og:title" content="%(title)s">
 <meta property="og:description" content="%(desc)s">
-<meta property="og:image" content="assets/logo-192.png">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="%(site)s/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="%(site)s/assets/og-image.jpg">
 %(canon)s
 <link rel="icon" type="image/png" href="assets/logo-64.png">
 <link rel="apple-touch-icon" href="assets/logo-192.png">
@@ -100,7 +109,7 @@ def head(page, extra_ld=''):
 </head>
 <body>
 <a class="skip-link" href="#main" data-i18n="common.skip">%(skip)s</a>
-''' % dict(page=page, title=esc(hu('meta.%s.title' % page)), desc=esc(hu('meta.%s.desc' % page)), canon=canon, ld=extra_ld, skip=esc(hu('common.skip')))
+''' % dict(page=page, title=esc(hu('meta.%s.title' % page)), desc=esc(hu('meta.%s.desc' % page)), canon=canon, site=SITE_URL, ld=extra_ld, skip=esc(hu('common.skip')))
 
 def navlinks(cur, cls=''):
     items = [('markets.html', 'nav.markets', 'markets'), ('academy.html', 'nav.learning', 'academy'),
@@ -123,7 +132,7 @@ def desktop_menu(cur):
                                ('mega.col.cat', [('markets.html', 'market.cat.commodities', None), ('markets.html', 'market.cat.crypto', None), ('markets.html', 'market.cat.etf', None)]),
                                ('mega.col.start', [('markets.html', 'mega.allm', None)])])
     m3 = mega('mega.learn', [('mega.col.acad', [('academy.html', 'nav.learning', None), ('academy.html', 'mega.alla', None)]),
-                             ('mega.col.tools', [('tools.html', 'mega.all', None), ('faq.html', 'footer.faq', None)])])
+                             ('mega.col.tools', [('learn.html', 'nav.learn', None), ('tools.html', 'mega.all', None), ('faq.html', 'footer.faq', None)])])
     plain = ''.join('<a href="%s"%s>%s</a>' % (h, ' aria-current="page"' if p == cur else '', tx(k)) for h, k, p in [('premium.html', 'nav.pricing', 'premium'), ('about.html', 'nav.about', 'about')])
     return m1 + m2 + m3 + plain
 
@@ -134,7 +143,7 @@ def header(page):
     <a class="brand" href="index.html" aria-label="Chartolj!"><img src="assets/logo-64.png" width="30" height="30" alt="" style="border-radius:8px"><span>CHARTOLJ<b>!</b></span></a>
     <nav class="nav-links" aria-label="Main">%(links)s</nav>
     <div class="nav-actions">
-      <div class="lang"><button type="button" aria-haspopup="true" aria-expanded="false" %(la)s>%(gl)s <span class="cur">HU</span></button>
+      <div class="lang"><button type="button" aria-haspopup="true" aria-expanded="false">%(gl)s <span class="cur">HU</span></button>
         <div class="lang-menu" role="menu"><button role="menuitemradio" data-lang="hu" aria-checked="true">Magyar</button><button role="menuitemradio" data-lang="en" aria-checked="false">English</button><button role="menuitemradio" data-lang="de" aria-checked="false">Deutsch</button></div></div>
       <a class="btn btn-ghost btn-sm" data-app href="app/index.html">%(login)s</a>
       <a class="btn btn-primary btn-sm" data-app href="app/index.html">%(start)s</a>
@@ -147,7 +156,7 @@ def header(page):
 ''' % dict(strip=tx('strip.risk'), stripmore=tx('strip.more'), links=desktop_menu(page), dlinks=navlinks(page, 'dl'), login=tx('nav.login', 'span'), start=tx('nav.start', 'span'), la=attrs(aria_label='common.langlabel'), ma=attrs(aria_label='common.menu'), gl='<span class="sr-only">%s</span>' % esc(hu('common.langlabel')))
 
 def footer():
-    col = lambda title, items: '<div><h4>%s</h4><ul>%s</ul></div>' % (tx(title), ''.join('<li><a href="%s">%s</a></li>' % (h, tx(k)) for h, k in items))
+    col = lambda title, items: '<div><div class="foot-title">%s</div><ul>%s</ul></div>' % (tx(title), ''.join('<li><a href="%s">%s</a></li>' % (h, tx(k)) for h, k in items))
     return '''</main>
 <footer class="footer dark"><div class="container">
   <div class="foot-grid">
@@ -164,7 +173,7 @@ def footer():
 <script src="js/charts.js"></script>
 <script src="js/site.js"></script>
 ''' % dict(stk=tx('sticky.cta'), tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), draft=tx('footer.draft'),
-           c1=col('footer.product', [('index.html#platform', 'nav.platform'), ('markets.html', 'nav.markets'), ('academy.html', 'nav.learning'), ('tools.html', 'nav.tools'), ('premium.html', 'nav.pricing')]),
+           c1=col('footer.product', [('index.html#platform', 'nav.platform'), ('markets.html', 'nav.markets'), ('academy.html', 'nav.learning'), ('tools.html', 'nav.tools'), ('learn.html', 'nav.learn'), ('premium.html', 'nav.pricing')]),
            c2=col('footer.company', [('about.html', 'nav.about'), ('faq.html', 'footer.faq'), ('contact.html', 'footer.contact')]),
            c3=col('footer.legal', [('privacy.html', 'footer.privacy'), ('terms.html', 'footer.terms'), ('risk.html', 'footer.risk'), ('cookies.html', 'footer.cookies')]))
 
@@ -210,7 +219,7 @@ def page_home():
   <div class="prod" id="prod">
     <div class="prod-tabs" role="tablist">%(tabs)s</div>
     <div class="prod-stage">
-      <div class="browser pane active" data-pane="trade"><div class="browser-bar"><i></i><i></i><i></i><span>chartolj.app</span></div><img src="assets/app-desktop.webp" width="1440" height="900" alt="%(alt1)s" fetchpriority="high"></div>
+      <div class="browser pane active" data-pane="trade"><div class="browser-bar"><i></i><i></i><i></i><span>chartolj.app</span></div><video id="hero-video" width="1440" height="900" muted loop playsinline preload="metadata" poster="assets/app-desktop.webp" aria-label="%(alt1)s"><source src="assets/hero-demo.mp4" type="video/mp4"></video></div>
       <div class="phone pane" data-pane="academy"><img src="assets/app-academy.webp" width="780" height="1688" alt="%(alt2)s" loading="lazy"></div>
       <div class="phone pane" data-pane="progress"><img src="assets/app-progress.webp" width="780" height="1688" alt="%(alt3)s" loading="lazy"></div>
     </div>
@@ -311,7 +320,7 @@ def page_home():
     h += '''<section class="section section--alt"><div class="container"><div class="section-head reveal"><div class="eyebrow">%s</div>%s%s</div>
   <div class="path reveal">%s</div><p style="margin-top:32px"><a class="btn btn-primary" href="academy.html">%s</a></p></div></section>
 ''' % (tx('nav.learning'), tx('academy.title', 'h2'), tx('academy.paths.d', 'p'),
-       ''.join('<div class="path-col"><span class="level l%d">%s</span>%s</div>' % (n, tx('level.%d' % n), ''.join('<div class="course"><h4>%s</h4><div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span></div></div>' % (tx('mod.%d.n' % m), academy[m]['lessons'], tx('course.lessons'), academy[m]['questions'], tx('course.quiz')) for m in ms)) for n, ms in lv), tx('academy.cta'))
+       ''.join('<div class="path-col"><span class="level l%d">%s</span>%s</div>' % (n, tx('level.%d' % n), ''.join('<div class="course"><h3>%s</h3><div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span></div></div>' % (tx('mod.%d.n' % m), academy[m]['lessons'], tx('course.lessons'), academy[m]['questions'], tx('course.quiz')) for m in ms)) for n, ms in lv), tx('academy.cta'))
 
     # pricing teaser
     h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p style="text-align:center;margin-top:32px"><a class="btn btn-primary" href="premium.html">%s</a></p></div></section>' % (
@@ -320,6 +329,7 @@ def page_home():
     # trust
     h += '<section class="section"><div class="container"><div class="section-head reveal"><div class="eyebrow">%s</div>%s</div><div class="grid grid-3">%s</div></div></section>' % (
         tx('trust.eyebrow'), tx('trust.title', 'h2'), ''.join('<div class="card reveal"><div class="icon-box">%s</div>%s%s</div>' % (icon(i), tx('trust.%d.t' % n, 'h3'), tx('trust.%d.d' % n, 'p')) for n, i in [(1, 'shield'), (2, 'globe'), (3, 'scale')]))
+    h += install_section()
     h += '<section class="section section--alt"><div class="container" style="max-width:900px"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s</div><div class="faq reveal">%s</div><p style="text-align:center;margin-top:28px"><a class="link-arrow" href="faq.html">%s</a></p></div></section>' % (
         tx('faqt.eyebrow'), tx('faq.title', 'h2'), ''.join('<details><summary>%s</summary>%s</details>' % (tx('faq.q%d' % i), tx('faq.a%d' % i, 'p')) for i in range(4)), tx('faqt.more'))
     h += cta_band() + footer() + close()
@@ -346,7 +356,7 @@ def page_academy():
     lv = [(1, [0, 2]), (2, [1, 3]), (3, [4, 5, 6])]
     def course(m):
         a = academy[m]
-        return '''<div class="course"><h4>%s</h4><p style="color:var(--c-text-2);font-size:var(--fs-sm)">%s</p>
+        return '''<div class="course"><h3>%s</h3><p style="color:var(--c-text-2);font-size:var(--fs-sm)">%s</p>
   <div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span><span><b>%d</b> %s</span>%s</div>
   <div class="calc-note" style="margin-top:4px">%s</div><ul lang="hu">%s</ul></div>''' % (
             tx('mod.%d.n' % m), tx('mod.%d.d' % m), a['lessons'], tx('course.lessons'), a['cards'], tx('course.cards'), a['questions'], tx('course.quiz'),
@@ -442,10 +452,35 @@ def page_cookies():
     h += footer() + close()
     return h
 
+def page_learn():
+    h = head('learn') + header('learn') + page_hero('learn', 'learn.title', 'learn.sub', eyebrow='nav.learn')
+    h += '<section class="section" style="padding-top:0"><div class="container"><p class="calc-note" style="margin-bottom:24px">%s</p><div class="grid grid-3">%s</div></div></section>' % (tx('learn.langnote'),
+        ''.join('<a class="card" href="learn-%s.html"><h3>%s</h3><p style="color:var(--c-text-2);margin:10px 0 16px">%s</p><span class="link-arrow">%s</span></a>' % (a['slug'], tx('art.%s.t' % a['slug']), tx('art.%s.d' % a['slug']), tx('learn.read')) for a in ARTICLES))
+    h += cta_band() + footer() + close()
+    return h
+
+def page_article(a):
+    pg = 'a-' + a['slug']
+    ld = '<script type="application/ld+json">%s</script>' % json.dumps({'@context': 'https://schema.org', '@type': 'Article', 'headline': a['t'][0], 'description': a['d'], 'inLanguage': 'hu', 'publisher': {'@type': 'Organization', 'name': 'Chartolj!'}}, ensure_ascii=False)
+    h = head(pg, ld) + header('learn') + page_hero(pg, 'art.%s.t' % a['slug'], 'learn.langnote', eyebrow='nav.learn')
+    body = ''
+    for kind, val in a['b']:
+        if kind == 'p': body += '<p lang="hu">%s</p>' % esc(val)
+        elif kind == 'h': body += '<h2 lang="hu">%s</h2>' % esc(val)
+        else: body += '<ul lang="hu" class="ticks" style="margin-bottom:16px">%s</ul>' % ''.join('<li>%s</li>' % esc(x) for x in val)
+    h += '<section class="section" style="padding-top:0"><div class="container"><article class="prose">%s<div class="notice" style="margin-top:32px" role="note"><span>%s</span></div><p style="margin-top:24px"><a class="btn btn-primary" data-app href="app/index.html">%s</a> <a class="link-arrow" style="margin-left:16px" href="learn.html">%s</a></p></article></div></section>' % (body, tx('learn.disc'), tx('learn.try'), tx('learn.back'))
+    h += footer() + close()
+    return h
+
+def install_section():
+    return '<section class="section" id="install"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p class="calc-note" style="text-align:center;margin-top:20px">%s</p></div></section>' % (
+        tx('inst.eyebrow'), tx('inst.title', 'h2'), tx('inst.sub', 'p'), ''.join('<div class="card"><h3>%s</h3><p style="color:var(--c-text-2);margin-top:10px">%s</p></div>' % (tx('inst.%s.t' % k), tx('inst.%s.d' % k)) for k in 'aid'), tx('inst.note'))
+
 # ---------------------------------------------------------------- write
 out = {'index.html': page_home(), 'markets.html': page_markets(), 'academy.html': page_academy(), 'tools.html': page_tools(), 'premium.html': page_premium(),
        'about.html': page_about(), 'faq.html': page_faq(), 'contact.html': page_contact(), 'privacy.html': page_legal('privacy', 4), 'terms.html': page_legal('terms', 4),
-       'risk.html': page_legal('risk', 4), 'cookies.html': page_cookies()}
+       'risk.html': page_legal('risk', 4), 'cookies.html': page_cookies(), 'learn.html': page_learn()}
+for _a in ARTICLES: out['learn-%s.html' % _a['slug']] = page_article(_a)
 for fn, content in out.items():
     open(os.path.join(ROOT, fn), 'w', encoding='utf-8').write(content)
 

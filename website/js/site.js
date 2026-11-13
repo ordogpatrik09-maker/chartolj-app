@@ -150,6 +150,12 @@
     const b = doc.querySelector('.sticky-cta'); if (!b) return;
     const on = () => b.classList.toggle('show', window.scrollY > 700); on(); window.addEventListener('scroll', on, { passive: true });
   }
+  function initVideo() {
+    const v = doc.getElementById('hero-video'); if (!v) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { v.removeAttribute('loop'); return; }
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) v.play().catch(() => {}); else v.pause(); }), { threshold: .25 });
+    io.observe(v);
+  }
   function initProd() {
     const root = doc.getElementById('prod'); if (!root) return;
     root.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
@@ -159,7 +165,7 @@
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const tabs = [...root.querySelectorAll('[data-tab]')]; let i = 0, stop = false;
       root.addEventListener('click', () => { stop = true; }); root.addEventListener('mouseenter', () => { stop = true; });
-      setInterval(() => { if (stop || document.hidden) return; i = (i + 1) % tabs.length; tabs[i].dispatchEvent(new MouseEvent('click', { bubbles: false })); }, 5500);
+      setInterval(() => { if (stop || document.hidden) return; i = (i + 1) % tabs.length; tabs[i].dispatchEvent(new MouseEvent('click', { bubbles: false })); }, 16000);
     }
   }
   function initHeroBg() {
@@ -308,6 +314,6 @@
     // wire app links to config
     const app = (window.CT_CONFIG && CT_CONFIG.appUrl) || 'app/index.html';
     doc.querySelectorAll('[data-app]').forEach(a => { a.href = app; });
-    initLang(); initNav(); initReveal(); initHero(); initProd(); initSticky(); initHeroBg(); initShowcase(); initSimSparks(); initCalcs(); initTools(); initPricing(); initContact(); initPrivacyControls();
+    initLang(); initNav(); initReveal(); initHero(); initProd(); initVideo(); initSticky(); initHeroBg(); initShowcase(); initSimSparks(); initCalcs(); initTools(); initPricing(); initContact(); initPrivacyControls();
   });
 })();

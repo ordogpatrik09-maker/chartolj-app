@@ -1,0 +1,205 @@
+[
+ {
+  "slug": "stop-loss",
+  "t": [
+   "Mi az a stop-loss, és hogyan használd?",
+   "What is a stop-loss and how do you use it?",
+   "Was ist ein Stop-Loss und wie nutzt du ihn?"
+  ],
+  "d": "A stop-loss megbízás előre meghatározott árszinten zárja a pozíciót, hogy a veszteség ne nőjön tovább.",
+  "b": [
+   [
+    "p",
+    "A stop-loss egy előre megadott árszint, amelynél a pozíciót automatikusan zárják. Célja, hogy egy rossz döntés vesztesége korlátozott maradjon, és ne a hangulatod döntsön a kilépésről."
+   ],
+   [
+    "h",
+    "Hova tedd?"
+   ],
+   [
+    "p",
+    "A stopot ne a „kényelmes veszteségedhez”, hanem a piachoz igazítsd: olyan szintre, ahol az eredeti elképzelésed érvényét veszti (például egy támasz alá vagy egy kitörési szint mögé). Ha a stop túl közel van, a szokásos ármozgás is kiüti."
+   ],
+   [
+    "h",
+    "Kapcsolat a pozíciómérettel"
+   ],
+   [
+    "p",
+    "Először a stop távolságát határozd meg, és csak utána számold ki a pozícióméretet úgy, hogy a stop elérésekor a veszteség a tervezett kockázat (például a számla 1%-a) legyen. Fordítva nem működik: a méretet nem érdemes a stophoz illeszteni."
+   ],
+   [
+    "h",
+    "Mire figyelj?"
+   ],
+   [
+    "ul",
+    [
+     "Gyors piacon az ár átugorhatja a stopot, ezért a tényleges veszteség nagyobb lehet a tervezettnél (csúszás, gap).",
+     "Ne told hátrébb a stopot veszteség közben, mert ez épp a védelmet számolja fel.",
+     "Szimulált környezetben a végrehajtás egyszerűsített, valós piacon eltérhet."
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "poziciomeret",
+  "t": [
+   "Hogyan számold ki a pozícióméretet?",
+   "How to calculate position size",
+   "So berechnest du die Positionsgröße"
+  ],
+  "d": "A pozícióméret a kockázati összeg és az egy egységre jutó stop-távolság hányadosa.",
+  "b": [
+   [
+    "p",
+    "A pozícióméret azt mondja meg, mekkora tételt nyiss ahhoz, hogy a stop elérésekor a veszteséged pontosan a tervezett kockázat legyen."
+   ],
+   [
+    "h",
+    "A képlet"
+   ],
+   [
+    "p",
+    "Kockázati összeg = számlaméret × kockázat%. Pozícióméret (egység) = kockázati összeg ÷ |belépő ár − stop ár|."
+   ],
+   [
+    "h",
+    "Példa"
+   ],
+   [
+    "p",
+    "Számla: 10 000, kockázat: 1%, így a kockázati összeg 100. Belépő ár: 100, stop: 95, a távolság 5. A pozícióméret 100 ÷ 5 = 20 egység, névértéke 20 × 100 = 2 000."
+   ],
+   [
+    "h",
+    "Tanulság"
+   ],
+   [
+    "p",
+    "Ugyanaz a 100-as kockázat mellett szélesebb stophoz kisebb méret tartozik, szűkebbhez nagyobb. A tőkeáttétel ezt nem változtatja: csak a szükséges fedezetet (margint) csökkenti, a kockázat összegét nem."
+   ],
+   [
+    "p",
+    "A Chartolj! eszköztárában a pozícióméret-kalkulátor ezt számolja ki helyetted."
+   ]
+  ]
+ },
+ {
+  "slug": "tokeattetel",
+  "t": [
+   "Mi az a tőkeáttétel, és miért kockázatos?",
+   "What is leverage and why is it risky?",
+   "Was ist Hebel und warum ist er riskant?"
+  ],
+  "d": "A tőkeáttétel kisebb fedezettel nagyobb pozíciót tesz lehetővé, a nyereséget és a veszteséget is felnagyítva.",
+  "b": [
+   [
+    "p",
+    "A tőkeáttétel (leverage) lehetővé teszi, hogy a saját tőkénél nagyobb pozíciót nyiss. 10x áttétellel 1 000 egység fedezet mellett 10 000 egység értékű pozíció nyitható."
+   ],
+   [
+    "h",
+    "Kétélű fegyver"
+   ],
+   [
+    "p",
+    "A nyereség és a veszteség is a teljes pozícióméret után keletkezik. 10x áttétel mellett a piac 10%-os kedvezőtlen mozgása a fedezet teljes elvesztését jelentheti, ezért a kényszerzárási (likvidációs) szint közel kerülhet."
+   ],
+   [
+    "h",
+    "Mire használd?"
+   ],
+   [
+    "p",
+    "Az áttétel nem a kockázatot, hanem a szükséges fedezetet határozza meg. A kockázatot a stop és a pozícióméret szabja meg. Kezdőként alacsony áttétellel és mindig stoppal érdemes gyakorolni."
+   ],
+   [
+    "ul",
+    [
+     "Számold ki előre a becsült likvidációs szintet.",
+     "Ne használd ki a maximális áttételt.",
+     "Vedd figyelembe a díjakat és a finanszírozási költségeket."
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "kockazat-hozam",
+  "t": [
+   "A kockázat/hozam arány és a nyerési ráta",
+   "Risk/reward ratio and win rate",
+   "Chance-Risiko-Verhältnis und Trefferquote"
+  ],
+  "d": "A kockázat/hozam arány azt mutatja, hány egység nyereség jut egy egység kockázatra.",
+  "b": [
+   [
+    "p",
+    "A kockázat/hozam arány (R:R) a potenciális nyereség és a potenciális veszteség hányadosa. Ha 50-et kockáztatsz 150 lehetséges nyereségért, az arány 1:3."
+   ],
+   [
+    "h",
+    "Mennyi találat kell?"
+   ],
+   [
+    "p",
+    "A nullszaldós nyerési ráta = 1 ÷ (1 + R), ahol R a nyereség/veszteség arány. 1:1 mellett ez 50%, 1:2 mellett kb. 33,3%, 1:3 mellett 25%. Díjak és csúszás nélkül számolva."
+   ],
+   [
+    "h",
+    "Elvárható érték"
+   ],
+   [
+    "p",
+    "Az elvárt eredmény egy ügyletre: nyerési ráta × átlagos nyereség − (1 − nyerési ráta) × átlagos veszteség. Csak akkor van pozitív kimenetel, ha ez a szám nullánál nagyobb, és ehhez a múltbeli adatok megbízhatóak."
+   ],
+   [
+    "p",
+    "Fontos: a magas R:R önmagában nem garancia. Ha a kitűzött célt ritkán éri el az ár, a tényleges nyerési ráta alacsony lesz."
+   ]
+  ]
+ },
+ {
+  "slug": "szimulalt-kereskedes",
+  "t": [
+   "Mire jó a szimulált kereskedés, és mik a korlátai?",
+   "What simulated trading is good for, and its limits",
+   "Wofür simulierter Handel gut ist und wo seine Grenzen liegen"
+  ],
+  "d": "A szimulált kereskedés kockázatmentesen gyakoroltatja a folyamatot, de a valós piac pszichológiáját és végrehajtását nem adja vissza.",
+  "b": [
+   [
+    "p",
+    "A szimulált (demó) kereskedés virtuális egyenleggel működik. Segít megérteni a felületet, a megbízástípusokat és a kockázatkezelés mechanikáját anélkül, hogy valódi pénzt veszélyeztetnél."
+   ],
+   [
+    "h",
+    "Előnyök"
+   ],
+   [
+    "ul",
+    [
+     "Biztonságos környezetben próbálhatod ki a stratégiádat.",
+     "Gyorsan tanulsz a hibáidból, napló vezetésével még gyorsabban.",
+     "Megismered az indikátorokat és a kalkulátorokat."
+    ]
+   ],
+   [
+    "h",
+    "Korlátok"
+   ],
+   [
+    "ul",
+    [
+     "Nincs valódi tét, ezért az érzelmi nyomás hiányzik.",
+     "A végrehajtás egyszerűsített: csúszás, részleges teljesülés, likviditás eltérhet.",
+     "A jó szimulált eredmény nem jelent garanciát valós eredményre."
+    ]
+   ],
+   [
+    "p",
+    "A Chartolj! szimulált kereskedése oktatási célú. Nem bróker, és nem ad befektetési tanácsot."
+   ]
+  ]
+ }
+]

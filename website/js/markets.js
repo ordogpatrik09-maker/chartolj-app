@@ -77,8 +77,8 @@
     }
     grid.innerHTML = rows.map(d => {
       const s = state[d.id], up = s.chg >= 0, on = watch.includes(d.id);
-      return '<div class="mk-card" role="button" tabindex="0" data-id="' + d.id + '" aria-label="' + esc(d.name) + '">' +
-        '<div class="mk-top"><div><div class="mk-name">' + esc(d.name) + '</div><div class="mk-sym">' + esc(d.sym) + '</div></div>' +
+      return '<div class="mk-card" role="group" data-id="' + d.id + '" aria-label="' + esc(d.name) + '">' +
+        '<div class="mk-top"><div><button type="button" class="mk-name mk-open">' + esc(d.name) + '</button><div class="mk-sym">' + esc(d.sym) + '</div></div>' +
         '<button class="star" data-star="' + d.id + '" aria-pressed="' + on + '" aria-label="' + esc(t(on ? 'market.unwatch' : 'market.watch')) + '"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg></button></div>' +
         '<div class="mk-mid"><div><div class="mk-price">' + priceHtml(d, s) + '</div><div class="mk-chg ' + (up ? 'up' : 'down') + '">' + (up ? '▲' : '▼') + ' ' + (up ? '+' : '') + CT.fmt(s.chg) + '%</div></div><svg class="mk-spark" data-spark="' + d.id + '" aria-hidden="true"></svg></div>' +
         '<div class="mk-foot">' + badge(s) + '<span class="mk-sym">' + t('market.cat.' + d.cat) + '</span></div></div>';
