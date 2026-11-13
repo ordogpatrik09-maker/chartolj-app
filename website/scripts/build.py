@@ -237,12 +237,7 @@ def cinema():
   </div>
   <p class="hx-plat">%(plat)s</p></div></section>
 
-<section class="scene scene-globe dark"><div class="container"><h2 class="two"><span class="dim">%(g1)s</span><span class="bright">%(g2)s</span></h2><p class="scene-sub">%(gsub)s</p></div>
-  <div class="globe-wrap"><canvas id="globe" aria-hidden="true"></canvas></div></section>
-
-<section class="scene scene-phones dark"><div class="container"><h2 class="two"><span class="dim">%(p1)s</span><span class="bright">%(p2)s</span></h2></div>
-  <div class="pscene"><div class="phone ps-a" data-par="-0.04"><img src="assets/app-home.webp" width="780" height="1688" alt="%(alt1)s" loading="lazy"></div><div class="phone ps-b" data-par="0.05"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(alt2)s" loading="lazy"></div></div>
-  <div class="strip" aria-hidden="true"><div class="strip-track">%(strip)s%(strip)s</div></div></section>
+<section class="strip-sec dark"><div class="strip" aria-hidden="true"><div class="strip-track">%(strip)s%(strip)s</div></div></section>
 
 <section class="scene scene-bars dark" id="sbars"><div class="sb-pin"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></div></section>
 ''' % dict(l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'),
@@ -258,6 +253,17 @@ def page_home():
     wl = ''.join('<div class="wl-row"><span>%s</span><span class="num" data-wl>+0,00%%</span></div>' % s for s in ['BTC/USDT', 'EUR/USD', 'XAU/USD', 'SPX'])
     tfs = ''.join('<button type="button" class="%s" data-seed="%d" data-vol="%s">%s</button>' % ('active' if t == 'H1' else '', sd, vol, t) for t, sd, vol in [('M15', 21, '1.0'), ('H1', 7, '1.5'), ('D1', 63, '2.6')])
     tabs = [('trade', 'hero2.tab1', 'app-desktop.webp', 1440, 900), ('academy', 'hero2.tab2', 'app-academy.webp', 780, 1688), ('progress', 'hero2.tab3', 'app-progress.webp', 780, 1688)]
+    simrow = lambda name, seed: '<div class="mini-row" data-row><span class="num" style="color:var(--c-text)">%s</span><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span></div>' % (name, seed)
+    tile = lambda cls, ic, k, body, extra='': '<article class="bt %s" data-spot><div class="bt-h"><span class="icon-box">%s</span>%s</div><p>%s</p>%s%s</article>' % (cls, icon(ic), tx(k + '.t', 'h3'), tx(k + '.d'), body, extra)
+    bento = '<section class="section bento-sec dark" id="platform"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="bento bento-x reveal">' % (tx('platform.eyebrow'), tx('platform.title', 'h2'), tx('platform.sub', 'p'))
+    bento += tile('bt-watch', 'star', 'f3', simrow('BTC/USDT', 5) + simrow('EUR/USD', 12) + simrow('XAU/USD', 19) + simrow('SPX', 26) + simrow('NVDA', 33), '<span class="badge badge-sim bt-badge">%s</span>' % tx('badge.demo'))
+    bento += tile('bt-acad', 'cap', 'f10', '<div class="rings"><div class="ring-wrap"><div class="ring" style="--p:62"><b>62%%</b></div>%s</div><div class="ring-wrap"><div class="ring" style="--p:48"><b>48%%</b></div>%s</div><div class="ring-wrap"><div class="ring" style="--p:100"><b>7</b></div>%s</div></div>' % (tx('ac.lessons'), tx('ac.quiz'), tx('ac.streak')), '<a class="link-arrow" href="academy.html">%s</a>' % tx('f10.cta'))
+    bento += tile('bt-jour', 'history', 'f7', '<div class="mini-row"><span>%s</span><span>%s</span></div><div class="mini-row"><span>%s</span><span>%s</span></div><div class="mini-row"><span>%s</span><span class="num up">+1,8R</span></div><div class="mini-row"><span>%s</span><span style="text-align:right;max-width:60%%">%s</span></div>' % (tx('journal.setup'), tx('journal.setupv'), tx('journal.reason'), tx('journal.reasonv'), tx('journal.result'), tx('journal.lesson'), tx('journal.lessonv')), '<span class="badge badge-sim bt-badge">%s</span>' % tx('show.example'))
+    bento += tile('w3 bt-calc', 'scale', 'f5', calc_card('rr', 'h'), '<a class="link-arrow" href="tools.html">%s</a>' % tx('f6.cta'))
+    bento += tile('w3 bt-risk', 'shield', 'f4', '<svg class="bt-art" viewBox="0 0 94 44" aria-hidden="true"><line class="r-stop" x1="4" y1="30" x2="90" y2="30"/><path class="r-line" pathLength="1" d="M4,14 L22,10 L38,18 L56,26 L72,32 L90,40"/></svg>', '<a class="link-arrow" href="learn-stop-loss.html">%s</a>' % tx('learn.read'))
+    bento += tile('w3 bt-tools', 'calc', 'f6', '<div class="chips" style="gap:6px">%s</div>' % ''.join('<span class="badge">%s</span>' % tx('tools.cat.' + c) for c in TOOLCATS), '<a class="link-arrow" href="tools.html">%s</a>' % tx('f6.cta'))
+    bento += tile('w3 bt-pf', 'pie', 'f9', '<div class="pf-bar" style="height:10px"><i style="width:48%%;background:var(--c-green)"></i><i style="width:32%%;background:var(--c-purple-soft)"></i><i style="width:20%%;background:#6EC1FF"></i></div><div class="chips" style="margin-top:12px"><span class="badge">%s</span><span class="badge">%s</span></div>' % (tx('pf.open'), tx('pf.hist')), '<span class="badge badge-sim bt-badge">%s</span>' % tx('show.example'))
+    bento += '</div></div></section>'
     h += '''%(cin1)s<section class="section prodscene dark"><div class="container hero-center">
   <div class="eyebrow">%(eb)s</div>
   <h2 class="prodscene-t">%(title)s</h2>
@@ -279,20 +285,13 @@ def page_home():
 <section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(he)s</div>%(ht)s</div>
   <div class="steps reveal">%(hsteps)s</div></div></section>
 
-<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(oe)s</div>%(ot)s%(os)s</div>
-  <div class="grid grid-3 reveal">%(ocards)s</div></div></section>
+%(bento)s
 
 <section class="band dark"><div class="container"><div class="band-head reveal"><div><div class="eyebrow">%(be)s</div>%(bt)s<p>%(bs)s</p></div><a class="btn btn-ghost" href="markets.html">%(bc)s</a></div>
   <div class="ticker reveal" aria-label="%(bsimlbl)s"><div class="ticker-track">%(tick)s%(tick)s</div></div>
   <div class="catgrid reveal">%(cats)s</div></div></section>
 
-<section class="story" id="story"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(se)s</div>%(st)s</div>
-  <div class="story-grid"><div class="story-device"><div class="phone story-phone">%(simgs)s</div></div><div class="story-steps">%(ssteps)s</div></div></div></section>
-
-<section class="section phones"><div class="container split"><div class="reveal"><div class="eyebrow">%(pe)s</div>%(pt)s<p class="lead" style="margin-top:12px;color:var(--c-text-2)">%(ps)s</p>
-  <ul class="ticks">%(pb)s</ul><p style="margin-top:28px"><a class="btn btn-primary" data-app href="app/index.html">%(pc)s</a></p><p class="calc-note" style="margin-top:12px">%(pn)s</p></div>
-  <div class="phone-row reveal"><div class="phone"><img src="assets/app-home.webp" width="780" height="1688" alt="%(a4)s" loading="lazy"></div><div class="phone up"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(a5)s" loading="lazy"></div></div></div></section>
-''' % dict(cin1=cinema(), eb=tx('hero2.eyebrow2'), title=tx('hero2.title', 'span'), pl0=tx('hero2.links'), pl1=tx('hero2.l1'), pl2=tx('hero2.l2'), pl3=tx('hero2.l3'), pl4=tx('hero2.l4'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
+''' % dict(bento=bento, cin1=cinema(), eb=tx('hero2.eyebrow2'), title=tx('hero2.title', 'span'), pl0=tx('hero2.links'), pl1=tx('hero2.l1'), pl2=tx('hero2.l2'), pl3=tx('hero2.l3'), pl4=tx('hero2.l4'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
            tabs=''.join('<button type="button" role="tab" class="%s" data-tab="%s" aria-selected="%s">%s</button>' % ('active' if i == 0 else '', k, 'true' if i == 0 else 'false', tx(l)) for i, (k, l, *_r) in enumerate(tabs)),
            alt1=esc(hu('hero2.tab1')), alt2=esc(hu('hero2.tab2')), alt3=esc(hu('hero2.tab3')), a4=esc(hu('hero2.tab2')), a5=esc(hu('hero2.tab1')),
            nl=N_LESSONS, nq=N_Q, nt=N_TOOLS, nm=N_MODS, fl=tx('facts.lessons'), fq=tx('facts.questions'), ft=tx('facts.tools'), fm=tx('facts.modules'),
@@ -306,60 +305,6 @@ def page_home():
     ticks = lambda *ks: '<ul class="ticks">%s</ul>' % ''.join('<li>%s</li>' % tx(k) for k in ks)
     simrow = lambda name, seed: '<div class="mini-row" data-row><span class="num" style="color:var(--c-text)">%s</span><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span></div>' % (name, seed)
     pillbtn = lambda attr, label, pressed: '<button type="button" class="chip btn-sm" %s aria-pressed="%s">%s</button>' % (attr, pressed, label)
-    h += '''<section class="section section--alt" id="platform"><div class="container">
-  <div class="section-head reveal"><div class="eyebrow">%(eb)s</div>%(title)s%(sub)s</div>
-
-  <div class="showcase split reveal"><div>
-      <div class="icon-box">%(i1)s</div>%(f1t)s<p class="lead" style="margin-top:12px">%(f1d)s</p>
-      <div style="height:20px"></div><div class="icon-box purple">%(i2)s</div>%(f2t)s<p class="lead" style="margin-top:12px">%(f2d)s</p></div>
-    <div class="panel dark"><div class="panel-title"><span>%(simlbl)s</span><span class="badge badge-sim">%(simbadge)s</span></div>
-      <div class="toggles" role="group">%(tf)s%(modes)s</div>
-      <div class="toggles" role="group">%(inds)s</div>
-      <div class="detail-chart" style="height:340px"><canvas id="showcase-chart" role="img" aria-label="%(simlbl)s"></canvas></div></div></div>
-
-  <div class="showcase split reverse reveal"><div>
-      <div class="icon-box">%(i3)s</div>%(f3t)s<p class="lead" style="margin-top:12px">%(f3d)s</p>%(f3b)s<p style="margin-top:24px"><a class="link-arrow" href="markets.html">%(f3c)s</a></p></div>
-    <div class="panel dark"><div class="panel-title"><span>%(wlt)s</span><span class="badge badge-sim">%(demo)s</span></div>%(rows)s<p class="calc-note" style="margin-top:12px">%(simlbl)s</p></div></div>
-
-  <div class="showcase split reveal"><div>
-      <div class="icon-box">%(i5)s</div>%(f5t)s<p class="lead" style="margin-top:12px">%(f5d)s</p>
-      <div style="height:20px"></div><div class="icon-box purple">%(i4)s</div>%(f4t)s<p class="lead" style="margin-top:12px">%(f4d)s</p></div>
-    <div>%(calc)s</div></div>
-
-  <div class="showcase reveal"><div class="bento">
-    <div class="panel w3"><div class="icon-box">%(i6)s</div><h3>%(f6t)s</h3><p style="color:var(--c-text-2);margin:8px 0 16px">%(f6d)s</p>
-      <div class="chips" style="gap:6px">%(tcats)s</div><p style="margin-top:20px"><a class="link-arrow" href="tools.html">%(f6c)s</a></p></div>
-    <div class="panel w3"><div class="panel-title"><span>%(f7t)s</span><span class="badge badge-sim">%(ex)s</span></div>
-      <div class="mini-row"><span>%(j1)s</span><span>%(j1v)s</span></div><div class="mini-row"><span>%(j2)s</span><span>%(j2v)s</span></div>
-      <div class="mini-row"><span>%(j3)s</span><span class="num up">+1,8R</span></div><div class="mini-row"><span>%(j4)s</span><span style="text-align:right;max-width:60%%">%(j4v)s</span></div>
-      <p style="color:var(--c-text-2);font-size:var(--fs-sm);margin-top:12px">%(f7d)s</p></div></div></div>
-
-  <div class="showcase reveal"><div class="bento">
-    <div class="panel w3"><div class="icon-box purple">%(i8)s</div><h3>%(f8t)s</h3><p style="color:var(--c-text-2);margin:8px 0 16px">%(f8d)s</p>
-      <div class="notice info"><span><strong>%(ht)s</strong> · %(hd)s</span></div></div>
-    <div class="panel w3"><div class="icon-box">%(i9)s</div><h3>%(f9t)s</h3><p style="color:var(--c-text-2);margin:8px 0 16px">%(f9d)s</p>
-      <div class="panel-title"><span>%(alloc)s</span><span class="badge badge-sim">%(ex)s</span></div>
-      <div class="pf-bar" style="height:10px"><i style="width:48%%;background:var(--c-green)"></i><i style="width:32%%;background:var(--c-purple-soft)"></i><i style="width:20%%;background:#6EC1FF"></i></div>
-      <div class="chips" style="margin-top:12px"><span class="badge">%(po)s</span><span class="badge">%(ph)s</span></div></div></div></div>
-
-  <div class="showcase split reverse reveal"><div>
-      <div class="icon-box purple">%(i10)s</div>%(f10t)s<p class="lead" style="margin-top:12px">%(f10d)s</p><p style="margin-top:24px"><a class="link-arrow" href="academy.html">%(f10c)s</a></p></div>
-    <div class="panel"><div class="panel-title"><span>%(f10s)s</span><span class="badge badge-sim">%(ex)s</span></div>
-      <div class="rings"><div class="ring-wrap"><div class="ring" style="--p:62"><b>62%%</b></div>%(rl)s</div><div class="ring-wrap"><div class="ring" style="--p:48"><b>48%%</b></div>%(rq)s</div><div class="ring-wrap"><div class="ring" style="--p:100"><b>7</b></div>%(rs)s</div></div></div></div>
-</div></section>
-''' % dict(eb=tx('platform.eyebrow'), title=tx('platform.title', 'h2'), sub=tx('platform.sub', 'p'), simlbl=tx('show.sim'), simbadge=tx('common.simlabel'), ex=tx('show.example'), demo=tx('badge.demo'),
-           i1=icon('chart'), i2=icon('sliders'), i3=icon('star'), i4=icon('shield'), i5=icon('scale'), i6=icon('calc'), i8=icon('history'), i9=icon('pie'), i10=icon('cap'),
-           f1t=tx('f1.t', 'h3'), f1d=tx('f1.d'), f2t=tx('f2.t', 'h3'), f2d=tx('f2.d'), f3t=tx('f3.t', 'h3'), f3d=tx('f3.d'), f3b=ticks('f3.b1', 'f3.b2', 'f3.b3'), f3c=tx('f3.cta'),
-           f4t=tx('f4.t', 'h3'), f4d=tx('f4.d'), f5t=tx('f5.t', 'h3'), f5d=tx('f5.d'), f6t=tx('f6.t'), f6d=tx('f6.d'), f6c=tx('f6.cta'), f7t=tx('f7.t'), f7d=tx('f7.d'),
-           f8t=tx('f8.t'), f8d=tx('f8.d'), f9t=tx('f9.t'), f9d=tx('f9.d'), f10t=tx('f10.t', 'h3'), f10s=tx('f10.t'), f10d=tx('f10.d'), f10c=tx('f10.cta'),
-           tf=''.join(pillbtn('data-tf="%s"' % k, l, 'true' if k == 'h1' else 'false') for k, l in [('m15', 'M15'), ('h1', 'H1'), ('d1', 'D1')]),
-           modes=pillbtn('data-mode="candles"', tx('chart.candles'), 'true') + pillbtn('data-mode="line"', tx('chart.line'), 'false'),
-           inds=''.join(pillbtn('data-ind="%s"' % k, l, 'true' if k == 'ema' else 'false') for k, l in [('ema', 'EMA 20/50'), ('bb', 'Bollinger'), ('rsi', 'RSI 14'), ('macd', 'MACD'), ('vol', 'Volume')]),
-           wlt=tx('term.watch'), rows=simrow('BTC/USDT', 5) + simrow('EUR/USD', 12) + simrow('XAU/USD', 19) + simrow('SPX', 26) + simrow('NVDA', 33),
-           calc=calc_card('pos', 'h'), tcats=''.join('<span class="badge">%s</span>' % tx('tools.cat.' + c) for c in TOOLCATS),
-           j1=tx('journal.setup'), j1v=tx('journal.setupv'), j2=tx('journal.reason'), j2v=tx('journal.reasonv'), j3=tx('journal.result'), j4=tx('journal.lesson'), j4v=tx('journal.lessonv'),
-           ht=tx('hist.title'), hd=tx('hist.d'), alloc=tx('pf.alloc'), po=tx('pf.open'), ph=tx('pf.hist'), rl=tx('ac.lessons'), rq=tx('ac.quiz'), rs=tx('ac.streak'))
-
     # academy teaser
     lv = [(1, [0, 2]), (2, [1, 3]), (3, [4, 5, 6])]
     h += '''<section class="section section--alt"><div class="container"><div class="section-head reveal"><div class="eyebrow">%s</div>%s%s</div>
@@ -367,17 +312,6 @@ def page_home():
 ''' % (tx('nav.learning'), tx('academy.title', 'h2'), tx('academy.paths.d', 'p'),
        ''.join('<div class="path-col"><span class="level l%d">%s</span>%s</div>' % (n, tx('level.%d' % n), ''.join('<div class="course"><h3>%s</h3><div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span></div></div>' % (tx('mod.%d.n' % m), academy[m]['lessons'], tx('course.lessons'), academy[m]['questions'], tx('course.quiz')) for m in ms)) for n, ms in lv), tx('academy.cta'))
 
-    # calm vs pressure
-    h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="calm reveal"><div class="calm-card bad"><svg viewBox="0 0 200 90" aria-hidden="true"><path class="c-line" pathLength="1" d="M4,40 L20,18 L34,62 L48,10 L64,74 L80,26 L96,80 L112,30 L128,84 L144,40 L160,86 L176,50 L196,84"/></svg><h3>%s</h3><p>%s</p></div><div class="calm-card good"><svg viewBox="0 0 200 90" aria-hidden="true"><line class="c-tp" x1="4" y1="14" x2="196" y2="14"/><line class="c-sl" x1="4" y1="76" x2="196" y2="76"/><path class="c-line" pathLength="1" d="M4,60 C40,56 60,62 90,46 S150,30 196,16"/></svg><h3>%s</h3><p>%s</p></div></div></div></section>' % (
-        tx('calm.eyebrow'), tx('calm.title', 'h2'), tx('calm.sub', 'p'), tx('calm.a.t'), tx('calm.a.d'), tx('calm.b.t'), tx('calm.b.d'))
-    # risk education row
-    redu = [('stop-loss', 'M4,34 L22,26 L38,30 L56,16 L72,22 L90,8', 'stop'), ('tokeattetel', 'M4,36 L90,36', 'lev'), ('poziciomeret', 'M4,30 L30,30 L30,12 L56,12 L56,22 L90,22', 'size')]
-    h += '<section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div></div></section>' % (
-        tx('redu.eyebrow'), tx('redu.title', 'h2'), tx('redu.sub', 'p'),
-        ''.join('<a class="card redu" href="learn-%s.html"><svg class="redu-art %s" viewBox="0 0 94 44" aria-hidden="true">%s</svg><h3>%s</h3><p>%s</p><span class="link-arrow">%s</span></a>' % (sl, k,
-            {'stop': '<line class="r-stop" x1="4" y1="30" x2="90" y2="30"/><path class="r-line" pathLength="1" d="M4,14 L22,10 L38,18 L56,26 L72,32 L90,40"/>',
-             'lev': '<rect class="r-b1" x="14" y="24" width="20" height="14" rx="3"/><rect class="r-b2" x="52" y="6" width="20" height="32" rx="3"/>',
-             'size': '<path class="r-line" pathLength="1" d="M6,36 L30,28 L48,32 L72,14 L90,8"/><circle class="r-dot" cx="90" cy="8" r="3"/>'}[k], tx('art.%s.t' % sl), tx('art.%s.d' % sl), tx('learn.read')) for sl, _p, k in redu))
     # pricing teaser
     h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p style="text-align:center;margin-top:32px"><a class="btn btn-primary" href="premium.html">%s</a></p></div></section>' % (
         tx('price.eyebrow'), tx('price.title', 'h2'), tx('price.sub', 'p'),

@@ -31,3 +31,10 @@
   new IntersectionObserver(e => { vis = e[0].isIntersecting; }, { rootMargin: '100px' }).observe(cv);
   (function loop() { if (vis) { if (!reduce) rot += .0028; draw(); } requestAnimationFrame(loop); })(); draw();
 })();
+
+/* spotlight hover on bento tiles */
+(function () {
+  document.querySelectorAll('[data-spot]').forEach(function (el) {
+    el.addEventListener('pointermove', function (e) { var r = el.getBoundingClientRect(); el.style.setProperty('--mx', (e.clientX - r.left) + 'px'); el.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
+  });
+})();
