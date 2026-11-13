@@ -28665,8 +28665,29 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const slow = parseInt(slowEl.value);
             const signalPeriod = parseInt(signalEl.value);
 
-            if (!emaPeriod || !fast || !slow || !signalPeriod || fast >= slow || prices.length < slow + signalPeriod) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódusokat (a gyorsnak kisebbnek kell lennie a lassúnál), és elég árat (legalább lassú periódus + szignál periódus)!</div>`;
+            // JAVÍTÁS: a 4 periódus-mezőt korábban csak `!emaPeriod`-szerű truthy
+            // ellenőrzés védte — ez a nem-numerikus/0 bemenetet kifogta, de egy
+            // negatív periódust (pl. billentyűzettel beírt "-3" — a HTML min="2"
+            // attribútum csak a léptető nyilakra hat, a klaviatúrás bevitelt NEM
+            // korlátozza) truthy-ként átengedett. A lenti emaSmaSeededAligned()
+            // belső `period < 1` védelme miatt ez nem jelenített meg NaN/Infinity
+            // szöveget, de egy valójában érvénytelen periódus-bemenetre egy
+            // félrevezető, a valós okot el nem áruló "Nincs elég adat" hibát adott
+            // (lásd lejjebb) — nem a "periódus érvénytelen" választ. Explicit,
+            // a mezők min="2" HTML-attribútumával konzisztens (>= 2, egész szám)
+            // ellenőrzésre váltva, ugyanazzal a mintával, mint az app többi
+            // periódus-bemenetű kalkulátora (pl. calcVWMA, calcGoldenCross).
+            if (!Number.isFinite(emaPeriod) || emaPeriod < 2 || !Number.isFinite(fast) || fast < 2 ||
+                !Number.isFinite(slow) || slow < 2 || !Number.isFinite(signalPeriod) || signalPeriod < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Mind a 4 periódusnak egy érvényes, legalább 2 értékű egész számnak kell lennie!</div>`;
+                return;
+            }
+            if (fast >= slow) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A MACD gyors periódusnak kisebbnek kell lennie a lassú periódusnál!</div>`;
+                return;
+            }
+            if (prices.length < slow + signalPeriod) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${slow + signalPeriod} érvényes záróár szükséges (lassú periódus + szignál periódus) — jelenleg ${prices.length} van megadva!</div>`;
                 return;
             }
 
