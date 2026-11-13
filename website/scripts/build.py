@@ -454,7 +454,7 @@ def page_cookies():
 
 def page_learn():
     h = head('learn') + header('learn') + page_hero('learn', 'learn.title', 'learn.sub', eyebrow='nav.learn')
-    h += '<section class="section" style="padding-top:0"><div class="container"><p class="calc-note" style="margin-bottom:24px">%s</p><div class="grid grid-3">%s</div></div></section>' % (tx('learn.langnote'),
+    h += '<section class="section" style="padding-top:0"><div class="container"><div class="grid grid-3">%s</div></div></section>' % (
         ''.join('<a class="card" href="learn-%s.html"><h3>%s</h3><p style="color:var(--c-text-2);margin:10px 0 16px">%s</p><span class="link-arrow">%s</span></a>' % (a['slug'], tx('art.%s.t' % a['slug']), tx('art.%s.d' % a['slug']), tx('learn.read')) for a in ARTICLES))
     h += cta_band() + footer() + close()
     return h
@@ -462,12 +462,15 @@ def page_learn():
 def page_article(a):
     pg = 'a-' + a['slug']
     ld = '<script type="application/ld+json">%s</script>' % json.dumps({'@context': 'https://schema.org', '@type': 'Article', 'headline': a['t'][0], 'description': a['d'], 'inLanguage': 'hu', 'publisher': {'@type': 'Organization', 'name': 'Chartolj!'}}, ensure_ascii=False)
-    h = head(pg, ld) + header('learn') + page_hero(pg, 'art.%s.t' % a['slug'], 'learn.langnote', eyebrow='nav.learn')
+    h = head(pg, ld) + header('learn') + page_hero(pg, 'art.%s.t' % a['slug'], 'learn.sub', eyebrow='nav.learn')
     body = ''
-    for kind, val in a['b']:
-        if kind == 'p': body += '<p lang="hu">%s</p>' % esc(val)
-        elif kind == 'h': body += '<h2 lang="hu">%s</h2>' % esc(val)
-        else: body += '<ul lang="hu" class="ticks" style="margin-bottom:16px">%s</ul>' % ''.join('<li>%s</li>' % esc(x) for x in val)
+    for lg, key in (('hu', 'b'), ('en', 'b_en'), ('de', 'b_de')):
+        blk = ''
+        for kind, val in a[key]:
+            if kind == 'p': blk += '<p>%s</p>' % esc(val)
+            elif kind == 'h': blk += '<h2>%s</h2>' % esc(val)
+            else: blk += '<ul class="ticks" style="margin-bottom:16px">%s</ul>' % ''.join('<li>%s</li>' % esc(x) for x in val)
+        body += '<div data-lb="%s" lang="%s">%s</div>' % (lg, lg, blk)
     h += '<section class="section" style="padding-top:0"><div class="container"><article class="prose">%s<div class="notice" style="margin-top:32px" role="note"><span>%s</span></div><p style="margin-top:24px"><a class="btn btn-primary" data-app href="app/index.html">%s</a> <a class="link-arrow" style="margin-left:16px" href="learn.html">%s</a></p></article></div></section>' % (body, tx('learn.disc'), tx('learn.try'), tx('learn.back'))
     h += footer() + close()
     return h
