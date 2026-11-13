@@ -1,0 +1,32 @@
+/* Cinematic scenes: dotted globe, scroll-lit statement lines, bar reveal. Decorative only; respects prefers-reduced-motion. */
+(function () {
+  'use strict';
+  const doc = document, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* bars + lit lines */
+  const sc = doc.querySelector('.scene-bars');
+  if (sc) { new IntersectionObserver((e, o) => { if (e[0].isIntersecting) { sc.classList.add('in'); o.disconnect(); } }, { threshold: .15 }).observe(sc); }
+  const lines = [...doc.querySelectorAll('#litlines p')];
+  if (lines.length) {
+    if (reduce) lines.forEach(l => l.classList.add('on'));
+    else { const upd = () => { const mid = innerHeight * .55; let idx = -1; lines.forEach((l, i) => { if (l.getBoundingClientRect().top < mid) idx = i; }); lines.forEach((l, i) => { l.classList.toggle('on', i === idx || (idx === lines.length - 1)); l.classList.toggle('past', i < idx && idx !== lines.length - 1); }); };
+      addEventListener('scroll', upd, { passive: true }); upd(); }
+  }
+  /* dotted globe */
+  const cv = doc.getElementById('globe'); if (!cv) return;
+  const ctx = cv.getContext('2d'); let W = 0, rot = 0, vis = false, pts = [];
+  const N = 16000, ga = Math.PI * (3 - Math.sqrt(5));
+  const land = (la, lo) => Math.sin(lo * 2.1 + 1) * Math.cos(la * 3) + Math.sin(lo * 4.3 - la * 2) * .5 + Math.cos(lo * 7 + la * 5) * .3 > -.1;
+  for (let i = 0; i < N; i++) { const y = 1 - 2 * (i + .5) / N, r = Math.sqrt(1 - y * y), th = i * ga, la = Math.asin(y), lo = th % (2 * Math.PI) - Math.PI; if (land(la, lo)) pts.push([Math.cos(th) * r, y, Math.sin(th) * r]); }
+  function size() { const d = Math.min(devicePixelRatio || 1, 2), r = cv.getBoundingClientRect(); W = Math.round(r.width * d); cv.width = W; cv.height = W; }
+  function draw() {
+    ctx.clearRect(0, 0, W, W); const R = W * .38, cx = W / 2, cy = W * .43, c = Math.cos(rot), s = Math.sin(rot);
+    const g = ctx.createRadialGradient(cx, cy, R * .95, cx, cy, R * 1.05); g.addColorStop(0, 'rgba(0,245,160,0)'); g.addColorStop(.965, 'rgba(0,245,160,.55)'); g.addColorStop(1, 'rgba(127,0,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.05, 0, 7); ctx.fill();
+    ctx.fillStyle = '#04060a'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
+    for (const p of pts) { const x = p[0] * c + p[2] * s, z = -p[0] * s + p[2] * c; if (z < -.05) continue; const lit = Math.max(0, (-x * .45 + p[1] * .5 + z * .6)); const a = .18 + .82 * Math.min(1, lit + .1);
+      ctx.fillStyle = 'rgba(' + (120 + lit * 135 | 0) + ',' + (245) + ',' + (200 - lit * 40 | 0) + ',' + a.toFixed(2) + ')'; ctx.fillRect(cx + x * R, cy - p[1] * R, W / 900 * (.8 + z), W / 900 * (.8 + z)); }
+  }
+  size(); addEventListener('resize', size);
+  new IntersectionObserver(e => { vis = e[0].isIntersecting; }, { rootMargin: '100px' }).observe(cv);
+  (function loop() { if (vis) { if (!reduce) rot += .0028; draw(); } requestAnimationFrame(loop); })(); draw();
+})();

@@ -31,7 +31,7 @@ with open(os.path.join(ROOT, 'js/locales.js'), 'w', encoding='utf-8') as f:
 import hashlib
 def _ver():
     h = hashlib.md5()
-    for f in ('css/design-system.css', 'js/site.js', 'js/fx.js', 'js/charts.js', 'js/tools-math.js', 'js/config.js', 'js/markets.js', 'js/locales.js'):
+    for f in ('css/design-system.css', 'js/site.js', 'js/fx.js', 'js/scenes.js', 'js/charts.js', 'js/tools-math.js', 'js/config.js', 'js/markets.js', 'js/locales.js'):
         try: h.update(open(os.path.join(ROOT, f), 'rb').read())
         except OSError: pass
     return h.hexdigest()[:8]
@@ -183,6 +183,7 @@ def footer():
 <script src="js/charts.js?v=%(ver)s"></script>
 <script src="js/site.js?v=%(ver)s"></script>
 <script src="js/fx.js?v=%(ver)s" defer></script>
+<script src="js/scenes.js?v=%(ver)s" defer></script>
 ''' % dict(ver=VER, helpspan=tx('help.label'), stk=tx('sticky.cta'), tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), fl=tx('footer.lang'), draft=tx('footer.draft'),
            c1=col('footer.product', [('index.html#platform', 'nav.platform'), ('markets.html', 'nav.markets'), ('academy.html', 'nav.learning'), ('tools.html', 'nav.tools'), ('learn.html', 'nav.learn'), ('premium.html', 'nav.pricing')]),
            c2=col('footer.company', [('about.html', 'nav.about'), ('faq.html', 'footer.faq'), ('contact.html', 'footer.contact')]),
@@ -213,6 +214,42 @@ def calc_card(kind, prefix='c'):
   <p class="calc-note" style="margin-top:12px">%(disc)s</p></div>''' % dict(k=kind, title=tx('calc.t.' + kind), fields=fields, form=FORM[kind], fl=esc(hu('calc.formula')), ex=tx('calc.example'), exd=tx('calc.x.' + kind), disc=tx('calc.disc'))
 
 # ---------------------------------------------------------------- pages
+def cinema():
+    t = tx
+    chips = ''.join('<span class="gchip" data-row><b>%s</b><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span></span>' % (n, sd) for n, sd in (('TSLA', 61), ('BTC', 5), ('EUR/USD', 12)))
+    qs = ''.join('<li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>%s</li>' % t('cx.q%d' % i) for i in (1, 2, 3))
+    bars = ''.join('<i style="--h:%d;--d:%d;--c:%s"></i>' % (h_, (i * 37) % 11, 'a' if i % 3 == 0 else ('b' if i % 3 == 1 else 'c')) for i, h_ in enumerate([22,34,18,12,9,26,14,6,5,3,38,52,60,24,70,34,48,92,66,44,30,18,40,58,26,34,60,36,20,12,24,16,8,6]))
+    return '''<section class="hero hero-x dark" id="top"><div class="hx-glow" aria-hidden="true"></div><div class="container hx-grid">
+  <div class="hx-copy">
+    <h1><span class="dim">%(l1)s</span><span class="bright">%(l2)s</span></h1>
+    <p class="hx-sub">%(sub)s</p>
+    <p class="hx-cta"><a class="btn btn-pill" data-app href="app/index.html">%(cta)s</a><a class="link-arrow" href="academy.html">%(cta2)s</a></p>
+  </div>
+  <div class="hx-stage" aria-hidden="false">
+    <div class="glass g-search" data-par="-0.05"><p class="g-title">%(gs)s</p><div class="g-chips">%(chips)s<em class="badge badge-sim">DEMO</em></div><ul class="g-q">%(qs)s</ul></div>
+    <div class="glass g-stat" data-par="0.04"><p class="g-title">%(gst)s</p>
+      <svg viewBox="0 0 240 120" class="g-chart" role="img" aria-label="%(gst)s"><path class="g-line" pathLength="1" d="M4 100 L24 98 L40 40 L58 38 L76 42 L96 38 L112 40 L128 104 L142 96 L158 92 L172 80 L190 70 L206 52 L236 30"/></svg>
+      <em class="badge badge-sim">DEMO</em></div>
+    <div class="glass g-stop" data-par="-0.02"><div class="g-row"><b>Stop loss</b><span class="g-mode">%(mode)s</span><span class="g-toggle"><i></i></span></div>
+      <div class="g-field"><span>%(f1)s</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      <div class="g-field g-num"><span class="num">309,50</span><span class="g-pm"><i>&minus;</i><i>+</i></span></div>
+      <div class="g-row g-foot"><span>%(f2)s <b class="num">50,00 $</b></span><span>%(f3)s <b class="num">2,85 (1,95%%)</b></span></div></div>
+  </div>
+  <p class="hx-plat">%(plat)s</p></div></section>
+
+<section class="scene scene-globe dark"><div class="container"><h2 class="two"><span class="dim">%(g1)s</span><span class="bright">%(g2)s</span></h2><p class="scene-sub">%(gsub)s</p></div>
+  <div class="globe-wrap"><canvas id="globe" aria-hidden="true"></canvas></div></section>
+
+<section class="scene scene-phones dark"><div class="container"><h2 class="two"><span class="dim">%(p1)s</span><span class="bright">%(p2)s</span></h2></div>
+  <div class="pscene"><div class="phone ps-a" data-par="-0.04"><img src="assets/app-home.webp" width="780" height="1688" alt="%(alt1)s" loading="lazy"></div><div class="phone ps-b" data-par="0.05"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(alt2)s" loading="lazy"></div></div>
+  <div class="strip" aria-hidden="true"><div class="strip-track">%(strip)s%(strip)s</div></div></section>
+
+<section class="scene scene-bars dark"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></section>
+''' % dict(l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'),
+        g1=t('cx.g1'), g2=t('cx.g2'), gsub=t('cx.gsub'), p1=t('cx.p1'), p2=t('cx.p2'), alt1=esc(hu('hero2.tab2')), alt2=esc(hu('hero2.tab1')),
+        strip=''.join('<span>%s</span>' % x for x in ['%d %s' % (N_LESSONS, t('facts.lessons')), '%d %s' % (N_Q, t('facts.questions')), '%d %s' % (N_TOOLS, t('facts.tools')), t('cx.s1'), t('cx.s2'), t('cx.s3')]),
+        b1=t('cx.b1'), b2=t('cx.b2'), b3=t('cx.b3'), bars=bars)
+
 def page_home():
     ld = '<script type="application/ld+json">%s</script>' % json.dumps({'@context': 'https://schema.org', '@graph': [
         {'@type': 'WebSite', 'name': 'Chartolj!', 'inLanguage': ['hu', 'en', 'de']},
@@ -221,9 +258,9 @@ def page_home():
     wl = ''.join('<div class="wl-row"><span>%s</span><span class="num" data-wl>+0,00%%</span></div>' % s for s in ['BTC/USDT', 'EUR/USD', 'XAU/USD', 'SPX'])
     tfs = ''.join('<button type="button" class="%s" data-seed="%d" data-vol="%s">%s</button>' % ('active' if t == 'H1' else '', sd, vol, t) for t, sd, vol in [('M15', 21, '1.0'), ('H1', 7, '1.5'), ('D1', 63, '2.6')])
     tabs = [('trade', 'hero2.tab1', 'app-desktop.webp', 1440, 900), ('academy', 'hero2.tab2', 'app-academy.webp', 780, 1688), ('progress', 'hero2.tab3', 'app-progress.webp', 780, 1688)]
-    h += '''<section class="hero hero-c dark"><canvas class="hero-bg" id="hero-bg" aria-hidden="true"></canvas><div class="container hero-center">
+    h += '''%(cin1)s<section class="section prodscene dark"><div class="container hero-center">
   <div class="eyebrow">%(eb)s</div>
-  <h1>%(title)s</h1>
+  <h2 class="prodscene-t">%(title)s</h2>
   <p class="lead">%(sub)s</p>
   <div class="hero-cta"><a class="btn btn-primary btn-lg" data-app href="app/index.html">%(c1)s</a><a class="btn btn-ghost btn-lg" href="markets.html">%(c2)s</a></div>
   <div class="prod" id="prod">
@@ -261,7 +298,7 @@ def page_home():
 <section class="section phones"><div class="container split"><div class="reveal"><div class="eyebrow">%(pe)s</div>%(pt)s<p class="lead" style="margin-top:12px;color:var(--c-text-2)">%(ps)s</p>
   <ul class="ticks">%(pb)s</ul><p style="margin-top:28px"><a class="btn btn-primary" data-app href="app/index.html">%(pc)s</a></p><p class="calc-note" style="margin-top:12px">%(pn)s</p></div>
   <div class="phone-row reveal"><div class="phone"><img src="assets/app-home.webp" width="780" height="1688" alt="%(a4)s" loading="lazy"></div><div class="phone up"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(a5)s" loading="lazy"></div></div></div></section>
-''' % dict(eb=tx('hero2.title') and tx('hero.eyebrow'), title=tx('hero2.title', 'span'), pl0=tx('hero2.links'), pl1=tx('hero2.l1'), pl2=tx('hero2.l2'), pl3=tx('hero2.l3'), pl4=tx('hero2.l4'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
+''' % dict(cin1=cinema(), eb=tx('hero2.eyebrow2'), title=tx('hero2.title', 'span'), pl0=tx('hero2.links'), pl1=tx('hero2.l1'), pl2=tx('hero2.l2'), pl3=tx('hero2.l3'), pl4=tx('hero2.l4'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
            tabs=''.join('<button type="button" role="tab" class="%s" data-tab="%s" aria-selected="%s">%s</button>' % ('active' if i == 0 else '', k, 'true' if i == 0 else 'false', tx(l)) for i, (k, l, *_r) in enumerate(tabs)),
            alt1=esc(hu('hero2.tab1')), alt2=esc(hu('hero2.tab2')), alt3=esc(hu('hero2.tab3')), a4=esc(hu('hero2.tab2')), a5=esc(hu('hero2.tab1')),
            nl=N_LESSONS, nq=N_Q, nt=N_TOOLS, nm=N_MODS, fl=tx('facts.lessons'), fq=tx('facts.questions'), ft=tx('facts.tools'), fm=tx('facts.modules'),
