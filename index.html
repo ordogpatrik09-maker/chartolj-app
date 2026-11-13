@@ -1607,6 +1607,13 @@
                                 <div class="text-[10px] text-slate-400">Teljes eloszlás-alapú teljesítménymutató</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('gaintopain-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-unbalanced"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Gain-to-Pain Ratio Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Nettó hozam az összesített "fájdalomhoz" (veszteséghez) viszonyítva</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('treynor-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
                             <div>
@@ -4310,6 +4317,40 @@
 
             <div id="omega-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Omega = 1 esetén a küszöb feletti és alatti "súly" pontosan egyenlő. 1 felett egyre kedvezőbb a hozam/kockázat viszony a küszöbhöz képest, 1 alatt kedvezőtlen. Ha minden hozam a küszöb felett van, a nevező 0, és az arány nem fejezhető ki véges számmal.</p>
+        </div>
+    </div>
+
+    <!-- ================= GAIN-TO-PAIN RATIO KALKULÁTOR (OKTATÁSI) =================
+         Jack Schwager (Hedge Fund Market Wizards) mutatója: a Profit
+         Factor rokona, de IDŐSZAKI HOZAM-sorozaton számolva, nem egyedi
+         trade-eken (a Profit Factort a Napló Haladó Statisztikái már
+         élő trade-eken számolják, lásd trade-journal-modal). Formula:
+         Gain-to-Pain = Σ(r_i) / Σ(|r_i|, ahol r_i < 0) — a NETTÓ (pozitív
+         ÉS negatív hozamokat is tartalmazó) összhozamot osztja az ÖSSZES
+         veszteséges időszak abszolút összegével. Minél magasabb, annál
+         kevesebb összesített "fájdalom" (veszteség) kellett az elért
+         nettó hozamhoz. ÖNÁLLÓ kalkulátor, nem épül az Omega/Sortino/
+         Sharpe kalkulátorokra, bár hasonló bemenetet (időszaki
+         hozamsorozat) vár. -->
+    <div id="gaintopain-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-scale-unbalanced text-amber-400"></i> Gain-to-Pain Ratio Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('gaintopain-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Gain-to-Pain Ratio (Jack Schwager) a Profit Factor rokona, de időszaki hozamsorozaton számolva: a NETTÓ (pozitív és negatív hozamokat is tartalmazó) összhozamot osztja az ÖSSZES veszteséges időszak abszolút összegével — megmutatja, mennyi összesített "fájdalom" (veszteség) kellett az elért eredményhez. Add meg az időszaki hozamaidat %-ban, vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="gaintopain-returns">Időszaki hozamok (%, vesszővel elválasztva)</label>
+            <textarea id="gaintopain-returns" rows="3" placeholder="pl. 3.5, -1.2, 2.8, -4.0, 1.5, 0.6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">3.5, -1.2, 2.8, -4.0, 1.5, 0.6, -2.5, 4.1, -0.9, 2.0</textarea>
+
+            <button onclick="calcGainToPainRatio()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="gaintopain-result" role="status" aria-live="polite" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ha egyetlen időszak sem volt veszteséges, a nevező 0, és az arány nem fejezhető ki véges számmal (végtelenhez tart). Minél magasabb az érték, annál kevesebb összesített veszteség kellett a nettó eredményhez — de ez NEM kockázatmentes mutató: egyetlen rendkívüli nyereséges időszak is eltorzíthatja felfelé, pont úgy, mint a Profit Factort.</p>
         </div>
     </div>
 
@@ -13940,6 +13981,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Omega Ratio Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Teljes eloszlás-alapú teljesítménymutató</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('gaintopain-modal')" data-tool-title="gain-to-pain ratio kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-unbalanced"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Gain-to-Pain Ratio Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Nettó hozam az összesített "fájdalomhoz" viszonyítva</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('treynor-modal')" data-tool-title="béta / treynor / jensen's alpha" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -25758,6 +25806,83 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <div class="flex justify-between"><span class="text-slate-400">Küszöb alatti időszakok:</span><span class="text-white">${belowCount} / ${n}</span></div>
                         <div class="flex justify-between"><span class="text-slate-400">"Nyereség-súly" / "Veszteség-súly":</span><span class="text-white">${gainSum.toFixed(2)} / ${lossSum.toFixed(2)}</span></div>
                         <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Omega Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${omega.toFixed(2)}</span></div>
+                    </div>
+                `;
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>`;
+            }
+
+            out.innerHTML = bodyHtml + verdictHtml;
+        }
+
+        // ================= GAIN-TO-PAIN RATIO KALKULÁTOR (OKTATÁSI) =================
+        // Gain-to-Pain = Σ(r_i) / Σ(|r_i|, ahol r_i < 0) — a nettó (pozitív ÉS
+        // negatív hozamokat is tartalmazó) összhozamot osztja az ÖSSZES
+        // veszteséges időszak abszolút összegével. Önálló logika, nem épül
+        // az Omega/Sortino/Sharpe kalkulátorokra.
+        function calcGainToPainRatio() {
+            const returnsEl = document.getElementById('gaintopain-returns');
+            const out = document.getElementById('gaintopain-result');
+            if (!returnsEl || !out) return;
+
+            const raw = returnsEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
+
+            if (raw.length < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott időszaki hozamot!</div>`;
+                return;
+            }
+
+            const n = raw.length;
+            const netSum = raw.reduce((acc, r) => acc + r, 0);
+            const painSum = raw.reduce((acc, r) => acc + (r < 0 ? Math.abs(r) : 0), 0);
+            const winCount = raw.filter(r => r > 0).length;
+            const lossCount = raw.filter(r => r < 0).length;
+
+            // JAVÍTÁS: rendkívül szélsőséges bemenet mellett a nettó összhozam
+            // vagy az összesített "fájdalom" önmagában, a végső arány
+            // kiszámítása ELŐTT is túlcsordulhat Infinity-re — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál (pl.
+            // Omega Ratio).
+            if (!Number.isFinite(netSum) || !Number.isFinite(painSum)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamsorozat túl szélsőséges érvényes Gain-to-Pain Ratio számításához!</div>`;
+                return;
+            }
+
+            let bodyHtml, verdictHtml;
+            if (painSum === 0) {
+                bodyHtml = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Nyereséges időszakok:</span><span class="text-white">${winCount} / ${n}</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Összesített "fájdalom" (veszteség):</span><span class="text-white">0.00%</span></div>
+                    </div>
+                `;
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">✅ Egyetlen időszak sem volt veszteséges — a nevező 0, így a Gain-to-Pain Ratio nem fejezhető ki véges számmal (végtelenhez tart).</p>`;
+            } else {
+                const gpr = netSum / painSum;
+                if (!Number.isFinite(gpr)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamsorozat túl szélsőséges érvényes Gain-to-Pain Ratio számításához!</div>`;
+                    return;
+                }
+                let colorClass, verdict;
+                if (gpr < 0) {
+                    colorClass = 'text-neon-red';
+                    verdict = '🚨 Negatív Gain-to-Pain Ratio: a nettó összhozam negatív — a veszteséges időszakok összesen felülírták a nyereséges időszakok hozamát.';
+                } else if (gpr < 1) {
+                    colorClass = 'text-amber-400';
+                    verdict = '⚠️ Gain-to-Pain Ratio 1 alatt: a nettó hozam pozitív, de az elért eredményhez viszonylag sok összesített "fájdalom" (veszteség) tartozott.';
+                } else if (gpr < 2) {
+                    colorClass = 'text-neon-cyan';
+                    verdict = 'Jó Gain-to-Pain Ratio — a nettó hozam jelentősen nagyobb, mint az összesített veszteséges időszakok "fájdalma".';
+                } else {
+                    colorClass = 'text-neon-green';
+                    verdict = '✅ Kiemelkedően magas Gain-to-Pain Ratio — a veszteséges időszakok összesített "fájdalma" messze a nettó hozam alatt marad.';
+                }
+                bodyHtml = `
+                    <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                        <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Nyereséges / veszteséges időszakok:</span><span class="text-white">${winCount} / ${lossCount}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Nettó összhozam / "Fájdalom":</span><span class="text-white">${netSum.toFixed(2)}% / ${painSum.toFixed(2)}%</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Gain-to-Pain Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${gpr.toFixed(2)}</span></div>
                     </div>
                 `;
                 verdictHtml = `<p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>`;
@@ -51580,7 +51705,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
