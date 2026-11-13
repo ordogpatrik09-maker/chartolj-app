@@ -218,7 +218,7 @@ def cinema():
     t = tx
     chips = ''.join('<span class="gchip" data-row><b>%s</b><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span></span>' % (n, sd) for n, sd in (('TSLA', 61), ('BTC', 5), ('EUR/USD', 12)))
     qs = ''.join('<li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>%s</li>' % t('cx.q%d' % i) for i in (1, 2, 3))
-    bars = ''.join('<i style="--h:%d;--d:%d;--c:%s"></i>' % (h_, (i * 37) % 11, 'a' if i % 3 == 0 else ('b' if i % 3 == 1 else 'c')) for i, h_ in enumerate([22,34,18,12,9,26,14,6,5,3,38,52,60,24,70,34,48,92,66,44,30,18,40,58,26,34,60,36,20,12,24,16,8,6]))
+    bars = ''.join('<i data-c="%s" style="--h:%d;--d:%d"></i>' % ('a' if i % 3 == 0 else ('b' if i % 3 == 1 else 'c'), h_, (i * 37) % 11) for i, h_ in enumerate([22,34,18,12,9,26,14,6,5,3,38,52,60,24,70,34,48,92,66,44,30,18,40,58,26,34,60,36,20,12,24,16,8,6]))
     return '''<section class="hero hero-x dark" id="top"><div class="hx-glow" aria-hidden="true"></div><div class="container hx-grid">
   <div class="hx-copy">
     <h1><span class="dim">%(l1)s</span><span class="bright">%(l2)s</span></h1>
@@ -244,7 +244,7 @@ def cinema():
   <div class="pscene"><div class="phone ps-a" data-par="-0.04"><img src="assets/app-home.webp" width="780" height="1688" alt="%(alt1)s" loading="lazy"></div><div class="phone ps-b" data-par="0.05"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(alt2)s" loading="lazy"></div></div>
   <div class="strip" aria-hidden="true"><div class="strip-track">%(strip)s%(strip)s</div></div></section>
 
-<section class="scene scene-bars dark"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></section>
+<section class="scene scene-bars dark" id="sbars"><div class="sb-pin"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></div></section>
 ''' % dict(l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'),
         g1=t('cx.g1'), g2=t('cx.g2'), gsub=t('cx.gsub'), p1=t('cx.p1'), p2=t('cx.p2'), alt1=esc(hu('hero2.tab2')), alt2=esc(hu('hero2.tab1')),
         strip=''.join('<span>%s</span>' % x for x in ['%d %s' % (N_LESSONS, t('facts.lessons')), '%d %s' % (N_Q, t('facts.questions')), '%d %s' % (N_TOOLS, t('facts.tools')), t('cx.s1'), t('cx.s2'), t('cx.s3')]),

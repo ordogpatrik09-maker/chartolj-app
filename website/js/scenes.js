@@ -3,13 +3,14 @@
   'use strict';
   const doc = document, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   /* bars + lit lines */
-  const sc = doc.querySelector('.scene-bars');
-  if (sc) { new IntersectionObserver((e, o) => { if (e[0].isIntersecting) { sc.classList.add('in'); o.disconnect(); } }, { threshold: .15 }).observe(sc); }
-  const lines = [...doc.querySelectorAll('#litlines p')];
-  if (lines.length) {
-    if (reduce) lines.forEach(l => l.classList.add('on'));
-    else { const upd = () => { const mid = innerHeight * .55; let idx = -1; lines.forEach((l, i) => { if (l.getBoundingClientRect().top < mid) idx = i; }); lines.forEach((l, i) => { l.classList.toggle('on', i === idx || (idx === lines.length - 1)); l.classList.toggle('past', i < idx && idx !== lines.length - 1); }); };
-      addEventListener('scroll', upd, { passive: true }); upd(); }
+  const sc = doc.querySelector('.scene-bars'), lines = [...doc.querySelectorAll('#litlines p')], bars = sc ? [...sc.querySelectorAll('.bars i')] : [];
+  if (sc && reduce) lines.forEach(l => l.classList.add('on'));
+  else if (sc) {
+    const upd = () => { const r = sc.getBoundingClientRect(), total = r.height - innerHeight; const p = Math.max(0, Math.min(1, -r.top / total));
+      const idx = p < .12 ? -1 : p < .38 ? 0 : p < .62 ? 1 : 2;
+      lines.forEach((l, i) => { l.classList.toggle('on', i === idx); l.classList.toggle('past', i < idx); });
+      const n = bars.length; bars.forEach((b, i) => { const wave = (Math.sin(i * .9 + p * 7) * .5 + .5) * .35; const grow = Math.max(0, Math.min(1, (p * 1.25 - (i / n) * .35) * 1.6)); b.style.transform = 'scaleY(' + (grow * (.65 + wave)).toFixed(3) + ')'; }); };
+    addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); upd();
   }
   /* dotted globe */
   const cv = doc.getElementById('globe'); if (!cv) return;

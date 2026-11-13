@@ -743,7 +743,15 @@ body { background: #030406; }
 .litlines p { font-size: clamp(2rem, .8rem + 4vw, 4rem); color: rgba(245,247,250,.18); transition: color .6s var(--ease); margin: .1em 0; } .litlines p.on { color: #fff; } .litlines p.past { color: rgba(245,247,250,.42); }
 .bars { position: relative; height: clamp(300px, 36vw, 480px); margin-top: 3rem; display: flex; align-items: flex-end; gap: clamp(6px, 1.4vw, 20px); padding: 0 clamp(10px, 4vw, 60px); -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent); mask-image: linear-gradient(to bottom, #000 40%, transparent); }
 .bars i { flex: 1; border-radius: 6px 6px 0 0; height: calc(var(--h) * 1%); background: linear-gradient(to top, transparent, rgba(255,255,255,.55)); transform-origin: bottom; transform: scaleY(0); transition: transform 1.2s var(--ease); transition-delay: calc(var(--d) * 60ms); }
-.bars i[style*="--c:a"] { background: linear-gradient(to top, transparent, #00F5A0); } .bars i[style*="--c:b"] { background: linear-gradient(to top, transparent, #9B5CFF); }
+.bars i[data-c="a"] { background: linear-gradient(to top, transparent, #00F5A0); } .bars i[data-c="b"] { background: linear-gradient(to top, transparent, #9B5CFF); }
 .scene-bars.in .bars i { transform: scaleY(1); animation: breathe 5s ease-in-out calc(var(--d) * -.5s) infinite alternate 1.4s; } @keyframes breathe { to { transform: scaleY(.82); } }
 .prodscene { background: #000; }
 @media (prefers-reduced-motion: reduce) { .hx-glow, .strip-track, .g-toggle i, .scene-bars.in .bars i { animation: none; } .g-line { animation: none; stroke-dashoffset: 0; } .bars i { transform: none; } }
+
+/* v12b: pinned, scroll-driven statement + bars */
+.scene-bars { padding: 0; min-height: 0; height: 320vh; overflow: visible; }
+.sb-pin { position: sticky; top: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; padding-top: clamp(5rem, 14vh, 9rem); }
+.scene-bars .bars { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; height: 62vh; }
+.scene-bars .bars i { transition: none; transform: scaleY(0); animation: none !important; will-change: transform; }
+.scene-bars .bars i[data-c="a"] { background: linear-gradient(to top, transparent, #00F5A0); }
+@media (prefers-reduced-motion: reduce) { .scene-bars { height: auto; } .sb-pin { position: relative; height: auto; padding-bottom: 40vh; } .scene-bars .bars { height: 40vh; } .scene-bars .bars i { transform: none; } }
