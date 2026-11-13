@@ -276,12 +276,6 @@ def page_home():
     <p class="hero-note"><span class="badge badge-sim">%(simlbl)s</span>%(shot)s</p>
     <ul class="trustrow">%(tr)s</ul>
   </div></div></section>
-<section class="section" style="padding-top:0"><div class="container"><div class="facts reveal">
-  <div class="fact"><b class="num" data-count="%(nl)d">%(nl)d</b>%(fl)s</div>
-  <div class="fact"><b class="num" data-count="%(nq)d">%(nq)d</b>%(fq)s</div>
-  <div class="fact"><b class="num" data-count="%(nt)d">%(nt)d</b>%(ft)s</div>
-  <div class="fact"><b class="num" data-count="%(nm)d">%(nm)d</b>%(fm)s</div></div></div></section>
-
 <section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(he)s</div>%(ht)s</div>
   <div class="steps reveal">%(hsteps)s</div></div></section>
 
