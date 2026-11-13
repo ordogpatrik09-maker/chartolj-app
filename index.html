@@ -17043,7 +17043,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function createPriceAlert() {
             const symbol = document.getElementById('alert-asset-select').value;
             const price = parseFloat(document.getElementById('alert-price-input').value);
-            if (!symbol || isNaN(price) || price <= 0) {
+            // JAVÍTÁS: a korábbi isNaN(price) ellenőrzés nem fogta ki a double
+            // tartományát túllépő bemenetet (pl. billentyűzettel beírt "1e400") —
+            // a parseFloat() ott Infinity-t ad vissza, ami nem NaN és nem <=0,
+            // így simán átment a validáción. Az elmentett Infinity ár a
+            // savePriceAlerts()-ben hívott JSON.stringify()-on át NÉMÁN null-lá
+            // alakult volna (a JSON formátum nem ismeri az Infinity-t), ami a
+            // checkPriceAlerts()-ben "price >= null" (ami "price >= 0"-ként
+            // viselkedik) miatt a riasztást az első élő árfolyam-frissítésnél
+            // azonnal, hibásan kiváltotta volna. Most Number.isFinite()-ot
+            // használ, konzisztensen az app többi kalkulátorának validációs
+            // mintájával.
+            if (!symbol || !Number.isFinite(price) || price <= 0) {
                 showNotification('Adj meg egy érvényes célárat.');
                 return;
             }
