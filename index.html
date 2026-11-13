@@ -26371,6 +26371,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let smoothedPDM = plusDM.slice(0, period).reduce((a, b) => a + b, 0);
             let smoothedMDM = minusDM.slice(0, period).reduce((a, b) => a + b, 0);
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony/Záró bemenetnél a
+            // kezdő TR/+DM/-DM ablak-összege (vagy a lenti ciklusban a Wilder-simítás
+            // "smoothedX - smoothedX/period + x[i]" lépése) túlcsordulhat Infinity-re. Ha
+            // ez megtörténik, a KÖVETKEZŐ simítási lépés "Infinity - Infinity/period" már
+            // NaN-t ad — és mivel a pushDiDx()-ben a "sTR > 0 ? ... : 0" ág NaN-ra HAMISAN
+            // kiértékelve 0-t ad (a NaN sosem nagyobb nullánál), a hiba NÉMÁN egy hamisan
+            // "tiszta" 0.00 ADX/+DI/-DI eredménnyé (és "Gyenge vagy nincs trend" verdikttel)
+            // álcázza magát, látható NaN/Infinity nélkül — ez rosszabb, mint egy nyílt NaN,
+            // mert nincs rajta a projekt piros hibajelzése. Ezért itt, a forrásnál kell
+            // elkapni, mielőtt a maszkoló ternary elnyelné.
+            if (!Number.isFinite(smoothedTR) || !Number.isFinite(smoothedPDM) || !Number.isFinite(smoothedMDM)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a TR/+DM/-DM összegzése túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const plusDIList = [], minusDIList = [], dxList = [];
             function pushDiDx(sTR, sPDM, sMDM) {
                 const pdi = sTR > 0 ? 100 * sPDM / sTR : 0;
@@ -26384,6 +26399,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 smoothedTR = smoothedTR - smoothedTR / period + tr[i];
                 smoothedPDM = smoothedPDM - smoothedPDM / period + plusDM[i];
                 smoothedMDM = smoothedMDM - smoothedMDM / period + minusDM[i];
+                if (!Number.isFinite(smoothedTR) || !Number.isFinite(smoothedPDM) || !Number.isFinite(smoothedMDM)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a TR/+DM/-DM Wilder-simítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                    return;
+                }
                 pushDiDx(smoothedTR, smoothedPDM, smoothedMDM);
             }
 
@@ -26399,6 +26418,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const lastPlusDI = plusDIList[plusDIList.length - 1];
             const lastMinusDI = minusDIList[minusDIList.length - 1];
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony/Záró bemenetnél a
+            // smoothedTR/smoothedPDM/smoothedMDM Wilder-simítás, vagy a belőlük képzett
+            // "100 * sPDM / sTR" (a 100-szoros szorzás MIELŐTT osztanánk) köztes szorzat
+            // túlcsordulhat Infinity-re, amiből a +DI/-DI/DX, végül az ADX is Infinity/NaN
+            // lenne — a NaN minden "adx < 25"/"adx < 50" összehasonlítás hamis, ezért a
+            // verdikt-logika néma módon az utolsó else ágra esne, és egy hamisan
+            // magabiztos ("Nagyon erős trend") zöld jelzést mutatna NaN mellett. Ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál (pl. MFI, CMF, TMF).
+            if (!Number.isFinite(adx) || !Number.isFinite(lastPlusDI) || !Number.isFinite(lastMinusDI)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — az ADX/+DI/-DI számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (adx < 25) { colorClass = 'text-slate-400'; verdict = 'Gyenge vagy nincs trend — a piac oldalazó jellegű lehet, ilyenkor a sáv-kereskedési (range) stratégiák működhetnek jobban, mint a trendkövetők.'; }
@@ -26479,6 +26511,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let smoothedPDM = plusDM.slice(0, period).reduce((a, b) => a + b, 0);
             let smoothedMDM = minusDM.slice(0, period).reduce((a, b) => a + b, 0);
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony/Záró bemenetnél a
+            // kezdő TR/+DM/-DM ablak-összege (vagy a lenti ciklusban a Wilder-simítás
+            // "smoothedX - smoothedX/period + x[i]" lépése) túlcsordulhat Infinity-re. Ha
+            // ez megtörténik, a KÖVETKEZŐ simítási lépés "Infinity - Infinity/period" már
+            // NaN-t ad — és mivel a pushDx()-ben a "sTR > 0 ? ... : 0" ág NaN-ra HAMISAN
+            // kiértékelve 0-t ad (a NaN sosem nagyobb nullánál), a hiba NÉMÁN egy hamisan
+            // "tiszta" 100.00 CZI/0.00 ADX eredménnyé (és "Erős Oldalazás" verdikttel)
+            // álcázza magát, látható NaN/Infinity nélkül — ez rosszabb, mint egy nyílt NaN,
+            // mert nincs rajta a projekt piros hibajelzése. Ezért itt, a forrásnál kell
+            // elkapni, mielőtt a maszkoló ternary elnyelné. Ugyanaz a hibaosztály és
+            // javítás, mint a szomszédos ADX kalkulátornál (azonos tr/DM-formula).
+            if (!Number.isFinite(smoothedTR) || !Number.isFinite(smoothedPDM) || !Number.isFinite(smoothedMDM)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a TR/+DM/-DM összegzése túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const dxList = [];
             function pushDx(sTR, sPDM, sMDM) {
                 const pdi = sTR > 0 ? 100 * sPDM / sTR : 0;
@@ -26492,6 +26540,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 smoothedTR = smoothedTR - smoothedTR / period + tr[i];
                 smoothedPDM = smoothedPDM - smoothedPDM / period + plusDM[i];
                 smoothedMDM = smoothedMDM - smoothedMDM / period + minusDM[i];
+                if (!Number.isFinite(smoothedTR) || !Number.isFinite(smoothedPDM) || !Number.isFinite(smoothedMDM)) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a TR/+DM/-DM Wilder-simítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                    return;
+                }
                 pushDx(smoothedTR, smoothedPDM, smoothedMDM);
             }
 
@@ -26506,6 +26558,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const czi = Math.max(0, Math.min(100, 100 - adx));
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony/Záró bemenetnél a
+            // smoothedTR/smoothedPDM/smoothedMDM Wilder-simítás, vagy a belőlük képzett
+            // "100 * sPDM / sTR" (a 100-szoros szorzás MIELŐTT osztanánk) köztes szorzat
+            // túlcsordulhat Infinity-re, amiből a DX, végül az ADX is Infinity/NaN lenne —
+            // a Math.max/Math.min NaN-nel NaN-t ad, a NaN pedig minden "adx < 25"/"< 50"
+            // összehasonlítást hamissá tesz, ezért a verdikt-logika néma módon az utolsó
+            // (zöld, "Erős Trend Zóna") else ágra esne NaN CZI/ADX mellett. Ugyanaz a
+            // hibaosztály, mint a szomszédos ADX kalkulátornál (azonos tr/DM-formula).
+            if (!Number.isFinite(adx) || !Number.isFinite(czi)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Chop Zone Index/ADX számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             let colorClass, zoneLabel, verdict;
             if (adx < 25) {
@@ -27393,6 +27458,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const finalOBV = obv[obv.length - 1];
             const priceChange = candles[candles.length - 1].close - candles[0].close;
             const obvChange = obv[obv.length - 1] - obv[0];
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Volumen bemenetnél az OBV kumulatív
+            // összege (az obv[] tömb minden lépésben +/- volument ad hozzá) túlcsordulhat
+            // Infinity-re, vagy vegyes irányú szélsőséges lépéseknél Infinity-Infinity=NaN-re
+            // — ekkor a kijelzett érték literal "Infinity"/"NaN" szöveg lenne, és a Math.sign
+            // Infinity-re +/-1-et, NaN-ra pedig NaN-t ad, ami a hasDivergence feltételt
+            // (priceSign !== obvSign) NaN esetén hamisan igazra értékelné ki (NaN sosem
+            // egyenlő semmivel, önmagával sem) — egy hamis divergencia-riasztást mutatva.
+            // Ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(finalOBV) || !Number.isFinite(priceChange) || !Number.isFinite(obvChange)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak/volumenek túl szélsőségesek — az OBV kumulatív összege túlcsordul. Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
             const priceSign = Math.sign(priceChange);
             const obvSign = Math.sign(obvChange);
             const hasDivergence = priceSign !== 0 && obvSign !== 0 && priceSign !== obvSign;
@@ -28632,6 +28711,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lastMinus = viMinusList[viMinusList.length - 1];
             const prevPlus = viPlusList[viPlusList.length - 2];
             const prevMinus = viMinusList[viMinusList.length - 2];
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Magas/Alacsony/Záró bemenetnél a
+            // sumPlus/sumMinus/sumTR ablak-összegzés túlcsordulhat Infinity-re, amiből a
+            // VI+/VI- (sumPlus/sumTR stb.) Infinity/Infinity = NaN lenne — a NaN minden
+            // "<="/">" összehasonlítást hamissá tesz, ezért a bullishCross/bearishCross
+            // néma módon hamis maradna, és a "dominant" ág egy hamisan magabiztos zöld/
+            // piros verdiktet mutatna NaN VI+/VI- mellett. Ugyanaz a hibaosztály, mint a
+            // szomszédos ADX/Chop Zone Index kalkulátoroknál (rokon tr-formula).
+            if (![lastPlus, lastMinus, prevPlus, prevMinus].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott gyertyák túl szélsőségesek — a Vortex Indikátor (VI+/VI-) számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
 
             const bullishCross = prevPlus <= prevMinus && lastPlus > lastMinus;
             const bearishCross = prevPlus >= prevMinus && lastPlus < lastMinus;
@@ -35897,6 +35988,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const latestRawForce = rawForce[rawForce.length - 1];
+
+            // JAVÍTÁS: szélsőséges, de egyenként véges Záróár/Volumen bemenetnél a nyers
+            // Force Index (árváltozás × volumen) vagy az EMA-simítás (smoothedForce)
+            // túlcsordulhat Infinity-re, amiből vegyes irányú szélsőséges bemenet esetén
+            // Infinity-Infinity=NaN is lehet — a NaN/Infinity minden ">"/"<" összehasonlítás
+            // hamis, ezért a verdikt-logika néma módon az utolsó ("Nulla közeli, kiegyensúlyozott")
+            // ágra esne egy valójában szélsőséges, túlcsordult érték mellett. Ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(smoothedForce) || !Number.isFinite(latestRawForce)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak/volumenek túl szélsőségesek — a Force Index számítása túlcsordul. Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (smoothedForce > 0) {
