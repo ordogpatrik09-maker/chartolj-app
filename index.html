@@ -27012,11 +27012,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 sumMFV += mfm * c.volume;
                 sumVolume += c.volume;
             }
+            // Minden mező egyedileg véges (Number.isFinite), de a ciklusban összeadott
+            // sumMFV/sumVolume szélsőséges volumenek mellett (pl. több, egyenként is
+            // közel Number.MAX_VALUE nagyságrendű volumen összeadva) túlcsordulhat
+            // Infinity-be, amiből Infinity/Infinity = NaN adódna — explicit ellenőrzés,
+            // hogy ne egy megtévesztő, hamisan magabiztos verdikt jelenjen meg NaN mellett
+            // (ugyanaz a hiba-mintázat, mint a korábban javított Money Flow Index-nél).
+            if (!Number.isFinite(sumMFV) || !Number.isFinite(sumVolume)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak/volumenek túl szélsőségesek — a pénzáramlás-összegek túlcsordulnak. Adj meg reálisabb nagyságrendű árakat/volumeneket!</div>`;
+                return;
+            }
             if (sumVolume <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott periódusban a volumen összege nulla vagy negatív — a CMF nem számolható!</div>`;
                 return;
             }
             const cmf = sumMFV / sumVolume;
+            if (!Number.isFinite(cmf)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott bemenetek kombinációja olyan extrém, hogy a CMF nem fejezhető ki véges számmal — adj meg reálisabb nagyságrendű árakat/volumeneket!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (cmf > 0.1) { colorClass = 'text-neon-green'; verdict = 'Pozitív, viszonylag erős CMF — a periódusban a vételi nyomás dominált, a záróár jellemzően a napi tartomány felső részén volt.'; }
@@ -28526,11 +28540,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const emaAdv = emaSmaSeeded(adv);
             const emaVol = emaSmaSeeded(vols);
+            // Minden mező egyedileg véges (Number.isFinite), de az EMA-simítás szélsőséges
+            // volumenek mellett (az adv/vols tagokon keresztül) túlcsordulhat Infinity-be,
+            // amiből Infinity/Infinity = NaN adódna — explicit ellenőrzés, hogy ne egy
+            // megtévesztő, hamisan magabiztos verdikt jelenjen meg NaN mellett (ugyanaz a
+            // hiba-mintázat, mint a szomszédos Chaikin Money Flow és a korábban javított
+            // Money Flow Index kalkulátoroknál).
+            if (!Number.isFinite(emaAdv) || !Number.isFinite(emaVol)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak/volumenek túl szélsőségesek — a simított pénzáramlás-értékek túlcsordulnak. Adj meg reálisabb nagyságrendű árakat/volumeneket!</div>`;
+                return;
+            }
             if (emaVol === 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A simított volumen nulla — a Twiggs Money Flow nem számolható!</div>`;
                 return;
             }
             const tmf = emaAdv / emaVol;
+            if (!Number.isFinite(tmf)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott bemenetek kombinációja olyan extrém, hogy a TMF nem fejezhető ki véges számmal — adj meg reálisabb nagyságrendű árakat/volumeneket!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (tmf > 0.1) { colorClass = 'text-neon-green'; verdict = 'Pozitív, viszonylag erős TMF — a periódusban a vételi nyomás dominált, a simított jelzés szerint is.'; }
