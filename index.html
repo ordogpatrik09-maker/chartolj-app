@@ -19047,8 +19047,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function runStrategyBuilderBacktest() {
             const out = document.getElementById('sb-result');
             const startEquity = parseFloat(document.getElementById('sb-equity').value);
-            if (!startEquity || startEquity <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív kezdő tőkét!</div>`;
+            // JAVÍTÁS: a korábbi `!startEquity || startEquity <= 0` minta a bevett
+            // isNaN/truthy-hibaosztályt hordozta (ld. korábbi startEquity-javítások 5
+            // optimalizáló kalkulátorban) — egy túlcsordult bemenet (pl. "1e309") Infinity-t
+            // ad, ami truthy és nem <=0, így átment a validáción, majd a backtest-motorba
+            // Infinity equityként került be, végül "NaN%" hozamot jelenítve meg.
+            if (!Number.isFinite(startEquity) || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, pozitív kezdő tőkét!</div>`;
                 return;
             }
 
@@ -19675,8 +19680,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const exitZ = parseFloat(document.getElementById('pairs-exit-z').value);
             const startEquity = parseFloat(document.getElementById('pairs-equity').value);
 
-            if (!lookback || lookback < 5 || !Number.isFinite(entryZ) || entryZ <= 0 || !Number.isFinite(exitZ) || exitZ < 0 || exitZ >= entryZ || !startEquity || startEquity <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes értékeket — a kilépő Z-score legyen kisebb, mint a belépő, és minden érték pozitív!</div>`;
+            // JAVÍTÁS: a startEquity itt is a `!startEquity || startEquity <= 0` bevett
+            // hibaosztályt hordozta — egy túlcsordult bemenet (pl. "1e309") Infinity-t ad,
+            // ami truthy és nem <=0, így átment a validáción, majd "NaN%" hozamot adott
+            // volna (konzisztensen a korábbi startEquity-javításokkal).
+            if (!lookback || lookback < 5 || !Number.isFinite(entryZ) || entryZ <= 0 || !Number.isFinite(exitZ) || exitZ < 0 || exitZ >= entryZ || !Number.isFinite(startEquity) || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes értékeket — a kilépő Z-score legyen kisebb, mint a belépő, és minden érték véges és pozitív!</div>`;
                 return;
             }
             if (pairsSampleData.pricesA.length < lookback + 10) {
@@ -19832,8 +19841,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const strategy = document.getElementById('backtest-strategy').value;
             const startEquity = parseFloat(document.getElementById('backtest-equity').value);
 
-            if (!startEquity || startEquity <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív kezdő tőkét!</div>`;
+            // JAVÍTÁS: a korábbi `!startEquity || startEquity <= 0` minta a bevett
+            // isNaN/truthy-hibaosztályt hordozta — egy túlcsordult bemenet (pl. "1e309")
+            // Infinity-t ad, ami truthy és nem <=0, így átment a validáción, majd
+            // Infinity equityként terjedt a backtest motorba és a window.lastBacktestResult-
+            // ba (innen a Bootstrap / Blokk-Bootstrap Monte Carlo kalkulátorokba is), végül
+            // "NaN%" hozamot jelenítve meg valódi hibaüzenet helyett.
+            if (!Number.isFinite(startEquity) || startEquity <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, pozitív kezdő tőkét!</div>`;
                 return;
             }
 
