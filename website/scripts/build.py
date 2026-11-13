@@ -45,6 +45,7 @@ def attrs(**kw):
         a = a.replace('_', '-'); used_keys.add(k); out.append('%s="%s"' % (a, esc(hu(k)))); pairs.append('%s:%s' % (a, k))
     return ' '.join(out) + ' data-i18n-attr="%s"' % ';'.join(pairs)
 
+MARKETS = json.load(open(os.path.join(ROOT, 'data/markets.json'), encoding='utf-8'))
 academy = json.load(open(os.path.join(ROOT, 'data/academy.json'), encoding='utf-8'))
 tools = json.load(open(os.path.join(ROOT, 'data/tools.json'), encoding='utf-8'))
 N_LESSONS = sum(m['lessons'] for m in academy); N_Q = sum(m['questions'] for m in academy)
@@ -261,7 +262,7 @@ def page_home():
            ocards=''.join('<a class="card prodcard" href="%s"><div class="pc-img"><img src="assets/%s" alt="" loading="lazy"></div><h3>%s</h3><p>%s</p><span class="link-arrow">%s</span></a>' % (hr, im, tx('one.%d.t' % n), tx('one.%d.d' % n), tx('one.link')) for n, hr, im in [(1, 'markets.html', 'app-trade.webp'), (2, 'academy.html', 'app-academy.webp'), (3, 'academy.html', 'app-progress.webp')]),
            be=tx('band.eyebrow'), bt=tx('band.title', 'h2'), bs=tx('band.sub'), bc=tx('band.cta'), bsimlbl=esc(hu('common.simlabel')),
            tick=''.join('<div class="tick" data-row><b>%s</b><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span><em class="badge badge-sim">DEMO</em></div>' % (n_, sd) for n_, sd in [('BTC/USDT', 5), ('EUR/USD', 12), ('XAU/USD', 19), ('SPX', 26), ('NVDA', 33), ('ETH/USDT', 41), ('GBP/USD', 48), ('OIL', 55)]),
-           cats=''.join('<a class="catcard" href="markets.html"><span class="icon-box">%s</span><b>%s</b></a>' % (icon(i), tx('market.cat.' + c)) for c, i in [('forex', 'globe'), ('stocks', 'building'), ('indices', 'layers'), ('commodities', 'coin'), ('crypto', 'trend'), ('etf', 'pie')]),
+           cats=''.join('<a class="catcard" href="markets.html"><span class="icon-box">%s</span><b>%s</b><ul>%s</ul><span class="catmore">%s &rarr;</span></a>' % (icon(ic), tx('market.cat.' + c), ''.join('<li>%s</li>' % esc(m['name']) for m in [m for m in MARKETS if m['cat'] == c][:4]), tx('mkcard.more', 'span', '', {'n': max(0, len([m for m in MARKETS if m['cat'] == c]) - 4)})) for c, ic in [('forex', 'globe'), ('stocks', 'building'), ('indices', 'layers'), ('commodities', 'coin'), ('crypto', 'trend'), ('etf', 'pie')]),
            se=tx('story.eyebrow'), st=tx('story.title', 'h2'), simgs=''.join('<img class="%s" data-scr="%d" src="assets/app-%s.webp" width="780" height="1688" alt="%s" loading="lazy">' % ('on' if i == 0 else '', i, k, esc(hu('story.%d.t' % (i + 1)))) for i, k in enumerate(['home', 'trade', 'academy', 'progress'])), ssteps=''.join('<div class="story-step%s" data-step="%d"><span class="step-n">%d</span><h3>%s</h3><p>%s</p></div>' % (' on' if i == 0 else '', i, i + 1, tx('story.%d.t' % (i + 1)), tx('story.%d.d' % (i + 1))) for i in range(4)), pe=tx('phone.eyebrow'), pt=tx('phone.title', 'h2'), ps=tx('phone.sub'), pb=''.join('<li>%s</li>' % tx('phone.b%d' % i) for i in (1, 2, 3, 4)), pc=tx('phone.cta'), pn=tx('phone.note'),
            re=tx('risk2.eyebrow'), rt=tx('risk2.title', 'h2'), rs=tx('risk2.sub'), rc=tx('risk2.cta'), rcalc=calc_card('pos', 'r'))
 
@@ -329,6 +330,14 @@ def page_home():
 ''' % (tx('nav.learning'), tx('academy.title', 'h2'), tx('academy.paths.d', 'p'),
        ''.join('<div class="path-col"><span class="level l%d">%s</span>%s</div>' % (n, tx('level.%d' % n), ''.join('<div class="course"><h3>%s</h3><div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span></div></div>' % (tx('mod.%d.n' % m), academy[m]['lessons'], tx('course.lessons'), academy[m]['questions'], tx('course.quiz')) for m in ms)) for n, ms in lv), tx('academy.cta'))
 
+    # risk education row
+    redu = [('stop-loss', 'M4,34 L22,26 L38,30 L56,16 L72,22 L90,8', 'stop'), ('tokeattetel', 'M4,36 L90,36', 'lev'), ('poziciomeret', 'M4,30 L30,30 L30,12 L56,12 L56,22 L90,22', 'size')]
+    h += '<section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div></div></section>' % (
+        tx('redu.eyebrow'), tx('redu.title', 'h2'), tx('redu.sub', 'p'),
+        ''.join('<a class="card redu" href="learn-%s.html"><svg class="redu-art %s" viewBox="0 0 94 44" aria-hidden="true">%s</svg><h3>%s</h3><p>%s</p><span class="link-arrow">%s</span></a>' % (sl, k,
+            {'stop': '<line class="r-stop" x1="4" y1="30" x2="90" y2="30"/><path class="r-line" pathLength="1" d="M4,14 L22,10 L38,18 L56,26 L72,32 L90,40"/>',
+             'lev': '<rect class="r-b1" x="14" y="24" width="20" height="14" rx="3"/><rect class="r-b2" x="52" y="6" width="20" height="32" rx="3"/>',
+             'size': '<path class="r-line" pathLength="1" d="M6,36 L30,28 L48,32 L72,14 L90,8"/><circle class="r-dot" cx="90" cy="8" r="3"/>'}[k], tx('art.%s.t' % sl), tx('art.%s.d' % sl), tx('learn.read')) for sl, _p, k in redu))
     # pricing teaser
     h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p style="text-align:center;margin-top:32px"><a class="btn btn-primary" href="premium.html">%s</a></p></div></section>' % (
         tx('price.eyebrow'), tx('price.title', 'h2'), tx('price.sub', 'p'),

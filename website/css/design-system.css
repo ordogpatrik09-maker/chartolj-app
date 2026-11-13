@@ -609,3 +609,19 @@ html, body { overflow-x: clip; } .drawer:not(.open) { display: none; } @media (m
 .hero-c h1 { background: none; -webkit-text-fill-color: initial; color: #fff; }
 .hero-c h1 .w { background: linear-gradient(180deg, #fff 45%, #AEBBCB); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; padding-bottom: .08em; }
 .tick .down, .mk-card .down, .wl-row .down { color: #FF5CA8; }
+
+/* ---------- v8: market category cards + risk art ---------- */
+.catgrid { grid-template-columns: repeat(3, 1fr); gap: var(--s-4); }
+.catcard { align-items: flex-start; text-align: left; gap: 10px; padding: var(--s-5); }
+.catcard b { font-size: var(--fs-lg); } .catcard ul { display: grid; gap: 6px; margin: 4px 0 8px; font-weight: 500; font-size: var(--fs-sm); color: #A5B0BE; }
+.catcard li::before { content: "·"; color: var(--c-green); margin-right: 8px; font-weight: 800; }
+.catmore { margin-top: auto; font-weight: 700; font-size: var(--fs-sm); color: #00F5A0; }
+@media (max-width: 720px) { .catgrid { grid-template-columns: 1fr; } }
+.redu { display: flex; flex-direction: column; gap: 10px; }
+.redu-art { width: 100%; height: 120px; padding: 14px; border-radius: var(--r-lg); background: linear-gradient(180deg, rgba(127,0,255,.16), rgba(0,245,160,.04)); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.redu-art .r-line { stroke: #00F5A0; stroke-dasharray: 1; stroke-dashoffset: 1; } .redu-art .r-stop { stroke: #FF5CA8; stroke-dasharray: 4 3; stroke-width: 1.5; }
+.redu-art .r-b1 { fill: rgba(165,92,255,.8); stroke: none; } .redu-art .r-b2 { fill: rgba(0,245,160,.85); stroke: none; transform-origin: 62px 38px; transform: scaleY(.25); }
+.redu-art .r-dot { fill: #00F5A0; stroke: none; opacity: 0; }
+.in .redu-art .r-line, .redu.in .redu-art .r-line { animation: draw 1.6s var(--ease) .3s forwards; } .in .redu-art .r-b2 { animation: grow 1.2s var(--ease) .3s forwards; } .in .redu-art .r-dot { animation: pop .4s 1.6s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } } @keyframes grow { to { transform: scaleY(1); } } @keyframes pop { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .redu-art .r-line { stroke-dashoffset: 0; } .redu-art .r-b2 { transform: none; } .redu-art .r-dot { opacity: 1; } }

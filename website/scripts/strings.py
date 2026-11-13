@@ -556,3 +556,9 @@ s('chip.bal', 'Szimulált egyenleg', 'Simulated balance', 'Simuliertes Guthaben'
 s('chip.pos', 'Nyitott szimulált pozíció', 'Open simulated position', 'Offene simulierte Position')
 s('chip.xp', 'Napi sorozat', 'Daily streak', 'Tägliche Serie')
 s('chip.days', 'nap', 'days', 'Tage')
+
+# ---------------------------------------------------------------- v8 market cards + risk education row
+s('mkcard.more', '+{n} piac', '+{n} markets', '+{n} Märkte')
+s('redu.eyebrow', 'Kockázatkezelés', 'Risk management', 'Risikomanagement')
+s('redu.title', 'Tanuld meg a védelmet, mielőtt kereskedsz', 'Learn protection before you trade', 'Lerne den Schutz, bevor du handelst')
+s('redu.sub', 'Három alapfogalom, amely nélkül a nyereség sem tartós. Olvasd el röviden, majd próbáld ki szimulált egyenleggel.', 'Three basics without which profits are not lasting either. Read them briefly, then try them with a simulated balance.', 'Drei Grundlagen, ohne die auch Gewinne nicht dauerhaft sind. Lies sie kurz und probiere sie dann mit simuliertem Guthaben aus.')
