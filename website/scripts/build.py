@@ -31,7 +31,7 @@ with open(os.path.join(ROOT, 'js/locales.js'), 'w', encoding='utf-8') as f:
 import hashlib
 def _ver():
     h = hashlib.md5()
-    for f in ('css/design-system.css', 'js/site.js', 'js/fx.js', 'js/scenes.js', 'js/charts.js', 'js/tools-math.js', 'js/config.js', 'js/markets.js', 'js/locales.js'):
+    for f in ('css/design-system.css', 'js/site.js', 'js/fx.js', 'js/scenes.js', 'js/scenario.js', 'js/overview.js', 'js/charts.js', 'js/tools-math.js', 'js/config.js', 'js/markets.js', 'js/locales.js'):
         try: h.update(open(os.path.join(ROOT, f), 'rb').read())
         except OSError: pass
     return h.hexdigest()[:8]
@@ -164,6 +164,8 @@ def footer():
 <script src="js/site.js?v=%(ver)s"></script>
 <script src="js/fx.js?v=%(ver)s" defer></script>
 <script src="js/scenes.js?v=%(ver)s" defer></script>
+<script src="js/scenario.js?v=%(ver)s" defer></script>
+<script src="js/overview.js?v=%(ver)s" defer></script>
 ''' % dict(ver=VER, helpspan=tx('help.label'), stk=tx('sticky.cta'), tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), fl=tx('footer.lang'), draft=tx('footer.draft'),
            c1=col('footer.product', [('index.html#platform', 'nav.platform'), ('markets.html', 'nav.markets'), ('academy.html', 'nav.learning'), ('tools.html', 'nav.tools'), ('learn.html', 'nav.learn'), ('premium.html', 'nav.pricing')]),
            c2=col('footer.company', [('about.html', 'nav.about'), ('faq.html', 'footer.faq'), ('contact.html', 'footer.contact')]),
@@ -217,14 +219,7 @@ def cinema():
   </div>
   <p class="hx-plat">%(plat)s</p></div></section>
 
-<section class="scene scene-globe dark"><div class="container"><h2 class="two"><span class="dim">%(g1)s</span><span class="bright">%(g2)s</span></h2><p class="scene-sub">%(gsub)s</p></div>
-  <div class="globe-wrap"><canvas id="globe" aria-hidden="true"></canvas></div></section>
-
-<section class="scene scene-phones dark"><div class="container"><h2 class="two"><span class="dim">%(p1)s</span><span class="bright">%(p2)s</span></h2></div>
-  <div class="pscene"><div class="phone ps-a" data-par="-0.04"><img src="assets/app-home.webp" width="780" height="1688" alt="%(alt1)s" loading="lazy"></div><div class="phone ps-b" data-par="0.05"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(alt2)s" loading="lazy"></div></div>
-  <div class="strip" aria-hidden="true"><div class="strip-track">%(strip)s%(strip)s</div></div></section>
-
-<section class="scene scene-bars dark" id="sbars"><div class="sb-pin"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></div></section>
+@@BARS@@<section class="scene scene-bars dark" id="sbars"><div class="sb-pin"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></div></section>
 ''' % dict(l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'), trust=t('cx.trust'), tt=t('cx.tt'), fb=t('cx.fb'), fr=t('cx.fr'),
         g1=t('cx.g1'), g2=t('cx.g2'), gsub=t('cx.gsub'), p1=t('cx.p1'), p2=t('cx.p2'), alt1=esc(hu('hero2.tab2')), alt2=esc(hu('hero2.tab1')),
         strip=''.join('<span>%s</span>' % x for x in ['%d %s' % (N_LESSONS, t('facts.lessons')), '%d %s' % (N_Q, t('facts.questions')), '%d %s' % (N_TOOLS, t('facts.tools')), t('cx.s1'), t('cx.s2'), t('cx.s3')]),
@@ -233,16 +228,40 @@ def cinema():
 def page_home():
     ld = '<script type="application/ld+json">%s</script>' % json.dumps({'@context': 'https://schema.org', '@graph': [
         {'@type': 'WebSite', 'name': 'Chartolj!', 'inLanguage': ['hu', 'en', 'de']},
-        {'@type': 'Organization', 'name': 'Chartolj!', 'description': hu('footer.tagline')}]}, ensure_ascii=False)
+        {'@type': 'Organization', 'name': 'Chartolj!', 'description': hu('footer.tagline')},
+        {'@type': 'FAQPage', 'mainEntity': [{'@type': 'Question', 'name': hu('hf.q%d' % i), 'acceptedAnswer': {'@type': 'Answer', 'text': hu('hf.a%d' % i, a=N_LESSONS, b=N_Q)}} for i in range(1, 11)]}]}, ensure_ascii=False)
     h = head('home', ld) + header('home')
-    wl = ''.join('<div class="wl-row"><span>%s</span><span class="num" data-wl>+0,00%%</span></div>' % s for s in ['BTC/USDT', 'EUR/USD', 'XAU/USD', 'SPX'])
-    tfs = ''.join('<button type="button" class="%s" data-seed="%d" data-vol="%s">%s</button>' % ('active' if t == 'H1' else '', sd, vol, t) for t, sd, vol in [('M15', 21, '1.0'), ('H1', 7, '1.5'), ('D1', 63, '2.6')])
-    tabs = [('trade', 'hero2.tab1', 'app-desktop.webp', 1440, 900), ('academy', 'hero2.tab2', 'app-academy.webp', 780, 1688), ('progress', 'hero2.tab3', 'app-progress.webp', 780, 1688)]
-    h += '''%(cin1)s<section class="section prodscene dark"><div class="container hero-center">
+    hero, bars = cinema().split('@@BARS@@')
+    h += hero
+    # ---- market overview (DEMO)
+    inst = [('BTC/USD', 5, 67000, 0), ('ETH/USD', 12, 3400, 0), ('EUR/USD', 19, 1.08, 4), ('GBP/USD', 26, 1.27, 4), ('XAU/USD', 33, 2350, 0), ('NASDAQ 100', 41, 18200, 0), ('S&P 500', 47, 5300, 0), ('NVIDIA', 54, 120, 2), ('Tesla', 61, 180, 2)]
+    cards = ''.join('<article class="mo-card" data-mo data-seed="%d" data-base="%s" data-dec="%d" aria-busy="true"><div class="mo-h"><b>%s</b><em class="badge badge-sim">DEMO</em></div><div class="mo-p num" data-p>%s</div><div class="mo-r"><span class="num" data-pct>–</span><span class="mo-ind" data-ind></span></div><svg class="mk-spark" data-spark preserveAspectRatio="none" aria-hidden="true"></svg></article>' % (sd, b, d, n, tx('mo.loading')) for n, sd, b, d in inst)
+    h += '''<section class="section mo dark" id="piacok"><div class="container"><div class="band-head reveal"><div><div class="eyebrow">%(e)s</div>%(t)s<p>%(s)s</p></div><a class="btn btn-ghost" href="markets.html">%(m)s</a></div>
+  <div class="mo-grid reveal" id="mo-grid" data-up="%(up)s" data-down="%(dn)s" data-unavail="%(un)s">%(cards)s</div>
+  <p class="calc-note" id="mo-asof" data-asof="%(asof)s" style="margin-top:16px"></p></div></section>
+''' % dict(e=tx('mo.eyebrow'), t=tx('mo.title', 'h2'), s=tx('mo.sub'), m=tx('mo.more'), cards=cards, up=esc(hu('mo.up')), dn=esc(hu('mo.down')), un=esc(hu('mo.unavail')), asof='mo.asof')
+    # ---- try-it scenario
+    h += '''<section class="section scn dark" id="probald"><div class="container">
+  <div class="section-head center reveal"><div class="eyebrow">%(e)s</div><h2 class="two"><span>%(h1)s</span><span>%(h2)s</span></h2>%(sub)s</div>
+  <div class="scn-card reveal" id="scn">
+    <div class="scn-top"><b id="scn-name"></b><span class="badge badge-sim">%(demo)s</span></div>
+    <p class="scn-ctx" id="scn-ctx"></p>
+    <div class="scn-chart"><canvas id="scn-canvas" role="img" aria-label="%(demo2)s"></canvas></div>
+    <div class="scn-pick" role="group" aria-label="%(pickA)s"><span class="scn-q">%(pick)s</span>
+      <button type="button" class="btn scn-b long" data-pick="long" aria-pressed="false">%(l)s</button>
+      <button type="button" class="btn scn-b short" data-pick="short" aria-pressed="false">%(s)s</button>
+      <button type="button" class="btn scn-b wait" data-pick="wait" aria-pressed="false">%(w)s</button></div>
+    <p class="calc-note scn-hint">%(hint)s</p>
+    <div class="scn-res" id="scn-res" aria-live="polite" hidden></div>
+    <div class="scn-foot"><span class="calc-note">%(rule)s</span><span class="scn-actions"><button type="button" class="btn btn-ghost btn-sm" data-scn-again>%(again)s</button><button type="button" class="btn btn-ghost btn-sm" data-scn-next>%(next)s</button><a class="btn btn-primary btn-sm" data-app href="app/index.html">%(cta)s</a></span></div>
+  </div></div></section>
+''' % dict(e=tx('sc.eyebrow'), h1=tx('sc.h1'), h2=tx('sc.h2'), sub=tx('sc.sub', 'p'), demo=tx('sc.demo'), demo2=esc(hu('sc.demo')), pick=tx('sc.pick'), pickA=esc(hu('sc.pick')), l=tx('sc.long'), s=tx('sc.short'), w=tx('sc.wait'), hint=tx('sc.hint'), rule=tx('sc.rule'), again=tx('sc.again'), next=tx('sc.next'), cta=tx('sc.cta'))
+    # ---- ecosystem: terminal showcase + 4 modules
+    tabs = [('trade', 'hero2.tab1'), ('academy', 'hero2.tab2'), ('progress', 'hero2.tab3')]
+    h += '''<section class="section prodscene dark" id="platform"><div class="container hero-center">
   <div class="eyebrow">%(eb)s</div>
-  <h2 class="prodscene-t">%(title)s</h2>
+  <h2 class="two"><span>%(h1)s</span><span>%(h2)s</span></h2>
   <p class="lead">%(sub)s</p>
-  <div class="hero-cta"><a class="btn btn-primary btn-lg" data-app href="app/index.html">%(c1)s</a><a class="btn btn-ghost btn-lg" href="markets.html">%(c2)s</a></div>
   <div class="prod" id="prod">
     <div class="prod-tabs" role="tablist">%(tabs)s</div>
     <div class="prod-stage">
@@ -254,121 +273,63 @@ def page_home():
       <div class="phone pane" data-pane="progress"><img src="assets/app-progress.webp" width="780" height="1688" alt="%(alt3)s" loading="lazy"></div>
     </div>
     <p class="hero-note"><span class="badge badge-sim">%(simlbl)s</span>%(shot)s</p>
-    <ul class="trustrow">%(tr)s</ul>
-  </div></div></section>
-<section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(he)s</div>%(ht)s</div>
-  <div class="steps reveal">%(hsteps)s</div></div></section>
-
-<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(oe)s</div>%(ot)s%(os)s</div>
-  <div class="grid grid-3 reveal">%(ocards)s</div></div></section>
-
-<section class="band dark"><div class="container"><div class="band-head reveal"><div><div class="eyebrow">%(be)s</div>%(bt)s<p>%(bs)s</p></div><a class="btn btn-ghost" href="markets.html">%(bc)s</a></div>
-  <div class="ticker reveal" aria-label="%(bsimlbl)s"><div class="ticker-track">%(tick)s%(tick)s</div></div>
-  <div class="catgrid reveal">%(cats)s</div></div></section>
-
-<section class="story" id="story"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(se)s</div>%(st)s</div>
-  <div class="story-grid"><div class="story-device"><div class="phone story-phone">%(simgs)s</div></div><div class="story-steps">%(ssteps)s</div></div></div></section>
-
-<section class="section phones"><div class="container split"><div class="reveal"><div class="eyebrow">%(pe)s</div>%(pt)s<p class="lead" style="margin-top:12px;color:var(--c-text-2)">%(ps)s</p>
-  <ul class="ticks">%(pb)s</ul><p style="margin-top:28px"><a class="btn btn-primary" data-app href="app/index.html">%(pc)s</a></p><p class="calc-note" style="margin-top:12px">%(pn)s</p></div>
-  <div class="phone-row reveal"><div class="phone"><img src="assets/app-home.webp" width="780" height="1688" alt="%(a4)s" loading="lazy"></div><div class="phone up"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(a5)s" loading="lazy"></div></div></div></section>
-''' % dict(cin1=cinema(), eb=tx('hero2.eyebrow2'), title=tx('hero2.title', 'span'), pl0=tx('hero2.links'), pl1=tx('hero2.l1'), pl2=tx('hero2.l2'), pl3=tx('hero2.l3'), pl4=tx('hero2.l4'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
-           tabs=''.join('<button type="button" role="tab" class="%s" data-tab="%s" aria-selected="%s">%s</button>' % ('active' if i == 0 else '', k, 'true' if i == 0 else 'false', tx(l)) for i, (k, l, *_r) in enumerate(tabs)),
-           alt1=esc(hu('hero2.tab1')), alt2=esc(hu('hero2.tab2')), alt3=esc(hu('hero2.tab3')), a4=esc(hu('hero2.tab2')), a5=esc(hu('hero2.tab1')),
-           nl=N_LESSONS, nq=N_Q, nt=N_TOOLS, nm=N_MODS, fl=tx('facts.lessons'), fq=tx('facts.questions'), ft=tx('facts.tools'), fm=tx('facts.modules'),
-           he=tx('how.eyebrow'), ht=tx('how.title', 'h2'), hsteps=''.join('<div class="step"><span class="step-n">%d</span><h3>%s</h3><p>%s</p></div>' % (n, tx('how.%d.t' % n), tx('how.%d.d' % n)) for n in (1, 2, 3)), oe=tx('one.eyebrow'), ot=tx('one.title', 'h2'), os=tx('one.sub', 'p'),
-           ocards=''.join('<a class="card prodcard" href="%s"><div class="pc-img"><img src="assets/%s" alt="" loading="lazy"></div><h3>%s</h3><p>%s</p><span class="link-arrow">%s</span></a>' % (hr, im, tx('one.%d.t' % n), tx('one.%d.d' % n), tx('one.link')) for n, hr, im in [(1, 'markets.html', 'app-trade.webp'), (2, 'academy.html', 'app-academy.webp'), (3, 'academy.html', 'app-progress.webp')]),
-           be=tx('band.eyebrow'), bt=tx('band.title', 'h2'), bs=tx('band.sub'), bc=tx('band.cta'), bsimlbl=esc(hu('common.simlabel')),
-           tick=''.join('<div class="tick" data-row><b>%s</b><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span><em class="badge badge-sim">DEMO</em></div>' % (n_, sd) for n_, sd in [('BTC/USDT', 5), ('EUR/USD', 12), ('XAU/USD', 19), ('SPX', 26), ('NVDA', 33), ('ETH/USDT', 41), ('GBP/USD', 48), ('OIL', 55)]),
-           cats=''.join('<a class="catcard" href="markets.html"><span class="icon-box">%s</span><b>%s</b><ul>%s</ul><span class="catmore">%s &rarr;</span></a>' % (icon(ic), tx('market.cat.' + c), ''.join('<li>%s</li>' % esc(m['name']) for m in [m for m in MARKETS if m['cat'] == c][:4]), tx('mkcard.more', 'span', '', {'n': max(0, len([m for m in MARKETS if m['cat'] == c]) - 4)})) for c, ic in [('forex', 'globe'), ('stocks', 'building'), ('indices', 'layers'), ('commodities', 'coin'), ('crypto', 'trend'), ('etf', 'pie')]),
-           se=tx('story.eyebrow'), st=tx('story.title', 'h2'), simgs=''.join('<img class="%s" data-scr="%d" src="assets/app-%s.webp" width="780" height="1688" alt="%s" loading="lazy">' % ('on' if i == 0 else '', i, k, esc(hu('story.%d.t' % (i + 1)))) for i, k in enumerate(['home', 'trade', 'academy', 'progress'])), ssteps=''.join('<div class="story-step%s" data-step="%d"><span class="step-n">%d</span><h3>%s</h3><p>%s</p></div>' % (' on' if i == 0 else '', i, i + 1, tx('story.%d.t' % (i + 1)), tx('story.%d.d' % (i + 1))) for i in range(4)), pe=tx('phone.eyebrow'), pt=tx('phone.title', 'h2'), ps=tx('phone.sub'), pb=''.join('<li>%s</li>' % tx('phone.b%d' % i) for i in (1, 2, 3, 4)), pc=tx('phone.cta'), pn=tx('phone.note'))
-
-    ticks = lambda *ks: '<ul class="ticks">%s</ul>' % ''.join('<li>%s</li>' % tx(k) for k in ks)
-    simrow = lambda name, seed: '<div class="mini-row" data-row><span class="num" style="color:var(--c-text)">%s</span><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span></div>' % (name, seed)
-    pillbtn = lambda attr, label, pressed: '<button type="button" class="chip btn-sm" %s aria-pressed="%s">%s</button>' % (attr, pressed, label)
-    h += '''<section class="section section--alt" id="platform"><div class="container">
-  <div class="section-head reveal"><div class="eyebrow">%(eb)s</div>%(title)s%(sub)s</div>
-
-  <div class="showcase split reveal"><div>
-      <div class="icon-box">%(i1)s</div>%(f1t)s<p class="lead" style="margin-top:12px">%(f1d)s</p>
-      <div style="height:20px"></div><div class="icon-box purple">%(i2)s</div>%(f2t)s<p class="lead" style="margin-top:12px">%(f2d)s</p></div>
-    <div class="panel dark"><div class="panel-title"><span>%(simlbl)s</span><span class="badge badge-sim">%(simbadge)s</span></div>
-      <div class="toggles" role="group">%(tf)s%(modes)s</div>
-      <div class="toggles" role="group">%(inds)s</div>
-      <div class="detail-chart" style="height:340px"><canvas id="showcase-chart" role="img" aria-label="%(simlbl)s"></canvas></div></div></div>
-
-  <div class="showcase split reverse reveal"><div>
-      <div class="icon-box">%(i3)s</div>%(f3t)s<p class="lead" style="margin-top:12px">%(f3d)s</p>%(f3b)s<p style="margin-top:24px"><a class="link-arrow" href="markets.html">%(f3c)s</a></p></div>
-    <div class="panel dark"><div class="panel-title"><span>%(wlt)s</span><span class="badge badge-sim">%(demo)s</span></div>%(rows)s<p class="calc-note" style="margin-top:12px">%(simlbl)s</p></div></div>
-
-  <div class="showcase split reveal"><div>
-      <div class="icon-box">%(i5)s</div>%(f5t)s<p class="lead" style="margin-top:12px">%(f5d)s</p>
-      <div style="height:20px"></div><div class="icon-box purple">%(i4)s</div>%(f4t)s<p class="lead" style="margin-top:12px">%(f4d)s</p></div>
-    <div>%(calc)s</div></div>
-
-  <div class="showcase reveal"><div class="bento">
-    <div class="panel w3"><div class="icon-box">%(i6)s</div><h3>%(f6t)s</h3><p style="color:var(--c-text-2);margin:8px 0 16px">%(f6d)s</p>
-      <div class="chips" style="gap:6px">%(tcats)s</div><p style="margin-top:20px"><a class="link-arrow" href="tools.html">%(f6c)s</a></p></div>
-    <div class="panel w3"><div class="panel-title"><span>%(f7t)s</span><span class="badge badge-sim">%(ex)s</span></div>
+  </div>
+  <div class="eco reveal">
+    <article class="eco-m m-term"><div class="icon-box">%(i1)s</div><h3>%(m1)s</h3><p>%(m1d)s</p>
+      <svg class="eco-art" viewBox="0 0 200 70" preserveAspectRatio="none" aria-hidden="true"><path class="e-line" pathLength="1" d="M4,52 L30,44 L52,48 L78,28 L104,34 L130,16 L156,22 L196,6"/><g class="e-c"><rect x="26" y="36" width="6" height="14" rx="1"/><rect x="74" y="22" width="6" height="14" rx="1"/><rect x="126" y="10" width="6" height="14" rx="1"/></g></svg>
+      <a class="link-arrow" data-app href="app/index.html">%(open)s</a></article>
+    <article class="eco-m m-acad"><div class="icon-box">%(i2)s</div><h3>%(m2)s</h3><p>%(m2d)s</p>
+      <div class="rings"><div class="ring-wrap"><div class="ring" style="--p:62"><b>62%%</b></div>%(rl)s</div><div class="ring-wrap"><div class="ring" style="--p:48"><b>48%%</b></div>%(rq)s</div></div>
+      <a class="link-arrow" href="academy.html">%(f10c)s</a></article>
+    <article class="eco-m m-calc"><div class="icon-box">%(i3)s</div><h3>%(m3)s</h3><p>%(m3d)s</p>%(calc)s<a class="link-arrow" href="tools.html">%(f6c)s</a></article>
+    <article class="eco-m m-jour"><div class="icon-box">%(i4)s</div><h3>%(m4)s</h3><p>%(m4d)s</p>
+      <div class="panel-title"><span>%(f7t)s</span><span class="badge badge-sim">%(ex)s</span></div>
       <div class="mini-row"><span>%(j1)s</span><span>%(j1v)s</span></div><div class="mini-row"><span>%(j2)s</span><span>%(j2v)s</span></div>
-      <div class="mini-row"><span>%(j3)s</span><span class="num up">+1,8R</span></div><div class="mini-row"><span>%(j4)s</span><span style="text-align:right;max-width:60%%">%(j4v)s</span></div>
-      <p style="color:var(--c-text-2);font-size:var(--fs-sm);margin-top:12px">%(f7d)s</p></div></div></div>
-
-  <div class="showcase reveal"><div class="bento">
-    <div class="panel w3"><div class="icon-box purple">%(i8)s</div><h3>%(f8t)s</h3><p style="color:var(--c-text-2);margin:8px 0 16px">%(f8d)s</p>
-      <div class="notice info"><span><strong>%(ht)s</strong> · %(hd)s</span></div></div>
-    <div class="panel w3"><div class="icon-box">%(i9)s</div><h3>%(f9t)s</h3><p style="color:var(--c-text-2);margin:8px 0 16px">%(f9d)s</p>
-      <div class="panel-title"><span>%(alloc)s</span><span class="badge badge-sim">%(ex)s</span></div>
-      <div class="pf-bar" style="height:10px"><i style="width:48%%;background:var(--c-green)"></i><i style="width:32%%;background:var(--c-purple-soft)"></i><i style="width:20%%;background:#6EC1FF"></i></div>
-      <div class="chips" style="margin-top:12px"><span class="badge">%(po)s</span><span class="badge">%(ph)s</span></div></div></div></div>
-
-  <div class="showcase split reverse reveal"><div>
-      <div class="icon-box purple">%(i10)s</div>%(f10t)s<p class="lead" style="margin-top:12px">%(f10d)s</p><p style="margin-top:24px"><a class="link-arrow" href="academy.html">%(f10c)s</a></p></div>
-    <div class="panel"><div class="panel-title"><span>%(f10s)s</span><span class="badge badge-sim">%(ex)s</span></div>
-      <div class="rings"><div class="ring-wrap"><div class="ring" style="--p:62"><b>62%%</b></div>%(rl)s</div><div class="ring-wrap"><div class="ring" style="--p:48"><b>48%%</b></div>%(rq)s</div><div class="ring-wrap"><div class="ring" style="--p:100"><b>7</b></div>%(rs)s</div></div></div></div>
-</div></section>
-''' % dict(eb=tx('platform.eyebrow'), title=tx('platform.title', 'h2'), sub=tx('platform.sub', 'p'), simlbl=tx('show.sim'), simbadge=tx('common.simlabel'), ex=tx('show.example'), demo=tx('badge.demo'),
-           i1=icon('chart'), i2=icon('sliders'), i3=icon('star'), i4=icon('shield'), i5=icon('scale'), i6=icon('calc'), i8=icon('history'), i9=icon('pie'), i10=icon('cap'),
-           f1t=tx('f1.t', 'h3'), f1d=tx('f1.d'), f2t=tx('f2.t', 'h3'), f2d=tx('f2.d'), f3t=tx('f3.t', 'h3'), f3d=tx('f3.d'), f3b=ticks('f3.b1', 'f3.b2', 'f3.b3'), f3c=tx('f3.cta'),
-           f4t=tx('f4.t', 'h3'), f4d=tx('f4.d'), f5t=tx('f5.t', 'h3'), f5d=tx('f5.d'), f6t=tx('f6.t'), f6d=tx('f6.d'), f6c=tx('f6.cta'), f7t=tx('f7.t'), f7d=tx('f7.d'),
-           f8t=tx('f8.t'), f8d=tx('f8.d'), f9t=tx('f9.t'), f9d=tx('f9.d'), f10t=tx('f10.t', 'h3'), f10s=tx('f10.t'), f10d=tx('f10.d'), f10c=tx('f10.cta'),
-           tf=''.join(pillbtn('data-tf="%s"' % k, l, 'true' if k == 'h1' else 'false') for k, l in [('m15', 'M15'), ('h1', 'H1'), ('d1', 'D1')]),
-           modes=pillbtn('data-mode="candles"', tx('chart.candles'), 'true') + pillbtn('data-mode="line"', tx('chart.line'), 'false'),
-           inds=''.join(pillbtn('data-ind="%s"' % k, l, 'true' if k == 'ema' else 'false') for k, l in [('ema', 'EMA 20/50'), ('bb', 'Bollinger'), ('rsi', 'RSI 14'), ('macd', 'MACD'), ('vol', 'Volume')]),
-           wlt=tx('term.watch'), rows=simrow('BTC/USDT', 5) + simrow('EUR/USD', 12) + simrow('XAU/USD', 19) + simrow('SPX', 26) + simrow('NVDA', 33),
-           calc=calc_card('pos', 'h'), tcats=''.join('<span class="badge">%s</span>' % tx('tools.cat.' + c) for c in TOOLCATS),
-           j1=tx('journal.setup'), j1v=tx('journal.setupv'), j2=tx('journal.reason'), j2v=tx('journal.reasonv'), j3=tx('journal.result'), j4=tx('journal.lesson'), j4v=tx('journal.lessonv'),
-           ht=tx('hist.title'), hd=tx('hist.d'), alloc=tx('pf.alloc'), po=tx('pf.open'), ph=tx('pf.hist'), rl=tx('ac.lessons'), rq=tx('ac.quiz'), rs=tx('ac.streak'))
-
-    # academy teaser
+      <div class="mini-row"><span>%(j3)s</span><span class="num up">+1,8R</span></div><div class="mini-row"><span>%(j4)s</span><span style="text-align:right;max-width:60%%">%(j4v)s</span></div></article>
+    <article class="eco-m m-perf"><div class="icon-box">%(i5)s</div><h3>%(m5)s</h3><p>%(m5d)s</p>
+      <div class="perf"><div><small>%(p1)s</small><b class="num up">58%%</b></div><div><small>%(p2)s</small><b class="num">1 : 1,9</b></div><div><small>%(p3)s</small><b class="num">1,64</b></div><div><small>%(p4)s</small><b class="num down">-6,2%%</b></div></div>
+      <svg class="eco-art wide" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden="true"><path class="e-line" pathLength="1" d="M0,50 L40,44 L80,48 L120,34 L160,38 L200,24 L240,30 L280,16 L320,22 L360,10 L400,14"/></svg>
+      <p class="calc-note"><span class="badge badge-sim">DEMO</span> %(pdemo)s</p></article>
+  </div></div></section>
+''' % dict(eb=tx('nav.platform'), h1=tx('eco.h1'), h2=tx('eco.h2'), sub=tx('eco.sub'), tabs=''.join('<button type="button" role="tab" class="%s" data-tab="%s" aria-selected="%s">%s</button>' % ('active' if i == 0 else '', k, 'true' if i == 0 else 'false', tx(l)) for i, (k, l) in enumerate(tabs)),
+        c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), alt1=esc(hu('hero2.tab1')), alt2=esc(hu('hero2.tab2')), alt3=esc(hu('hero2.tab3')), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
+        i1=icon('chart'), i2=icon('cap'), i3=icon('calc'), i4=icon('history'), i5=icon('pie'), m1=tx('eco.m1', 'span'), m1d=tx('eco.m1d'), m2=tx('eco.m2', 'span'), m2d=tx('eco.m2d', 'span', '', {'a': N_LESSONS, 'b': N_Q}),
+        m3=tx('eco.m3', 'span'), m3d=tx('eco.m3d'), m4=tx('eco.m4', 'span'), m4d=tx('eco.m4d'), m5=tx('eco.m5', 'span'), m5d=tx('eco.m5d'), open=tx('eco.open'), f10c=tx('f10.cta'), f6c=tx('f6.cta'), calc=calc_card('pos', 'h'),
+        f7t=tx('f7.t'), ex=tx('show.example'), j1=tx('journal.setup'), j1v=tx('journal.setupv'), j2=tx('journal.reason'), j2v=tx('journal.reasonv'), j3=tx('journal.result'), j4=tx('journal.lesson'), j4v=tx('journal.lessonv'),
+        rl=tx('ac.lessons'), rq=tx('ac.quiz'), p1=tx('eco.perf.wr'), p2=tx('eco.perf.rr'), p3=tx('eco.perf.pf'), p4=tx('eco.perf.dd'), pdemo=tx('eco.perf.demo'))
+    # ---- growth / academy preview
     lv = [(1, [0, 2]), (2, [1, 3]), (3, [4, 5, 6])]
-    h += '''<section class="section section--alt"><div class="container"><div class="section-head reveal"><div class="eyebrow">%s</div>%s%s</div>
-  <div class="path reveal">%s</div><p style="margin-top:32px"><a class="btn btn-primary" href="academy.html">%s</a></p></div></section>
-''' % (tx('nav.learning'), tx('academy.title', 'h2'), tx('academy.paths.d', 'p'),
-       ''.join('<div class="path-col"><span class="level l%d">%s</span>%s</div>' % (n, tx('level.%d' % n), ''.join('<div class="course"><h3>%s</h3><div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span></div></div>' % (tx('mod.%d.n' % m), academy[m]['lessons'], tx('course.lessons'), academy[m]['questions'], tx('course.quiz')) for m in ms)) for n, ms in lv), tx('academy.cta'))
-
-    # calm vs pressure
-    h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="calm reveal"><div class="calm-card bad"><svg viewBox="0 0 200 90" aria-hidden="true"><path class="c-line" pathLength="1" d="M4,40 L20,18 L34,62 L48,10 L64,74 L80,26 L96,80 L112,30 L128,84 L144,40 L160,86 L176,50 L196,84"/></svg><h3>%s</h3><p>%s</p></div><div class="calm-card good"><svg viewBox="0 0 200 90" aria-hidden="true"><line class="c-tp" x1="4" y1="14" x2="196" y2="14"/><line class="c-sl" x1="4" y1="76" x2="196" y2="76"/><path class="c-line" pathLength="1" d="M4,60 C40,56 60,62 90,46 S150,30 196,16"/></svg><h3>%s</h3><p>%s</p></div></div></div></section>' % (
-        tx('calm.eyebrow'), tx('calm.title', 'h2'), tx('calm.sub', 'p'), tx('calm.a.t'), tx('calm.a.d'), tx('calm.b.t'), tx('calm.b.d'))
-    # risk education row
-    redu = [('stop-loss', 'M4,34 L22,26 L38,30 L56,16 L72,22 L90,8', 'stop'), ('tokeattetel', 'M4,36 L90,36', 'lev'), ('poziciomeret', 'M4,30 L30,30 L30,12 L56,12 L56,22 L90,22', 'size')]
-    h += '<section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div></div></section>' % (
-        tx('redu.eyebrow'), tx('redu.title', 'h2'), tx('redu.sub', 'p'),
-        ''.join('<a class="card redu" href="learn-%s.html"><svg class="redu-art %s" viewBox="0 0 94 44" aria-hidden="true">%s</svg><h3>%s</h3><p>%s</p><span class="link-arrow">%s</span></a>' % (sl, k,
-            {'stop': '<line class="r-stop" x1="4" y1="30" x2="90" y2="30"/><path class="r-line" pathLength="1" d="M4,14 L22,10 L38,18 L56,26 L72,32 L90,40"/>',
-             'lev': '<rect class="r-b1" x="14" y="24" width="20" height="14" rx="3"/><rect class="r-b2" x="52" y="6" width="20" height="32" rx="3"/>',
-             'size': '<path class="r-line" pathLength="1" d="M6,36 L30,28 L48,32 L72,14 L90,8"/><circle class="r-dot" cx="90" cy="8" r="3"/>'}[k], tx('art.%s.t' % sl), tx('art.%s.d' % sl), tx('learn.read')) for sl, _p, k in redu))
-    # pricing teaser
-    h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p style="text-align:center;margin-top:32px"><a class="btn btn-primary" href="premium.html">%s</a></p></div></section>' % (
+    gpath = ''.join('<div class="path-col"><span class="level l%d">%s</span>%s</div>' % (n, tx('level.%d' % n), ''.join('<div class="course"><h3>%s</h3><div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span></div></div>' % (tx('mod.%d.n' % m), academy[m]['lessons'], tx('course.lessons'), academy[m]['questions'], tx('course.quiz')) for m in ms)) for n, ms in lv)
+    h += '''<section class="section section--alt" id="akademia-elo"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(e)s</div><h2 class="two"><span>%(g)s</span></h2><p>%(sub)s</p></div>
+  <div class="path reveal">%(path)s</div>
+  <div class="gr reveal">
+    <div class="gr-c"><div class="icon-box">%(i1)s</div><h3>%(xp)s</h3><p>%(xpd)s</p><div class="gr-lv"><span class="level l1">%(lv1)s</span><i><b style="width:62%%"></b></i><span class="level l3">%(lv3)s</span></div></div>
+    <div class="gr-c"><div class="icon-box">%(i2)s</div><h3>%(bd)s</h3><p>%(bdd)s</p><div class="gr-badges" aria-hidden="true"><span>1</span><span>7</span><span>%(nl)s</span></div></div>
+    <div class="gr-c gr-quiz" id="grq"><h3>%(qt)s</h3><p class="gr-qq">%(q)s</p>
+      <button type="button" class="gr-opt" data-ok="1">%(o1)s</button><button type="button" class="gr-opt">%(o2)s</button><button type="button" class="gr-opt">%(o3)s</button>
+      <p class="gr-fb" aria-live="polite" data-ok-t="%(ok)s" data-no-t="%(no)s"></p></div>
+  </div><p style="margin-top:32px;text-align:center"><a class="btn btn-primary" href="academy.html">%(cta)s</a></p></div></section>
+''' % dict(e=tx('nav.learning'), g=tx('gr.h1'), sub=tx('gr.sub'), path=gpath, i1=icon('star'), i2=icon('shield'), xp=tx('gr.xp'), xpd=tx('gr.xpd'), lv1=tx('level.1'), lv3=tx('level.3'), bd=tx('gr.badge'), bdd=tx('gr.badged'), nl=N_LESSONS, qt=tx('gr.quiz'), q=tx('gr.q'), o1=tx('gr.q1'), o2=tx('gr.q2'), o3=tx('gr.q3'), ok=esc(hu('gr.ok')), no=esc(hu('gr.no')), cta=tx('gr.cta'))
+    # ---- AI mentor (as it exists in the app)
+    h += '''<section class="section"><div class="container split"><div class="reveal"><div class="eyebrow">%(e)s</div>%(t)s<p class="lead" style="margin-top:12px;color:var(--c-text-2)">%(s)s</p></div>
+  <div class="ai-chat reveal"><div class="ai-m u">%(u)s</div><div class="ai-m a">%(a)s</div><p class="calc-note"><span class="badge badge-sim">%(ex)s</span> %(exd)s</p></div></div></section>
+''' % dict(e=tx('ai.eyebrow'), t=tx('ai.title', 'h2'), s=tx('ai.sub'), u=tx('ai.u'), a=tx('ai.a'), ex=tx('show.example'), exd=tx('ai.ex'))
+    # ---- statement bridge
+    h += '@@BARS@@'.replace('@@BARS@@', bars)
+    # ---- pricing teaser
+    h += '<section class="section section--alt" id="arazas"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p style="text-align:center;margin-top:32px"><a class="btn btn-primary" href="premium.html">%s</a></p></div></section>' % (
         tx('price.eyebrow'), tx('price.title', 'h2'), tx('price.sub', 'p'),
         ''.join('<div class="card"><h3>%s</h3><p style="color:var(--c-text-2);margin-top:8px">%s</p></div>' % (tx(a_), tx(b_)) for a_, b_ in [('plan.free', 'plan.free.d'), ('plan.month', 'plan.month.d'), ('plan.year', 'plan.year.d')]), tx('price.cta'))
-    # trust
+    # ---- trust
     h += '<section class="section"><div class="container"><div class="section-head reveal"><div class="eyebrow">%s</div>%s</div><div class="grid grid-3">%s</div></div></section>' % (
         tx('trust.eyebrow'), tx('trust.title', 'h2'), ''.join('<div class="card reveal"><div class="icon-box">%s</div>%s%s</div>' % (icon(i), tx('trust.%d.t' % n, 'h3'), tx('trust.%d.d' % n, 'p')) for n, i in [(1, 'shield'), (2, 'globe'), (3, 'scale')]))
     h += install_section()
-    h += '<section class="section section--alt"><div class="container" style="max-width:900px"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s</div><div class="faq reveal">%s</div><p style="text-align:center;margin-top:28px"><a class="link-arrow" href="faq.html">%s</a></p></div></section>' % (
-        tx('faqt.eyebrow'), tx('faq.title', 'h2'), ''.join('<details><summary>%s</summary>%s</details>' % (tx('faq.q%d' % i), tx('faq.a%d' % i, 'p')) for i in range(4)), tx('faqt.more'))
-    h += cta_band() + footer() + close()
+    # ---- FAQ (10)
+    h += '<section class="section section--alt" id="gyik"><div class="container" style="max-width:900px"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s</div><div class="faq reveal">%s</div><p style="text-align:center;margin-top:28px"><a class="link-arrow" href="faq.html">%s</a></p></div></section>' % (
+        tx('faqt.eyebrow'), tx('faq.title', 'h2'), ''.join('<details><summary>%s</summary>%s</details>' % (tx('hf.q%d' % i), tx('hf.a%d' % i, 'p', '', {'a': N_LESSONS, 'b': N_Q})) for i in range(1, 11)), tx('faqt.more'))
+    # ---- final CTA
+    h += '<section class="section fin dark"><div class="container hero-center reveal"><h2 class="two"><span>%s</span><span>%s</span></h2><p class="lead">%s</p><a class="btn btn-primary btn-lg" data-app href="app/index.html">%s</a></div></section>' % (tx('fin.h1'), tx('fin.h2'), tx('fin.sub'), tx('fin.btn'))
+    h += footer() + close()
     return h
 
 def page_markets():
