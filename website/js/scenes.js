@@ -21,7 +21,7 @@
   function size() { const d = Math.min(devicePixelRatio || 1, 2), r = cv.getBoundingClientRect(); W = Math.round(r.width * d); cv.width = W; cv.height = W; }
   function draw() {
     ctx.clearRect(0, 0, W, W); const R = W * .38, cx = W / 2, cy = W * .43, c = Math.cos(rot), s = Math.sin(rot);
-    const g = ctx.createRadialGradient(cx, cy, R * .95, cx, cy, R * 1.05); g.addColorStop(0, 'rgba(127,0,255,0)'); g.addColorStop(.93, 'rgba(127,0,255,.35)'); g.addColorStop(.965, 'rgba(181,140,255,.7)'); g.addColorStop(1, 'rgba(127,0,255,0)');
+    const g = ctx.createRadialGradient(cx, cy, R * .95, cx, cy, R * 1.05); g.addColorStop(0, 'rgba(47,107,255,0)'); g.addColorStop(.93, 'rgba(47,107,255,.35)'); g.addColorStop(.965, 'rgba(127,176,255,.7)'); g.addColorStop(1, 'rgba(47,107,255,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.05, 0, 7); ctx.fill();
     ctx.fillStyle = '#04060a'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
     for (const p of pts) { const x = p[0] * c + p[2] * s, z = -p[0] * s + p[2] * c; if (z < -.05) continue; const lit = Math.max(0, (-x * .45 + p[1] * .5 + z * .6)); const a = .18 + .82 * Math.min(1, lit + .1);

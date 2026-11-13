@@ -282,14 +282,11 @@ def page_home():
     <p class="hero-note"><span class="badge badge-sim">%(simlbl)s</span>%(shot)s</p>
     <ul class="trustrow">%(tr)s</ul>
   </div></div></section>
-<section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(he)s</div>%(ht)s</div>
-  <div class="steps reveal">%(hsteps)s</div></div></section>
-
 %(bento)s
 
 <section class="band dark"><div class="container"><div class="band-head reveal"><div><div class="eyebrow">%(be)s</div>%(bt)s<p>%(bs)s</p></div><a class="btn btn-ghost" href="markets.html">%(bc)s</a></div>
   <div class="ticker reveal" aria-label="%(bsimlbl)s"><div class="ticker-track">%(tick)s%(tick)s</div></div>
-  <div class="catgrid reveal">%(cats)s</div></div></section>
+  </div></section>
 
 ''' % dict(bento=bento, cin1=cinema(), eb=tx('hero2.eyebrow2'), title=tx('hero2.title', 'span'), pl0=tx('hero2.links'), pl1=tx('hero2.l1'), pl2=tx('hero2.l2'), pl3=tx('hero2.l3'), pl4=tx('hero2.l4'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
            tabs=''.join('<button type="button" role="tab" class="%s" data-tab="%s" aria-selected="%s">%s</button>' % ('active' if i == 0 else '', k, 'true' if i == 0 else 'false', tx(l)) for i, (k, l, *_r) in enumerate(tabs)),
@@ -316,10 +313,6 @@ def page_home():
     h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p style="text-align:center;margin-top:32px"><a class="btn btn-primary" href="premium.html">%s</a></p></div></section>' % (
         tx('price.eyebrow'), tx('price.title', 'h2'), tx('price.sub', 'p'),
         ''.join('<div class="card"><h3>%s</h3><p style="color:var(--c-text-2);margin-top:8px">%s</p></div>' % (tx(a_), tx(b_)) for a_, b_ in [('plan.free', 'plan.free.d'), ('plan.month', 'plan.month.d'), ('plan.year', 'plan.year.d')]), tx('price.cta'))
-    # trust
-    h += '<section class="section"><div class="container"><div class="section-head reveal"><div class="eyebrow">%s</div>%s</div><div class="grid grid-3">%s</div></div></section>' % (
-        tx('trust.eyebrow'), tx('trust.title', 'h2'), ''.join('<div class="card reveal"><div class="icon-box">%s</div>%s%s</div>' % (icon(i), tx('trust.%d.t' % n, 'h3'), tx('trust.%d.d' % n, 'p')) for n, i in [(1, 'shield'), (2, 'globe'), (3, 'scale')]))
-    h += install_section()
     h += '<section class="section section--alt"><div class="container" style="max-width:900px"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s</div><div class="faq reveal">%s</div><p style="text-align:center;margin-top:28px"><a class="link-arrow" href="faq.html">%s</a></p></div></section>' % (
         tx('faqt.eyebrow'), tx('faq.title', 'h2'), ''.join('<details><summary>%s</summary>%s</details>' % (tx('faq.q%d' % i), tx('faq.a%d' % i, 'p')) for i in range(4)), tx('faqt.more'))
     h += cta_band() + footer() + close()
