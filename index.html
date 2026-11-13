@@ -46172,7 +46172,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 .sort((a, b) => a.term.localeCompare(b.term, 'hu'));
 
             if (filtered.length === 0) {
-                listEl.innerHTML = `<div class="text-center py-10 text-slate-500 text-xs">Nincs találat ${query ? `a "${query}"` : 'ebben a kategóriában'} keresésre.</div>`;
+                // JAVÍTÁS (audit): a `query` a keresőmezőből (szabad szöveges
+                // felhasználói bevitel) származik, és ez az ág korábban NYERSEN,
+                // escapelés nélkül fűzte be az innerHTML-be. Egy olyan keresés,
+                // mint "<img src=x onerror=...>" (amire nyilván nincs találat),
+                // valódi HTML-ként futott volna le (self-XSS) — ugyanaz a
+                // hibaosztály, mint amit a Korrelációs Mátrix és a Kereskedési
+                // Napló jegyzet-mezőjénél korábban már javítottunk. A sikeres
+                // (van találat) ágon a `t.term`/`t.def` nem felhasználói bevitel
+                // (a GLOSSARY_TERMS statikus app-adat), azokat nem kell escapelni.
+                listEl.innerHTML = `<div class="text-center py-10 text-slate-500 text-xs">Nincs találat ${query ? `a "${escapeHtml(query)}"` : 'ebben a kategóriában'} keresésre.</div>`;
                 return;
             }
 
