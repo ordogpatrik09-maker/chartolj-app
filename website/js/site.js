@@ -49,6 +49,7 @@
     let l = 'hu';
     try { l = localStorage.getItem(KEY) || 'hu'; } catch (e) { /* ignore */ }
     CT.setLang(l, true);
+    doc.querySelectorAll('.foot-lang button').forEach(b => b.addEventListener('click', () => CT.setLang(b.dataset.lang)));
     const wrap = doc.querySelector('.lang'); if (!wrap) return;
     const btn = wrap.querySelector('button');
     btn.addEventListener('click', e => { e.stopPropagation(); const o = wrap.classList.toggle('open'); btn.setAttribute('aria-expanded', o); });

@@ -165,8 +165,9 @@ def footer():
     %(c1)s%(c2)s%(c3)s
   </div>
   <div class="risk-strip" role="note">%(risk)s</div>
-  <div class="foot-bottom"><span>%(rights)s</span><span>%(draft)s</span></div>
+  <div class="foot-bottom"><span>%(rights)s</span><span class="foot-lang"><span class="sr-only">%(fl)s</span><button type="button" data-lang="hu">HU</button><button type="button" data-lang="en">EN</button><button type="button" data-lang="de">DE</button></span><span>%(draft)s</span></div>
 </div></footer>
+<a class="help-fab" href="faq.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>%(helpspan)s</a>
 <a class="sticky-cta btn btn-primary" data-app href="app/index.html">%(stk)s</a>
 <script src="js/config.js"></script>
 <script src="js/locales.js"></script>
@@ -174,7 +175,7 @@ def footer():
 <script src="js/charts.js"></script>
 <script src="js/site.js"></script>
 <script src="js/fx.js" defer></script>
-''' % dict(stk=tx('sticky.cta'), tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), draft=tx('footer.draft'),
+''' % dict(helpspan=tx('help.label'), stk=tx('sticky.cta'), tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), fl=tx('footer.lang'), draft=tx('footer.draft'),
            c1=col('footer.product', [('index.html#platform', 'nav.platform'), ('markets.html', 'nav.markets'), ('academy.html', 'nav.learning'), ('tools.html', 'nav.tools'), ('learn.html', 'nav.learn'), ('premium.html', 'nav.pricing')]),
            c2=col('footer.company', [('about.html', 'nav.about'), ('faq.html', 'footer.faq'), ('contact.html', 'footer.contact')]),
            c3=col('footer.legal', [('privacy.html', 'footer.privacy'), ('terms.html', 'footer.terms'), ('risk.html', 'footer.risk'), ('cookies.html', 'footer.cookies')]))
@@ -218,6 +219,7 @@ def page_home():
   <p class="lead">%(sub)s</p>
   <div class="hero-cta"><a class="btn btn-primary btn-lg" data-app href="app/index.html">%(c1)s</a><a class="btn btn-ghost btn-lg" href="markets.html">%(c2)s</a></div>
   <ul class="trustrow">%(tr)s</ul>
+  <p class="platlinks"><span>%(pl0)s</span><a data-app href="app/index.html">%(pl1)s</a><a href="#install">%(pl2)s</a><a href="#install">%(pl3)s</a><a href="#install">%(pl4)s</a></p>
   <div class="prod" id="prod">
     <div class="prod-tabs" role="tablist">%(tabs)s</div>
     <div class="prod-stage">
@@ -252,7 +254,7 @@ def page_home():
 <section class="section phones"><div class="container split"><div class="reveal"><div class="eyebrow">%(pe)s</div>%(pt)s<p class="lead" style="margin-top:12px;color:var(--c-text-2)">%(ps)s</p>
   <ul class="ticks">%(pb)s</ul><p style="margin-top:28px"><a class="btn btn-primary" data-app href="app/index.html">%(pc)s</a></p><p class="calc-note" style="margin-top:12px">%(pn)s</p></div>
   <div class="phone-row reveal"><div class="phone"><img src="assets/app-home.webp" width="780" height="1688" alt="%(a4)s" loading="lazy"></div><div class="phone up"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(a5)s" loading="lazy"></div></div></div></section>
-''' % dict(eb=tx('hero2.title') and tx('hero.eyebrow'), title=tx('hero2.title', 'span'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
+''' % dict(eb=tx('hero2.title') and tx('hero.eyebrow'), title=tx('hero2.title', 'span'), pl0=tx('hero2.links'), pl1=tx('hero2.l1'), pl2=tx('hero2.l2'), pl3=tx('hero2.l3'), pl4=tx('hero2.l4'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
            tabs=''.join('<button type="button" role="tab" class="%s" data-tab="%s" aria-selected="%s">%s</button>' % ('active' if i == 0 else '', k, 'true' if i == 0 else 'false', tx(l)) for i, (k, l, *_r) in enumerate(tabs)),
            alt1=esc(hu('hero2.tab1')), alt2=esc(hu('hero2.tab2')), alt3=esc(hu('hero2.tab3')), a4=esc(hu('hero2.tab2')), a5=esc(hu('hero2.tab1')),
            nl=N_LESSONS, nq=N_Q, nt=N_TOOLS, nm=N_MODS, fl=tx('facts.lessons'), fq=tx('facts.questions'), ft=tx('facts.tools'), fm=tx('facts.modules'),
@@ -327,6 +329,9 @@ def page_home():
 ''' % (tx('nav.learning'), tx('academy.title', 'h2'), tx('academy.paths.d', 'p'),
        ''.join('<div class="path-col"><span class="level l%d">%s</span>%s</div>' % (n, tx('level.%d' % n), ''.join('<div class="course"><h3>%s</h3><div class="meta"><span><b>%d</b> %s</span><span><b>%d</b> %s</span></div></div>' % (tx('mod.%d.n' % m), academy[m]['lessons'], tx('course.lessons'), academy[m]['questions'], tx('course.quiz')) for m in ms)) for n, ms in lv), tx('academy.cta'))
 
+    # calm vs pressure
+    h += '<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="calm reveal"><div class="calm-card bad"><svg viewBox="0 0 200 90" aria-hidden="true"><path class="c-line" pathLength="1" d="M4,40 L20,18 L34,62 L48,10 L64,74 L80,26 L96,80 L112,30 L128,84 L144,40 L160,86 L176,50 L196,84"/></svg><h3>%s</h3><p>%s</p></div><div class="calm-card good"><svg viewBox="0 0 200 90" aria-hidden="true"><line class="c-tp" x1="4" y1="14" x2="196" y2="14"/><line class="c-sl" x1="4" y1="76" x2="196" y2="76"/><path class="c-line" pathLength="1" d="M4,60 C40,56 60,62 90,46 S150,30 196,16"/></svg><h3>%s</h3><p>%s</p></div></div></div></section>' % (
+        tx('calm.eyebrow'), tx('calm.title', 'h2'), tx('calm.sub', 'p'), tx('calm.a.t'), tx('calm.a.d'), tx('calm.b.t'), tx('calm.b.d'))
     # risk education row
     redu = [('stop-loss', 'M4,34 L22,26 L38,30 L56,16 L72,22 L90,8', 'stop'), ('tokeattetel', 'M4,36 L90,36', 'lev'), ('poziciomeret', 'M4,30 L30,30 L30,12 L56,12 L56,22 L90,22', 'size')]
     h += '<section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div></div></section>' % (
@@ -489,8 +494,8 @@ def page_article(a):
     return h
 
 def install_section():
-    return '<section class="section" id="install"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><p class="calc-note" style="text-align:center;margin-top:20px">%s</p></div></section>' % (
-        tx('inst.eyebrow'), tx('inst.title', 'h2'), tx('inst.sub', 'p'), ''.join('<div class="card"><h3>%s</h3><p style="color:var(--c-text-2);margin-top:10px">%s</p></div>' % (tx('inst.%s.t' % k), tx('inst.%s.d' % k)) for k in 'aid'), tx('inst.note'))
+    return '<section class="section" id="install"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s%s</div><div class="grid grid-3 reveal">%s</div><div class="qrbox reveal"><img src="assets/qr-app.svg" width="132" height="132" alt="QR" loading="lazy"><div><b>%s</b><p>%s</p></div></div><p class="calc-note" style="text-align:center;margin-top:20px">%s</p></div></section>' % (
+        tx('inst.eyebrow'), tx('inst.title', 'h2'), tx('inst.sub', 'p'), ''.join('<div class="card"><h3>%s</h3><p style="color:var(--c-text-2);margin-top:10px">%s</p></div>' % (tx('inst.%s.t' % k), tx('inst.%s.d' % k)) for k in 'aid'), tx('qr.title'), tx('qr.sub'), tx('inst.note'))
 
 # ---------------------------------------------------------------- write
 out = {'index.html': page_home(), 'markets.html': page_markets(), 'academy.html': page_academy(), 'tools.html': page_tools(), 'premium.html': page_premium(),
