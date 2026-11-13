@@ -120,30 +120,10 @@ def head(page, extra_ld=''):
 <a class="skip-link" href="#main" data-i18n="common.skip">%(skip)s</a>
 ''' % dict(page=page, title=esc(hu('meta.%s.title' % page)), desc=esc(hu('meta.%s.desc' % page)), canon=canon, site=SITE_URL, ver=VER, ld=extra_ld, skip=esc(hu('common.skip')))
 
+NAVITEMS = [('index.html', 'nav.home', 'home'), ('index.html#platform', 'nav.platform', 'platform'), ('academy.html', 'nav.academy2', 'academy'), ('tools.html', 'nav.tools2', 'tools'), ('premium.html', 'nav.pricing', 'premium'), ('faq.html', 'nav.faq', 'faq')]
+
 def navlinks(cur, cls=''):
-    items = [('markets.html', 'nav.markets', 'markets'), ('academy.html', 'nav.learning', 'academy'),
-             ('tools.html', 'nav.tools', 'tools'), ('premium.html', 'nav.pricing', 'premium'), ('about.html', 'nav.about', 'about')]
-    if not cls:
-        return ''
-    return ''.join('<a class="dl" href="%s"%s>%s</a>' % (h, ' aria-current="page"' if p == cur else '', tx(k)) for h, k, p in [('index.html#platform', 'nav.platform', 'home')] + items)
-
-def mega(btn_key, cols, cta=True):
-    inner = ''.join('<div><h5>%s</h5>%s</div>' % (tx(t), ''.join('<a href="%s">%s%s</a>' % (h, tx(k), ('<small>%s</small>' % tx(d)) if d else '') for h, k, d in links)) for t, links in cols)
-    if cta:
-        inner += '<div class="mega-cta"><b>%s</b><p>%s</p><a class="btn btn-primary btn-sm" data-app href="app/index.html">%s</a></div>' % (tx('mega.cta.t'), tx('mega.cta.d'), tx('nav.start'))
-    return '<div class="has-mega"><button type="button" aria-haspopup="true">%s</button><div class="mega"><div class="container">%s</div></div></div>' % (tx(btn_key), inner)
-
-def desktop_menu(cur):
-    m1 = mega('mega.platform', [('mega.col.trade', [('app/index.html', 'mega.t1', 'mega.t1d'), ('app/index.html', 'mega.t2', None), ('app/index.html', 'mega.t3', None)]),
-                                ('mega.col.analysis', [('tools.html', 'mega.a1', None), ('tools.html', 'mega.a2', None), ('markets.html', 'mega.a3', None)]),
-                                ('mega.col.tools', [('tools.html', 'mega.all', None), ('index.html#platform', 'nav.platform', None)])])
-    m2 = mega('mega.markets', [('mega.col.cat', [('markets.html', 'market.cat.forex', None), ('markets.html', 'market.cat.stocks', None), ('markets.html', 'market.cat.indices', None)]),
-                               ('mega.col.cat', [('markets.html', 'market.cat.commodities', None), ('markets.html', 'market.cat.crypto', None), ('markets.html', 'market.cat.etf', None)]),
-                               ('mega.col.start', [('markets.html', 'mega.allm', None)])])
-    m3 = mega('mega.learn', [('mega.col.acad', [('academy.html', 'nav.learning', None), ('academy.html', 'mega.alla', None)]),
-                             ('mega.col.tools', [('learn.html', 'nav.learn', None), ('tools.html', 'mega.all', None), ('faq.html', 'footer.faq', None)])])
-    plain = ''.join('<a href="%s"%s>%s</a>' % (h, ' aria-current="page"' if p == cur else '', tx(k)) for h, k, p in [('premium.html', 'nav.pricing', 'premium'), ('about.html', 'nav.about', 'about')])
-    return m1 + m2 + m3 + plain
+    return ''.join('<a class="%s" href="%s"%s>%s</a>' % (cls, h, ' aria-current="page"' if p == cur else '', tx(k)) for h, k, p in NAVITEMS)
 
 def header(page):
     return '''<header class="nav" role="banner">
@@ -162,7 +142,7 @@ def header(page):
 </header>
 <div class="drawer" id="drawer">%(dlinks)s<div class="drawer-cta"><a class="btn btn-ghost btn-lg" data-app href="app/index.html">%(login)s</a><a class="btn btn-primary btn-lg" data-app href="app/index.html">%(start)s</a></div></div>
 <main id="main">
-''' % dict(strip=tx('strip.risk'), stripmore=tx('strip.more'), links=desktop_menu(page), dlinks=navlinks(page, 'dl'), login=tx('nav.login', 'span'), start=tx('nav.start', 'span'), la=attrs(aria_label='common.langlabel'), ma=attrs(aria_label='common.menu'), gl='<span class="sr-only">%s</span>' % esc(hu('common.langlabel')))
+''' % dict(strip=tx('strip.risk'), stripmore=tx('strip.more'), links=navlinks(page), dlinks=navlinks(page, 'dl'), login=tx('nav.login', 'span'), start=tx('nav.register', 'span'), la=attrs(aria_label='common.langlabel'), ma=attrs(aria_label='common.menu'), gl='<span class="sr-only">%s</span>' % esc(hu('common.langlabel')))
 
 def footer():
     col = lambda title, items: '<div><div class="foot-title">%s</div><ul>%s</ul></div>' % (tx(title), ''.join('<li><a href="%s">%s</a></li>' % (h, tx(k)) for h, k in items))
@@ -223,17 +203,17 @@ def cinema():
   <div class="hx-copy">
     <h1><span class="dim">%(l1)s</span><span class="bright">%(l2)s</span></h1>
     <p class="hx-sub">%(sub)s</p>
-    <p class="hx-cta"><a class="btn btn-pill" data-app href="app/index.html">%(cta)s</a><a class="link-arrow" href="academy.html">%(cta2)s</a></p>
+    <p class="hx-cta"><a class="btn btn-pill" data-app href="app/index.html">%(cta)s</a><a class="link-arrow" href="#platform">%(cta2)s</a></p>
+    <p class="hx-trust">%(trust)s</p>
   </div>
-  <div class="hx-stage" aria-hidden="false">
-    <div class="glass g-search" data-par="-0.05"><p class="g-title">%(gs)s</p><div class="g-chips">%(chips)s<em class="badge badge-sim">DEMO</em></div><ul class="g-q">%(qs)s</ul></div>
-    <div class="glass g-stat" data-par="0.04"><p class="g-title">%(gst)s</p>
-      <svg viewBox="0 0 240 120" class="g-chart" role="img" aria-label="%(gst)s"><path class="g-line" pathLength="1" d="M4 100 L24 98 L40 40 L58 38 L76 42 L96 38 L112 40 L128 104 L142 96 L158 92 L172 80 L190 70 L206 52 L236 30"/></svg>
-      <em class="badge badge-sim">DEMO</em></div>
-    <div class="glass g-stop" data-par="-0.02"><div class="g-row"><b>Stop loss</b><span class="g-mode">%(mode)s</span><span class="g-toggle"><i></i></span></div>
-      <div class="g-field"><span>%(f1)s</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+  <div class="hx-stage">
+    <div class="term" id="term"><div class="term-bar"><i></i><i></i><i></i><b>%(tt)s</b><em class="badge badge-sim">DEMO</em></div>
+      <canvas id="hx-chart" role="img" aria-label="%(tt)s"></canvas>
+      <div class="term-foot"><span class="tf-l">LONG</span><span class="tf-s">SHORT</span><span class="num tf-p">0.00</span></div></div>
+    <div class="fcard fc-a"><small>%(fb)s</small><b class="num" id="fc-bal">10 000,00</b><span class="num up" id="fc-pnl">+0,00</span></div>
+    <div class="glass g-stop fc-b"><div class="g-row"><b>Stop loss</b><span class="g-mode">%(mode)s</span><span class="g-toggle"><i></i></span></div>
       <div class="g-field g-num"><span class="num">309,50</span><span class="g-pm"><i>&minus;</i><i>+</i></span></div>
-      <div class="g-row g-foot"><span>%(f2)s <b class="num">50,00 $</b></span><span>%(f3)s <b class="num">2,85 (1,95%%)</b></span></div></div>
+      <div class="g-row g-foot"><span>%(fr)s <b class="num">1,0%%</b></span><span>R:R <b class="num">1 : 2,4</b></span></div></div>
   </div>
   <p class="hx-plat">%(plat)s</p></div></section>
 
@@ -245,7 +225,7 @@ def cinema():
   <div class="strip" aria-hidden="true"><div class="strip-track">%(strip)s%(strip)s</div></div></section>
 
 <section class="scene scene-bars dark" id="sbars"><div class="sb-pin"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></div></section>
-''' % dict(l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'),
+''' % dict(l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'), trust=t('cx.trust'), tt=t('cx.tt'), fb=t('cx.fb'), fr=t('cx.fr'),
         g1=t('cx.g1'), g2=t('cx.g2'), gsub=t('cx.gsub'), p1=t('cx.p1'), p2=t('cx.p2'), alt1=esc(hu('hero2.tab2')), alt2=esc(hu('hero2.tab1')),
         strip=''.join('<span>%s</span>' % x for x in ['%d %s' % (N_LESSONS, t('facts.lessons')), '%d %s' % (N_Q, t('facts.questions')), '%d %s' % (N_TOOLS, t('facts.tools')), t('cx.s1'), t('cx.s2'), t('cx.s3')]),
         b1=t('cx.b1'), b2=t('cx.b2'), b3=t('cx.b3'), bars=bars)
