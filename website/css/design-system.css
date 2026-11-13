@@ -1,3 +1,7 @@
+@font-face { font-family: "Sora Variable"; font-style: normal; font-display: swap; font-weight: 100 800; src: url("../assets/fonts/sora-latin-ext-wght-normal.woff2") format("woff2-variations"); unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Sora Variable"; font-style: normal; font-display: swap; font-weight: 100 800; src: url("../assets/fonts/sora-latin-wght-normal.woff2") format("woff2-variations"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Inter Variable"; font-style: normal; font-display: swap; font-weight: 100 800; src: url("../assets/fonts/inter-latin-ext-wght-normal.woff2") format("woff2-variations"); unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: "Inter Variable"; font-style: normal; font-display: swap; font-weight: 100 800; src: url("../assets/fonts/inter-latin-wght-normal.woff2") format("woff2-variations"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 /* ==========================================================================
    CHARTOLJ! DESIGN SYSTEM v1
    Tokens -> base -> layout -> components -> sections -> utilities
@@ -27,7 +31,8 @@
   --c-border-strong: rgba(11, 18, 32, .18);
 
   /* Typography tokens */
-  --f-sans: "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --f-display: "Sora Variable", "Inter Variable", system-ui, sans-serif;
+  --f-sans: "Inter Variable", "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --fs-xs: .75rem;
   --fs-sm: .875rem;
@@ -817,3 +822,10 @@ body { background: #030406; }
 .catcard::before { background: radial-gradient(50% 60% at 50% 100%, rgba(127,0,255,.35), transparent 70%); }
 .strip-track span::before { color: #B58CFF; }
 .page-hero h1 { background: linear-gradient(180deg, #fff 45%, #B58CFF); -webkit-background-clip: text; background-clip: text; }
+
+/* v15: display typeface for headlines */
+h1, h2, .two, .litlines p, .hero-x h1, .page-hero h1, .prodscene-t, .story-step h3, .cta-band h2, .steps .step h3, .catcard b, .fact b { font-family: var(--f-display); }
+.hero-x h1 { font-size: clamp(2.4rem, 1rem + 3.5vw, 4rem); letter-spacing: -.03em; line-height: 1.06; }
+.two, .section-head h2, .prodscene .prodscene-t, .cta-band h2 { letter-spacing: -.03em; line-height: 1.08; }
+.two { font-size: clamp(2rem, 1rem + 3.9vw, 4rem); } .litlines p { font-size: clamp(1.8rem, .8rem + 3.5vw, 3.5rem); letter-spacing: -.03em; }
+.page-hero h1 { letter-spacing: -.03em; font-size: clamp(2.2rem, 1rem + 4vw, 4.2rem); }
