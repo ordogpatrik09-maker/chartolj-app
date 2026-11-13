@@ -2139,6 +2139,13 @@
                                 <div class="text-[10px] text-slate-400">Rejtett kereskedési költség halmozott hatása</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('spreadbet-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-400/10 text-emerald-400 border border-emerald-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-money-bill-trend-up"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Spread Betting P&L Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Tét/pont, nyitó-záró mid ár és a spread rejtett költsége</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('stoplimitgap-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-orange-400/10 text-orange-400 border border-orange-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-shield-halved"></i></span>
                             <div>
@@ -11440,6 +11447,57 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
         </div>
     </div>
 
+    <!-- ================= SPREAD BETTING P&L KALKULÁTOR (OKTATÁSI) =================
+         Long: belépő = Mid(nyitás) + Spread/2, kilépő = Mid(zárás) - Spread/2.
+         Short: belépő = Mid(nyitás) - Spread/2, kilépő = Mid(zárás) + Spread/2.
+         Nettó pont = irány szerinti bruttó mozgás − Spread. P&L = Tét/pont × Nettó pont. -->
+    <div id="spreadbet-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-money-bill-trend-up text-emerald-400"></i> Spread Betting P&L Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('spreadbet-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Spread bettingnél nem az eszközt veszed meg, hanem tét/pont (stake) összeget fogadsz az árfolyam-mozgás irányára és mértékére — a bróker spreadje (vétel/eladás ár közti különbség) viszont minden ügyletnél rejtett költségként jelenik meg. Add meg a nyitó/záró középárat, a spreadet és a tét/pont értéket, és nézd meg, mennyit "eszik meg" a spread a bruttó mozgásból.</p>
+
+            <div class="mb-3">
+                <label class="text-[11px] font-semibold text-slate-400" for="spreadbet-dir">Irány</label>
+                <select id="spreadbet-dir" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                    <option value="long">Long (árfolyam-emelkedésre)</option>
+                    <option value="short">Short (árfolyam-csökkenésre)</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="spreadbet-open">Mid ár nyitáskor</label>
+                    <input type="number" id="spreadbet-open" value="100" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="spreadbet-close">Mid ár záráskor</label>
+                    <input type="number" id="spreadbet-close" value="104" step="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="spreadbet-spread">Spread (pontban)</label>
+                    <input type="number" id="spreadbet-spread" value="1" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="spreadbet-stake">Tét / pont</label>
+                    <input type="number" id="spreadbet-stake" value="10" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-emerald-400/50">
+                </div>
+            </div>
+
+            <button onclick="calcSpreadBet()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-emerald-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="spreadbet-result" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A spread költsége (Tét/pont × Spread) MINDIG megfizetendő, függetlenül attól, hogy nyereséges vagy veszteséges lett a pozíció — ez a belépéskor és kilépéskor is átlépett bid-ask rés kumulált hatása. Minél rövidebb a tervezett tartási idő (pl. napon belüli kereskedés), annál nagyobb súllyal esik latba a bruttó mozgáshoz képest.</p>
+        </div>
+    </div>
+
     <!-- ================= STOP-LIMIT VÉDELMI SÁV KALKULÁTOR (OKTATÁSI) =================
          Tolerancia-sáv = Stop ár × (tolerancia% / 100). Gap = Stop ár × (gap% / 100).
          Ha Gap <= Tolerancia-sáv, a stop-limit megbízás TELJESÜL (védett maradsz, de
@@ -14984,6 +15042,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Bid-Ask Spread Költség Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Rejtett kereskedési költség halmozott hatása</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('spreadbet-modal')" data-tool-title="spread betting p&l kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-money-bill-trend-up"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Spread Betting P&L Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Tét/pont, nyitó-záró mid ár és a spread rejtett költsége</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('stoplimitgap-modal')" data-tool-title="stop-limit védelmi sáv kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -32041,6 +32106,85 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Spread:</span><span class="text-white">${spread.toLocaleString(undefined, { maximumFractionDigits: 4 })} (${spreadPct.toFixed(4)}%)</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Költség / trade:</span><span class="text-white">${costPerTrade.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Teljes költség (${count} trade):</span><span class="${colorClass} font-extrabold text-sm">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        function calcSpreadBet() {
+            const dirEl = document.getElementById('spreadbet-dir');
+            const openEl = document.getElementById('spreadbet-open');
+            const closeEl = document.getElementById('spreadbet-close');
+            const spreadEl = document.getElementById('spreadbet-spread');
+            const stakeEl = document.getElementById('spreadbet-stake');
+            const out = document.getElementById('spreadbet-result');
+            if (!dirEl || !openEl || !closeEl || !spreadEl || !stakeEl || !out) return;
+
+            const dir = dirEl.value;
+            const midOpen = parseFloat(openEl.value);
+            const midClose = parseFloat(closeEl.value);
+            const spread = parseFloat(spreadEl.value);
+            const stake = parseFloat(stakeEl.value);
+
+            if (![midOpen, midClose, spread, stake].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat minden mezőben!</div>`;
+                return;
+            }
+            if (midOpen <= 0 || midClose <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A nyitó és záró mid árnak pozitívnak kell lennie!</div>`;
+                return;
+            }
+            if (spread < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A spread nem lehet negatív!</div>`;
+                return;
+            }
+            if (stake <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A tét/pont értéknek pozitívnak kell lennie!</div>`;
+                return;
+            }
+            if (spread / 2 >= midOpen || spread / 2 >= midClose) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott spread irreálisan nagy a megadott árfolyamokhoz képest (negatív belépő/kilépő árat eredményezne) — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
+            const isLong = dir === 'long';
+            const entry = isLong ? midOpen + spread / 2 : midOpen - spread / 2;
+            const exit = isLong ? midClose - spread / 2 : midClose + spread / 2;
+            const directionalGrossMove = isLong ? (midClose - midOpen) : (midOpen - midClose);
+            const netPoints = isLong ? (exit - entry) : (entry - exit);
+            const spreadCostMoney = stake * spread;
+            const grossPnl = stake * directionalGrossMove;
+            const netPnl = stake * netPoints;
+
+            if (![entry, exit, netPoints, spreadCostMoney, grossPnl, netPnl].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékek együttesen túl szélsőséges eredményt adnak — adj meg reálisabb nagyságrendű számokat!</div>`;
+                return;
+            }
+
+            let colorClass, verdict;
+            if (grossPnl <= 0) {
+                colorClass = 'text-neon-red';
+                verdict = 'A pozíció a spread költsége NÉLKÜL is nullán vagy veszteségben lett volna — a spread ezt még tovább rontja.';
+            } else if (netPnl <= 0) {
+                colorClass = 'text-neon-red';
+                verdict = 'A spread önmagában megfordította a bruttó nyereséges pozíciót nullára vagy veszteségbe!';
+            } else {
+                const eatRatio = (spreadCostMoney / grossPnl) * 100;
+                if (eatRatio > 50) {
+                    colorClass = 'text-neon-yellow';
+                    verdict = `A spread a bruttó nyereség ${eatRatio.toFixed(1)}%-át felemésztette — rövid tartási idejű pozícióknál ez a hatás különösen felnagyítódik.`;
+                } else {
+                    colorClass = 'text-neon-green';
+                    verdict = `A spread hatása a bruttó nyereséghez képest elfogadható mértékű (a nyereség ${eatRatio.toFixed(1)}%-át emészti fel).`;
+                }
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Belépő / kilépő ár:</span><span class="text-white">${entry.toLocaleString(undefined, { maximumFractionDigits: 4 })} / ${exit.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Bruttó P&L (spread nélkül):</span><span class="${grossPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${grossPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Spread költsége:</span><span class="text-white">${spreadCostMoney.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Nettó P&L:</span><span class="${netPnl >= 0 ? 'text-neon-green' : 'text-neon-red'} font-extrabold text-sm">${netPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -51008,6 +51152,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             416: { tool: 'corrshift-modal', cta: 'Próbáld ki élesben Bence esetét: futtasd a Korrelációs Rezsim-Váltás Monitort egy korábban alacsony korrelációjú, majd stressz idején összeszorult eszközpáron' },
             476: { tool: 'downdev-modal', cta: 'Számold ki élesben a downside deviationt, és vesd össze a teljes szórással' },
             482: { tool: 'downdev-modal', cta: 'Próbáld ki élesben Levente két stratégiáját: azonos teljes szórás, mennyire eltérő downside deviation?' },
+            159: { tool: 'spreadbet-modal', cta: 'Számold ki élesben a Spread Betting P&L Kalkulátorral, mennyit "eszik meg" a spread a bruttó mozgásból — ugyanaz a kockázat, mint bármilyen más tőkeáttételes terméknél' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -51027,7 +51172,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
