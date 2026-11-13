@@ -17701,7 +17701,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (index < period - 1) return null;
             let sumSq = 0;
             for (let i = index - period + 1; i <= index; i++) sumSq += Math.pow(values[i] - mean, 2);
-            return Math.sqrt(sumSq / period);
+            const result = Math.sqrt(sumSq / period);
+            // JAVÍTÁS: szélsőséges, de egyenként véges bemeneti (close) érték esetén
+            // a négyzetre emelés/összegzés túlcsordulhat Infinity-re (pl. egyetlen
+            // hibás/extrém adatsor-pont elég hozzá) — ilyenkor null-t adunk vissza,
+            // ugyanazzal a "nincs érvényes adat ezen a ponton" konvencióval, mint a
+            // calcSMA-nál. Hívó oldalak (Bollinger-szalag rajzolás, Bollinger
+            // Reversion backtest, Strategy Builder Bollinger-jelzések) mind kezelik
+            // a null-t. Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál.
+            return Number.isFinite(result) ? result : null;
         }
 
         // Egyszerű, standard EMA-sorozat: az első érték a kezdő `period`
@@ -17865,6 +17874,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const sma = calcSMA(closes, period, i);
                 if (sma === null) continue;
                 const sd = calcStdDev(closes, period, i, sma);
+                // JAVÍTÁS: lásd calcStdDev — szélsőséges bemenet esetén null-t adhat
+                // vissza (Infinity-szivárgás helyett); ilyenkor ezen a ponton nincs
+                // érvényes szalag, ugyanúgy, mint ha az SMA lett volna null.
+                if (sd === null) continue;
                 middle[i] = sma;
                 lower[i] = sma - (stdDevMultiplier * sd);
             }
@@ -18704,6 +18717,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const sma = calcSMA(closes, period, i);
                 if (sma === null) continue;
                 const sd = calcStdDev(closes, period, i, sma);
+                // JAVÍTÁS: lásd calcStdDev — szélsőséges bemenet esetén null-t adhat
+                // vissza (Infinity-szivárgás helyett); ilyenkor ezen a ponton nincs
+                // érvényes szalag, ugyanúgy, mint ha az SMA lett volna null.
+                if (sd === null) continue;
                 middle[i] = sma;
                 lower[i] = sma - (stdDevMultiplier * sd);
             }
@@ -23023,6 +23040,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     const sma = calcSMA(closes, 20, i);
                     if (sma === null) { upper.push(null); lower.push(null); mid.push(null); continue; }
                     const sd = calcStdDev(closes, 20, i, sma);
+                    // JAVÍTÁS: lásd calcStdDev — szélsőséges bemenet esetén null-t
+                    // adhat vissza (Infinity-szivárgás helyett); a drawBandLine()
+                    // már eddig is kihagyja a null pontokat, így ez a konvenció
+                    // zökkenőmentesen illeszkedik.
+                    if (sd === null) { upper.push(null); lower.push(null); mid.push(null); continue; }
                     upper.push(sma + sd * 2);
                     lower.push(sma - sd * 2);
                     mid.push(sma);
