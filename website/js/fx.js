@@ -16,6 +16,14 @@
   addEventListener('scroll', onScroll, { passive: true }); onScroll();
   if (reduce) return;
 
+  /* hero cursor glow + ticker speed-up on scroll */
+  const hero = doc.querySelector('.hero-c');
+  if (hero && fine) { const g = doc.createElement('div'); g.className = 'hero-glow'; g.setAttribute('aria-hidden', 'true'); hero.appendChild(g);
+    hero.addEventListener('pointermove', e => { const r = hero.getBoundingClientRect(); g.style.setProperty('--gx', (e.clientX - r.left) + 'px'); g.style.setProperty('--gy', (e.clientY - r.top) + 'px'); }); }
+  const tt = doc.querySelector('.ticker-track'); let lastY = scrollY, sp = 1;
+  if (tt && tt.getAnimations) { addEventListener('scroll', () => { const d = Math.abs(scrollY - lastY); lastY = scrollY; sp = Math.min(4, 1 + d / 40); tt.getAnimations().forEach(a => a.playbackRate = sp); }, { passive: true });
+    setInterval(() => { if (sp > 1) { sp = Math.max(1, sp - .25); tt.getAnimations().forEach(a => a.playbackRate = sp); } }, 120); }
+
   /* word-by-word headline reveal */
   function splitHero() {
     const h = doc.querySelector('.hero-c h1 > span'); if (!h || h.dataset.split === h.textContent) return;
