@@ -181,7 +181,7 @@
         ctx.beginPath(); ctx.lineWidth = (k ? 1.4 : 2) * (w / 1500 + .5); ctx.strokeStyle = cols[k]; ctx.moveTo(pts[0][0], pts[0][1]);
         for (let i = 1; i < pts.length - 1; i++) { const mx2 = (pts[i][0] + pts[i + 1][0]) / 2, my2 = (pts[i][1] + pts[i + 1][1]) / 2; ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx2, my2); }
         ctx.stroke();
-        const g = ctx.createLinearGradient(0, h * .5, 0, h); g.addColorStop(0, k ? 'rgba(0,245,160,.07)' : 'rgba(0,245,160,.08)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        const g = ctx.createLinearGradient(0, h * .5, 0, h); g.addColorStop(0, k ? 'rgba(127,0,255,.12)' : 'rgba(0,245,160,.08)'); g.addColorStop(1, 'rgba(0,0,0,0)');
         if (k === 0) { ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fillStyle = g; ctx.fill(); } });
       t++; if (!reduce) requestAnimationFrame(draw);
     }

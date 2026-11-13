@@ -2,7 +2,7 @@
    + sparkline helper. Data passed in is either real (Binance klines) or clearly labelled simulated. */
 (function () {
   'use strict';
-  const C = { up: '#00F5A0', down: '#A0AAB8', grid: 'rgba(255,255,255,.055)', text: '#66727F', ema: '#F5F7FA', ema2: '#A0AAB8', bb: 'rgba(245,247,250,.85)', bbFill: 'rgba(0,245,160,.07)', macd: '#A0AAB8', sig: '#F5F7FA', rsi: '#A55CFF' };
+  const C = { up: '#00F5A0', down: '#A0AAB8', grid: 'rgba(255,255,255,.055)', text: '#66727F', ema: '#B58CFF', ema2: '#A0AAB8', bb: 'rgba(245,247,250,.85)', bbFill: 'rgba(0,245,160,.07)', macd: '#A0AAB8', sig: '#F5F7FA', rsi: '#A55CFF' };
 
   const fp = (v, d) => (window.CT && CT.fmt ? CT.fmt(v, d) : v.toFixed(d));
   function rng(seed) { // mulberry32
