@@ -172,6 +172,7 @@ def footer():
 <script src="js/tools-math.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/site.js"></script>
+<script src="js/fx.js" defer></script>
 ''' % dict(stk=tx('sticky.cta'), tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), draft=tx('footer.draft'),
            c1=col('footer.product', [('index.html#platform', 'nav.platform'), ('markets.html', 'nav.markets'), ('academy.html', 'nav.learning'), ('tools.html', 'nav.tools'), ('learn.html', 'nav.learn'), ('premium.html', 'nav.pricing')]),
            c2=col('footer.company', [('about.html', 'nav.about'), ('faq.html', 'footer.faq'), ('contact.html', 'footer.contact')]),
@@ -219,6 +220,9 @@ def page_home():
   <div class="prod" id="prod">
     <div class="prod-tabs" role="tablist">%(tabs)s</div>
     <div class="prod-stage">
+      <div class="chip-float c1" data-par="-0.06"><small>%(c1l)s</small><b class="num" id="chip-bal">$100 000</b><em class="badge badge-sim">DEMO</em></div>
+      <div class="chip-float c2" data-par="0.05"><small>%(c2l)s</small><b class="num up">LONG BTC/USDT</b><span class="num up" id="chip-pnl">+0,00%%</span></div>
+      <div class="chip-float c3" data-par="-0.03"><small>%(c3l)s</small><b class="num">7 <span style="font-weight:500">%(days)s</span></b></div>
       <div class="browser pane active" data-pane="trade"><div class="browser-bar"><i></i><i></i><i></i><span>chartolj.app</span></div><video id="hero-video" width="1440" height="900" muted loop playsinline preload="metadata" poster="assets/app-desktop.webp" aria-label="%(alt1)s"><source src="assets/hero-demo.mp4" type="video/mp4"></video></div>
       <div class="phone pane" data-pane="academy"><img src="assets/app-academy.webp" width="780" height="1688" alt="%(alt2)s" loading="lazy"></div>
       <div class="phone pane" data-pane="progress"><img src="assets/app-progress.webp" width="780" height="1688" alt="%(alt3)s" loading="lazy"></div>
@@ -241,12 +245,15 @@ def page_home():
   <div class="ticker reveal" aria-label="%(bsimlbl)s"><div class="ticker-track">%(tick)s%(tick)s</div></div>
   <div class="catgrid reveal">%(cats)s</div></div></section>
 
+<section class="story" id="story"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(se)s</div>%(st)s</div>
+  <div class="story-grid"><div class="story-device"><div class="phone story-phone">%(simgs)s</div></div><div class="story-steps">%(ssteps)s</div></div></div></section>
+
 <section class="section phones"><div class="container split"><div class="reveal"><div class="eyebrow">%(pe)s</div>%(pt)s<p class="lead" style="margin-top:12px;color:var(--c-text-2)">%(ps)s</p>
   <ul class="ticks">%(pb)s</ul><p style="margin-top:28px"><a class="btn btn-primary" data-app href="app/index.html">%(pc)s</a></p><p class="calc-note" style="margin-top:12px">%(pn)s</p></div>
   <div class="phone-row reveal"><div class="phone"><img src="assets/app-home.webp" width="780" height="1688" alt="%(a4)s" loading="lazy"></div><div class="phone up"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(a5)s" loading="lazy"></div></div></div></section>
 
 <section class="section section--alt"><div class="container"><div class="split"><div class="reveal"><div class="eyebrow">%(re)s</div>%(rt)s<p class="lead" style="margin-top:12px;color:var(--c-text-2)">%(rs)s</p><p style="margin-top:24px"><a class="link-arrow" href="tools.html">%(rc)s</a></p></div><div class="reveal">%(rcalc)s</div></div></div></section>
-''' % dict(eb=tx('hero2.title') and tx('hero.eyebrow'), title=tx('hero2.title', 'span'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
+''' % dict(eb=tx('hero2.title') and tx('hero.eyebrow'), title=tx('hero2.title', 'span'), c1l=tx('chip.bal'), c2l=tx('chip.pos'), c3l=tx('chip.xp'), days=tx('chip.days'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
            tabs=''.join('<button type="button" role="tab" class="%s" data-tab="%s" aria-selected="%s">%s</button>' % ('active' if i == 0 else '', k, 'true' if i == 0 else 'false', tx(l)) for i, (k, l, *_r) in enumerate(tabs)),
            alt1=esc(hu('hero2.tab1')), alt2=esc(hu('hero2.tab2')), alt3=esc(hu('hero2.tab3')), a4=esc(hu('hero2.tab2')), a5=esc(hu('hero2.tab1')),
            nl=N_LESSONS, nq=N_Q, nt=N_TOOLS, nm=N_MODS, fl=tx('facts.lessons'), fq=tx('facts.questions'), ft=tx('facts.tools'), fm=tx('facts.modules'),
@@ -255,7 +262,7 @@ def page_home():
            be=tx('band.eyebrow'), bt=tx('band.title', 'h2'), bs=tx('band.sub'), bc=tx('band.cta'), bsimlbl=esc(hu('common.simlabel')),
            tick=''.join('<div class="tick" data-row><b>%s</b><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span><em class="badge badge-sim">DEMO</em></div>' % (n_, sd) for n_, sd in [('BTC/USDT', 5), ('EUR/USD', 12), ('XAU/USD', 19), ('SPX', 26), ('NVDA', 33), ('ETH/USDT', 41), ('GBP/USD', 48), ('OIL', 55)]),
            cats=''.join('<a class="catcard" href="markets.html"><span class="icon-box">%s</span><b>%s</b></a>' % (icon(i), tx('market.cat.' + c)) for c, i in [('forex', 'globe'), ('stocks', 'building'), ('indices', 'layers'), ('commodities', 'coin'), ('crypto', 'trend'), ('etf', 'pie')]),
-           pe=tx('phone.eyebrow'), pt=tx('phone.title', 'h2'), ps=tx('phone.sub'), pb=''.join('<li>%s</li>' % tx('phone.b%d' % i) for i in (1, 2, 3, 4)), pc=tx('phone.cta'), pn=tx('phone.note'),
+           se=tx('story.eyebrow'), st=tx('story.title', 'h2'), simgs=''.join('<img class="%s" data-scr="%d" src="assets/app-%s.webp" width="780" height="1688" alt="%s" loading="lazy">' % ('on' if i == 0 else '', i, k, esc(hu('story.%d.t' % (i + 1)))) for i, k in enumerate(['home', 'trade', 'academy', 'progress'])), ssteps=''.join('<div class="story-step%s" data-step="%d"><span class="step-n">%d</span><h3>%s</h3><p>%s</p></div>' % (' on' if i == 0 else '', i, i + 1, tx('story.%d.t' % (i + 1)), tx('story.%d.d' % (i + 1))) for i in range(4)), pe=tx('phone.eyebrow'), pt=tx('phone.title', 'h2'), ps=tx('phone.sub'), pb=''.join('<li>%s</li>' % tx('phone.b%d' % i) for i in (1, 2, 3, 4)), pc=tx('phone.cta'), pn=tx('phone.note'),
            re=tx('risk2.eyebrow'), rt=tx('risk2.title', 'h2'), rs=tx('risk2.sub'), rc=tx('risk2.cta'), rcalc=calc_card('pos', 'r'))
 
     ticks = lambda *ks: '<ul class="ticks">%s</ul>' % ''.join('<li>%s</li>' % tx(k) for k in ks)
