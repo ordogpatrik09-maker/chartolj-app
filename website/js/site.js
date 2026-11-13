@@ -172,12 +172,17 @@
   function initHeroBg() {
     const cv = doc.getElementById('hero-bg'); if (!cv || !window.CTCharts) return;
     const ctx = cv.getContext('2d'), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; let w, h, t = 0;
-    const lines = [0, 1, 2].map(i => CTCharts.simCandles(11 + i * 17, 120, 100, 1.2, .02).map(x => x.c));
+    const smooth = (a, n) => a.map((_, i) => { let s = 0, c = 0; for (let k = -n; k <= n; k++) { const v = a[i + k]; if (v !== undefined) { s += v; c++; } } return s / c; });
+    const lines = [0, 1, 2].map(i => smooth(CTCharts.simCandles(11 + i * 17, 160, 100, 1.2, .02).map(x => x.c), 7));
     function size() { const r = cv.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); w = cv.width = r.width * d; h = cv.height = r.height * d; }
     function draw() {
-      ctx.clearRect(0, 0, w, h); const cols = ['rgba(0,245,160,.55)', 'rgba(127,0,255,.55)', 'rgba(110,193,255,.35)'];
-      lines.forEach((ln, k) => { const mn = Math.min(...ln), mx = Math.max(...ln); ctx.beginPath(); ctx.lineWidth = 2 * (w / 1400 + .5); ctx.strokeStyle = cols[k];
-        ln.forEach((v, i) => { const x = (i / (ln.length - 1)) * w, y = h * (.2 + .5 * (1 - (v - mn) / (mx - mn))) + k * h * .05 + Math.sin(t / 60 + i / 9 + k) * 6; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); });
+      ctx.clearRect(0, 0, w, h); const cols = ['rgba(0,245,160,.5)', 'rgba(165,92,255,.5)', 'rgba(110,193,255,.28)'];
+      lines.forEach((ln, k) => { const mn = Math.min(...ln), mx = Math.max(...ln), pts = ln.map((v, i) => [(i / (ln.length - 1)) * w, h * (.52 + .3 * (1 - (v - mn) / (mx - mn))) + k * h * .045 + Math.sin(t / 90 + i / 14 + k) * 4]);
+        ctx.beginPath(); ctx.lineWidth = (k ? 1.4 : 2) * (w / 1500 + .5); ctx.strokeStyle = cols[k]; ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length - 1; i++) { const mx2 = (pts[i][0] + pts[i + 1][0]) / 2, my2 = (pts[i][1] + pts[i + 1][1]) / 2; ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx2, my2); }
+        ctx.stroke();
+        const g = ctx.createLinearGradient(0, h * .5, 0, h); g.addColorStop(0, k ? 'rgba(127,0,255,.07)' : 'rgba(0,245,160,.08)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        if (k === 0) { ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fillStyle = g; ctx.fill(); } });
       t++; if (!reduce) requestAnimationFrame(draw);
     }
     size(); draw(); addEventListener('resize', () => { size(); if (reduce) draw(); });

@@ -226,8 +226,6 @@ def page_home():
   <h1>%(title)s</h1>
   <p class="lead">%(sub)s</p>
   <div class="hero-cta"><a class="btn btn-primary btn-lg" data-app href="app/index.html">%(c1)s</a><a class="btn btn-ghost btn-lg" href="markets.html">%(c2)s</a></div>
-  <ul class="trustrow">%(tr)s</ul>
-  <p class="platlinks"><span>%(pl0)s</span><a data-app href="app/index.html">%(pl1)s</a><a href="#install">%(pl2)s</a><a href="#install">%(pl3)s</a><a href="#install">%(pl4)s</a></p>
   <div class="prod" id="prod">
     <div class="prod-tabs" role="tablist">%(tabs)s</div>
     <div class="prod-stage">
@@ -239,6 +237,7 @@ def page_home():
       <div class="phone pane" data-pane="progress"><img src="assets/app-progress.webp" width="780" height="1688" alt="%(alt3)s" loading="lazy"></div>
     </div>
     <p class="hero-note"><span class="badge badge-sim">%(simlbl)s</span>%(shot)s</p>
+    <ul class="trustrow">%(tr)s</ul>
   </div></div></section>
 <section class="section" style="padding-top:0"><div class="container"><div class="facts reveal">
   <div class="fact"><b class="num" data-count="%(nl)d">%(nl)d</b>%(fl)s</div>
