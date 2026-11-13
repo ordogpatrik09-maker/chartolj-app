@@ -38725,8 +38725,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const bufferDays = isFinite(estimatedDays) ? (days - estimatedDays) : -Infinity;
             const suggestedSafeRiskPct = dailyLimitPct / 3;
 
+            // JAVÍTÁS (audit): a maxConsecLossesDaily/Total (= dailyLimitPct|maxddPct
+            // / riskPct) és a targetInR (= targetPct / riskPct) ugyanúgy Infinity-be
+            // csordulhat túl rendkívül kicsi riskPct mellett, mint az estimatedTrades/
+            // estimatedDays fentebb — ezt a 3 táblázat-sort és az alábbi riskVerdict
+            // szöveget is a kódbázisban már bevett '∞' konvencióval védjük (lásd pl.
+            // a Spread/Margin kalkulátorok "isFinite(...) ? ... : '∞'" mintáját).
+            const maxConsecLossesDailyDisplay = Number.isFinite(maxConsecLossesDaily) ? maxConsecLossesDaily : '∞';
+            const maxConsecLossesTotalDisplay = Number.isFinite(maxConsecLossesTotal) ? maxConsecLossesTotal : '∞';
+            const targetInRDisplay = Number.isFinite(targetInR) ? targetInR.toFixed(1) : '∞';
+
             let riskColor, riskVerdict;
-            if (maxConsecLossesDaily <= 1) {
+            if (!Number.isFinite(maxConsecLossesDaily)) {
+                riskColor = 'text-neon-green';
+                riskVerdict = `✅ OK: a megadott kockázat/trade (${riskPct}%) a napi limithez (${dailyLimitPct}%) képest elhanyagolhatóan kicsi — gyakorlatilag korlátlan számú egymást követő vesztes trade elférne a napi limit alatt.`;
+            } else if (maxConsecLossesDaily <= 1) {
                 riskColor = 'text-neon-red';
                 riskVerdict = `🚨 KRITIKUS: a megadott kockázat/trade mellett már ${maxConsecLossesDaily <= 0 ? '1 vesztes trade is átütheti' : '1 vesztes trade is elérheti'} a napi limitet — ez nagyon kevés hibahatárt hagy. Fontold meg kisebb kockázat/trade választását (pl. ~${suggestedSafeRiskPct.toFixed(2)}%, hogy legalább 3 egymást követő vesztes trade elférjen).`;
             } else if (maxConsecLossesDaily === 2) {
@@ -38741,6 +38754,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (expectancyR <= 0) {
                 targetColor = 'text-neon-red';
                 targetVerdict = `🚨 Ezzel a nyerési aránnyal (${winratePct}%) és reward:risk-kel (${rr.toFixed(2)}) a stratégia várható értéke (expectancy) NULLA vagy NEGATÍV (${expectancyR.toFixed(3)}R/trade) — matematikailag NEM érhető el a cél megbízhatóan, függetlenül az időkerettől. Először az edge-et (nyerési arány és/vagy RR) kell javítani, nem a tétméretet növelni.`;
+            } else if (!Number.isFinite(estimatedDays) || !Number.isFinite(estimatedTrades)) {
+                // JAVÍTÁS (audit): rendkívül kicsi kockázat/trade % (pl. "1e-300")
+                // mellett targetInR = targetPct / riskPct túlcsordulhat Infinity-be,
+                // ami estimatedTrades/estimatedDays-t is Infinity-vé tenné — ez a
+                // sablon-literálba SZÓ SZERINT "Infinity"-ként szivárgott volna be
+                // (lásd a táblázat-sorokban már alkalmazott isFinite-védelmet).
+                targetColor = 'text-amber-400';
+                targetVerdict = `⚠️ A megadott kockázat/trade (${riskPct}%) ehhez a profit célhoz (${targetPct}%) túl kicsi — a becsült trade-szám/időtartam túlcsordul, pontosan nem jeleníthető meg. Adj meg reálisabb (nagyobb) kockázat/trade %-ot a becsléshez.`;
             } else if (estimatedDays > days) {
                 targetColor = 'text-amber-400';
                 targetVerdict = `⚠️ A becsült idő (~${estimatedDays} nap, ${estimatedTrades} trade, napi ${tradesPerDay} trade mellett) TÖBB, mint a kihívás időkorlátja (${days} nap). Vagy nő kell a napi trade-szám/kockázat (a limitek tiszteletben tartásával), vagy ezzel az edge-vel nem reális a cél ennyi idő alatt.`;
@@ -38755,10 +38776,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Napi veszteséglimit összegben:</span><span class="text-neon-red">-$${dailyLimitAmount.toLocaleString(undefined, {maximumFractionDigits: 2})}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Max. teljes drawdown összegben:</span><span class="text-neon-red">-$${maxddAmount.toLocaleString(undefined, {maximumFractionDigits: 2})}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázat/trade összegben:</span><span class="text-white">$${riskAmount.toLocaleString(undefined, {maximumFractionDigits: 2})}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Max. egymást követő vesztes (napi limitig):</span><span class="font-extrabold ${riskColor}">${maxConsecLossesDaily}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Max. egymást követő vesztes (teljes DD-ig):</span><span class="font-extrabold ${riskColor}">${maxConsecLossesTotal}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Max. egymást követő vesztes (napi limitig):</span><span class="font-extrabold ${riskColor}">${maxConsecLossesDailyDisplay}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Max. egymást követő vesztes (teljes DD-ig):</span><span class="font-extrabold ${riskColor}">${maxConsecLossesTotalDisplay}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Stratégia expectancy:</span><span class="font-extrabold ${expectancyR > 0 ? 'text-neon-green' : 'text-neon-red'}">${expectancyR >= 0 ? '+' : ''}${expectancyR.toFixed(3)}R / trade</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Cél R-multiple-ben:</span><span class="text-white">${targetInR.toFixed(1)}R</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Cél R-multiple-ben:</span><span class="text-white">${targetInRDisplay}R</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Becsült trade-szám a célig:</span><span class="text-white">${isFinite(estimatedTrades) ? estimatedTrades : '—'}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Becsült napok száma a célig:</span><span class="text-white">${isFinite(estimatedDays) ? estimatedDays : '—'}</span></div>
                 </div>
