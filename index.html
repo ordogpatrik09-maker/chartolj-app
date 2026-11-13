@@ -21473,6 +21473,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
             const riskOfRuinPct = Math.min(100, Math.max(0, ror * 100));
 
+            // JAVÍTÁS (audit, folyamatos minőségi kör): ugyanaz a hibaosztály,
+            // mint amit a calcRiskOfRuin()-ban (lásd az ottani részletes
+            // magyarázatot) és a Prop Trading Kihívás Kalkulátorban korábban
+            // már javítottunk — units = 100/riskPct egy rendkívül kicsi, de
+            // egyenként véges riskPct mellett (pl. egy a mező min="0.1"
+            // attribútumát megkerülő, közvetlenül beírt "1e-300" érték)
+            // túlcsordulhat Infinity-re. Ez a renderAutoRiskOfRuinHtml() "fmt"
+            // segédfüggvényén keresztül SZÓ SZERINT "Infinity"-t jelenített
+            // volna meg a "Kockázati egységek a tőkében" mezőben, hibaüzenet
+            // helyett — ráadásul ezt a tool KÉT felhasználója (a Backtest és
+            // a Stratégia Builder panel) is megosztja, így a javítás mindkét
+            // helyen egyszerre érvényesül.
+            if (!Number.isFinite(units) || !Number.isFinite(riskOfRuinPct)) {
+                throw new Error('A megadott kockázat/trade % túl szélsőséges érvényes csőd-kockázat becsléshez — adj meg egy reálisabb (nagyobb) értéket!');
+            }
+
             return { tradeCount: n, winRatePct: winRate * 100, rr, edgePct: edge * 100, riskPct, unitsInCapital: units, riskOfRuinPct };
         }
 
