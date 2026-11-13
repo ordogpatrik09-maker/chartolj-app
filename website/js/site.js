@@ -156,6 +156,11 @@
       root.querySelectorAll('[data-tab]').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-selected', x === b); });
       root.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.dataset.pane === b.dataset.tab));
     }));
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const tabs = [...root.querySelectorAll('[data-tab]')]; let i = 0, stop = false;
+      root.addEventListener('click', () => { stop = true; }); root.addEventListener('mouseenter', () => { stop = true; });
+      setInterval(() => { if (stop || document.hidden) return; i = (i + 1) % tabs.length; tabs[i].dispatchEvent(new MouseEvent('click', { bubbles: false })); }, 5500);
+    }
   }
   function initHeroBg() {
     const cv = doc.getElementById('hero-bg'); if (!cv || !window.CTCharts) return;
