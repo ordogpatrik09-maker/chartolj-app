@@ -146,6 +146,10 @@
   }
 
   /* ---------- Simulated sparklines in illustrative panels ---------- */
+  function initSticky() {
+    const b = doc.querySelector('.sticky-cta'); if (!b) return;
+    const on = () => b.classList.toggle('show', window.scrollY > 700); on(); window.addEventListener('scroll', on, { passive: true });
+  }
   function initProd() {
     const root = doc.getElementById('prod'); if (!root) return;
     root.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
@@ -299,6 +303,6 @@
     // wire app links to config
     const app = (window.CT_CONFIG && CT_CONFIG.appUrl) || 'app/index.html';
     doc.querySelectorAll('[data-app]').forEach(a => { a.href = app; });
-    initLang(); initNav(); initReveal(); initHero(); initProd(); initHeroBg(); initShowcase(); initSimSparks(); initCalcs(); initTools(); initPricing(); initContact(); initPrivacyControls();
+    initLang(); initNav(); initReveal(); initHero(); initProd(); initSticky(); initHeroBg(); initShowcase(); initSimSparks(); initCalcs(); initTools(); initPricing(); initContact(); initPrivacyControls();
   });
 })();

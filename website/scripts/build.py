@@ -157,12 +157,13 @@ def footer():
   <div class="risk-strip" role="note">%(risk)s</div>
   <div class="foot-bottom"><span>%(rights)s</span><span>%(draft)s</span></div>
 </div></footer>
+<a class="sticky-cta btn btn-primary" data-app href="app/index.html">%(stk)s</a>
 <script src="js/config.js"></script>
 <script src="js/locales.js"></script>
 <script src="js/tools-math.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/site.js"></script>
-''' % dict(tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), draft=tx('footer.draft'),
+''' % dict(stk=tx('sticky.cta'), tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), draft=tx('footer.draft'),
            c1=col('footer.product', [('index.html#platform', 'nav.platform'), ('markets.html', 'nav.markets'), ('academy.html', 'nav.learning'), ('tools.html', 'nav.tools'), ('premium.html', 'nav.pricing')]),
            c2=col('footer.company', [('about.html', 'nav.about'), ('faq.html', 'footer.faq'), ('contact.html', 'footer.contact')]),
            c3=col('footer.legal', [('privacy.html', 'footer.privacy'), ('terms.html', 'footer.terms'), ('risk.html', 'footer.risk'), ('cookies.html', 'footer.cookies')]))
@@ -205,6 +206,7 @@ def page_home():
   <h1>%(title)s</h1>
   <p class="lead">%(sub)s</p>
   <div class="hero-cta"><a class="btn btn-primary btn-lg" data-app href="app/index.html">%(c1)s</a><a class="btn btn-ghost btn-lg" href="markets.html">%(c2)s</a></div>
+  <ul class="trustrow">%(tr)s</ul>
   <div class="prod" id="prod">
     <div class="prod-tabs" role="tablist">%(tabs)s</div>
     <div class="prod-stage">
@@ -220,7 +222,10 @@ def page_home():
   <div class="fact"><b class="num" data-count="%(nt)d">%(nt)d</b>%(ft)s</div>
   <div class="fact"><b class="num" data-count="%(nm)d">%(nm)d</b>%(fm)s</div></div></div></section>
 
-<section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(oe)s</div>%(ot)s%(os)s</div>
+<section class="section"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(he)s</div>%(ht)s</div>
+  <div class="steps reveal">%(hsteps)s</div></div></section>
+
+<section class="section section--alt"><div class="container"><div class="section-head center reveal"><div class="eyebrow">%(oe)s</div>%(ot)s%(os)s</div>
   <div class="grid grid-3 reveal">%(ocards)s</div></div></section>
 
 <section class="band dark"><div class="container"><div class="band-head reveal"><div><div class="eyebrow">%(be)s</div>%(bt)s<p>%(bs)s</p></div><a class="btn btn-ghost" href="markets.html">%(bc)s</a></div>
@@ -232,16 +237,16 @@ def page_home():
   <div class="phone-row reveal"><div class="phone"><img src="assets/app-home.webp" width="780" height="1688" alt="%(a4)s" loading="lazy"></div><div class="phone up"><img src="assets/app-trade.webp" width="780" height="1688" alt="%(a5)s" loading="lazy"></div></div></div></section>
 
 <section class="section section--alt"><div class="container"><div class="split"><div class="reveal"><div class="eyebrow">%(re)s</div>%(rt)s<p class="lead" style="margin-top:12px;color:var(--c-text-2)">%(rs)s</p><p style="margin-top:24px"><a class="link-arrow" href="tools.html">%(rc)s</a></p></div><div class="reveal">%(rcalc)s</div></div></div></section>
-''' % dict(eb=tx('hero2.title') and tx('hero.eyebrow'), title=tx('hero2.title', 'span'), sub=tx('hero2.sub'), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
+''' % dict(eb=tx('hero2.title') and tx('hero.eyebrow'), title=tx('hero2.title', 'span'), sub=tx('hero2.sub'), tr=''.join('<li>%s</li>' % tx(k) for k in ('hero2.trust1', 'hero2.trust2', 'hero2.trust3')), c1=tx('hero2.cta1'), c2=tx('hero2.cta2'), simlbl=tx('common.simlabel'), shot=tx('hero2.shot'),
            tabs=''.join('<button type="button" role="tab" class="%s" data-tab="%s" aria-selected="%s">%s</button>' % ('active' if i == 0 else '', k, 'true' if i == 0 else 'false', tx(l)) for i, (k, l, *_r) in enumerate(tabs)),
            alt1=esc(hu('hero2.tab1')), alt2=esc(hu('hero2.tab2')), alt3=esc(hu('hero2.tab3')), a4=esc(hu('hero2.tab2')), a5=esc(hu('hero2.tab1')),
            nl=N_LESSONS, nq=N_Q, nt=N_TOOLS, nm=N_MODS, fl=tx('facts.lessons'), fq=tx('facts.questions'), ft=tx('facts.tools'), fm=tx('facts.modules'),
-           oe=tx('one.eyebrow'), ot=tx('one.title', 'h2'), os=tx('one.sub', 'p'),
+           he=tx('how.eyebrow'), ht=tx('how.title', 'h2'), hsteps=''.join('<div class="step"><span class="step-n">%d</span><h3>%s</h3><p>%s</p></div>' % (n, tx('how.%d.t' % n), tx('how.%d.d' % n)) for n in (1, 2, 3)), oe=tx('one.eyebrow'), ot=tx('one.title', 'h2'), os=tx('one.sub', 'p'),
            ocards=''.join('<a class="card prodcard" href="%s"><div class="pc-img"><img src="assets/%s" alt="" loading="lazy"></div><h3>%s</h3><p>%s</p><span class="link-arrow">%s</span></a>' % (hr, im, tx('one.%d.t' % n), tx('one.%d.d' % n), tx('one.link')) for n, hr, im in [(1, 'markets.html', 'app-trade.webp'), (2, 'academy.html', 'app-academy.webp'), (3, 'academy.html', 'app-progress.webp')]),
            be=tx('band.eyebrow'), bt=tx('band.title', 'h2'), bs=tx('band.sub'), bc=tx('band.cta'), bsimlbl=esc(hu('common.simlabel')),
            tick=''.join('<div class="tick" data-row><b>%s</b><svg data-sim-spark="%d" class="mk-spark" aria-hidden="true"></svg><span class="num" data-pct>0%%</span><em class="badge badge-sim">DEMO</em></div>' % (n_, sd) for n_, sd in [('BTC/USDT', 5), ('EUR/USD', 12), ('XAU/USD', 19), ('SPX', 26), ('NVDA', 33), ('ETH/USDT', 41), ('GBP/USD', 48), ('OIL', 55)]),
            cats=''.join('<a class="catcard" href="markets.html"><span class="icon-box">%s</span><b>%s</b></a>' % (icon(i), tx('market.cat.' + c)) for c, i in [('forex', 'globe'), ('stocks', 'building'), ('indices', 'layers'), ('commodities', 'coin'), ('crypto', 'trend'), ('etf', 'pie')]),
-           pe=tx('phone.eyebrow'), pt=tx('phone.title', 'h2'), ps=tx('phone.sub'), pb=''.join('<li>%s</li>' % tx('phone.b%d' % i) for i in (1, 2, 3)), pc=tx('phone.cta'), pn=tx('phone.note'),
+           pe=tx('phone.eyebrow'), pt=tx('phone.title', 'h2'), ps=tx('phone.sub'), pb=''.join('<li>%s</li>' % tx('phone.b%d' % i) for i in (1, 2, 3, 4)), pc=tx('phone.cta'), pn=tx('phone.note'),
            re=tx('risk2.eyebrow'), rt=tx('risk2.title', 'h2'), rs=tx('risk2.sub'), rc=tx('risk2.cta'), rcalc=calc_card('pos', 'r'))
 
     ticks = lambda *ks: '<ul class="ticks">%s</ul>' % ''.join('<li>%s</li>' % tx(k) for k in ks)
@@ -315,6 +320,8 @@ def page_home():
     # trust
     h += '<section class="section"><div class="container"><div class="section-head reveal"><div class="eyebrow">%s</div>%s</div><div class="grid grid-3">%s</div></div></section>' % (
         tx('trust.eyebrow'), tx('trust.title', 'h2'), ''.join('<div class="card reveal"><div class="icon-box">%s</div>%s%s</div>' % (icon(i), tx('trust.%d.t' % n, 'h3'), tx('trust.%d.d' % n, 'p')) for n, i in [(1, 'shield'), (2, 'globe'), (3, 'scale')]))
+    h += '<section class="section section--alt"><div class="container" style="max-width:900px"><div class="section-head center reveal"><div class="eyebrow">%s</div>%s</div><div class="faq reveal">%s</div><p style="text-align:center;margin-top:28px"><a class="link-arrow" href="faq.html">%s</a></p></div></section>' % (
+        tx('faqt.eyebrow'), tx('faq.title', 'h2'), ''.join('<details><summary>%s</summary>%s</details>' % (tx('faq.q%d' % i), tx('faq.a%d' % i, 'p')) for i in range(4)), tx('faqt.more'))
     h += cta_band() + footer() + close()
     return h
 
