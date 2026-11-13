@@ -2958,6 +2958,13 @@
                                 <div class="text-[10px] text-slate-400">Fibonacci-arányos hullám-célárak és a 3 alapszabály ellenőrzése</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('execlatency-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-bolt"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Végrehajtási Latencia Slippage-Költség</div>
+                                <div class="text-[10px] text-slate-400">Mennyit veszítesz egy lassú bróker végrehajtási sebessége miatt?</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -9078,6 +9085,60 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="halving-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy EGYSZERŰSÍTETT, lineáris becslés, ÁLLANDÓ átlagos blokkidőt feltételezve — a valóságban a hálózati hash-rate és a nehézségi szint (difficulty) folyton módosul, ezért a tényleges halving-dátum ettől eltérhet. A "ciklus-fázis" és a hozzá kötött elméleti várakozások (pl. hogy a ciklus vége felé jár a csúcs) NEM garanciák, csak a múltbeli (mindössze 4 megfigyelt) ciklus mintázatán alapuló, erősen bizonytalan heurisztikák — a múltbeli mintázat nem jósolja meg a jövőt.</p>
+        </div>
+    </div>
+
+    <!-- ================= VÉGREHAJTÁSI LATENCIA SLIPPAGE-KÖLTSÉG KALKULÁTOR =================
+         A 407-es lecke (Bróker Végrehajtási Sebesség Mérése) elmagyarázza, hogy a
+         lassabb végrehajtás több slippage-hez vezet, és javasolja a brókerek
+         sebességének összehasonlítását — de eddig NEM volt hozzá eszköz, ami ezt
+         SZÁMSZERŰSÍTI. Ez a kalkulátor egy egyszerű, lineáris közelítéssel teszi
+         ezt meg: a végrehajtási késleltetés (latencia) alatt az ár egy adott
+         sebességgel "elmozdulhat" a megbízás ellen, és ez a mozgás a slippage. -->
+    <div id="execlatency-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-neon-cyan"></i> Végrehajtási Latencia Slippage-Költség
+                </h3>
+                <button onclick="closeToolModal('execlatency-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Minél lassabb a bróker megbízás-végrehajtása (latencia), annál nagyobb eséllyel mozdul el ellened az ár a leadás és a tényleges végrehajtás között, különösen volatilis pillanatokban. Add meg a pozíció méretét, egy jellemző volatilis árelmozdulási sebességet, és két bróker (a jelenlegi + egy összehasonlított) latenciáját — a kalkulátor megbecsüli, mennyi a várható slippage-költség különbsége.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="execlat-notional">Pozíció névleges értéke ($)</label>
+            <input type="number" id="execlat-notional" value="10000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <label class="text-[11px] font-semibold text-slate-400" for="execlat-vol">Ár-elmozdulás sebessége volatilis pillanatban (%/másodperc)</label>
+            <input type="number" id="execlat-vol" value="0.02" step="0.001" min="0" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="execlat-latA">Jelenlegi bróker latenciája (ms)</label>
+                    <input type="number" id="execlat-latA" value="300" step="1" min="0" max="600000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="execlat-latB">Összehasonlított bróker latenciája (ms)</label>
+                    <input type="number" id="execlat-latB" value="50" step="1" min="0" max="600000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="execlat-trades">Trade-ek száma / nap</label>
+                    <input type="number" id="execlat-trades" value="10" step="1" min="1" max="100000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="execlat-days">Kereskedési napok / hónap</label>
+                    <input type="number" id="execlat-days" value="20" step="1" min="1" max="31" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <button onclick="calcExecutionLatencySlippage()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="execlat-result" role="status" aria-live="polite" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy EGYSZERŰSÍTETT, LINEÁRIS közelítés (slippage ≈ latencia × árelmozdulási sebesség) — a valódi slippage-t ennél sokkal több tényező befolyásolja (order book mélység/likviditás, megbízástípus, pontos gap-időzítés, hírmozgás jellege), ezért ez NEM pontos árazási modell, csak a latencia-slippage KAPCSOLAT nagyságrendjének megértésére szolgál. A saját brókered tényleges latenciáját a megbízás leadási és végrehajtási időbélyegéből mérheted (lásd a kapcsolódó leckét).</p>
         </div>
     </div>
 
@@ -15210,6 +15271,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Korrelációs Rezsim-Váltás Monitor</div>
                             <div class="text-[10px] text-slate-400">Gördülő korreláció — mikor szorulnak hirtelen együvé a szét-mozgó eszközök</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('execlatency-modal')" data-tool-title="végrehajtási latencia slippage-költség kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-bolt"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Végrehajtási Latencia Slippage-Költség</div>
+                            <div class="text-[10px] text-slate-400">Mennyit veszítesz egy lassú bróker végrehajtási sebessége miatt?</div>
                         </div>
                     </button>
                 </div>
@@ -37307,6 +37375,104 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= VÉGREHAJTÁSI LATENCIA SLIPPAGE-KÖLTSÉG KALKULÁTOR =================
+        // Egyszerűsített, LINEÁRIS modell: a megbízás leadása és a tényleges
+        // végrehajtása közt eltelt idő (latencia) alatt az ár egy jellemző,
+        // volatilis pillanatra becsült sebességgel "elmozdulhat" a megbízás
+        // ellen — ez a mozgás adja a (becsült) slippage-t.
+        //   slippagePct_X   = (latencia_X_ms / 1000) × volPctPerSec
+        //   slippageCost_X  = notional × slippagePct_X / 100           (1 trade-re)
+        //   diffPerTrade    = slippageCost_A − slippageCost_B          (A = jelenlegi, B = összehasonlított bróker)
+        //   napiKülönbség   = diffPerTrade × tradesPerDay
+        //   havi/éves       = napi × tradingDaysPerMonth (× 12 az évesnél)
+        // A diffPerTrade POZITÍV, ha a B bróker (alacsonyabb latencia esetén)
+        // olcsóbb — ha B latenciája NAGYOBB, a diff negatív (váltás többletköltség).
+        function calcExecutionLatencySlippage() {
+            const ids = ['execlat-notional', 'execlat-vol', 'execlat-latA', 'execlat-latB', 'execlat-trades', 'execlat-days'];
+            const els = ids.map(id => document.getElementById(id));
+            const out = document.getElementById('execlat-result');
+            if (els.some(el => !el) || !out) return;
+
+            const [notional, volPctPerSec, latA_ms, latB_ms, tradesRaw, daysRaw] = els.map(el => parseFloat(el.value));
+            const trades = Math.max(1, Math.round(tradesRaw || 0));
+            const days = Math.max(1, Math.round(daysRaw || 0));
+
+            // Konzisztensen az app többi "pénzösszeg" mezőjével (lásd calcGslCostBenefit):
+            // Number.isFinite + explicit felső korlát a notionalra, hogy egy
+            // szintaktikailag érvényes, de a double tartományát túllépő bemenet
+            // (pl. "1e309" → Infinity) ne szivárogjon át Infinity/NaN-ként az
+            // eredménybe. A latenciákra és a trades/days egész-mezőkre is explicit
+            // felső korlát van (max 600000 ms = 10 perc, max 100000 trade/nap,
+            // max 31 nap/hónap) — ezek fizikailag/naptárilag értelmes határok.
+            if (!Number.isFinite(notional) || notional <= 0 || notional > 1e12 ||
+                !Number.isFinite(volPctPerSec) || volPctPerSec < 0 || volPctPerSec > 100 ||
+                !Number.isFinite(latA_ms) || latA_ms < 0 || latA_ms > 600000 ||
+                !Number.isFinite(latB_ms) || latB_ms < 0 || latB_ms > 600000 ||
+                !Number.isFinite(tradesRaw) || tradesRaw < 1 || tradesRaw > 100000 ||
+                !Number.isFinite(daysRaw) || daysRaw < 1 || daysRaw > 31) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, 1 billiónál kisebb, véges névleges értéket, 0-100 közötti árelmozdulási sebességet, 0-600000 ms közötti latenciákat, legalább 1 trade/napot (max 100000) és 1-31 közötti kereskedési napot/hónapot!</div>`;
+                return;
+            }
+
+            const slipPctA = (latA_ms / 1000) * volPctPerSec;
+            const slipPctB = (latB_ms / 1000) * volPctPerSec;
+            const costA = notional * slipPctA / 100;
+            const costB = notional * slipPctB / 100;
+            const diffPerTrade = costA - costB;
+
+            const dailyCostA = costA * trades;
+            const dailyDiff = diffPerTrade * trades;
+            const monthlyCostA = dailyCostA * days;
+            const monthlyDiff = dailyDiff * days;
+            const annualCostA = monthlyCostA * 12;
+            const annualDiff = monthlyDiff * 12;
+
+            // Biztonsági háló: második védelmi réteg bármilyen előre nem látott
+            // extrém bemenet-kombináció ellen, konzisztensen az app többi
+            // kalkulátorával (lásd calcGslCostBenefit).
+            if (![slipPctA, slipPctB, costA, costB, diffPerTrade, dailyCostA, dailyDiff, monthlyCostA, monthlyDiff, annualCostA, annualDiff].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékek kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
+
+            const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            const fmtPct4 = (n) => `${n.toFixed(4)}%`;
+            const annualDiffPctOfNotional = (annualDiff / notional) * 100;
+
+            let colorClass, verdict;
+            if (diffPerTrade === 0) {
+                colorClass = 'text-slate-300';
+                verdict = 'A két latencia pontosan azonos becsült slippage-költséget eredményez ezekkel a feltevésekkel — a bróker-váltás itt nem hozna slippage-megtakarítást.';
+            } else if (diffPerTrade < 0) {
+                colorClass = 'text-neon-red';
+                verdict = '🚨 Az "összehasonlított" bróker latenciája ezekkel a feltevésekkel LASSABB, mint a jelenlegi — a váltás TÖBBLETKÖLTSÉGET, nem megtakarítást jelentene a becsült slippage-ben.';
+            } else if (annualDiffPctOfNotional < 1) {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Kimutatható, de a pozíció méretéhez viszonyítva kicsi az éves megtakarítás — ennél a volatilitási feltevésnél a latencia-különbség nem a legfontosabb költségtényező.';
+            } else if (annualDiffPctOfNotional < 5) {
+                colorClass = 'text-neon-green';
+                verdict = '✅ Számottevő éves megtakarítás adódna a gyorsabb végrehajtásból — érdemes lehet a bróker-váltást alaposabban is megvizsgálni.';
+            } else {
+                colorClass = 'text-neon-green';
+                verdict = '✅✅ Jelentős éves megtakarítás adódna ezekkel a feltevésekkel — ennyi trade-szám és volatilitás mellett a végrehajtási sebesség önmagában jelentős költségtényező lehet.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Becsült slippage % / trade (jelenlegi, A):</span><span class="text-white">${fmtPct4(slipPctA)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Becsült slippage % / trade (összehasonlított, B):</span><span class="text-white">${fmtPct4(slipPctB)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Slippage-költség / trade (A):</span><span class="text-white">${fmtMoney(costA)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Slippage-költség / trade (B):</span><span class="text-white">${fmtMoney(costB)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Különbség / trade (A − B):</span><span class="font-bold ${diffPerTrade >= 0 ? 'text-neon-green' : 'text-neon-red'}">${diffPerTrade >= 0 ? '+' : ''}${fmtMoney(diffPerTrade)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Napi különbség (${trades} trade):</span><span class="${dailyDiff >= 0 ? 'text-neon-green' : 'text-neon-red'}">${dailyDiff >= 0 ? '+' : ''}${fmtMoney(dailyDiff)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Havi különbség (${days} kereskedési nap):</span><span class="${monthlyDiff >= 0 ? 'text-neon-green' : 'text-neon-red'}">${monthlyDiff >= 0 ? '+' : ''}${fmtMoney(monthlyDiff)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Éves különbség (becsült):</span><span class="font-extrabold ${colorClass} text-sm">${annualDiff >= 0 ? '+' : ''}${fmtMoney(annualDiff)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Jelenlegi (A) bróker teljes becsült éves slippage-költsége:</span><span class="text-white">${fmtMoney(annualCostA)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
         // ================= BITCOIN HALVING VISSZASZÁMLÁLÓ & CIKLUS FÁZIS (OKTATÁSI) =================
         // HALVING_INTERVAL = 210 000 blokk (a Bitcoin protokoll rögzített szabálya)
         // epoch                   = floor(currentBlock / 210000)   — hányadik "halving-korszak"
@@ -50975,6 +51141,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            407: { tool: 'execlatency-modal', cta: 'Számold ki élesben, mennyi slippage-költség különbség adódik egy lassabb és egy gyorsabb bróker végrehajtási latenciája közt' },
             339: { tool: 'settlement-modal', cta: 'Számold ki élesben egy kötés pontos T+n elszámolási (settlement) dátumát, hétvégéket átugorva' },
             85: { tool: 'hedgeratio-modal', cta: 'Számold ki élesben a minimum-varianciájú fedezeti arányt egy korrelált eszközzel' },
             111: { tool: 'gsl-modal', cta: 'Számold ki élesben, várható értékben megéri-e a Garantált Stop-Loss (GSL) felára a gap-kockázat ellen' },
@@ -51364,7 +51531,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
