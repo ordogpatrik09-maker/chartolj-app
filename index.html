@@ -3715,8 +3715,8 @@
             <h3 class="text-sm font-bold text-white mb-1">Új jelszó beállítása</h3>
             <p class="text-[11px] text-slate-500 mb-4">Válassz egy új jelszót a fiókodhoz (legalább 6 karakter).</p>
             <div class="space-y-3">
-                <input type="password" id="new-password-input" onkeydown="if(event.key==='Enter')document.getElementById('new-password-confirm').focus()" placeholder="Új jelszó" aria-label="Új jelszó" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="password" id="new-password-confirm" onkeydown="if(event.key==='Enter')submitNewPassword()" placeholder="Új jelszó mégegyszer" aria-label="Új jelszó megerősítése" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="new-password-input" autocomplete="new-password" onkeydown="if(event.key==='Enter')document.getElementById('new-password-confirm').focus()" placeholder="Új jelszó" aria-label="Új jelszó" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="new-password-confirm" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitNewPassword()" placeholder="Új jelszó mégegyszer" aria-label="Új jelszó megerősítése" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <div id="new-password-error" class="hidden text-[11px] text-neon-red"></div>
                 <button id="new-password-submit-btn" onclick="submitNewPassword()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 hover:brightness-110 transition">Jelszó mentése</button>
             </div>
@@ -3742,8 +3742,8 @@
 
             <!-- Login Form -->
             <div id="auth-form-login" class="space-y-3">
-                <input type="email" id="login-email" onkeydown="if(event.key==='Enter')submitLogin()" placeholder="Email cím" aria-label="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="password" id="login-password" onkeydown="if(event.key==='Enter')submitLogin()" placeholder="Jelszó" aria-label="Jelszó" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="email" id="login-email" autocomplete="username" onkeydown="if(event.key==='Enter')submitLogin()" placeholder="Email cím" aria-label="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="login-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLogin()" placeholder="Jelszó" aria-label="Jelszó" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <div class="text-right -mt-1">
                     <button onclick="showPasswordResetForm()" class="text-[10px] text-slate-500 hover:text-neon-cyan transition">Elfelejtetted a jelszavad?</button>
                 </div>
@@ -3756,7 +3756,7 @@
             <!-- Jelszó-visszaállítás kérése (156. pont) -->
             <div id="auth-form-password-reset" class="hidden space-y-3">
                 <p class="text-[11px] text-slate-400">Add meg a fiókodhoz tartozó email címet — küldünk egy linket, amivel új jelszót állíthatsz be.</p>
-                <input type="email" id="password-reset-email" onkeydown="if(event.key==='Enter')requestPasswordReset()" placeholder="Email cím" aria-label="Email cím a jelszó-visszaállításhoz" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="email" id="password-reset-email" autocomplete="username" onkeydown="if(event.key==='Enter')requestPasswordReset()" placeholder="Email cím" aria-label="Email cím a jelszó-visszaállításhoz" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <div id="password-reset-message" class="hidden text-[11px]"></div>
                 <button id="password-reset-submit-btn" onclick="requestPasswordReset()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                     Visszaállító link küldése
@@ -3769,9 +3769,9 @@
             <!-- Register Form -->
             <div id="auth-form-register" class="hidden space-y-3">
                 <input type="text" id="register-name" placeholder="Név / Felhasználónév" aria-label="Név / Felhasználónév" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="email" id="register-email" onkeydown="if(event.key==='Enter')submitRegister()" placeholder="Email cím" aria-label="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="password" id="register-password" placeholder="Jelszó (min. 6 karakter)" aria-label="Jelszó (min. 6 karakter)" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
-                <input type="password" id="register-password-confirm" placeholder="Jelszó megerősítése" aria-label="Jelszó megerősítése" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="email" id="register-email" autocomplete="email" onkeydown="if(event.key==='Enter')submitRegister()" placeholder="Email cím" aria-label="Email cím" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="register-password" autocomplete="new-password" placeholder="Jelszó (min. 6 karakter)" aria-label="Jelszó (min. 6 karakter)" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <input type="password" id="register-password-confirm" autocomplete="new-password" placeholder="Jelszó megerősítése" aria-label="Jelszó megerősítése" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                 <div id="auth-register-error" class="hidden text-[11px] text-neon-red"></div>
                 <label class="flex items-start gap-2 text-[10px] text-slate-400 leading-relaxed cursor-pointer">
                     <input type="checkbox" id="register-legal-accept" class="mt-0.5 accent-neon-green">
