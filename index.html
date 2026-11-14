@@ -30921,6 +30921,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a volumen önmagában véges volt (pl. "1e308"), és az
+            // "avgVolume <= 0" ellenőrzés csak a nulla/negatív esetet fogja ki —
+            // egy szélsőségesen KICSI, de pozitív referencia-átlagvolumen (pl.
+            // "1e-300") mellett a vol/avgVolume hányados túlcsordulhat
+            // Infinity-re, ami korábban csupasz "Infinity×" szövegként jelent
+            // meg a Volumen-arány mezőben (a boolean HIGH_VOL/LOW_VOL logika
+            // helyesen kezeli az Infinity-t, csak a MEGJELENÍTÉS hiányzott) —
+            // ugyanaz a mintázat, mint a lentebbi spreadRatio már meglévő '∞'
+            // jelöléses kezelése.
             const volRatio = vol / avgVolume;
             const spreadRatio = avgSpread > 1e-12 ? (spread / avgSpread) : (spread > 1e-12 ? Infinity : 0);
             const closePos = spread > 1e-12 ? (c - l) / spread : 0.5;
@@ -30968,11 +30977,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const colorMap = { bullish: 'text-neon-green', bearish: 'text-neon-red', neutral: 'text-amber-400', none: 'text-slate-400' };
             const colorClass = colorMap[info.bias] || 'text-slate-400';
             const spreadRatioText = isFinite(spreadRatio) ? spreadRatio.toFixed(2) + '×' : '∞';
+            const volRatioText = isFinite(volRatio) ? volRatio.toFixed(2) + '×' : '∞';
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Irány:</span><span class="${isUp ? 'text-neon-green' : 'text-neon-red'} font-bold">${isUp ? 'Emelkedő (Záró ≥ Nyitó)' : 'Csökkenő (Záró &lt; Nyitó)'}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Volumen-arány (vs. referencia):</span><span class="text-white">${volRatio.toFixed(2)}×${HIGH_VOL ? ' (magas)' : (LOW_VOL ? ' (alacsony)' : ' (átlagos)')}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Volumen-arány (vs. referencia):</span><span class="text-white">${volRatioText}${HIGH_VOL ? ' (magas)' : (LOW_VOL ? ' (alacsony)' : ' (átlagos)')}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Spread-arány (vs. referencia):</span><span class="text-white">${spreadRatioText}${WIDE_SPREAD ? ' (széles)' : (NARROW_SPREAD ? ' (szűk)' : ' (átlagos)')}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Záróhelyzet a tartományban:</span><span class="text-white">${(closePos * 100).toFixed(1)}%${CLOSE_HIGH ? ' (tetőn)' : (CLOSE_LOW ? ' (alján)' : ' (középen)')}</span></div>
                 </div>
@@ -31032,6 +31042,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const sumBidVol = bids.reduce((s, [, v]) => s + v, 0);
             const sumAskVol = asks.reduce((s, [, v]) => s + v, 0);
             const obi = (sumBidVol - sumAskVol) / (sumBidVol + sumAskVol);
+
+            // JAVÍTÁS: minden egyes ár/volumen érték önmagában véges volt
+            // (pl. egyenként "1e308"), de a Micro Price (bidVol×ask + askVol×bid
+            // szorzatok) és az OBI (Σ volumenek összege/különbsége) ÖSSZEGE már
+            // túllépheti az IEEE754 double tartományát (~1.8e308) és Infinity-re
+            // csordulhat — ami Infinity/Infinity vagy Infinity-Infinity formán
+            // keresztül látható "NaN"-t ad a Micro Price-nál, miközben a fenti
+            // "bestBid >= bestAsk" ellenőrzés ezt nem fogja ki. Ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál (pl.
+            // Rebalancing, Treynor/Jensen's Alpha, Information Ratio).
+            if (![spread, midPrice, spreadBps, microPrice, sumBidVol, sumAskVol, obi].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott ár/volumen értékek kombinációja olyan extrém, hogy a könyv-mélység számítása (Micro Price, OBI) nem fejezhető ki véges számmal. Adj meg reálisabb nagyságrendű ár és volumen értékeket!</div>`;
+                return;
+            }
 
             let obiLabel, obiColor;
             if (obi >= 0.2) { obiLabel = 'Erős vételi nyomás-túlsúly (mélyebb Bid oldal)'; obiColor = 'text-neon-green'; }
