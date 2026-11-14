@@ -42543,8 +42543,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Explicit véges-szám ellenőrzés a hatványozás UTÁN, NEM egy új
             // tetszőleges felső korlát a napok mezőn (azt máshol sem alkalmazza
             // az app konzisztensen "nap" típusú mezőknél).
-            if (!Number.isFinite(growthFactor) || !Number.isFinite(finalBalance)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott APR, jóváírási gyakoriság és tartási időtartam mellett a végösszeg túl nagy ahhoz, hogy véges számmal kifejezhető legyen — csökkentsd a tartási időt vagy az APR-t!</div>`;
+            //
+            // JAVÍTÁS (audit — Infinity-szivárgás): a fenti ellenőrzés csak a
+            // `growthFactor`/`finalBalance`-t fedte le, az `apyPct`-t (és a
+            // belőle számolt `apyVsAprDiffPct`-t) NEM — pedig ez egy KÜLÖNÁLLÓ
+            // hatványozás, FÜGGETLEN kitevővel (`n`, nem `n × days/365`). Egy
+            // extrém, de egyenként érvényes APR (pl. "1e18") mellett, ha a
+            // "Tartási időtartam" rövid (pl. 1 nap) a jóváírási gyakorisághoz
+            // (pl. napi, n=365) képest, a `growthFactor` kitevője (`n×days/365`
+            // = 1) kicsi marad és VÉGES értéket ad — átmegy a fenti ellenőrzésen
+            // —, miközben az `apyPct` mindig a TELJES éves kitevővel (`n`=365)
+            // számol, és emiatt Infinity-be futhat. Anélkül ez a kimeneten szó
+            // szerint "Infinity%"-ként jelent volna meg valódi hibaüzenet
+            // helyett az "Effektív APY" mezőben.
+            if (!Number.isFinite(growthFactor) || !Number.isFinite(finalBalance) || !Number.isFinite(apyPct) || !Number.isFinite(apyVsAprDiffPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott APR, jóváírási gyakoriság és tartási időtartam mellett a végösszeg vagy az effektív APY túl nagy ahhoz, hogy véges számmal kifejezhető legyen — csökkentsd a tartási időt vagy az APR-t!</div>`;
                 return;
             }
 
