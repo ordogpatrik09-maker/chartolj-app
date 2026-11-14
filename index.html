@@ -41617,6 +41617,30 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: rendkívül szélsőséges, de egyenként véges spot/napok/
+            // volatilitás kombinációnál a Black-Scholes normál-sűrűség (pdf(d1))
+            // a lebegőpontos aritmetika alsó határa alá csordulhat, és PONTOSAN
+            // 0-ra kerekedik — ez NEM NaN/Infinity, amit a fenti ellenőrzés már
+            // kifogna, hanem egy technikailag "véges" (0) Gamma minden egyes
+            // megadott strike-nál, "+$0" nettó GEX-szel. A lenti gamma-flip-kereső
+            // ezt a mindenhol-nulla jelet HAMIS előjelváltásnak érti (a
+            // netGexAtHypotheticalSpot ugyanígy 0-t ad a rács túlnyúló pontjain
+            // is), és egy teljesen értelmetlen, de hihetőnek tűnő "gamma-flip
+            // szintet" ad vissza (pl. a keresési sáv szélén lévő, vagy — extrém
+            // spot mellett — több száz nagyságrenddel túlméretezett számot)
+            // valódi hibaüzenet helyett. Egy VALÓS opciónál, még mélyen ITM/OTM
+            // esetén is, a Gamma sosem kerekedik PONTOSAN 0-ra EGYSZERRE minden
+            // megadott strike-nál (ehhez |d1| ≈ 38 fölötti érték szükséges,
+            // ami csak irreálisan extrém spot/kötési ár arány vagy irreálisan
+            // nagy lejárati idő mellett fordul elő) — ugyanaz a hibaosztály,
+            // mint a korábban javított Greeks/IV kalkulátoroknál, csak itt a
+            // "túlcsordulás" iránya alulcsordulás egy hamisan érvényesnek
+            // tűnő 0 értékre, nem egy NaN/Infinity-re.
+            if (detailed.every(d => d.gamma === 0)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott spot/napok/volatilitás/ráta kombináció mellett a Gamma minden megadott strike-nál számszakilag 0-ra csökken (a Black-Scholes normál-eloszlás sűrűsége alulcsordul) — adj meg reálisabb, kevésbé szélsőséges értékeket!</div>`;
+                return;
+            }
+
             // Gamma-flip szint becslése: a nettó GEX-et egy spot-rácson
             // (a megadott strike-sáv ±10%-án) újraszámoljuk, és lineáris
             // interpolációval keressük az első előjelváltás helyét.
