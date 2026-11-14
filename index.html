@@ -32565,6 +32565,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 distance = distanceInput;
             }
 
+            // JAVÍTÁS: a distanceInput és az atrValue egyenként véges (pl.
+            // mindkettő "1e200"), de a szorzatuk (ATR-módban) túlcsordulhat
+            // Infinity-re — ettől a stops[] sorozat minden eleme -Infinity-re
+            // esik, a "prices[i] <= stop" feltétel SOHA nem igaz (egy véges
+            // ár sosem lehet kisebb vagy egyenlő -Infinity-nél), és a
+            // kalkulátor hamisan azt a látszatot adja, hogy a trailing stop
+            // "a teljes idősoron nem triggerelt" (jó kockázatkezelésre utalva),
+            // miközben a stop-távolság valójában matematikailag értelmezhetetlen.
+            // Ugyanaz a hibaosztály (egyenként véges, de a szorzatukban
+            // túlcsorduló mezőpár), mint a korábban javított Fedezeti Arány
+            // kalkulátornál.
+            if (!Number.isFinite(distance)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott távolság/szorzó és ATR-érték kombinációja túl szélsőséges — a trailing stop távolsága túlcsordul (nem fejezhető ki véges számmal). Adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
             const stops = [prices[0] - distance];
             let triggeredAt = null;
             for (let i = 1; i < n; i++) {
