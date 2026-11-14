@@ -24917,6 +24917,80 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         });
 
+        // MINŐSÉGJAVÍTÁS: TAB-fókuszcsapda (focus trap) a nyitott modalokban.
+        // Az ESC (bezárás) és az Enter (kiszámolás-gomb) billentyűs UX már
+        // korábban megvolt minden modalra — a TAB azonban eddig semmit nem
+        // csinált: egy nyitott kalkulátorban a mezők között tabbal előre
+        // haladva a fókusz a modal UTOLSÓ fókuszálható eleme után KISZÖKÖTT
+        // a háttérben lévő (vizuálisan letakart, de a DOM-ban továbbra is
+        // jelenlévő) oldalra, majd onnan tovább a KÖVETKEZŐ, esetleg egy
+        // teljesen más, háttérben lévő panel mezőire. Ez billentyűzet-only és
+        // képernyőolvasó-használóknak zavaró/becsapó UX, és ellentétes az
+        // ARIA Authoring Practices Guide "Dialog (Modal)" ajánlásával (a
+        // fókusznak a dialógus nyitott állapotában a dialóguson belül kell
+        // KÖRBEZÁRÓDNIA — Tab az utolsó elemről az elsőre, Shift+Tab az
+        // elsőről az utolsóra ugorjon, sosem a háttérre).
+        //
+        // Általános (nem modal-specifikus) megoldás, ugyanazt a "[id$='-modal']"
+        // mintát használva, mint az ESC-kezelő _getToolModalIds()-je és a
+        // full_regression.js modals_are_reachable ellenőrzése (237 modal) —
+        // így ÚJ modal hozzáadásakor nincs szükség semmilyen külön
+        // regisztrálásra, automatikusan működik.
+        //
+        // "Legfelső" nyitott modal: a kódban a modalok túlnyomó része (223/237)
+        // azonos z-[96]-on van, ami azt jelenti, hogy a UI-folyamat szerint
+        // sosem nyílik meg egyszerre kettő közülük (egymást kizáró megnyitási
+        // útvonalak) — DE néhány megerősítő/felülréteg-modal (logout-confirm-
+        // modal, reset-balance-confirm-modal: z-98; delete-account-modal:
+        // z-110; premium-modal: z-95) szándékosan MAGASABB/ALACSONYABB
+        // z-indexű, a jövőbeli (vagy ritka) egymásra-nyíló esetekre felkészülve.
+        // Ezért a tényleges getComputedStyle() z-index alapján választjuk ki a
+        // VIZUÁLISAN LEGFELSŐ nyitott modalt — sosem az első DOM-sorrendi
+        // találatot —, hogy egy esetleges egymásra-nyílásnál mindig a valóban
+        // interaktív (legfelső) dialógusban csapdázzuk a fókuszt, nem egy
+        // alatta lévő, vizuálisan letakart modalban.
+        function _getTopmostOpenModal() {
+            const openModals = Array.from(document.querySelectorAll('[id$="-modal"]:not(.hidden)'));
+            if (!openModals.length) return null;
+            let top = openModals[0];
+            let topZ = parseInt(getComputedStyle(top).zIndex, 10) || 0;
+            for (let i = 1; i < openModals.length; i++) {
+                const z = parseInt(getComputedStyle(openModals[i]).zIndex, 10) || 0;
+                if (z >= topZ) { top = openModals[i]; topZ = z; }
+            }
+            return top;
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Tab') return;
+            const modalEl = _getTopmostOpenModal();
+            if (!modalEl) return; // nincs nyitott modal — a TAB a szokásos módon működik
+            const dialogBox = modalEl.firstElementChild || modalEl;
+            // Ugyanaz a fókuszálható-elem-szelektor és láthatóság-szűrés
+            // (_isElementVisible), mint amit az Enter-kezelő calc-gomb-keresése
+            // már használ — egy "hidden" osztályú al-szekcióban (pl. egy még
+            // összecsukott backtest-elemző-kategóriában) lévő elemet nem
+            // tartalmaz a körbezáródó TAB-sorrend, mert az amúgy sem érhető
+            // el sem egérrel, sem a normál TAB-sorrenddel.
+            const focusable = Array.from(dialogBox.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => _isElementVisible(el, dialogBox));
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const activeInDialog = dialogBox.contains(document.activeElement);
+            if (e.shiftKey) {
+                if (!activeInDialog || document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                if (!activeInDialog || document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        });
+
         // --- Pozícióméret kalkulátor ---
         function calcPositionSize() {
             const bal = parseFloat(document.getElementById('ps-balance').value) || 0;
