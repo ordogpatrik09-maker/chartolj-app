@@ -19277,8 +19277,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     period: parseInt(document.getElementById('sb-bb-period').value, 10),
                     stdDev: parseFloat(document.getElementById('sb-bb-stddev').value)
                 };
-                if (!entryParams.period || entryParams.period < 2 || !entryParams.stdDev || entryParams.stdDev <= 0) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes SMA periódust és egy nullánál nagyobb szórás-szorzót!</div>`;
+                // JAVÍTÁS: a `!entryParams.stdDev || entryParams.stdDev <= 0` a bevett
+                // truthy-hibaosztályt hordozta — egy túlcsordult bemenet (pl. "1e309")
+                // Infinity-t ad, ami truthy és nem <=0, így átment a validáción. A
+                // sbGetBollingerBreakSignals()-ben ez `lower[i] = sma - (Infinity * sd)`
+                // = -Infinity szalagot adott, ami a `closes[i] < lower[i]` feltételt
+                // örökre hamissá teszi — a kalkulátor NEM hibát jelez, hanem némán,
+                // magyarázat nélkül soha nem generál belépési jelzést (0 trade).
+                if (!entryParams.period || entryParams.period < 2 || !Number.isFinite(entryParams.stdDev) || entryParams.stdDev <= 0 || entryParams.stdDev > 1e6) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes SMA periódust és egy nullánál nagyobb, véges szórás-szorzót!</div>`;
                     return;
                 }
                 minCandlesNeeded = entryParams.period + 2;
@@ -19311,14 +19318,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     stopLossPct: parseFloat(document.getElementById('sb-stoploss').value),
                     takeProfitPct: parseFloat(document.getElementById('sb-takeprofit').value)
                 };
-                if (!exitParams.stopLossPct || exitParams.stopLossPct <= 0 || !exitParams.takeProfitPct || exitParams.takeProfitPct <= 0) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb Stop-Loss és Take-Profit %-okat!</div>`;
+                // JAVÍTÁS: a stopLossPct/takeProfitPct korábban a bevett truthy-
+                // hibaosztályt hordozta — egy túlcsordult bemenet (pl. "1e309" a
+                // Take-Profit mezőben, amelynek nincs is HTML max attribútuma) Infinity-t
+                // ad, ami átment a validáción. A futtató ciklusban (lásd lejjebb,
+                // `currentRetPct <= -stopLossPct/100` és `>= takeProfitPct/100`) egy
+                // Infinity küszöb SOHA nem teljesül egy véges hozamnál, így a
+                // kalkulátor hibajelzés nélkül, némán egy "sosem zár" stratégiát futtat
+                // le a felhasználó által kért stop/profit-cél helyett.
+                if (!Number.isFinite(exitParams.stopLossPct) || exitParams.stopLossPct <= 0 || exitParams.stopLossPct > 1e6 || !Number.isFinite(exitParams.takeProfitPct) || exitParams.takeProfitPct <= 0 || exitParams.takeProfitPct > 1e6) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, nullánál nagyobb Stop-Loss és Take-Profit %-okat!</div>`;
                     return;
                 }
             } else if (exitType === 'trailing_stop') {
                 exitParams = { trailingStopPct: parseFloat(document.getElementById('sb-trailing-pct').value) };
-                if (!exitParams.trailingStopPct || exitParams.trailingStopPct <= 0) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb Trailing Stop távolságot!</div>`;
+                // JAVÍTÁS: ugyanaz a truthy-hibaosztály, mint a Stop-Loss/Take-Profit
+                // mezőknél — egy Infinity trailingStopPct a `drawdownFromPeak >=
+                // trailingStopPct/100` feltételt örökre hamissá teszi, a trailing stop
+                // némán sosem váltja ki.
+                if (!Number.isFinite(exitParams.trailingStopPct) || exitParams.trailingStopPct <= 0 || exitParams.trailingStopPct > 1e6) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, nullánál nagyobb Trailing Stop távolságot!</div>`;
                     return;
                 }
             } else if (exitType === 'atr_trailing') {
@@ -19326,8 +19345,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     atrPeriod: parseInt(document.getElementById('sb-atr-period').value),
                     atrMultiplier: parseFloat(document.getElementById('sb-atr-mult').value)
                 };
-                if (!exitParams.atrPeriod || exitParams.atrPeriod < 2 || !exitParams.atrMultiplier || exitParams.atrMultiplier <= 0) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes ATR periódust (min. 2) és nullánál nagyobb ATR szorzót!</div>`;
+                // JAVÍTÁS: ugyanaz a truthy-hibaosztály — egy Infinity atrMultiplier a
+                // `stopLevel = peakPrice - Infinity * currentAtr` sorban -Infinity
+                // (vagy 0 ATR esetén NaN) stop-szintet ad, amit a `closes[i] <=
+                // stopLevel` feltétel sosem teljesít — a stop némán sosem váltja ki.
+                if (!exitParams.atrPeriod || exitParams.atrPeriod < 2 || !Number.isFinite(exitParams.atrMultiplier) || exitParams.atrMultiplier <= 0 || exitParams.atrMultiplier > 1e6) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes ATR periódust (min. 2) és nullánál nagyobb, véges ATR szorzót!</div>`;
                     return;
                 }
                 minCandlesNeeded = Math.max(minCandlesNeeded, exitParams.atrPeriod + 2);
@@ -20070,8 +20093,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             } else if (strategy === 'bollinger') {
                 const bbPeriod = parseInt(document.getElementById('backtest-bb-period').value, 10);
                 const bbStdDev = parseFloat(document.getElementById('backtest-bb-stddev').value);
-                if (!bbPeriod || bbPeriod < 2 || !bbStdDev || bbStdDev <= 0) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes SMA periódust és egy nullánál nagyobb szórás-szorzót!</div>`;
+                // JAVÍTÁS: a `!bbStdDev || bbStdDev <= 0` a bevett truthy-hibaosztályt
+                // hordozta — egy túlcsordult bemenet (pl. "1e309") Infinity-t ad, ami
+                // átment a validáción. A runBollingerReversionBacktest()-ben ez
+                // `lower[i] = sma - (Infinity * sd)` = -Infinity szalagot adott, ami a
+                // `closes[i] < lower[i]` feltételt örökre hamissá teszi — hibajelzés
+                // helyett a kalkulátor némán 0 trade-es eredményt ad.
+                if (!bbPeriod || bbPeriod < 2 || !Number.isFinite(bbStdDev) || bbStdDev <= 0 || bbStdDev > 1e6) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes SMA periódust és egy nullánál nagyobb, véges szórás-szorzót!</div>`;
                     return;
                 }
                 minCandlesNeeded = bbPeriod + 2;
