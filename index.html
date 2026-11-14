@@ -53578,7 +53578,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const colorClass = level === 'ERROR' ? 'text-neon-red' : level === 'TRADE' ? 'text-neon-green' : 'text-neon-cyan';
             const time = new Date().toLocaleTimeString();
             const entry = document.createElement('div');
-            entry.innerHTML = `[${time}] <span class="${colorClass}">[${level}]</span> ${msg}`;
+            // JAVÍTÁS (self-XSS/DOM-injektálás, ugyanaz a hibaosztály, mint amit a
+            // 2026-10-31-es mobil UX audit a showNotification()-ben és a
+            // leaderboard/barátok-listában már javított): a `msg` paramétert
+            // korábban nyersen fűztük be ide — a hívási helyek túlnyomó többsége
+            // statikus szöveg, DE a finishAuth() (bejelentkezés/regisztráció
+            // sikerüzenete) `currentUser.name`-et is belefűzi, ami a
+            // refreshPremiumStatus()-on át a Supabase profiles.display_name
+            // mezőjéből töltődik be — ez egy MÁSODIK, a kliens-oldali
+            // Profil-névváltás "<>"-szűrését nem feltétlenül átélt forrás (régi
+            // adat, másik kliens, vagy közvetlen API-hívás). Egy ott tárolt
+            // "<img src=x onerror=...>" jellegű display_name így escapelés
+            // nélkül, valódi HTML-ként futott volna a Rendszer Napló feedjébe
+            // fűzve. escapeHtml()-lel védjük, konzisztensen a showNotification()
+            // és a leaderboard/barátok-lista már javított mintájával.
+            entry.innerHTML = `[${time}] <span class="${colorClass}">[${level}]</span> ${escapeHtml(msg)}`;
             list.appendChild(entry);
             while (list.children.length > MAX_SYSTEM_LOG_ENTRIES) {
                 list.removeChild(list.firstChild);
