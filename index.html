@@ -30825,7 +30825,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // részvényszám mezőkben szó szerint "Infinity" szöveg jelent meg
             // valódi hibaüzenet helyett. Végső véges-ellenőrzés biztonsági
             // hálóként, konzisztensen az app többi kalkulátorának mintájával.
-            if (![marketCap0, sharesAfterSplit, marketCapAfterSplit, sharesAfterBuyback, marketCapAfterBuyback, buybackYieldPct, epsAfterBuyback].every(Number.isFinite)) {
+            // A `eps0`/`epsAfterSplit` (ni / shares0, ni / sharesAfterSplit) is
+            // bekerült a listába: ezek KÜLÖNÁLLÓ osztások, egy rendkívül kicsi,
+            // de egyenként érvényes (>0) `shares0` mellett (pl. "1e-250") ezek a
+            // hányadosok Infinity-be futhatnak akkor is, ha a market cap-alapú
+            // változók véges maradnak — korábban ellenőrzés nélkül, szó szerint
+            // "Infinity"-ként jelentek volna meg a "Split előtt"/"Split után"
+            // EPS mezőkben.
+            if (![marketCap0, eps0, sharesAfterSplit, epsAfterSplit, marketCapAfterSplit, sharesAfterBuyback, marketCapAfterBuyback, buybackYieldPct, epsAfterBuyback].every(Number.isFinite)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árfolyam, részvényszám és split arány kombinációja olyan extrém, hogy az eredmény nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
                 return;
             }
@@ -35558,6 +35565,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const sharpe = (Rp - Rf) / sigmaP;
             const m2 = Rf + sharpe * sigmaM;
+
+            // JAVÍTÁS: a `sigmaP > 0` ellenőrzés csak a nullát/negatívat zárja ki,
+            // egy egyenként véges, de rendkívül kicsi szórás (pl. "1e-300") mellett
+            // a `sharpe = (Rp - Rf) / sigmaP` osztás túlcsordulhat Infinity-be —
+            // ez korábban ellenőrzés nélkül, szó szerint "Infinity"-ként jelent
+            // volna meg a Sharpe Ráta mezőben, és ha ezután `sigmaM` (ami csak
+            // `< 0`-ra van tiltva, a 0 érvényes bemenet) nulla, a `m2 = Rf +
+            // sharpe * sigmaM` szorzás `Infinity * 0 = NaN`-t ad, szintén
+            // ellenőrzés nélkül megjelenítve. Végső véges-ellenőrzés az app
+            // többi kalkulátorának mintájával konzisztensen.
+            if (![sharpe, m2].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozam/szórás/kockázatmentes ráta kombinációja olyan extrém, hogy a Sharpe Ráta vagy az M2 nem fejezhető ki véges számmal — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
 
             let comparisonHtml = '';
             if (Number.isFinite(Rm)) {
