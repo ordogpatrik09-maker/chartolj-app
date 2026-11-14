@@ -25053,10 +25053,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function calcDailyLimit() {
             const balance = parseFloat(document.getElementById('dl-balance').value) || 0;
             const limitPct = parseFloat(document.getElementById('dl-limit-pct').value) || 0;
-            const todayPnl = parseFloat(document.getElementById('dl-today-pnl').value) || 0;
+            // JAVÍTÁS: a todayPnl-t korábban `parseFloat(...) || 0`-val olvastuk ki,
+            // ÉS az alábbi érvényesség-ellenőrzés is ezt a MÁR 0-ra cserélt értéket
+            // nézte Number.isFinite()-tal — mivel a 0 véges szám, egy törölt/üres
+            // vagy nem-numerikus "Mai eddigi eredmény" mező CSENDBEN "break-even"
+            // (0) napi eredményként jelent meg, hibaüzenet nélkül (0 ugyanis
+            // önmagában is érvényes, valós bemenet lenne — ezért nem lehet a
+            // fallback UTÁNI értéken megkülönböztetni az "érvénytelen bemenet"
+            // esetet a "valóban 0 a mai P&L" esettől). Ugyanaz a hibaosztály, mint
+            // amit korábban a Teljes Portfólió Szimulátor "years" mezőjénél
+            // javítottunk: a nyers, parseFloat-olt értéket kell Number.isFinite()-
+            // tal ellenőrizni, MIELŐTT bármilyen `|| 0` fallback lefutna.
+            const todayPnlRaw = parseFloat(document.getElementById('dl-today-pnl').value);
+            const todayPnl = todayPnlRaw || 0;
             const out = document.getElementById('dl-result');
 
-            if (balance <= 0 || limitPct <= 0 || !Number.isFinite(balance) || !Number.isFinite(limitPct) || !Number.isFinite(todayPnl)) {
+            if (balance <= 0 || limitPct <= 0 || !Number.isFinite(balance) || !Number.isFinite(limitPct) || !Number.isFinite(todayPnlRaw)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számla-egyenleget, limitet és napi eredményt!</div>`;
                 return;
             }
@@ -43624,11 +43636,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function calcDailyGoal() {
             const balance = parseFloat(document.getElementById('dg-balance').value) || 0;
             const goalPct = parseFloat(document.getElementById('dg-goal-pct').value) || 0;
-            const todayPnl = parseFloat(document.getElementById('dg-today-pnl').value) || 0;
+            // JAVÍTÁS: a todayPnl-t korábban `parseFloat(...) || 0`-val olvastuk ki,
+            // majd (egy korábbi javítási kísérletben) a Number.isFinite()-ellenőrzés
+            // is ezt a MÁR 0-ra cserélt értéket nézte — mivel a 0 véges szám, egy
+            // törölt/üres vagy nem-numerikus "Mai eddigi eredmény" mező CSENDBEN
+            // "break-even" (0) napi eredményként jelent meg, hibaüzenet nélkül (a
+            // fallback UTÁNI értéken nem lehet megkülönböztetni az "érvénytelen
+            // bemenet" esetet a "valóban 0 a mai P&L" esettől — 0 maga is érvényes
+            // input). Ugyanaz a hibaosztály, mint amit korábban a Teljes Portfólió
+            // Szimulátor "years" mezőjénél és a testvér-eszköznél (calcDailyLimit)
+            // javítottunk: a nyers, parseFloat-olt értéket kell Number.isFinite()-
+            // tal ellenőrizni, MIELŐTT bármilyen `|| 0` fallback lefutna.
+            const todayPnlRaw = parseFloat(document.getElementById('dg-today-pnl').value);
+            const todayPnl = todayPnlRaw || 0;
             const out = document.getElementById('dg-result');
 
-            if (balance <= 0 || goalPct <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számla-egyenleget és napi célt!</div>`;
+            if (balance <= 0 || goalPct <= 0 || !Number.isFinite(balance) || !Number.isFinite(goalPct) || !Number.isFinite(todayPnlRaw)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számla-egyenleget, napi célt és mai eredményt!</div>`;
                 return;
             }
 
