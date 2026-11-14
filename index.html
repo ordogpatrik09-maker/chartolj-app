@@ -40405,6 +40405,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const totalPnl = pnlPerContract * contracts;
             const pointValue = tickDollar / tickSize;
 
+            if (![ticks, pnlPerContract, totalPnl, pointValue].every(v => Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott ár/tick-méret/tick-érték kombinációja túl szélsőséges érvényes P&L-számításhoz — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
             let colorClass = 'text-slate-300';
             let pnlLabel = 'Nullszaldós (breakeven)';
             if (totalPnl > 0) { colorClass = 'text-neon-green'; pnlLabel = 'Nyereség'; }
