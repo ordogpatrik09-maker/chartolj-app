@@ -22946,7 +22946,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (dof > 0 && sxx > 0) {
                 const residualVariance = sse / dof;
                 stdErrSlope = Math.sqrt(residualVariance / sxx);
-                kRatio = stdErrSlope !== 0 ? (slope / stdErrSlope) : 0;
+                // JAVÍTÁS: egy (majdnem) tökéletesen egyenletes (log-)egyenleg-görbénél
+                // a VALÓDI maradék-variancia (sse) nulla volna, de a Math.log +
+                // lineáris regresszió lebegőpontos aritmetikája ezt a nullát csak
+                // rendkívül kicsi, de technikailag NEM pontosan nulla "zajként" hagyja
+                // a maradékban (pl. sse ~1e-30 nagyságrendű kerekítési hiba egy
+                // tökéletes mértani sorozatú egyenleg-görbénél). A korábbi szigorú
+                // `stdErrSlope !== 0` ellenőrzés ezt a lebegőpontos zajt valós,
+                // mérhető hibaként kezelte, és az emiatt nullához közeli (de nem
+                // pontosan nulla) stdErrSlope osztóval egy irreálisan nagy, több száz
+                // billiós K-Ratio-t produkált — miközben a függvény saját tervezett
+                // viselkedése szerint egy tökéletes illesztésnél a nulla K-Ratio a
+                // helyes, "nincs mérhető bizonytalanság" alapérték volna (lásd a `: 0`
+                // ágat lejjebb). A javítás a sse/sst arányt (skálafüggetlen — 0-hoz
+                // tart tökéletes illesztésnél, függetlenül az egyenleg-görbe
+                // nagyságrendjétől) hasonlítja egy kis, a lebegőpontos kerekítési
+                // zaj fölötti küszöbhöz, nem magát az abszolút stdErrSlope-ot
+                // pontosan nullához — konzisztensen az app többi, hasonló "majdnem
+                // nulla" osztó-ellenőrzésével (pl. Order Book Mélység Kalkulátor).
+                const nearPerfectFit = sst <= 0 || (sse / sst) < 1e-9;
+                kRatio = (!nearPerfectFit && stdErrSlope !== 0) ? (slope / stdErrSlope) : 0;
             }
 
             return { slope, intercept, rSquared, stdErrSlope, kRatio };
