@@ -24765,7 +24765,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // választás, nincs "kihagyás" gomb) és new-password-modal
         // (jelszó-visszaállító email linkről nyílik, nincs "mégse" — a
         // felhasználónak be KELL állítania az új jelszót a folytatáshoz).
+        // MINŐSÉGJAVÍTÁS: a onboarding-tour-overlay (mobil, első-indításos
+        // "spotlight" tour a 4 alsó nav-fülhöz) eddig KIMARADT ebből a
+        // listából, pedig role="dialog" aria-modal="true"-ként van jelölve,
+        // és van saját, nem-destruktív "Kihagyás" útja (endOnboardingTour())
+        // — ugyanaz a mintázat, mint a fenti whatif-modal/badges-modal stb.,
+        // NEM tartozik a fentebb felsorolt, szándékos kivételek közé (azok
+        // mindegyikénél NINCS "mégse"/"kihagyás" útvonal, itt VAN).
         const _escClosableOtherModals = {
+            'onboarding-tour-overlay': () => endOnboardingTour(),
             'badges-modal': () => closeBadgesPanel(),
             'trade-journal-modal': () => closeTradeJournalDashboard(),
             'whatif-modal': () => closeWhatIfSimulator(),
@@ -54281,11 +54289,36 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             { tab: 'progress', navId: 'navbtn-progress', text: 'A Fejlődés fülön követheted az XP-det, a rangjaidat és a kitűzött céljaidat.' }
         ];
         let onboardingTourStepIdx = 0;
+        // MINŐSÉGJAVÍTÁS: az onboarding-tour-overlay role="dialog"
+        // aria-modal="true"-ként van jelölve, de a nyitott eszköz-kalkulátor
+        // modalok (openToolModal/closeToolModal) induló-fókusz és
+        // fókusz-visszaállítási logikáját NEM kapta meg — a tour indulásakor
+        // a fókusz ott maradt, ahol épp volt (gyakran a háttérben, egy már
+        // rejtett elemen), záráskor sem tért vissza semmihez. A MEGLÉVŐ,
+        // _toolModalTriggers-szel azonos mintát (trigger elmentése nyitáskor,
+        // focus({preventScroll:true}) a dialógusra, majd visszaállítás
+        // záráskor) itt NEM a megosztott _toolModalTriggers objektumra
+        // épülve, hanem egy saját, dedikált változóval oldjuk meg, mert ez
+        // az overlay nem "...-modal" ID-re végződik (lásd _getTopmostOpenModal()
+        // kommentjét), és a struktúrája is más: az ELSŐ gyermeke egy tisztán
+        // kozmetikai sötétítő réteg (bg-black/70), NEM a tényleges
+        // dialógus-doboz — a generikus TAB-csapda dialogBox = firstElementChild
+        // feltételezése itt a sötétítő rétegen (0 fókuszálható elem) akadna
+        // el, ezért alább egy külön, az #onboarding-tour-tooltip-re célzott
+        // TAB-kezelőt is kap.
+        let _onboardingTourTrigger = null;
         function startOnboardingTour() {
             if (window.innerWidth >= 1024) return; // desktopon nincs alsó nav, nincs tour
             onboardingTourStepIdx = 0;
+            _onboardingTourTrigger = document.activeElement;
             document.getElementById('onboarding-tour-overlay').classList.remove('hidden');
             renderOnboardingTourStep();
+            const tooltip = document.getElementById('onboarding-tour-tooltip');
+            if (tooltip) {
+                if (!tooltip.hasAttribute('tabindex')) tooltip.setAttribute('tabindex', '-1');
+                tooltip.style.outline = 'none';
+                tooltip.focus({ preventScroll: true });
+            }
         }
         function renderOnboardingTourStep() {
             const step = ONBOARDING_TOUR_STEPS[onboardingTourStepIdx];
@@ -54306,7 +54339,43 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             document.getElementById('onboarding-tour-overlay').classList.add('hidden');
             document.querySelectorAll('.onboarding-tour-highlight').forEach(el => el.classList.remove('onboarding-tour-highlight'));
             if (typeof switchMobileTab === 'function') switchMobileTab('home');
+            const trigger = _onboardingTourTrigger;
+            _onboardingTourTrigger = null;
+            if (trigger && trigger !== document.body && typeof trigger.focus === 'function' && document.body.contains(trigger)) {
+                trigger.focus({ preventScroll: true });
+            }
         }
+        // TAB-fókuszcsapda az onboarding-tour-overlay tooltipjéhez — ugyanaz
+        // a körbezáródó logika, mint a nyitott eszköz-kalkulátor modalok
+        // generikus TAB-kezelőjében (ld. _getTopmostOpenModal() alatti
+        // komment), de közvetlenül az #onboarding-tour-tooltip-re célzva,
+        // mert ennek az overlay-nek az ELSŐ gyermeke (a sötétítő réteg) nem
+        // a tényleges dialógus-doboz.
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Tab') return;
+            const overlayEl = document.getElementById('onboarding-tour-overlay');
+            if (!overlayEl || overlayEl.classList.contains('hidden')) return;
+            const tooltip = document.getElementById('onboarding-tour-tooltip');
+            if (!tooltip) return;
+            const focusable = Array.from(tooltip.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => _isElementVisible(el, tooltip));
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const activeInside = tooltip.contains(document.activeElement);
+            if (e.shiftKey) {
+                if (!activeInside || document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                if (!activeInside || document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        });
 
         function updateAuthHeader() {
             const label = document.getElementById('auth-header-label');
