@@ -40210,7 +40210,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // attribútum (50) CSAK a spinner-nyilakra hat, a billentyűzettel beírt értéket NEM
             // korlátozza. Most explicit felső korláttal (Math.min) is lezárva, konzisztensen a
             // mező HTML max="50" attribútumával.
-            const years = Math.max(1, Math.min(50, Math.round(parseFloat(yearsEl.value) || 0)));
+            // JAVÍTÁS 2 (audit, folyamatos minőségi kör): a `parseFloat(yearsEl.value) || 0`
+            // minta egy törölt/nem-numerikus years-bemenetet a Math.max(1,...) padló miatt
+            // csendben "1 év"-re cserélt, MIELŐTT bármilyen hibaüzenet megjelenhetett volna —
+            // ugyanaz a hibaosztály, mint amit ugyanebben a függvényben lejjebb a kezdő
+            // összegnél és a súly-mezőknél már javítottunk (lásd az ottani JAVÍTÁS
+            // megjegyzéseket), de a years mező akkor kimaradt belőle. Most a nem-véges
+            // (törölt/nem-numerikus) bemenet explicit piros hibaüzenetet kap; egy érvényes,
+            // de tartományon kívüli szám (pl. 0 vagy 1000) továbbra is csendben 1 és 50 közé
+            // VAN szorítva — ez szándékos, mert ez a felső korlát (lásd fent) a
+            // böngészőlap-fagyás elleni biztonsági háló, nem egy felhasználói hiba jelzése.
+            const yearsRaw = parseFloat(yearsEl.value);
+            if (!Number.isFinite(yearsRaw)) {
+                resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Adj meg egy érvényes időtartamot (év) 1 és 50 között!</div>`;
+                if (warningEl) warningEl.classList.add('hidden');
+                return;
+            }
+            const years = Math.max(1, Math.min(50, Math.round(yearsRaw)));
             const rebalance = rebalanceEl.checked;
 
             // JAVÍTÁS: korábban a Math.max(0, parseFloat(...) || 0) minta érvénytelen/
