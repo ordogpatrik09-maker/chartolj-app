@@ -36265,6 +36265,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a többi Magas/Alacsony-alapú kalkulátorral (pl. Awesome
+            // Oscillator, ATR-alapú kalkulátorok) ellentétben itt korábban nem volt
+            // ellenőrzés arra, hogy a Magas érték nullánál nagyobb-e, illetve hogy
+            // sosem lehet kisebb az Alacsonynál. Egy 0/negatív Magas/Alacsony érték
+            // (pl. elgépelt előjel) a lenti downPct/upPct képletekben osztást okoz
+            // egy 0 vagy negatív nevezővel — ez csendben 0/0 = NaN-t vagy egy
+            // előjelet-fordító, teljesen félrevezető %-ot adott a küszöb-összehasonlításhoz
+            // valódi hibaüzenet helyett, konzisztensen az app többi, Magas/Alacsony
+            // bemenetet validáló kalkulátorának mintájával.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const pivots = [];
             let direction = null;
             let extremeHigh = candles[0].high, extremeHighIdx = 0;
