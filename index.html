@@ -34124,15 +34124,33 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a liquidated-ellenőrzés (leveragedR <= -1) csak a lefelé
+            // irányú, egyetlen lépésben 100%+ veszteséget okozó szélsőséget
+            // kapja el — egy egyenként véges, de rendkívül nagy tőkeáttétel-
+            // szint (pl. "1e100", amit a fenti validáció csak pozitívnak
+            // követel meg, felső korlát nélkül) egy NYERTES trade-nél is
+            // IEEE754 double túlcsordulást okozhat a `equity = equity * (1 +
+            // leveragedR)` szorzásban, így `r.totalReturnPct` Infinity lesz.
+            // Mivel `(Infinity).toFixed(2)` szó szerint az "Infinity" szöveget
+            // adja, ez korábban ellenőrzés nélkül "+Infinity%"-ként jelent
+            // volna meg egy sornál és a "Legjobb szint" dobozban is (a reduce
+            // Infinity > véges összehasonlítása mindig igaz, tehát egy ilyen
+            // irreális sor automatikusan "legjobbnak" minősült volna).
+            // Explicit Number.isFinite ellenőrzéssel ez a sor most egyedi,
+            // érthető hibaüzenetet kap, és ki van zárva a "legjobb szint"
+            // jelöltek köréből, konzisztensen az app többi kalkulátorával.
             const rows = sweep.results.map(r => {
                 if (r.liquidated) {
                     return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-red font-semibold">${r.leverage}×:</span><span class="text-neon-red font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>LIKVIDÁLÓDOTT (${r.liquidatedAtTradeIndex + 1}. trade-nél)</span></div>`;
+                }
+                if (!Number.isFinite(r.totalReturnPct) || !Number.isFinite(r.maxDrawdownPct)) {
+                    return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${r.leverage}×:</span><span class="text-amber-400 font-semibold">túl extrém a számszerűsítéshez</span></div>`;
                 }
                 return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${r.leverage}×:</span><span class="${r.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${r.totalReturnPct >= 0 ? '+' : ''}${r.totalReturnPct.toFixed(2)}% · DD ${r.maxDrawdownPct.toFixed(2)}%</span></div>`;
             }).join('');
 
             const firstLiquidation = sweep.results.find(r => r.liquidated);
-            const bestResult = sweep.results.filter(r => !r.liquidated).reduce((best, r) => (!best || r.totalReturnPct > best.totalReturnPct) ? r : best, null);
+            const bestResult = sweep.results.filter(r => !r.liquidated && Number.isFinite(r.totalReturnPct)).reduce((best, r) => (!best || r.totalReturnPct > best.totalReturnPct) ? r : best, null);
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-0">
