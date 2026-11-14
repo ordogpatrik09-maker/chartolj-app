@@ -27830,6 +27830,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const eps = netIncome / shares;
 
+            if (!Number.isFinite(eps)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott nettó nyereség és részvényszám kombinációja túl szélsőséges érvényes EPS-számításhoz — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
             if (eps <= 0) {
                 out.innerHTML = `
                     <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
@@ -27842,6 +27847,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const peRatio = price / eps;
+
+            if (!Number.isFinite(peRatio)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott részvényár és EPS kombinációja túl szélsőséges érvényes P/E-ráta számításhoz — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
 
             let colorClass, verdict;
             if (peRatio < 10) {
