@@ -49637,6 +49637,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function replayEndSession() {
             if (replaySession && replaySession.position) replayClosePosition();
             const s = replaySession;
+            // Az "Újra (azonos típus)" gombhoz: a MOST lezárt nap piactípusát
+            // (trend_up/trend_down/choppy/volatile_reversal/news_shock — sosem
+            // "random", a generateReplayCandles() mindig egy konkrét típust
+            // ad vissza) kell megőriznünk, hogy újraindításkor ne essen vissza
+            // az aktuálisan kiválasztott (esetleg "Meglepetés nap") típusra.
+            const lastReplayType = s.type;
             const totalReturn = s.trades.reduce((acc, t) => acc + t.pnlPct * t.size, 0);
             const firstOpen = s.candles[0].o;
             const lastClose = s.candles[s.candles.length - 1].c;
@@ -49648,8 +49654,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             replayStats.sessionsCompleted++;
             // Track profitable sessions streak
             if (totalReturn > 0) {
-                const _lastReplayType = replaySession ? replaySession.type : null;
-            replayStats.currentProfitStreak = (replayStats.currentProfitStreak || 0) + 1;
+                replayStats.currentProfitStreak = (replayStats.currentProfitStreak || 0) + 1;
                 replayStats.bestProfitStreak = Math.max(replayStats.bestProfitStreak || 0, replayStats.currentProfitStreak);
             } else {
                 replayStats.currentProfitStreak = 0;
@@ -49727,9 +49732,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <button onclick="startReplaySession('${currentDifficulty}')" class="px-6 py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                             <i class="fa-solid fa-rotate-right mr-1"></i> Új nap
                         </button>
-                        <button onclick="renderReplayIntro()" class="px-6 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition"><i class="fa-solid fa-arrow-left mr-1"></i>Menü</button><button onclick="startReplaySession('' + (s.difficulty||'medium') + '\', _lastReplayType)" class="px-4 py-2 rounded-xl text-xs font-bold bg-dark-850 border border-dark-750 text-slate-300 hover:border-dark-600 transition"><i class="fa-solid fa-rotate mr-1"></i>Újra (azonos típus)</button><button onclick="renderReplayIntro()" style="display:none">
-                            Vissza
-                        </button>
+                        <button onclick="renderReplayIntro()" class="px-6 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition"><i class="fa-solid fa-arrow-left mr-1"></i>Menü</button>
+                        <button onclick="startReplaySession('${currentDifficulty}', '${lastReplayType}')" class="px-4 py-2 rounded-xl text-xs font-bold bg-dark-850 border border-dark-750 text-slate-300 hover:border-dark-600 transition"><i class="fa-solid fa-rotate mr-1"></i>Újra (azonos típus)</button>
                     </div>
                 </div>
             `;
