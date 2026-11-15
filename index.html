@@ -2055,6 +2055,13 @@
                                 <div class="text-[10px] text-slate-400">4 időtávú súlyozott momentum-kombináció</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('tsi-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-sky-400/10 text-sky-400 border border-sky-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-signal"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">True Strength Index (TSI) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Kétszeres EMA-simított momentum-oszcillátor</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('divergence-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-rose-400/10 text-rose-400 border border-rose-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-compare"></i></span>
                             <div>
@@ -10724,6 +10731,93 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
         </div>
     </div>
 
+    <!-- ================= TRUE STRENGTH INDEX (TSI) KALKULÁTOR =================
+         Blau-féle momentum-oszcillátor: a napi árkülönbség (momentum) kétszeres
+         EMA-simítását osztja el az abszolút árkülönbség kétszeres EMA-simításával,
+         majd a hányadost 100-zal szorozza. A klasszikus paraméterek (hosszú EMA=25,
+         rövid EMA=13, jelvonal EMA=7) fixek, ugyanúgy, mint a KST kalkulátornál a
+         ROC/SMA periódusok — nincs numerikus bemeneti mező a periódusokhoz, csak a
+         záróár-sorozat. -->
+    <div id="tsi-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-signal text-sky-400"></i> True Strength Index (TSI) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('tsi-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a záróárak sorozatát (soronként egy érték, legalább 44 adatpont szükséges). A TSI a napi árváltozás (momentum) kétszeres EMA-simítását osztja el az abszolút árváltozás kétszeres EMA-simításával (hosszú EMA=25, rövid EMA=13), majd 100-zal szorozza — ebből egy sima oszcillátor jön ki, amit egy 7 periódusú EMA jelvonallal vetnek össze.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="tsi-closes">Záróárak (soronként egy érték, min. 44 adat)</label>
+            <textarea id="tsi-closes" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50" placeholder="100&#10;100.76&#10;98.39&#10;...">100
+100.761077
+98.388632
+97.291281
+95.929656
+97.185659
+98.136826
+100.186942
+98.13033
+97.782132
+95.434097
+94.049151
+94.126463
+91.761796
+90.275868
+91.090279
+91.369481
+89.993728
+90.498983
+92.127078
+89.660222
+91.2699
+92.330411
+91.565689
+89.858634
+92.240421
+91.457053
+89.430057
+87.42331
+89.245531
+89.824534
+91.440888
+92.66252
+92.897284
+95.360174
+94.790699
+95.106107
+96.83607
+97.490521
+99.385226
+99.829722
+100.923039
+98.656743
+97.319024
+96.294903
+94.201842
+92.889075
+90.904183
+89.821848
+90.563839
+89.924483
+89.312406
+87.880892
+86.742479
+89.019417
+89.824397
+90.430966
+88.803773
+90.022319
+88.355672</textarea>
+
+            <button onclick="calcTSI()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-sky-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="tsi-result" role="status" aria-live="polite" class="mt-4"></div>
+        </div>
+    </div>
+
     <!-- ================= DIVERGENCIA ELLENŐRZŐ (REGULAR / HIDDEN) KALKULÁTOR (OKTATÁSI) =================
          Mélypont-elemzésnél: ár magasabb mélypont + indikátor alacsonyabb mélypont = Hidden Bullish (folytatódás);
          ár alacsonyabb mélypont + indikátor magasabb mélypont = Regular Bullish (fordulat).
@@ -14469,6 +14563,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Know Sure Thing (KST) Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">4 időtávú súlyozott momentum-kombináció</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('tsi-modal')" data-tool-title="true strength index (tsi) kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-signal"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">True Strength Index (TSI) Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Kétszeres EMA-simított momentum-oszcillátor</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('divergence-modal')" data-tool-title="divergencia ellenőrző" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -32082,6 +32183,93 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold ${crossUp ? 'text-neon-green' : 'text-neon-red'}">${verdict}</p>
                 <p class="text-[10px] text-slate-400 mt-1">${zeroLineNote}</p>
+            `;
+        }
+
+        function calcTSI() {
+            const closesEl = document.getElementById('tsi-closes');
+            const out = document.getElementById('tsi-result');
+            if (!closesEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
+            const n = closes.length;
+
+            const longPeriod = 25, shortPeriod = 13, signalPeriod = 7;
+            const minNeeded = longPeriod + shortPeriod + signalPeriod - 1; // 44: a momentum-sorozat kétszeres EMA-simításához (25, majd 13) + a jelvonal 7 periódusú EMA-jához legalább 1 érvényes jelvonal-pont kell
+            if (n < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} záróár szükséges a TSI kiszámításához — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            const momentum = [];
+            const absMomentum = [];
+            for (let i = 1; i < n; i++) {
+                const diff = closes[i] - closes[i - 1];
+                if (!Number.isFinite(diff)) continue;
+                momentum.push(diff);
+                absMomentum.push(Math.abs(diff));
+            }
+
+            const ema1Aligned = emaSmaSeededAligned(momentum, longPeriod);
+            const ema1 = ema1Aligned.filter(v => v !== null);
+            const dsmAligned = emaSmaSeededAligned(ema1, shortPeriod);
+            const dsm = dsmAligned.filter(v => v !== null);
+
+            const aema1Aligned = emaSmaSeededAligned(absMomentum, longPeriod);
+            const aema1 = aema1Aligned.filter(v => v !== null);
+            const dsamAligned = emaSmaSeededAligned(aema1, shortPeriod);
+            const dsam = dsamAligned.filter(v => v !== null);
+
+            const length = Math.min(dsm.length, dsam.length);
+            const tsiSeries = [];
+            let tsiOverflowed = false;
+            for (let i = 0; i < length; i++) {
+                if (dsam[i] === 0) continue;
+                const val = 100 * dsm[i] / dsam[i];
+                // JAVÍTÁS: ugyanaz a hibaosztály, mint a TRIX/KST kalkulátoroknál —
+                // szélsőséges, de egyenként véges záróárak esetén a kétszeres
+                // EMA-simítás különbsége, illetve egy nullához közeli DSAM-osztó
+                // túlcsordulhat Infinity/NaN-re. Az adott pontot kihagyjuk (a TSI
+                // pontjai egymástól függetlenek, nincs szükség a teljes sorozat
+                // elvetésére, mint a rekurzív TRIX-nél).
+                if (!Number.isFinite(val)) { tsiOverflowed = true; continue; }
+                tsiSeries.push(val);
+            }
+
+            if (tsiSeries.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${tsiOverflowed ? 'A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a TSI Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!' : 'Nem sikerült kiszámolni a TSI-t — adj meg több adatot!'}</div>`;
+                return;
+            }
+
+            const signalAligned = emaSmaSeededAligned(tsiSeries, signalPeriod);
+            const signalSeries = signalAligned.filter(v => v !== null);
+
+            const lastTsi = tsiSeries[tsiSeries.length - 1];
+            const prevTsi = tsiSeries.length > 1 ? tsiSeries[tsiSeries.length - 2] : null;
+            const lastSignal = signalSeries.length > 0 ? signalSeries[signalSeries.length - 1] : null;
+
+            const colorClass = lastTsi >= 0 ? 'text-neon-green' : 'text-neon-red';
+            let verdict = lastTsi >= 0
+                ? 'A TSI a nulla vonal FÖLÖTT van — hosszabb távú momentum pozitív.'
+                : 'A TSI a nulla vonal ALATT van — hosszabb távú momentum negatív.';
+            if (lastSignal !== null) {
+                const crossUpSignal = lastTsi > lastSignal;
+                verdict += crossUpSignal
+                    ? ' A TSI a jelvonal fölött van — bullish momentumjelzés.'
+                    : ' A TSI a jelvonal alatt van — bearish momentumjelzés.';
+            }
+            if (prevTsi !== null) {
+                const rising = lastTsi > prevTsi;
+                verdict += rising ? ' A TSI emelkedik az előző értékéhez képest.' : ' A TSI csökken az előző értékéhez képest.';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">TSI (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastTsi >= 0 ? '+' : ''}${lastTsi.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    ${lastSignal !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (EMA7):</span><span class="text-white">${lastSignal >= 0 ? '+' : ''}${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>` : ''}
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
         }
 
@@ -52750,7 +52938,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
