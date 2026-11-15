@@ -24681,6 +24681,42 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         });
 
+        /* ================= TIZEDESVESSZŐ → TIZEDESPONT type="number" MEZŐKNÉL =================
+           JAVÍTÁS: a type="number" mezők natív HTML5-sanitizálása a "."-ot
+           fogadja el tizedes-elválasztóként, a VESSZŐT — ami a magyar
+           (hu-HU) locale/billentyűzet TERMÉSZETES tizedes-elválasztója, és
+           amit pl. a calculateMapComparison/calculateTbsz kimenete is
+           toLocaleString('hu-HU')-val vesszővel jelenít meg — viszont NEM
+           utasítja el hibával, hanem CSENDBEN KISZŰRI a beírt/beillesztett
+           karakterek közül, a két szomszédos számjegy-csoportot pedig
+           egyszerűen összefűzi. Playwrighttal mérve (Chromium): a mezőbe
+           beírt "0,05" a value-ban "005"-ként landol (parseFloat()-tel 5,
+           NEM 0.05 — 100×-os eltérés), "1,5" pedig "15"-ként (10×-es
+           eltérés) — mindkettő egy szintaktikailag ÉRVÉNYES, pozitív egész
+           számnak néz ki, tehát az app összes meglévő isFinite/tartomány-
+           ellenőrzése simán átengedi, valódi hibaüzenet helyett egy
+           CSENDESEN, ÉSZREVEHETETLENÜL ROSSZ bemenetet/eredményt adva — ez
+           mind az 551 type="number" mezőt érinti (az e22b7f7 kör
+           inputmode="decimal"-t adott hozzájuk, de ez csak a mobil
+           virtuális billentyűzet KIOSZTÁSÁT kéri egységesre, a
+           tizedesvessző-karakter natív kezelését nem javítja).
+
+           Globális, delegált "beforeinput" figyelő minden type="number"
+           mezőn: ha a beírt vagy beillesztett (paste) szövegrész vesszőt
+           tartalmaz, megakadályozza az alapértelmezett (hibás) beszúrást,
+           és a vessző(ke)t pontra cserélve, document.execCommand-dal szúrja
+           be — ez a natív böngésző-kurzorpozíciót és value-sanitizálást is
+           helyesen kezeli (Playwrighttal tesztelve: "0,05"→"0.05",
+           "1,5"→"1.5", "-1,5"→"-1.5", "12,34"→"12.34", egyszeri
+           karakterbeírásnál és teljes beillesztett szövegnél egyaránt). */
+        document.addEventListener('beforeinput', function(e) {
+            const t = e.target;
+            if (t && t.tagName === 'INPUT' && t.type === 'number' && typeof e.data === 'string' && e.data.indexOf(',') !== -1) {
+                e.preventDefault();
+                document.execCommand('insertText', false, e.data.replace(/,/g, '.'));
+            }
+        }, true);
+
         // FÓKUSZ-KEZELÉS eszköz-kalkulátor modaloknál (billentyűzet/screen
         // reader-barát UX, az ESC-bezárás és Enter-kiszámolás párja — eddig
         // a modal megnyitása NEM mozgatta a fókuszt a dialógusba: a
