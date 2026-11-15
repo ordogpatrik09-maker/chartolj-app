@@ -3168,8 +3168,8 @@
         </aside>
 
         <!-- Bal eszköztár összecsukó fül — húzva átméretezhető, kattintva be/kicsukható -->
-        <div id="left-toolbar-resize-handle" onclick="toggleLeftToolbar()" class="w-3 bg-dark-950/60 border-r border-dark-750/40 hover:bg-dark-800 flex items-center justify-center transition shrink-0 z-30" style="cursor: ew-resize;" title="Húzd az átméretezéshez, kattints az elrejtéshez">
-            <i id="left-toolbar-toggle-icon" class="fa-solid fa-chevron-left text-[8px] text-slate-600"></i>
+        <div id="left-toolbar-resize-handle" role="button" tabindex="0" aria-label="Bal eszköztár elrejtése/megjelenítése" onclick="toggleLeftToolbar()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" class="w-3 bg-dark-950/60 border-r border-dark-750/40 hover:bg-dark-800 flex items-center justify-center transition shrink-0 z-30" style="cursor: ew-resize;" title="Húzd az átméretezéshez, kattints az elrejtéshez">
+            <i id="left-toolbar-toggle-icon" class="fa-solid fa-chevron-left text-[8px] text-slate-600" aria-hidden="true"></i>
         </div>
 
         <!-- Center Main Canvas Chart Work Area -->
@@ -3459,8 +3459,8 @@
         </main>
 
         <!-- ================= RIGHT SIDEBAR: ORDER DESK & ORDERBOOK ================= -->
-        <div id="orderdesk-resize-handle" onclick="toggleOrderDesk()" class="w-3 bg-dark-950/60 border-l border-dark-750/40 hover:bg-dark-800 flex items-center justify-center transition shrink-0 z-30" style="cursor: ew-resize;" title="Húzd az átméretezéshez, kattints az elrejtéshez">
-            <i id="orderdesk-toggle-icon" class="fa-solid fa-chevron-right text-[8px] text-slate-600"></i>
+        <div id="orderdesk-resize-handle" role="button" tabindex="0" aria-label="Order desk panel elrejtése/megjelenítése" onclick="toggleOrderDesk()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" class="w-3 bg-dark-950/60 border-l border-dark-750/40 hover:bg-dark-800 flex items-center justify-center transition shrink-0 z-30" style="cursor: ew-resize;" title="Húzd az átméretezéshez, kattints az elrejtéshez">
+            <i id="orderdesk-toggle-icon" class="fa-solid fa-chevron-right text-[8px] text-slate-600" aria-hidden="true"></i>
         </div>
         <aside id="orderdesk-aside" style="width: 320px;" class="bg-dark-950/80 border-l border-dark-750/60 flex flex-col shrink-0 z-30 backdrop-blur-md overflow-hidden transition-all duration-200">
             
@@ -16255,7 +16255,7 @@ Mean-reversion,2.5</textarea>
                         <button id="academy-roadmap-toggle" type="button" onclick="toggleAcademyRoadmapView()" title="Útvonal nézet" aria-label="Útvonal nézet váltása" class="shrink-0 w-7 h-7 rounded-lg border border-dark-750 bg-dark-850/60 text-slate-400 hover:text-neon-cyan hover:border-neon-cyan/40 transition flex items-center justify-center"><i class="fa-solid fa-route text-[11px]"></i></button>
                     </div>
                     <p id="academy-module-subtitle" class="text-[10px] text-slate-400 mt-0.5"></p>
-                <div id="lesson-bm-filter" data-active="0" onclick="this.dataset.active=this.dataset.active==='1'?'0':'1';renderAcademyLessonList();" style="display:none" class="items-center gap-1 text-[10px] font-bold text-amber-400 cursor-pointer mt-1"><i class="fa-solid fa-bookmark mr-0.5"></i><span id="lesson-bm-count">0</span> könyvjelző</div>
+                <div id="lesson-bm-filter" data-active="0" role="button" tabindex="0" aria-pressed="false" aria-label="Csak a könyvjelzőzött leckék szűrése" onclick="this.dataset.active=this.dataset.active==='1'?'0':'1';this.setAttribute('aria-pressed', this.dataset.active==='1');renderAcademyLessonList();" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" style="display:none" class="items-center gap-1 text-[10px] font-bold text-amber-400 cursor-pointer mt-1"><i class="fa-solid fa-bookmark mr-0.5" aria-hidden="true"></i><span id="lesson-bm-count">0</span> könyvjelző</div>
                 </div>
                 <div id="academy-lesson-list" class="flex-grow overflow-y-auto p-2 space-y-1.5"></div>
             </section>
@@ -50084,7 +50084,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             el.innerHTML = starred.map(a => {
                 const price = a.symbol === currentAsset.symbol ? currentAsset.price : ((typeof livePrices !== 'undefined' ? livePrices[a.symbol] : null) ?? ASSET_BASE_PRICES[a.symbol] ?? 0);
                 return `
-                <div class="glass-card rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-neon-cyan/40 transition" onclick="selectAsset('${a.symbol}', '${a.name}', '${a.icon}', '${a.color}'); switchMobileTab('trade');">
+                <div class="glass-card rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-neon-cyan/40 transition" role="button" tabindex="0" aria-label="${a.symbol} kiválasztása kereskedésre" onclick="selectAsset('${a.symbol}', '${a.name}', '${a.icon}', '${a.color}'); switchMobileTab('trade');" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-7 h-7 shrink-0 rounded-full ${a.bg} border flex items-center justify-center text-xs font-bold">${a.icon}</span>
                         <div class="min-w-0">
@@ -51307,7 +51307,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     cellClass += 'bg-dark-850/60 border-dark-750 text-slate-500 hover:border-neon-cyan/40';
                 }
                 if (isToday) cellClass += ' ring-1 ring-neon-cyan/70';
-                cells += `<div class="${cellClass}" onclick="openJournalEntryEditor('${key}')">
+                const dayAriaLabel = `${day}. nap napló bejegyzés szerkesztése${pnlLabel ? ` (eredmény: ${pnlLabel})` : ' (még nincs bejegyzés)'}`;
+                cells += `<div class="${cellClass}" role="button" tabindex="0" aria-label="${dayAriaLabel}" onclick="openJournalEntryEditor('${key}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
                     <span class="font-bold">${day}</span>
                     ${pnlLabel ? `<span class="text-[9px] leading-none mt-0.5">${pnlLabel}</span>` : ''}
                     ${entry && entry.note ? `<span class="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-amber-400"></span>` : ''}
