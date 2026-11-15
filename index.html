@@ -2076,6 +2076,13 @@
                                 <div class="text-[10px] text-slate-400">6 SMA egyszerre — szalagszélesség elemzés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('hma-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-fuchsia-400/10 text-fuchsia-400 border border-fuchsia-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-wave-square"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Hull Mozgóátlag (HMA)</div>
+                                <div class="text-[10px] text-slate-400">Jóval kisebb lag, mint SMA/EMA</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('orb-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-lime-400/10 text-lime-400 border border-lime-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-door-open"></i></span>
                             <div>
@@ -11191,6 +11198,63 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
         </div>
     </div>
 
+    <!-- ================= HULL MOZGÓÁTLAG (HMA) KALKULÁTOR (OKTATÁSI) =================
+         HMA(n) = WMA( 2×WMA(záróár, round(n/2)) − WMA(záróár, n), round(sqrt(n)) ).
+         Alan Hull 2005-ös konstrukciója: a kettős súlyozott-mozgóátlagos "raw HMA" sorozatot
+         egy harmadik, rövidebb (sqrt(n) periódusú) WMA-val simítja — ez a jóval kevesebb
+         lag mellett is sima (nem zajos, mint egy egyszerű gyors EMA) eredményt ad. -->
+    <div id="hma-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-fuchsia-400"></i> Hull Mozgóátlag (HMA) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('hma-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Hull Mozgóátlag (HMA) egy súlyozott mozgóátlagokból (WMA) háromszorosan épített mutató, amit Alan Hull dolgozott ki azzal a céllal, hogy jelentősen KISEBB legyen a lag-ja, mint egy egyszerű SMA-nak vagy akár egy EMA-nak, de közben ne váljon zajossá. Add meg a záróárak sorozatát (soronként egy érték, időrendben, legrégebbi elől) és a periódust — a kalkulátor a HMA utolsó néhány értékét, az irányát (emelkedő/csökkenő), valamint összehasonlításképp az azonos periódusú EMA-t is megmutatja.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="hma-closes">Záróárak (soronként egy érték, időrendben)</label>
+            <textarea id="hma-closes" rows="6" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-2 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50" placeholder="100.0&#10;100.5&#10;...">100.49
+99.93
+99.8
+99.58
+100.23
+100.78
+101.7
+101.24
+101.36
+100.81
+100.58
+100.84
+100.29
+100.03
+100.53
+100.86
+100.63
+101.03
+101.81
+101.22
+101.99
+102.58
+102.56
+102.22
+103.25
+103.22
+102.78
+102.34
+103.18
+103.61</textarea>
+            <label class="text-[11px] font-semibold text-slate-400" for="hma-period">Periódus</label>
+            <input type="number" inputmode="decimal" id="hma-period" value="9" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-fuchsia-400/50">
+
+            <button onclick="calcHMA()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-fuchsia-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="hma-result" role="status" aria-live="polite" class="mt-4"></div>
+        </div>
+    </div>
+
     <!-- ================= OPENING RANGE BREAKOUT (ORB) KALKULÁTOR (OKTATÁSI) =================
          Opening Range = [nyitás utáni első időszak legalacsonyabb, legmagasabb ára].
          Kitörés felfelé/lefelé az aktuális ár alapján; cél = kitörési szint ± Range (1:1 mért mozgás). -->
@@ -14658,6 +14722,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Mozgóátlag Szalag (MA Ribbon)</div>
                             <div class="text-[10px] text-slate-400">6 SMA egyszerre — szalagszélesség elemzés</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('hma-modal')" data-tool-title="hull mozgóátlag (hma)" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-wave-square"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Hull Mozgóátlag (HMA)</div>
+                            <div class="text-[10px] text-slate-400">Jóval kisebb lag, mint SMA/EMA</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('orb-modal')" data-tool-title="opening range breakout (orb)" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -32113,6 +32184,125 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold text-orange-400">${trendNote}</p>
                 <p class="text-[10px] text-slate-400 mt-1">${widthNote}</p>
+            `;
+        }
+
+        // Hull Mozgóátlag (HMA): WMA(2×WMA(záróár, round(n/2)) − WMA(záróár, n), round(sqrt(n))).
+        // A hagyományos WMA (Weighted Moving Average) az ablakon belül lineárisan növekvő
+        // súlyokat ad a legrégebbitől a legfrissebbig (1,2,...,n), a súlyösszeggel (n(n+1)/2)
+        // osztva. Ennek a belső segédfüggvénynek a kimenete MINDIG a bemeneti sorozat VÉGÉHEZ
+        // igazított tömb (a legelső visszaadott érték a (period-1). indexű eredeti adatponthoz
+        // tartozik) — ez teszi lehetővé, hogy a lenti kód a fél- és teljes-periódusú WMA-sorokat
+        // helyes index-eltolással (offset = period - halfLen) illessze össze.
+        function calcHMA() {
+            const closesEl = document.getElementById('hma-closes');
+            const periodEl = document.getElementById('hma-period');
+            const out = document.getElementById('hma-result');
+            if (!closesEl || !periodEl || !out) return;
+
+            const lines = closesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const closes = lines.map(l => parseFloat(l)).filter(v => Number.isFinite(v));
+            const period = parseInt(periodEl.value, 10);
+
+            // Explicit, előzetes "legalább 2" ellenőrzés — konzisztensen a VWMA/EMV stb.
+            // kalkulátorok mintájával: a HTML min="2" attribútum csak a spinner-nyilakra hat,
+            // billentyűzettel beírt 0/negatív érték megkerülné. A parseInt() a tört részt
+            // (pl. "9.5" → 9) a többi ilyen mintájú kalkulátorral (VWMA, stb.) konzisztensen
+            // már a fenti sorban csendben levágja, tehát itt már csak egész érték érkezhet be.
+            if (!Number.isFinite(period) || period < 2) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A periódusnak egy érvényes, legalább 2 értékű egész számnak kell lennie!</div>`;
+                return;
+            }
+
+            const halfLen = Math.round(period / 2);
+            const sqrtLen = Math.round(Math.sqrt(period));
+            // A kettős (fél- és teljes-periódusú) WMA, majd egy harmadik, sqrt(n)-periódusú
+            // WMA miatt ennyi adatpont szükséges MINIMÁLISAN 1 HMA-értékhez — a +9 puffer
+            // azért kell, hogy legalább az utolsó 10 HMA-érték (irány/trend megítéléséhez)
+            // és az összehasonlító EMA is kiszámolható legyen.
+            const minNeeded = period + sqrtLen + 9;
+
+            if (closes.length < minNeeded) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${minNeeded} érvényes záróár szükséges a ${period}-periódusú Hull Mozgóátlaghoz (a kettős simítás miatt) — jelenleg ${closes.length} van megadva!</div>`;
+                return;
+            }
+
+            function wma(series, p) {
+                const weightSum = p * (p + 1) / 2;
+                const result = [];
+                for (let i = p - 1; i < series.length; i++) {
+                    let sum = 0;
+                    for (let j = 0; j < p; j++) sum += series[i - p + 1 + j] * (j + 1);
+                    result.push(sum / weightSum);
+                }
+                return result;
+            }
+
+            const wmaHalf = wma(closes, halfLen);
+            const wmaFull = wma(closes, period);
+            const offset = period - halfLen; // halfLen <= period mindig, így offset >= 0
+            const diffSeries = wmaFull.map((v, i) => 2 * wmaHalf[i + offset] - v);
+            const hmaSeries = wma(diffSeries, sqrtLen);
+
+            function emaSeriesCalc(series, p) {
+                const k = 2 / (p + 1);
+                let val = series.slice(0, p).reduce((a, b) => a + b, 0) / p;
+                const result = [val];
+                for (let i = p; i < series.length; i++) {
+                    val = series[i] * k + val * (1 - k);
+                    result.push(val);
+                }
+                return result;
+            }
+            const emaSeries = emaSeriesCalc(closes, period);
+
+            // JAVÍTÁS-mintakövetés: szélsőséges, de egyenként véges záróár-bemenetnél a
+            // belső összegek túlcsordulhatnak Infinity-re/NaN-ra — ugyanaz a hibaosztály,
+            // mint a korábban javított kalkulátoroknál (VWMA, MA Ribbon, stb.).
+            if (!hmaSeries.every(Number.isFinite) || !emaSeries.every(Number.isFinite) || hmaSeries.length === 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — a Hull Mozgóátlag számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
+            const lastHMA = hmaSeries[hmaSeries.length - 1];
+            const prevHMA = hmaSeries.length > 1 ? hmaSeries[hmaSeries.length - 2] : null;
+            const lastEMA = emaSeries[emaSeries.length - 1];
+            const lastClose = closes[closes.length - 1];
+
+            const last5 = hmaSeries.slice(-5);
+            const rowsHtml = last5.map((v, i) => {
+                const idxFromEnd = last5.length - i;
+                const label = idxFromEnd === 1 ? 'Utolsó (legfrissebb)' : `${idxFromEnd - 1} periódussal korábban`;
+                return `<div class="flex justify-between"><span class="text-slate-400">${label}:</span><span class="text-white">${v.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>`;
+            }).join('');
+
+            const trendNote = prevHMA === null
+                ? 'Nincs elég korábbi HMA-érték az irány megítéléséhez.'
+                : (lastHMA > prevHMA
+                    ? 'A HMA EMELKEDIK — ez a legutóbbi adatpontok alapján felfelé forduló/erősödő trendre utal.'
+                    : (lastHMA < prevHMA
+                        ? 'A HMA CSÖKKEN — ez a legutóbbi adatpontok alapján lefelé forduló/gyengülő trendre utal.'
+                        : 'A HMA iránya pillanatnyilag változatlan (lapos).'));
+
+            const priceVsHma = lastClose > lastHMA
+                ? 'Az ár a HMA FELETT van — ez tipikusan bullish (emelkedő) bias-t jelez a trendkövető olvasatban.'
+                : (lastClose < lastHMA
+                    ? 'Az ár a HMA ALATT van — ez tipikusan bearish (csökkenő) bias-t jelez a trendkövető olvasatban.'
+                    : 'Az ár pontosan a HMA-n van.');
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">HMA(${period}) — utolsó érték:</span><span class="text-fuchsia-400 font-extrabold text-sm">${lastHMA.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA(${period}) — összehasonlításhoz:</span><span class="text-white">${lastEMA.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó záróár:</span><span class="text-white">${lastClose.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                </div>
+                <div class="glass-card rounded-xl p-3 space-y-1 mb-3 font-mono text-[10.5px]">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Utolsó ${last5.length} HMA-érték</div>
+                    ${rowsHtml}
+                </div>
+                <p class="text-[10px] font-semibold text-fuchsia-400">${trendNote}</p>
+                <p class="text-[10px] text-slate-400 mt-1">${priceVsHma}</p>
+                <p class="text-[10px] text-slate-500 mt-1">A HMA a kettős WMA-simítás miatt jóval gyorsabban reagál az árváltozásra, mint az azonos periódusú SMA, és általában simábban is, mint egy egyszerű gyors EMA — ezért sokan trendkövető belépési/kilépési szűrőként használják.</p>
             `;
         }
 
@@ -52407,7 +52597,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
