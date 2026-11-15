@@ -42591,6 +42591,29 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const spread = iv - rvAnnualPct;
             const ratio = rvAnnualPct > 0 ? (iv / rvAnnualPct) : null;
 
+            // JAVÍTÁS: a bemenetet csak egyedileg, elemenként szűrtük
+            // Number.isFinite()-fel és "> 0"-ra (azaz minden egyes beírt
+            // záróár önmagában véges és pozitív volt), de ez nem védett az
+            // EGYMÁST KÖVETŐ záróárak HÁNYADOSÁNAK túlcsordulása ellen. Két
+            // egyébként véges, de szélsőségesen eltérő nagyságrendű
+            // záróár — pl. "1e250, 1e-250, 1e250" — esetén a closes[i]/
+            // closes[i-1] hányados maga lép túl az IEEE754 double
+            // ábrázolható tartományán (0-ra alulcsordul, majd a következő
+            // lépésben Infinity-re túlcsordul), így a Math.log()-ból
+            // -Infinity/Infinity keletkezik. Ez a meanReturn/variance
+            // összegzésén Infinity − Infinity = NaN-ként terjedt tovább, és
+            // a rvAnnualPct NaN lett — amit a fenti "rvAnnualPct === 0"
+            // összehasonlítás NEM fogott ki (NaN ≠ 0), így a kód a legutolsó
+            // "IV és RV közel áll egymáshoz" ágra esett volna át egy
+            // megtévesztő, hibásan zöld verdikttel és "NaN%" felirattal.
+            // Ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál — most egy explicit véges-ellenőrzés a
+            // származtatott értékeken ezt kizárja.
+            if (!Number.isFinite(meanReturn) || !Number.isFinite(variance) || !Number.isFinite(dailyStdev) || !Number.isFinite(rvAnnualPct) || !Number.isFinite(spread) || (ratio !== null && !Number.isFinite(ratio))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak között túl nagy a nagyságrendi eltérés — az egymást követő napi hozamok (log-arányok) túlcsordulnak, és a Realized Volatility nem fejezhető ki véges számmal. Adj meg reálisabb nagyságrendű, egymáshoz közelebbi záróárakat!</div>`;
+                return;
+            }
+
             let verdict, verdictColor;
             if (rvAnnualPct === 0) {
                 verdict = 'A realizált volatilitás NULLA (a megadott áraknak nincs elmozdulása) — az arány nem értelmezhető, csak a nyers spread (= IV) mutat valamit.';
@@ -42695,6 +42718,27 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const hvAnnualPct = dailyStdev * Math.sqrt(annFactor) * 100;
 
             const diff = atrNaiveAnnualPct - hvAnnualPct;
+
+            // JAVÍTÁS: ugyanaz a hibaosztály, mint a Realized vs Implied
+            // Volatility Kalkulátornál (lásd ott a részletes magyarázatot) —
+            // a bemenetet csak egyedileg, elemenként szűrtük (minden ár
+            // önmagában véges és pozitív), de ez nem védett az EGYMÁST
+            // KÖVETŐ záróárak HÁNYADOSÁNAK (a historical volatility
+            // log-hozamaihoz), illetve a lastAtr/lastClose aránynak (az ATR
+            // naiv évesítéséhez) a túlcsordulása ellen. Két egyébként véges,
+            // de szélsőségesen eltérő nagyságrendű záróár esetén a
+            // meanReturn/variance/hvAnnualPct, vagy extrém kicsi záróár
+            // esetén az atrPctOfPrice/atrNaiveAnnualPct NaN/Infinity-re
+            // csordulhat, amit az alábbi "Math.abs(diff) <= ..." és
+            // "diff > 0" összehasonlítások NEM fognak ki (egy NaN-t
+            // tartalmazó összehasonlítás mindig false-ra értékelődik ki),
+            // így a kód a legutolsó ágra esne át egy megtévesztő, hibás
+            // verdikttel és "NaN%"/"Infinity%" felirattal.
+            if (![atrPctOfPrice, atrNaiveAnnualPct, meanReturn, variance, dailyStdev, hvAnnualPct, diff].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak túl szélsőségesek (pl. a záróárak közötti nagyságrendi eltérés, vagy egy nullához túl közeli záróár) — az ATR és/vagy a Historical Volatility évesített értéke túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             let verdict, verdictColor;
             if (Math.abs(diff) <= hvAnnualPct * 0.15 || Math.abs(diff) <= 2) {
                 verdict = 'A két mutató naiv évesített nagyságrendje KÖZEL áll egymáshoz ezen az adatsoron — de ez csak véletlen egybeesés, nem jelenti, hogy a két módszer felcserélhető. Más-más matematikai alapon számolnak.';
