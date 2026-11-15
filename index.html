@@ -25500,6 +25500,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 results.push(simulateMonteCarloPath(winRateFrac, rr, riskPctFrac, numTrades));
             }
 
+            // JAVÍTÁS: a winRatePct/rr/riskPct/numTrades mezők fenti felső korlátai
+            // (99%, 50, 99%, 2000) EGYENKÉNT érvényesek, de EGYÜTT, egy hosszú
+            // nyertes sorozat mentén a compound equity-görbe (equity *= 1 +
+            // riskPctFrac*rr, ismételve akár 2000-szer) a lebegőpontos double
+            // ábrázolható tartományát messze túllépi (pl. 50%-os kockázat × 50-es
+            // R/R × akár csak ~1500 egymást követő nyereséges trade esetén a
+            // szorzat Infinity-be csordul túl) — ÉRVÉNYES, a validáción átmenő
+            // bemenettel, nem csak szélsőséges kézzel beírt extrém számmal. Az
+            // Infinity onnan a medián/percentilis/profitábilis-arány mezőkbe
+            // szivárgott volna ("+Infinity%"), és egy Infinity equity-jű út
+            // "csúcs" (peak) értéke is Infinity lett, amin a (peak-equity)/peak
+            // visszaesés-számítás Infinity-Infinity=NaN-t ad — ez az átlagos
+            // max. visszaesés mezőt "NaN%"-ra szennyezte volna. Most explicit
+            // Number.isFinite() ellenőrzést kap minden szimulált út végeredménye
+            // és max. visszaesése, ugyanazzal a hibaosztállyal és mintával, mint
+            // az app többi kalkulátorában (Black-Scholes, Tőke-mérföldkövek, stb.)
+            // már javított Infinity/NaN-szivárgásoknál.
+            if (results.some(r => !Number.isFinite(r.finalEquity) || !Number.isFinite(r.maxDrawdown))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott paraméter-kombináció (kockázat/trade %, R/R arány és trade-szám együtt) egy hosszú nyertes sorozat mentén lebegőpontos túlcsordulást okoz a szimulált tőkegörbében — csökkentsd a kockázat/trade %-ot, az R/R arányt, vagy a trade-számot, és próbáld újra!</div>`;
+                return;
+            }
+
             const finalEquities = results.map(r => r.finalEquity).sort((a, b) => a - b);
             const maxDrawdowns = results.map(r => r.maxDrawdown);
             const percentile = (arr, p) => arr[Math.min(arr.length - 1, Math.max(0, Math.floor(p * (arr.length - 1))))];
