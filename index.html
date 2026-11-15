@@ -37504,6 +37504,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const latestRoc = (latestClose - refClose) / refClose * 100;
             const prevRoc = (prevClose - prevRefClose) / prevRefClose * 100;
 
+            // JAVÍTÁS: két önmagában véges, de szélsőséges nagyságrendű
+            // záróár (pl. ~1.7e308 és ennek ellentéte) mellett a
+            // (latestClose - refClose) különbség túlcsordulhat
+            // Infinity-re, így a ROC is Infinity/-Infinity lenne — ez a
+            // nevező-nulla ellenőrzés UTÁN, de a kijelzés ELŐTT is
+            // megjelenhet. Ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál.
+            if (!Number.isFinite(latestRoc) || !Number.isFinite(prevRoc)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőséges nagyságrendűek érvényes ROC-érték kiszámításához — a köztes számítás túlcsordul!</div>`;
+                return;
+            }
+
             const crossedUp = prevRoc <= 0 && latestRoc > 0;
             const crossedDown = prevRoc >= 0 && latestRoc < 0;
 
