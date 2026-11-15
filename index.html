@@ -24911,6 +24911,30 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         });
 
+        // ESC-bezárás kiterjesztése a mobil alulról-felcsúszó panelekre
+        // ("Eszközök" / left-toolbar-aside és "Kereskedés" / orderdesk-aside).
+        // Eddig ezek a panelek KIMARADTAK a fenti két ESC-mechanizmusból: nem
+        // "openToolModal("-mintájú kalkulátor-modalok (az első blokk), és nem
+        // a "hidden" osztályt (ki)kapcsoló egyedi app-modalok (a második
+        // blokk) — saját "mobile-sheet-open" osztállyal nyílnak/záródnak, amit
+        // semelyik meglévő ESC-figyelő nem ismer fel. Billentyűzettel navigáló
+        // felhasználó a panel megnyitása (pl. "Eszközök" fül) után eddig csak
+        // a panel belsejében lévő "Bezárás" gombig Tab-elve tudta becsukni —
+        // az ESC némán nem csinált semmit, eltérően minden más dialógustól az
+        // alkalmazásban. A closeMobileSheets() a panelek MÁR MEGLÉVŐ, saját
+        // bezáró útvonala (ugyanaz, mint a két "Bezárás" gomb onclick-je),
+        // nem vezet be új viselkedést és nem destruktív (nincs el nem mentett
+        // állapot egyik panelben sem).
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            const toolsSheet = document.getElementById('left-toolbar-aside');
+            const orderSheet = document.getElementById('orderdesk-aside');
+            if ((toolsSheet && toolsSheet.classList.contains('mobile-sheet-open')) ||
+                (orderSheet && orderSheet.classList.contains('mobile-sheet-open'))) {
+                closeMobileSheets();
+            }
+        });
+
         // ENTER billentyű lefuttatja az éppen nyitott eszköz-kalkulátor
         // "Kiszámolás" gombját, ha a fókusz egy szöveges/szám mezőn van
         // (billentyűzet-barát UX, az ESC-bezárás párja — eddig Enterre
