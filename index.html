@@ -39941,6 +39941,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const winRatePct = (wins / n) * 100;
             const variance = rValues.reduce((sum, r) => sum + Math.pow(r - avgR, 2), 0) / n;
             const stdDevR = Math.sqrt(variance);
+            // JAVÍTÁS: minden egyes R-érték egyenként véges (a soronkénti
+            // Number.isFinite ellenőrzés ezt már garantálja), de ÖSSZEADVA
+            // (totalR / avgR) vagy a szórás számításánál négyzetre emelve
+            // (variance / stdDevR) túlcsordulhatnak Infinity-re — ugyanaz a
+            // hibaosztály, mint a sor-szintű ellenőrzésnél fent, csak az
+            // aggregátumokon. bestR/worstR biztonságos (már véges értékek
+            // Math.max/min-je), ezért azokat nem kell itt újra ellenőrizni.
+            if (![totalR, avgR, variance, stdDevR].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott trade-ek R-értékeinek összege/szórása túl szélsőséges, az aggregált statisztikák túlcsordulnak — adj meg reálisabb nagyságrendű eredmény/kockázat értékeket!</div>`;
+                return;
+            }
             const bestR = Math.max(...rValues);
             const worstR = Math.min(...rValues);
             const isPositive = avgR > 0;
