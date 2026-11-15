@@ -26878,6 +26878,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // a Zig Zag és a Historical Volatility vs ATR kalkulátoroknál már
+            // korábban javított hibaosztály — itt sem volt ellenőrzés arra, hogy
+            // a Magas/Alacsony/Záró érték nullánál nagyobb-e, illetve hogy a
+            // Magas sosem lehet kisebb az Alacsonynál. Egy elgépelt/felcserélt
+            // vagy negatív érték csendben, hibaüzenet nélkül egy félrevezető
+            // (torz +DI/-DI/ADX) eredményt adott volna valódi hibajelzés helyett.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const n = candles.length;
             const tr = [], plusDM = [], minusDM = [];
             for (let i = 1; i < n; i++) {
@@ -27015,6 +27028,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (!period || period < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy pozitív egész periódust!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a calcADX()-nél (ez a kalkulátor az
+            // ADX-re épül) — lásd az ottani javítási megjegyzést.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -27597,6 +27619,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított — itt sem volt
+            // ellenőrzés a Magas/Alacsony/Záró pozitivitására és sorrendjére.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const lastN = candles.slice(-period);
             let sumMFV = 0;
             let sumVolume = 0;
@@ -27658,6 +27690,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (!period || period < 1 || candles.length < period + 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (periódus + 1) érvényes gyertyát "Magas,Alacsony,Záró,Volumen" formátumban, soronként egyet, és egy érvényes (legalább 1) periódust!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -27915,6 +27956,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const closes = candles.map(c => c.close);
             const k = 2 / (period + 1);
             let ema = closes.slice(0, period).reduce((a, b) => a + b, 0) / period;
@@ -28057,13 +28107,30 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const candles = [];
             for (const line of lines) {
                 const parts = line.split(',').map(s => parseFloat(s.trim()));
-                if (parts.length === 4 && parts.every(p => Number.isFinite(p)) && parts[0] >= parts[1]) {
+                // JAVÍTÁS (audit — néma adatvesztés): a korábbi verzió a "Magas ≥
+                // Alacsony" feltételt már ITT, a feldolgozás előtt, a tömbbe-
+                // kerülést CSENDBEN, hibaüzenet nélkül megakadályozva ellenőrizte
+                // — egy elgépelt/felcserélt sor egyszerűen "eltűnt" a bemenetből,
+                // a felhasználó észrevétlenül kevesebb gyertyán futó eredményt
+                // kapott, mint amennyit megadott. Ez ugyanaz a "néma" hibaosztály,
+                // amit a korábbi javítási körök (pl. Napi Veszteséglimit Tracker,
+                // Teljes Portfólió Szimulátor "years" mezője) már kiküszöböltek
+                // máshol — most minden szintaktikailag érvényes (4 szám) sor
+                // bekerül a tömbbe, és egy explicit, utólagos ellenőrzés jelzi
+                // hibaüzenettel, PONTOSAN melyik sorszámú gyertya érvénytelen.
+                if (parts.length === 4 && parts.every(p => Number.isFinite(p))) {
                     candles.push({ high: parts[0], low: parts[1], close: parts[2], volume: parts[3] });
                 }
             }
 
             if (candles.length < 2) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes gyertyát "Magas,Alacsony,Záró,Volumen" formátumban (Magas ≥ Alacsony)!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes gyertyát "Magas,Alacsony,Záró,Volumen" formátumban!</div>`;
+                return;
+            }
+
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -28615,6 +28682,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const lastN = candles.slice(-period);
             const highestHigh = Math.max(...lastN.map(c => c.high));
             const lowestLow = Math.min(...lastN.map(c => c.low));
@@ -28680,6 +28756,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const neededCandles = kPeriod + dPeriod - 1;
             if (candles.length < neededCandles) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${neededCandles} gyertya szükséges (%K periódus + %D periódus - 1), jelenleg ${candles.length} van megadva!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -28970,6 +29055,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             let uptrend = candles[1].close >= candles[0].close;
             let af = afStep;
             let sar = uptrend ? candles[0].low : candles[0].high;
@@ -29131,6 +29225,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const adv = [], vols = [];
             for (let i = 1; i < candles.length; i++) {
                 const { high: h, low: l, close: c } = candles[i];
@@ -29215,6 +29318,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (!period || period < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy pozitív egész periódust!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -29555,6 +29667,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag kalkulátornál már
+            // korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const n = candles.length;
             if (n < period + 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${period + 1} érvényes gyertya szükséges a ${period}-es periódushoz (jelenleg ${n} van megadva)!</div>`;
@@ -29660,6 +29781,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag kalkulátornál már
+            // korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const lastN = candles.slice(-period);
             const upper = Math.max(...lastN.map(c => c.high));
             const lower = Math.min(...lastN.map(c => c.low));
@@ -29719,6 +29849,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (!period || period < 2 || candles.length < period) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább annyi gyertyát (Magas,Alacsony formátumban), amennyi a periódus, és érvényes, legalább 2-es periódust!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag kalkulátornál már
+            // korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -31241,6 +31380,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const closes = candles.map(c => c.close);
             const k = 2 / (emaPeriod + 1);
             let ema = closes.slice(0, emaPeriod).reduce((a, b) => a + b, 0) / emaPeriod;
@@ -31312,6 +31460,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (n < emaLong + 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább ${emaLong + 1} gyertya szükséges az EMA55 kiszámításához — jelenleg ${n} van megadva!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -31566,6 +31723,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (n < 2) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 2 gyertya szükséges az EMV kiszámításához!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag kalkulátornál már
+            // korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -35124,6 +35290,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const bp = new Array(n).fill(null);
             const tr = new Array(n).fill(null);
             for (let i = 1; i < n; i++) {
@@ -36186,6 +36361,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             function hhLl(period) {
                 const last = candles.slice(candles.length - period);
                 const hh = Math.max(...last.map(c => c.high));
@@ -36433,6 +36617,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const atrSeries = calcATRSeries(candles, period);
             const n = candles.length;
             const finalUpper = new Array(n).fill(null);
@@ -36531,6 +36724,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (!period || period < 2 || !mult || mult <= 0 || candles.length < period) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes periódust/szorzót, és legalább annyi gyertyát, amennyi a periódus!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony/Záró bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag és a Historical Volatility
+            // vs ATR kalkulátoroknál már korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -36760,6 +36962,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag kalkulátornál már
+            // korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const ranges = candles.map(c => c.high - c.low);
             const ema1 = emaFull(ranges, emaPeriod);
             const ema2 = emaFull(ema1, emaPeriod);
@@ -36916,6 +37127,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (!currentPeriod || currentPeriod < 1 || !referencePeriod || referencePeriod < 1 || candles.length < currentPeriod + referencePeriod) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (aktuális periódus + referencia periódus) érvényes gyertyát "Magas,Alacsony" formátumban, soronként egyet, és két érvényes (legalább 1) periódust!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Zig Zag kalkulátornál már
+            // korábban javított.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
