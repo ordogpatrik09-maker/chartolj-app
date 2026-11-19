@@ -36626,8 +36626,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const start = parseInt(startEl.value);
             let count = parseInt(countEl.value);
 
-            if (isNaN(start) || start < 0 || isNaN(count) || count < 1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nem-negatív kezdő indexet és legalább 1 időzónát!</div>`;
+            // JAVÍTÁS: a Kezdő Index mezőt korábban csak `isNaN()`-nal ellenőriztük —
+            // ez a nem-numerikus bemenetet kifogta, de egy nagyon hosszú, csupa
+            // számjegyből álló értéket (pl. billentyűzettel beírt, 309+ karakteres
+            // szám a "Kezdő Index" mezőben) NEM: a parseInt() ilyenkor Infinity-t ad
+            // vissza (a számjegy-sorozat a double tartományát túllépi), ami nem NaN,
+            // így simán átment a validáción. Az Infinity onnan minden időzóna
+            // gyertya-sorszámán végigterjedt (start + f), és "gyertya #Infinity"
+            // szöveget jelenített meg valódi hibaüzenet helyett — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál (pl. Black-
+            // Scholes Greekek, Volume Delta). A Számláló (count) mezőt az utána
+            // következő `Math.min(count, 12)` már eleve véges értékre korlátozta,
+            // ezért ott nem kellett külön Number.isFinite() védelem.
+            if (!Number.isFinite(start) || start < 0 || isNaN(count) || count < 1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, nem-negatív kezdő indexet és legalább 1 időzónát!</div>`;
                 return;
             }
             count = Math.min(count, 12);
