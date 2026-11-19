@@ -2335,6 +2335,13 @@
                                 <div class="text-[10px] text-slate-400">Tom DeMark túlvett/túladott oszcillátora friss Magas/Alacsony extrémekből</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('fractal-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-draw-polygon"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Williams Fraktál Kereső</div>
+                                <div class="text-[10px] text-slate-400">Felső/Alsó Fraktál szintek keresése 5-gyertyás ablakkal</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('psar-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-circle-dot"></i></span>
                             <div>
@@ -7150,6 +7157,49 @@ Kripto: 15000, 20</textarea>
 
             <div id="demarker-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A Williams %R-rel és a Stochastic-kal ellentétben a DeMarker nem a záróár pozícióját méri a tartományon belül, hanem kizárólag azt, hogy az extrémek (Magas/Alacsony) hogyan mozdultak el gyertyánként — ezért más jelzéseket adhat oldalazó, de emelkedő/csökkenő csúcsokkal/aljakkal jellemzett piacon.</p>
+        </div>
+    </div>
+
+    <!-- ================= WILLIAMS FRAKTÁL (FRACTAL) KERESŐ (OKTATÁSI) =================
+         Bill Williams Fraktál indikátora, klasszikus 5-gyertyás ablakkal:
+         egy i. gyertya FELSŐ FRAKTÁL, ha a Magasa SZIGORÚAN nagyobb mind a
+         2 megelőző ÉS mind a 2 rákövetkező gyertya Magasánál; ALSÓ FRAKTÁL,
+         ha az Alacsonya SZIGORÚAN kisebb mind a 2 megelőző ÉS mind a 2
+         rákövetkező gyertya Alacsonyánál. Mivel minden vizsgált gyertyánál
+         2 KÖVETKEZŐ gyertya is szükséges az összehasonlításhoz, egy valódi
+         fraktál csak 2 gyertyával KÉSVE válik látszólagossá — az utolsó 2
+         gyertya sosem minősíthető a bemeneten belül. Csak Magas/Alacsony
+         sorozat kell, Záró nem (ugyanaz a 2-oszlopos bemeneti minta, mint a
+         Donchian Csatorna és a DeMarker kalkulátoroknál). -->
+    <div id="fractal-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-draw-polygon text-amber-400"></i> Williams Fraktál Kereső
+                </h3>
+                <button onclick="closeToolModal('fractal-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Bill Williams fraktál-indikátora: egy gyertya <strong class="text-white">Felső Fraktál</strong>, ha a Magasa szigorúan felülmúlja a 2-2 szomszédos (előtte és utána lévő) gyertya Magasát — ez egy jelzett ellenállás-szint. Egy gyertya <strong class="text-white">Alsó Fraktál</strong>, ha az Alacsonya szigorúan a 2-2 szomszédos gyertya Alacsonya alatt van — ez egy jelzett támasz-szint. Add meg a gyertyákat (Magas,Alacsony) sorrendben, soronként egyet.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="fractal-candles">Gyertyák: Magas,Alacsony (soronként egy)</label>
+            <textarea id="fractal-candles" rows="7" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-[10px] text-white focus:outline-none focus:border-amber-400/50">10,9.5
+10.3,9.8
+10.8,10.2
+10.5,10
+10.2,9.7
+9.8,9.3
+10,9.5
+10.4,9.9
+10.9,10.3
+10.6,10
+10.3,9.8</textarea>
+
+            <button onclick="calcFractal()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Fraktálok Keresése
+            </button>
+
+            <div id="fractal-result" role="status" aria-live="polite" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A fraktál ÖNMAGÁBAN nem kereskedési szignál — a jelzett szint csak akkor válik relevánssá, ha az ár később visszatér hozzá (pl. kitörés vagy visszateszt formájában). A 2 gyertyányi megerősítési késés miatt a chart jobb szélén épphogy kialakult "csúcs"/"alj" élőben még NEM fraktál, csak 2 gyertyával később derül ki, ha valóban az volt.</p>
         </div>
     </div>
 
@@ -14735,6 +14785,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">DeMarker (DeM) Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Tom DeMark túlvett/túladott oszcillátora friss Magas/Alacsony extrémekből</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('fractal-modal')" data-tool-title="williams fraktál kereső" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-draw-polygon"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Williams Fraktál Kereső</div>
+                            <div class="text-[10px] text-slate-400">Felső/Alsó Fraktál szintek keresése 5-gyertyás ablakkal</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('bbwidth-modal')" data-tool-title="bollinger band width kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -29113,6 +29170,87 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-xl font-extrabold ${colorClass}">${dem.toFixed(4)}</div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= WILLIAMS FRAKTÁL (FRACTAL) KERESŐ (OKTATÁSI) =================
+        // Klasszikus 5-gyertyás ablak: az i. gyertya (0-indexű tömbben) csak
+        // akkor vizsgálható, ha van 2-2 szomszédja mindkét oldalon, azaz
+        // i a [2, n-3] tartományban kell legyen. FELSŐ FRAKTÁL: candles[i].high
+        // SZIGORÚAN nagyobb mind a 4 szomszéd (i-2, i-1, i+1, i+2) Magasánál.
+        // ALSÓ FRAKTÁL: candles[i].low SZIGORÚAN kisebb mind a 4 szomszéd
+        // Alacsonyánál. A szigorú egyenlőtlenség miatt egy pontosan egyező
+        // (tie) szomszéd-érték NEM fraktál — ez egy tudatos, determinisztikus
+        // választás, nem él "≥"/"≤" toleranciával.
+        function calcFractal() {
+            const candlesEl = document.getElementById('fractal-candles');
+            const out = document.getElementById('fractal-result');
+            if (!candlesEl || !out) return;
+
+            const lines = candlesEl.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const candles = [];
+            for (const line of lines) {
+                const parts = line.split(',').map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && parts.every(p => Number.isFinite(p))) {
+                    candles.push({ high: parts[0], low: parts[1] });
+                }
+            }
+
+            // JAVÍTÁS (ugyanaz a hibaosztály, mint a Donchian/DeMarker
+            // kalkulátoroknál): hiányzó Magas/Alacsony bemenet-validáció.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
+            const n = candles.length;
+            if (n < 5) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 5 gyertya szükséges (Magas,Alacsony formátumban) — egy fraktál mindkét oldalán 2-2 szomszédos gyertya kell az összehasonlításhoz, jelenleg csak ${n} gyertya van megadva!</div>`;
+                return;
+            }
+
+            const upFractals = [], downFractals = [];
+            for (let i = 2; i <= n - 3; i++) {
+                const h = candles[i].high;
+                if (h > candles[i - 2].high && h > candles[i - 1].high && h > candles[i + 1].high && h > candles[i + 2].high) {
+                    upFractals.push({ idx: i + 1, price: h });
+                }
+                const l = candles[i].low;
+                if (l < candles[i - 2].low && l < candles[i - 1].low && l < candles[i + 1].low && l < candles[i + 2].low) {
+                    downFractals.push({ idx: i + 1, price: l });
+                }
+            }
+
+            if (upFractals.length === 0 && downFractals.length === 0) {
+                out.innerHTML = `<p class="text-[11px] text-slate-400">A megadott sorozatban nem található Felső vagy Alsó Fraktál — nincs olyan vizsgálható gyertya, amelynek a Magasa/Alacsonya szigorúan felülmúlná mind a 2-2 szomszédos gyertyáét valamelyik oldalon.</p>`;
+                return;
+            }
+
+            const rowsHtml = (arr, label, color) => arr.map(f => `
+                <div class="flex justify-between font-mono text-[10px] py-1 border-b border-dark-750/50">
+                    <span class="${color} font-semibold">${label}</span>
+                    <span class="text-slate-400">#${f.idx}. gyertya</span>
+                    <span class="text-white">${f.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                </div>
+            `).join('');
+
+            const lastUp = upFractals.length ? upFractals[upFractals.length - 1] : null;
+            const lastDown = downFractals.length ? downFractals[downFractals.length - 1] : null;
+            let verdict;
+            if (lastUp && (!lastDown || lastUp.idx > lastDown.idx)) {
+                verdict = `A legutóbbi megerősített fraktál egy Felső Fraktál a #${lastUp.idx}. gyertyánál (${lastUp.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}) — ez a legfrissebb jelzett ellenállás-szint.`;
+            } else {
+                verdict = `A legutóbbi megerősített fraktál egy Alsó Fraktál a #${lastDown.idx}. gyertyánál (${lastDown.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}) — ez a legfrissebb jelzett támasz-szint.`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    ${rowsHtml(upFractals, 'FELSŐ', 'text-neon-red')}
+                    ${rowsHtml(downFractals, 'ALSÓ', 'text-neon-green')}
+                </div>
+                <p class="text-[10px] font-semibold text-amber-400 mb-1">${verdict}</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed">Az utolsó 2 gyertya még nem minősíthető — a megerősítéshez mindkét oldalon 2-2 KÖVETKEZŐ gyertya kell, ezért egy valódi fraktál csak 2 gyertyával KÉSVE válik láthatóvá a charton.</p>
             `;
         }
 
