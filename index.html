@@ -36890,6 +36890,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció):
+            // ugyanaz a hibaosztály, mint a Mass Index / Awesome Oscillator /
+            // BOP kalkulátoroknál már korábban javított. Korábban ez a
+            // kalkulátor elfogadott olyan gyertyát is, ahol a Magas kisebb
+            // volt az Alacsonynál (vagy bármelyik ≤ 0) — ebből a haHigh/haLow
+            // Math.max/Math.min számítás csendben, hibajelzés nélkül hibás,
+            // félrevezető szintetikus Heikin-Ashi gyertyákat generált.
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
+            if (invalidIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
+                return;
+            }
+
             const ha = [];
             for (let i = 0; i < candles.length; i++) {
                 const c = candles[i];
