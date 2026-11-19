@@ -49915,8 +49915,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         const anns = [];
                         if (s.position) {
                             anns.push({ type: 'hline', price: s.position.entryPrice, label: 'Belépő', color: 'var(--neon-cyan)' });
-                            if (s.position.stopLoss) anns.push({ type: 'hline', price: s.position.stopLoss, label: 'Stop', color: 'var(--red)' });
-                            if (s.position.takeProfit) anns.push({ type: 'hline', price: s.position.takeProfit, label: 'Target', color: 'var(--green)' });
+                            // JAVÍTÁS: a pozíció-objektum a replayOpenPosition()-ben `stopPrice`/`targetPrice`
+                            // kulcsneveket használ (lásd a startReplaySession() kommentjét és a
+                            // replayCheckStopTarget()/trade-history/SL-TP felirat összes többi
+                            // hivatkozását is) — ez a blokk korábban a nem létező `stopLoss`/`takeProfit`
+                            // mezőket nézte, ami mindig `undefined` (falsy) volt, így a Stop/Target
+                            // szintvonal SOHA nem jelent meg a charton, csendben, hibaüzenet nélkül,
+                            // miközben a szöveges "SL: .../TP: ..." felirat a pozíció mellett helyesen
+                            // mutatta az értékeket — megtévesztő inkonzisztenciát okozva pont abban az
+                            // eszközben, ami a stop-loss/take-profit fegyelmet oktatja vizuálisan.
+                            if (s.position.stopPrice) anns.push({ type: 'hline', price: s.position.stopPrice, label: 'Stop', color: 'var(--red)' });
+                            if (s.position.targetPrice) anns.push({ type: 'hline', price: s.position.targetPrice, label: 'Target', color: 'var(--green)' });
                         }
                         return anns;
                     })())}
