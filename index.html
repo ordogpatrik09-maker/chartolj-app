@@ -3007,6 +3007,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyit veszítesz egy lassú bróker végrehajtási sebessége miatt?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('linreg-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-blue/10 text-neon-blue border border-neon-blue/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Lineáris Regressziós Csatorna Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">OLS trendegyenes + szórás-sávok, objektív trend-erősség méréshez</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -5444,6 +5451,39 @@
 
             <div id="donchianwidth-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Miben más, mint a Bollinger Band Width? A Donchian nyers, extrém ártartományra épül, míg a Bollinger a szórásra — eltérő matematikai alapon mérnek hasonló koncepciót (piaci szűkülés/tágulás).</p>
+        </div>
+    </div>
+
+    <!-- ================= LINEÁRIS REGRESSZIÓS CSATORNA KALKULÁTOR (OKTATÁSI) =================
+         Legkisebb négyzetek (OLS) egyenes a megadott záróárakra: x=0..n-1 (bár-index),
+         y=záróár. Lejtés b = (nΣxy − ΣxΣy) / (nΣx² − (Σx)²), tengelymetszet
+         a = (Σy − bΣx) / n. A reziduálok (y_i − (a+b·x_i)) populációs szórása adja a
+         csatorna félszélességét, amit a felhasználó által megadott k szorzóval
+         (szokásosan 2) szoroz a felső/alsó sáv kialakításához. Az R² (1 − SSres/SStot)
+         a trendegyenes illeszkedésének jóságát méri. A momentum trading stílus (118.
+         lecke) objektív, szubjektív vonalhúzás nélküli trend-erősség mérésére épül. -->
+    <div id="linreg-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-neon-blue"></i> Lineáris Regressziós Csatorna Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('linreg-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Lineáris Regressziós Csatorna a megadott záróárakra egy legkisebb négyzetek (OLS) trendegyenest illeszt, majd a reziduálok szórásával párhuzamos felső/alsó sávot rajzol köré. A lejtés előjele és meredeksége objektíven, szubjektív vonalhúzás nélkül méri a trend irányát és erejét — jól használható momentum-stílusú kereskedésnél annak eldöntésére, hogy egy mozgás még a trend-csatornán belül van, vagy már túlvett/túladott, kifáradó szakaszba ért. Add meg a záróárakat időrendben, a legrégebbitől a legfrissebbig, vesszővel elválasztva.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="linreg-closes">Záróárak (vesszővel elválasztva, időrendben)</label>
+            <textarea id="linreg-closes" rows="4" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-blue/50">100,100.8,101.5,101.2,102.3,103.1,102.8,103.9,104.6,104.2,105.3,106.1,105.8,106.9,107.7,107.3,108.4,109.2,108.9,110.0</textarea>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="linreg-k">Szórás-szorzó (k, szokásosan 2)</label>
+            <input type="number" inputmode="decimal" id="linreg-k" value="2" step="0.1" min="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-blue/50">
+
+            <button onclick="calcLinRegChannel()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-blue text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="linreg-result" role="status" aria-live="polite" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Az R² (0 és 1 közt) azt mutatja, mennyire szorosan követik az árak az illesztett egyenest — alacsony érték esetén a "trend" inkább csak zajos oldalazás, a lejtés önmagában megbízhatatlan.</p>
         </div>
     </div>
 
@@ -15687,6 +15727,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Végrehajtási Latencia Slippage-Költség</div>
                             <div class="text-[10px] text-slate-400">Mennyit veszítesz egy lassú bróker végrehajtási sebessége miatt?</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('linreg-modal')" data-tool-title="lineáris regressziós csatorna kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-line"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Lineáris Regressziós Csatorna Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">OLS trendegyenes + szórás-sávok, objektív trend-erősség méréshez</div>
                         </div>
                     </button>
                 </div>
@@ -30455,6 +30502,122 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <div class="glass-card rounded-xl p-3">
                     <div class="text-[11px] font-semibold ${colorClass} leading-relaxed">${verdict}</div>
+                </div>
+            `;
+        }
+
+        // ================= LINEÁRIS REGRESSZIÓS CSATORNA KALKULÁTOR (OKTATÁSI) =================
+        // OLS (legkisebb négyzetek) egyenes a bár-indexre (x=0..n-1) és a záróárra (y):
+        //   b (lejtés)       = (nΣxy − ΣxΣy) / (nΣx² − (Σx)²)
+        //   a (tengelymetszet) = (Σy − bΣx) / n
+        //   reg(i)           = a + b·i
+        // A csatorna félszélessége a reziduálok (y_i − reg(i)) populációs szórása,
+        // a felhasználó megadott k-szorzójával szorozva (klasszikusan k=2).
+        // R² = 1 − SSres/SStot méri az illeszkedés jóságát (SStot = Σ(y_i − ȳ)²).
+        function calcLinRegChannel() {
+            const closesEl = document.getElementById('linreg-closes');
+            const kEl = document.getElementById('linreg-k');
+            const out = document.getElementById('linreg-result');
+            if (!closesEl || !kEl || !out) return;
+
+            const closes = closesEl.value.split(',').map(s => parseFloat(s.trim())).filter(v => Number.isFinite(v));
+            const k = parseFloat(kEl.value);
+
+            if (closes.length < 3) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 3 érvényes záróárat, vesszővel elválasztva!</div>`;
+                return;
+            }
+            if (closes.some(c => c <= 0)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Minden záróár legyen nullánál nagyobb!</div>`;
+                return;
+            }
+            if (!Number.isFinite(k) || k <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A szórás-szorzó (k) legyen nullánál nagyobb szám!</div>`;
+                return;
+            }
+
+            const n = closes.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            for (let i = 0; i < n; i++) {
+                sumX += i;
+                sumY += closes[i];
+                sumXY += i * closes[i];
+                sumX2 += i * i;
+            }
+            const denom = n * sumX2 - sumX * sumX;
+            const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
+            const intercept = (sumY - slope * sumX) / n;
+            const meanY = sumY / n;
+
+            let sumSqResid = 0, sumSqTot = 0;
+            for (let i = 0; i < n; i++) {
+                const reg = intercept + slope * i;
+                const resid = closes[i] - reg;
+                sumSqResid += resid * resid;
+                sumSqTot += (closes[i] - meanY) * (closes[i] - meanY);
+            }
+            const stdDev = Math.sqrt(sumSqResid / n);
+            const r2 = sumSqTot === 0 ? (sumSqResid === 0 ? 1 : 0) : 1 - sumSqResid / sumSqTot;
+
+            const lastIdx = n - 1;
+            const regAtLast = intercept + slope * lastIdx;
+            const upperAtLast = regAtLast + k * stdDev;
+            const lowerAtLast = regAtLast - k * stdDev;
+            const lastClose = closes[lastIdx];
+            const slopePctPerBar = meanY === 0 ? 0 : (slope / meanY) * 100;
+
+            if (![slope, intercept, stdDev, regAtLast, upperAtLast, lowerAtLast, r2].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak túl szélsőségesek — a regressziós csatorna számítása túlcsordul. Adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
+            let trendLabel, trendColor;
+            if (slope > 0) { trendLabel = 'Felfelé irányuló trend (pozitív lejtés)'; trendColor = 'text-neon-green'; }
+            else if (slope < 0) { trendLabel = 'Lefelé irányuló trend (negatív lejtés)'; trendColor = 'text-neon-red'; }
+            else { trendLabel = 'Nincs irányultság (lapos lejtés)'; trendColor = 'text-slate-300'; }
+
+            let posLabel, posColor;
+            const channelWidth = upperAtLast - lowerAtLast;
+            if (lastClose > upperAtLast) {
+                posLabel = 'Az ár a FELSŐ sáv fölött van — a trendhez képest túlvett, kifáradó szakaszra utalhat';
+                posColor = 'text-neon-red';
+            } else if (lastClose < lowerAtLast) {
+                posLabel = 'Az ár az ALSÓ sáv alatt van — a trendhez képest túladott, kifáradó szakaszra utalhat';
+                posColor = 'text-neon-red';
+            } else {
+                const posPct = channelWidth === 0 ? 50 : ((lastClose - lowerAtLast) / channelWidth) * 100;
+                posLabel = `Az ár a csatornán belül van, a sáv ${posPct.toFixed(1)}%-ánál (0% = alsó sáv, 100% = felső sáv)`;
+                posColor = 'text-slate-300';
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
+                    <div class="flex items-center justify-between font-mono text-xs">
+                        <span class="text-slate-400">Felső sáv (jelenlegi bár):</span>
+                        <span class="font-extrabold text-neon-green text-sm">${upperAtLast.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Regressziós érték (középvonal):</span>
+                        <span class="font-extrabold text-white text-sm">${regAtLast.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Alsó sáv (jelenlegi bár):</span>
+                        <span class="font-extrabold text-neon-red text-sm">${lowerAtLast.toFixed(2)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">Lejtés (bárankénti ármozgás):</span>
+                        <span class="font-extrabold ${trendColor} text-sm">${slope >= 0 ? '+' : ''}${slope.toFixed(4)} (${slopePctPerBar >= 0 ? '+' : ''}${slopePctPerBar.toFixed(3)}%/bár)</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
+                        <span class="text-slate-400">R² (illeszkedés jósága):</span>
+                        <span class="font-extrabold text-white text-sm">${r2.toFixed(4)}</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-xl p-3 mb-3">
+                    <div class="text-[11px] font-semibold ${trendColor} leading-relaxed">${trendLabel}</div>
+                </div>
+                <div class="glass-card rounded-xl p-3">
+                    <div class="text-[11px] font-semibold ${posColor} leading-relaxed">${posLabel}</div>
                 </div>
             `;
         }
@@ -53226,6 +53389,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             476: { tool: 'downdev-modal', cta: 'Számold ki élesben a downside deviationt, és vesd össze a teljes szórással' },
             482: { tool: 'downdev-modal', cta: 'Próbáld ki élesben Levente két stratégiáját: azonos teljes szórás, mennyire eltérő downside deviation?' },
             159: { tool: 'spreadbet-modal', cta: 'Számold ki élesben a Spread Betting P&L Kalkulátorral, mennyit "eszik meg" a spread a bruttó mozgásból — ugyanaz a kockázat, mint bármilyen más tőkeáttételes terméknél' },
+            118: { tool: 'linreg-modal', cta: 'Számold ki élesben a Lineáris Regressziós Csatornát, és nézd meg, a trend lejtéséhez (momentumhoz) képest túlvett/túladott tartományban van-e éppen az ár' },
         };
 
         function tryToolFromLesson(lessonIdx) {
@@ -53245,7 +53409,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'demarker-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'demarker-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal', 'linreg-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
