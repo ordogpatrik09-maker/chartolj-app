@@ -38,7 +38,7 @@ BEGIN
     v_caller_email := lower(coalesce(auth.jwt() ->> 'email', ''));
 
     IF v_caller_email IS NULL OR v_caller_email = '' OR v_caller_email NOT IN (
-        'ordog.patrik.09@gmail.com'
+        'patrik66@gmail.com'
     ) THEN
         RAISE EXCEPTION 'Nincs jogosultság ehhez a művelethez.' USING ERRCODE = '42501';
     END IF;
