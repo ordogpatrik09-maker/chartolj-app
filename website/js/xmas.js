@@ -35,7 +35,7 @@
       for (var i = 0; i < flakes.length; i++) {
         var f = flakes[i]; f.y += f.v; f.s += .012; f.x += Math.sin(f.s) * .5;
         if (f.y > H + 6) { flakes[i] = mk(false); flakes[i].x = Math.random() * W; continue; }
-        cx.globalAlpha = f.a; cx.fillStyle = '#8fb8dc'; cx.shadowColor = 'rgba(255,255,255,.9)'; cx.shadowBlur = 3; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 6.283); cx.fill();
+        cx.globalAlpha = f.a; cx.fillStyle = '#fff'; cx.shadowColor = 'rgba(30,50,100,.6)'; cx.shadowBlur = 3; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 6.283); cx.fill();
       }
       raf = requestAnimationFrame(tick);
     }
