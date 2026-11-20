@@ -54502,15 +54502,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a könyvjelző-szűrőt (lesson-bm-filter) KORÁBBAN csak a
+            // lista-nézet alkalmazta — az útvonal (roadmap) nézet a szűretlen
+            // "indices"-t kapta meg, tehát bekapcsolt könyvjelző-szűrő mellett
+            // is MINDEN leckét mutatta az útvonalon. A szűrést előrébb kell
+            // hozni, hogy mindkét nézet (lista ÉS útvonal) ugyanazt a
+            // (adott esetben szűrt) listát lássa.
+            const _bmOnly = document.getElementById('lesson-bm-filter') && document.getElementById('lesson-bm-filter').dataset.active === '1';
+            const _fIdx = _bmOnly ? indices.filter(function(i){return bookmarkedLessons.has(i);}) : indices;
+
             if (academyRoadmapViewActive && !searchTerm) {
-                renderAcademyRoadmap(indices);
+                renderAcademyRoadmap(_fIdx);
                 return;
             }
 
             const hiTerm = searchTerm;
             const hiText = (txt) => hiTerm ? txt.replace(new RegExp('(' + hiTerm.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi'), '<mark class="bg-amber-400/30 text-amber-200 rounded px-0.5">$1</mark>') : txt;
-            const _bmOnly = document.getElementById('lesson-bm-filter') && document.getElementById('lesson-bm-filter').dataset.active === '1';
-            const _fIdx = _bmOnly ? indices.filter(function(i){return bookmarkedLessons.has(i);}) : indices;
             listEl.innerHTML = _fIdx.map(i => {
                 const l = LESSONS_DATA[i];
                 const done = academyCompleted.has(i);
