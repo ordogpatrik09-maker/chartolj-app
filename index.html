@@ -27060,7 +27060,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // nyers `${A}` interpolációval jelenítettük meg — egy nagyon
             // kicsi (pl. "1e-10") bemenet a JS alapértelmezett szám→string
             // konverziója miatt nyers tudományos jelölést adott.
-            const AFmt = A.toLocaleString('en-US', { maximumFractionDigits: 10 });
+            // JAVÍTÁS (literális "-0" bemenet audit): ha a felhasználó
+            // pontosan "-0"-t ír be az A mezőbe, a `parseFloat` a JS
+            // negatív nullát (`-0`) adja vissza, amit a `.toLocaleString()`
+            // "-0"-ként jelenít meg (a `===` nem különbözteti meg a ±0-t,
+            // de a string-konverzió megtartja az előjel-bitet) — explicit
+            // -0 → +0 normalizálással kerüljük ezt el.
+            const ASafe = A === 0 ? 0 : A;
+            const AFmt = ASafe.toLocaleString('en-US', { maximumFractionDigits: 10 });
 
             let verdictColor, verdict;
             if (cePct < 0 && meanPct > 0) {
@@ -27833,16 +27840,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!tradesEl || !rateEl || !out) return;
 
             const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
-            const ratePct = parseFloat(rateEl.value);
+            const ratePctRaw = parseFloat(rateEl.value);
 
             if (trades.length < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 érvényes ügylet-eredményt (Ft, vesszővel elválasztva)!</div>`;
                 return;
             }
-            if (!isFinite(ratePct) || ratePct < 0 || ratePct > 100) {
+            if (!isFinite(ratePctRaw) || ratePctRaw < 0 || ratePctRaw > 100) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az SZJA kulcs 0% és 100% között legyen!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol, ami a `rate`/`taxDue` számításon
+            // keresztül "-0 Ft"-ként, az `.toLocaleString()`-en keresztül a
+            // kulcs feliratozásánál pedig "-0%"-ként jelenne meg. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const ratePct = ratePctRaw === 0 ? 0 : ratePctRaw;
 
             const rate = ratePct / 100;
             const gains = trades.filter(t => t > 0);
@@ -27945,16 +27958,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!tradesEl || !rateEl || !out) return;
 
             const trades = tradesEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
-            const ratePct = parseFloat(rateEl.value);
+            const ratePctRaw = parseFloat(rateEl.value);
 
             if (trades.length < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 1 érvényes kriptó-ügylet eredményt (Ft, vesszővel elválasztva)!</div>`;
                 return;
             }
-            if (!isFinite(ratePct) || ratePct < 0 || ratePct > 100) {
+            if (!isFinite(ratePctRaw) || ratePctRaw < 0 || ratePctRaw > 100) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az adókulcs 0% és 100% között legyen!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol, ami a `rate`/`taxDue` számításon
+            // keresztül "-0 Ft"-ként, az `.toLocaleString()`-en keresztül a
+            // kulcs feliratozásánál pedig "-0%"-ként jelenne meg. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const ratePct = ratePctRaw === 0 ? 0 : ratePctRaw;
 
             const rate = ratePct / 100;
             const gains = trades.filter(t => t > 0);
@@ -28060,7 +28079,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const netBefore = parseFloat(gainEl.value);
             const harvestLoss = parseFloat(lossEl.value);
-            const ratePct = parseFloat(rateEl.value);
+            const ratePctRaw = parseFloat(rateEl.value);
 
             if (!isFinite(netBefore)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy érvényes, eddig realizált nettó eredményt (Ft)!</div>`;
@@ -28074,10 +28093,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb veszteséget a realizáláshoz!</div>`;
                 return;
             }
-            if (!isFinite(ratePct) || ratePct < 0 || ratePct > 100) {
+            if (!isFinite(ratePctRaw) || ratePctRaw < 0 || ratePctRaw > 100) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az SZJA kulcs 0% és 100% között legyen!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol, ami a `rate`/`taxBefore`/`taxAfter`
+            // számításon keresztül "-0 Ft"-ként jelenne meg "0 Ft" helyett. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const ratePct = ratePctRaw === 0 ? 0 : ratePctRaw;
 
             const rate = ratePct / 100;
             const taxBefore = Math.max(netBefore, 0) * rate;
@@ -31636,7 +31660,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const price0 = parseFloat(document.getElementById('div-price0').value);
             const shares0 = parseFloat(document.getElementById('div-shares0').value);
-            const d0 = parseFloat(document.getElementById('div-d0').value);
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a `d0 < 0` validáción átmegy
+            // (−0 < 0 hamis), majd a `currentYield = (d0/price0)*100`
+            // számításon keresztül "-0.00%"-ként jelenik meg "0.00%" helyett.
+            // A `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const d0Raw = parseFloat(document.getElementById('div-d0').value);
+            const d0 = d0Raw === 0 ? 0 : d0Raw;
             const gPct = parseFloat(document.getElementById('div-g').value);
             const rPct = parseFloat(document.getElementById('div-r').value);
             const years = parseInt(document.getElementById('div-years').value, 10);
@@ -33843,17 +33873,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!breakoutEl || !heightEl || !directionEl || !out) return;
 
             const breakout = parseFloat(breakoutEl.value);
-            const height = parseFloat(heightEl.value);
+            const heightRaw = parseFloat(heightEl.value);
             const direction = directionEl.value;
 
-            if (!Number.isFinite(breakout) || !Number.isFinite(height)) {
+            if (!Number.isFinite(breakout) || !Number.isFinite(heightRaw)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat mindkét mezőben!</div>`;
                 return;
             }
-            if (height < 0) {
+            if (heightRaw < 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az alakzat magassága nem lehet negatív!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `height < 0` validáción
+            // átmegy (−0 < 0 hamis), majd a "Alakzat magassága" sorban nyers
+            // `.toLocaleString()`-tel "-0"-ként jelenne meg "0" helyett. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const height = heightRaw === 0 ? 0 : heightRaw;
 
             const sign = direction === 'up' ? 1 : -1;
             const target = breakout + sign * height;
@@ -34210,10 +34246,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const bid = parseFloat(bidEl.value);
             const ask = parseFloat(askEl.value);
-            const size = parseFloat(sizeEl.value);
+            const sizeRaw = parseFloat(sizeEl.value);
             const count = parseFloat(countEl.value);
 
-            if ([bid, ask, size, count].some(v => !Number.isFinite(v))) {
+            if ([bid, ask, sizeRaw, count].some(v => !Number.isFinite(v))) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat minden mezőben!</div>`;
                 return;
             }
@@ -34221,10 +34257,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az Ask árnak nagyobbnak kell lennie a Bid árnál!</div>`;
                 return;
             }
-            if (size < 0 || count < 1) {
+            if (sizeRaw < 0 || count < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret nem lehet negatív, a trade-ek száma legalább 1 legyen!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `size < 0` validáción
+            // átmegy, majd a `costPerTrade`/`totalCost` szorzáson keresztül
+            // "-0"-ként jelenne meg "0" helyett. A `=== 0 ? 0 : ...`
+            // normalizálás a NaN-t nem érinti.
+            const size = sizeRaw === 0 ? 0 : sizeRaw;
 
             const spread = ask - bid;
             const mid = (bid + ask) / 2;
@@ -34271,10 +34313,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const dir = dirEl.value;
             const midOpen = parseFloat(openEl.value);
             const midClose = parseFloat(closeEl.value);
-            const spread = parseFloat(spreadEl.value);
+            const spreadRaw = parseFloat(spreadEl.value);
             const stake = parseFloat(stakeEl.value);
 
-            if (![midOpen, midClose, spread, stake].every(Number.isFinite)) {
+            if (![midOpen, midClose, spreadRaw, stake].every(Number.isFinite)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat minden mezőben!</div>`;
                 return;
             }
@@ -34282,10 +34324,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A nyitó és záró mid árnak pozitívnak kell lennie!</div>`;
                 return;
             }
-            if (spread < 0) {
+            if (spreadRaw < 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A spread nem lehet negatív!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `spread < 0` validáción
+            // átmegy, majd a `spreadCostMoney = stake * spread` szorzáson
+            // keresztül "-0"-ként jelenne meg "0" helyett. A `=== 0 ? 0 : ...`
+            // normalizálás a NaN-t nem érinti.
+            const spread = spreadRaw === 0 ? 0 : spreadRaw;
             if (stake <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A tét/pont értéknek pozitívnak kell lennie!</div>`;
                 return;
@@ -34350,24 +34398,32 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const direction = dirEl.value;
             const size = parseFloat(sizeEl.value);
             const stopPrice = parseFloat(stopEl.value);
-            const tolerancePct = parseFloat(tolEl.value);
-            const gapPct = parseFloat(gapEl.value);
+            const tolerancePctRaw = parseFloat(tolEl.value);
+            const gapPctRaw = parseFloat(gapEl.value);
 
-            if (!Number.isFinite(size) || !Number.isFinite(stopPrice) || !Number.isFinite(tolerancePct) || !Number.isFinite(gapPct)) {
+            if (!Number.isFinite(size) || !Number.isFinite(stopPrice) || !Number.isFinite(tolerancePctRaw) || !Number.isFinite(gapPctRaw)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes (véges) számokat minden mezőben!</div>`;
                 return;
             }
-            if (size <= 0 || stopPrice <= 0 || tolerancePct < 0 || gapPct < 0) {
+            if (size <= 0 || stopPrice <= 0 || tolerancePctRaw < 0 || gapPctRaw < 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A pozícióméret és a stop-ár pozitív, a tolerancia és a gap mérete nem-negatív szám legyen!</div>`;
                 return;
             }
             // Felső korlát irreálisan extrém bemenetekre — tisztán védelmi jellegű
             // bemenet-validáció, ugyanazt a mintát követve, mint a korábbi
             // "NaN/Infinity szivárgás extrém bemenetnél" javítási körök.
-            if (size > 1000000000 || stopPrice > 1000000000 || tolerancePct > 1000 || gapPct > 1000) {
+            if (size > 1000000000 || stopPrice > 1000000000 || tolerancePctRaw > 1000 || gapPctRaw > 1000) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott érték irreálisan nagy — adj meg praktikus kereskedési értékeket!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `< 0` validációkon átmegy,
+            // majd a `toleranceAmount`/`gapAmount`/`slippageCost`/
+            // `maxFilledCost` szorzás-láncon keresztül "-0"-ként jelenne meg
+            // "0" helyett. A `=== 0 ? 0 : ...` normalizálás a NaN-t nem
+            // érinti.
+            const tolerancePct = tolerancePctRaw === 0 ? 0 : tolerancePctRaw;
+            const gapPct = gapPctRaw === 0 ? 0 : gapPctRaw;
 
             const toleranceAmount = stopPrice * (tolerancePct / 100);
             const gapAmount = stopPrice * (gapPct / 100);
@@ -39502,9 +39558,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
-            const feeFrac = feePct / 100;
-            const probFrac = probPct / 100;
-            const slipFrac = slipPct / 100;
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `< 0` validációkon átmegy
+            // (−0 < 0 hamis), majd a `costPerTradeGSL`/`expectedSlippagePerTrade`
+            // szorzáson keresztül "$-0"-ként jelenne meg "$0.00" helyett. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const feeFrac = (feePct === 0 ? 0 : feePct) / 100;
+            const probFrac = (probPct === 0 ? 0 : probPct) / 100;
+            const slipFrac = (slipPct === 0 ? 0 : slipPct) / 100;
 
             const costPerTradeGSL = notional * feeFrac;
             const expectedSlippagePerTrade = notional * probFrac * slipFrac;
@@ -39575,9 +39636,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('execlat-result');
             if (els.some(el => !el) || !out) return;
 
-            const [notional, volPctPerSec, latA_ms, latB_ms, tradesRaw, daysRaw] = els.map(el => parseFloat(el.value));
+            const [notional, volPctPerSecRaw, latA_msRaw, latB_msRaw, tradesRaw, daysRaw] = els.map(el => parseFloat(el.value));
             const trades = Math.max(1, Math.round(tradesRaw || 0));
             const days = Math.max(1, Math.round(daysRaw || 0));
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a lenti `< 0` validációkon átmegy,
+            // majd a `slipPctA`/`slipPctB`/`costA`/`costB` szorzás-láncon
+            // keresztül "$-0"-ként jelenne meg "$0.00" helyett. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const volPctPerSec = volPctPerSecRaw === 0 ? 0 : volPctPerSecRaw;
+            const latA_ms = latA_msRaw === 0 ? 0 : latA_msRaw;
+            const latB_ms = latB_msRaw === 0 ? 0 : latB_msRaw;
 
             // Konzisztensen az app többi "pénzösszeg" mezőjével (lásd calcGslCostBenefit):
             // Number.isFinite + explicit felső korlát a notionalra, hogy egy
@@ -39673,7 +39742,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (els.some(el => !el) || !out) return;
 
             const [blockRaw, blockTimeRaw] = els.map(el => parseFloat(el.value));
-            const block = Math.round(blockRaw);
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" blokkmagasság-
+            // bemenet a JS negatív nullaként parseol — a `Math.round(-0)` is
+            // -0-t ad, ami a lenti `epoch = Math.floor(block / 210000)`-en és
+            // az `epoch × 210000`-en keresztül "Utolsó halving blokkja: -0"-
+            // ként jelenne meg "0" helyett. A `=== 0 ? 0 : ...` normalizálás a
+            // validációt (block !== blockRaw) és a NaN-t nem érinti.
+            const blockUnsafe = Math.round(blockRaw);
+            const block = blockUnsafe === 0 ? 0 : blockUnsafe;
 
             // JAVÍTÁS: a blokkidő (percben) mezőnek korábban nem volt JS-ben érvényesített
             // FELSŐ korlátja — csak a ">0" feltételt ellenőriztük. Az `estimatedDaysToHalving`
@@ -40592,7 +40668,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('feestruct-result');
             if (els.some(el => !el) || !out) return;
 
-            const [position, flatFeePerSide, pctFeePerSide, tradesRaw] = els.map(el => parseFloat(el.value));
+            const [position, flatFeePerSideRaw, pctFeePerSideRaw, tradesRaw] = els.map(el => parseFloat(el.value));
             const trades = Math.max(1, Math.round(tradesRaw || 0));
 
             // JAVÍTÁS: a flatFeePerSide/pctFeePerSide mezőket korábban `isNaN(...)`-tal
@@ -40600,12 +40676,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // de szintaktikailag érvényes bemenetet (pl. "1e308") NEM, mert az
             // Infinity nem NaN. Number.isFinite()-ra váltva ez is explicit hibát ad.
             if (!position || position <= 0 ||
-                !Number.isFinite(flatFeePerSide) || flatFeePerSide < 0 ||
-                !Number.isFinite(pctFeePerSide) || pctFeePerSide < 0 ||
+                !Number.isFinite(flatFeePerSideRaw) || flatFeePerSideRaw < 0 ||
+                !Number.isFinite(pctFeePerSideRaw) || pctFeePerSideRaw < 0 ||
                 !trades || trades <= 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, véges pozícióméretet, egy nullánál nem kisebb, véges fix díjat és százalékos díjat, és legalább 1 trade-et!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `< 0` validációkon átmegy,
+            // majd a `flatCostPerRoundTrip`/`pctCostPerRoundTrip` szorzáson
+            // keresztül "$-0"-ként jelenne meg "$0.00" helyett. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const flatFeePerSide = flatFeePerSideRaw === 0 ? 0 : flatFeePerSideRaw;
+            const pctFeePerSide = pctFeePerSideRaw === 0 ? 0 : pctFeePerSideRaw;
 
             const flatCostPerRoundTrip = flatFeePerSide * 2;
             const pctCostPerRoundTrip = position * (pctFeePerSide / 100) * 2;
@@ -40998,7 +41081,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const riskPctFmt = riskPct.toLocaleString('en-US', { maximumFractionDigits: 6 });
             const dailyLimitPctFmt = dailyLimitPct.toLocaleString('en-US', { maximumFractionDigits: 6 });
             const targetPctFmt = targetPct.toLocaleString('en-US', { maximumFractionDigits: 6 });
-            const winratePctFmt = winratePct.toLocaleString('en-US', { maximumFractionDigits: 6 });
+            // JAVÍTÁS (literális "-0" bemenet audit): a "winratePct" mező
+            // egyetlen ellenőrzése (`winratePct < 0`) a 0%-os nyerési arányt
+            // is megengedi (helyesen), de a "-0" bemenetre a JS negatív
+            // nullaként parseol, amit a `-0 < 0` hamis értéke átenged, majd a
+            // `.toLocaleString()` "-0%"-ként jelenít meg "0%" helyett. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti. A többi
+            // mezőnek (riskPct/dailyLimitPct/targetPct/stb.) a validáció már
+            // `<= 0`-s alsó korlátja miatt ez nem fordulhat elő (−0 ≤ 0 igaz,
+            // így az a mező érvénytelen bemenetként elutasul).
+            const winratePctSafe = winratePct === 0 ? 0 : winratePct;
+            const winratePctFmt = winratePctSafe.toLocaleString('en-US', { maximumFractionDigits: 6 });
             const daysFmt = days.toLocaleString('en-US', { maximumFractionDigits: 6 });
             const tradesPerDayFmt = tradesPerDay.toLocaleString('en-US', { maximumFractionDigits: 6 });
 
@@ -41857,7 +41950,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const adv = parseFloat(advEl.value);
             const maxPct = parseFloat(maxPctEl.value);
-            const planned = parseFloat(plannedEl.value);
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként (`-0`) parseol, amit a lenti `fmt()`
+            // (`.toLocaleString()`) "-0"-ként jelenít meg — a `=== 0 ? 0 : ...`
+            // normalizálás a NaN-t (érvénytelen bemenet) NEM érinti, csak a
+            // ±0 közötti különbséget törli el a megjelenítés előtt.
+            const plannedRaw = parseFloat(plannedEl.value);
+            const planned = plannedRaw === 0 ? 0 : plannedRaw;
 
             if (!Number.isFinite(adv) || adv <= 0 || !Number.isFinite(maxPct) || maxPct <= 0 || !Number.isFinite(planned) || planned < 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges, nullánál nagyobb ADV-t és max. %-ot, valamint egy véges, nullánál nem kisebb tervezett pozícióméretet!</div>`;
@@ -42107,7 +42206,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const units = unitsRaw;
-            const pipCount = pipCountRaw;
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a `pipCountRaw < 0` validáción
+            // átmegy (−0 < 0 hamis), majd a `totalValueUsd = pipValueUsd *
+            // pipCount` szorzáson és a `.toLocaleString()`-en keresztül
+            // "$-0"-ként és "-0 pip összesen"-ként jelenne meg. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const pipCount = pipCountRaw === 0 ? 0 : pipCountRaw;
 
             const PIP_SIZE = 0.0001; // standard USD-kvótált pároknál (pl. EUR/USD)
             const pipValueUsd = units * PIP_SIZE;
@@ -42154,7 +42259,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const entry = parseFloat(entryEl.value);
             const exit = parseFloat(exitEl.value);
             const tickSize = parseFloat(tickSizeEl.value);
-            const tickDollar = parseFloat(tickDollarEl.value);
+            const tickDollarRaw = parseFloat(tickDollarEl.value);
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a `tickDollar < 0` validáción
+            // átmegy (−0 < 0 hamis), majd a `pnlPerContract`/`pointValue`
+            // számításon keresztül "+$-0.00"-ként (ellentmondó "+" előjellel és
+            // "-0" nagysággal) jelenne meg. A `=== 0 ? 0 : ...` normalizálás a
+            // NaN-t nem érinti.
+            const tickDollar = tickDollarRaw === 0 ? 0 : tickDollarRaw;
             const contracts = parseFloat(contractsEl.value);
             const direction = directionEl.value;
 
@@ -42270,12 +42382,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // explicit piros hibaüzenetet kap, konzisztensen az app többi
             // kalkulátorának validációs mintájával. A legitim "0" súly (eszköz
             // kizárása a portfólióból) változatlanul érvényes bemenet marad.
-            const weightRaws = [1, 2, 3].map(i => parseFloat(document.getElementById(`port-a${i}-weight`).value));
-            if (weightRaws.some(w => !Number.isFinite(w) || w < 0)) {
+            const weightRawsUnsafe = [1, 2, 3].map(i => parseFloat(document.getElementById(`port-a${i}-weight`).value));
+            if (weightRawsUnsafe.some(w => !Number.isFinite(w) || w < 0)) {
                 resultEl.innerHTML = `<div class="text-center text-xs text-neon-red font-bold py-3">Mindhárom súly mező érvényes, nullánál nem kisebb szám legyen!</div>`;
                 if (warningEl) warningEl.classList.add('hidden');
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `w < 0` validáción átmegy
+            // (−0 < 0 hamis), majd a `total * (weightPct / weightSum)`
+            // szorzáson keresztül az érintett eszköz kezdő/végértéke "$-0"-ként
+            // jelenne meg "$0" helyett. A `=== 0 ? 0 : ...` normalizálás a
+            // NaN-t nem érinti.
+            const weightRaws = weightRawsUnsafe.map(w => w === 0 ? 0 : w);
 
             // JAVÍTÁS: az eszköznév szabad szöveges mező (port-a1/2/3-name) értéke korábban
             // escapelés nélkül került az eredmény innerHTML-jébe (lásd lejjebb) — egy
@@ -42626,7 +42745,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
             const position = positionRaw;
-            const feePctPerSide = feePctRaw;
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `feePctRaw < 0`
+            // validáción átmegy (−0 < 0 hamis), majd a `feePerSide`/
+            // `roundTripFee`/`totalFees` szorzás-láncon keresztül "$-0"-ként
+            // jelenne meg "$0.00" helyett. A `=== 0 ? 0 : ...` normalizálás a
+            // NaN-t nem érinti.
+            const feePctPerSide = feePctRaw === 0 ? 0 : feePctRaw;
             const trades = Math.round(tradesRaw);
 
             const feePerSide = position * (feePctPerSide / 100);
@@ -43901,7 +44026,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // ügyleten. A spread NEM skálázódik az idővel (ez egy
             // egyszeri végrehajtási költség, nem egy folyamatos kockázat).
             const spreadRaw = document.getElementById('var-spread').value;
-            const spreadPct = spreadRaw === '' ? 0 : parseFloat(spreadRaw);
+            const spreadPctUnsafe = spreadRaw === '' ? 0 : parseFloat(spreadRaw);
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a lenti `spreadPct < 0`
+            // validáción átmegy (−0 < 0 hamis), majd a `liquidityCostAmount`
+            // szorzáson keresztül "$-0"-ként jelenne meg "$0.00" helyett. A
+            // `=== 0 ? 0 : ...` normalizálás a NaN-t nem érinti.
+            const spreadPct = spreadPctUnsafe === 0 ? 0 : spreadPctUnsafe;
             // JAVÍTÁS: a bid-ask spread % sosem lehet negatív (lásd calcSpreadCost
             // és calcTickValue, ahol ez már ki van kényszerítve) — korábban egy
             // negatív/elgépelt spread% csendben NEGATÍV likviditási költséget adott,
@@ -44272,12 +44403,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const expenses = parseFloat(expensesEl.value);
             const months = parseFloat(monthsEl.value);
-            const savings = parseFloat(savingsEl.value);
+            const savingsRaw = parseFloat(savingsEl.value);
 
-            if (!Number.isFinite(expenses) || expenses <= 0 || !Number.isFinite(months) || months <= 0 || !Number.isFinite(savings) || savings < 0) {
+            if (!Number.isFinite(expenses) || expenses <= 0 || !Number.isFinite(months) || months <= 0 || !Number.isFinite(savingsRaw) || savingsRaw < 0) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy pozitív havi kiadást, egy pozitív célzott hónapszámot, és egy nullánál nagyobb vagy egyenlő megtakarítást!</div>`;
                 return;
             }
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a fenti `savings < 0` validáción
+            // átmegy (−0 < 0 hamis), majd a `monthsCovered = safeSavings /
+            // safeExpenses` osztáson keresztül "-0 hónap"-ként jelenne meg
+            // "0 hónap" helyett. A `=== 0 ? 0 : ...` normalizálás a NaN-t nem
+            // érinti.
+            const savings = savingsRaw === 0 ? 0 : savingsRaw;
 
             // Felső korlát a hónapszámra és a bemeneti összegekre — ugyanaz a
             // védelmi elv, mint a többi kalkulátornál: egy astronómiailag
@@ -44570,7 +44708,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!out) return;
 
             const principal = parseFloat(document.getElementById('stakingapy-principal').value);
-            const aprPct = parseFloat(document.getElementById('stakingapy-apr').value);
+            const aprPctRaw = parseFloat(document.getElementById('stakingapy-apr').value);
+            // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
+            // negatív nullaként parseol — ez a lenti `aprPct < 0` validáción
+            // átmegy (−0 < 0 hamis), majd a `simpleProfit` szorzáson keresztül
+            // "+$-0"-ként jelenne meg "+$0" helyett. A `=== 0 ? 0 : ...`
+            // normalizálás a NaN-t nem érinti.
+            const aprPct = aprPctRaw === 0 ? 0 : aprPctRaw;
             const n = parseFloat(document.getElementById('stakingapy-freq').value);
             const days = parseFloat(document.getElementById('stakingapy-days').value);
             const haircutPct = parseFloat(document.getElementById('stakingapy-haircut').value);
