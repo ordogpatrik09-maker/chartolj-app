@@ -39793,11 +39793,35 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: az L1 és L2 díj (l1Fee/l2Fee) két FÜGGETLEN szorzat-
+            // láncból (gas limit × gas ár × 1e-9 × ETH-árfolyam, illetve +
+            // adatközlési díj) adódik össze, ezért két, egymáshoz nagyon
+            // KÖZELI (de nem egyenlő) bemenet-kombinációnál a savingsPerTx =
+            // l1Fee - l2Fee különbség lebegőpontosan egy tetszőlegesen kis,
+            // negatív maradék lehet, ami a `decimals` (6/4/2) tizedesjegyre
+            // kerekítve pontosan 0,000000-ra kerekedik — az eredeti
+            // `sign = n < 0 ? '-' : ''` ekkor a RAW (kerekítés előtti)
+            // előjelet nézte, így "-$0.000000" jelent meg ("Megtakarítás /
+            // tranzakció" és "Nettó megtakarítás" sorok), ami vizuálisan
+            // értelmetlen/megtévesztő (azt sugallja, van tényleges negatív
+            // megtakarítás, miközben a megjelenített összeg maga 0). Az
+            // előjelet a KEREKÍTETT (megjelenítendő) magnitúdó alapján
+            // döntjük el: ha az 0, nincs "-" előtag.
             const fmtUSD = (n) => {
                 const abs = Math.abs(n);
                 const decimals = abs < 0.01 ? 6 : (abs < 1 ? 4 : 2);
-                const sign = n < 0 ? '-' : '';
-                return `${sign}$${abs.toFixed(decimals)}`;
+                const absStr = abs.toFixed(decimals);
+                const sign = (n < 0 && parseFloat(absStr) !== 0) ? '-' : '';
+                return `${sign}$${absStr}`;
+            };
+
+            // JAVÍTÁS: ugyanez a negatív-nulla hiba a savingsPct%-nál is
+            // jelentkezhet (a fenti lebegőpontos maradék %-os formában is
+            // tetszőlegesen kicsi lehet) — a sima `savingsPct.toFixed(1)`
+            // "-0.0%"-t adott volna "0.0%" helyett.
+            const fmtPct1 = (n) => {
+                const rounded = Math.round(n * 10) / 10;
+                return (rounded === 0 ? 0 : rounded).toFixed(1);
             };
 
             let verdictColor, verdict;
@@ -39816,7 +39840,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs mb-3">
                     <div class="flex justify-between"><span class="text-slate-400">L1 díj / tranzakció:</span><span class="text-white">${fmtUSD(l1Fee)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">L2 díj / tranzakció (végrehajtás + adatközlés):</span><span class="text-white">${fmtUSD(l2Fee)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Megtakarítás / tranzakció:</span><span class="font-extrabold ${savingsPerTx > 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtUSD(savingsPerTx)} (${savingsPct.toFixed(1)}%)</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Megtakarítás / tranzakció:</span><span class="font-extrabold ${savingsPerTx > 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtUSD(savingsPerTx)} (${fmtPct1(savingsPct)}%)</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Bridge-megtérülési pont:</span><span class="text-white">${breakevenTxs !== null ? breakevenTxs + ' tranzakció után' : 'soha (L2 nem olcsóbb)'}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Nettó megtakarítás ${numTx} tranzakción:</span><span class="font-extrabold ${totalSavingsN >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtUSD(totalSavingsN)}</span></div>
                 </div>
