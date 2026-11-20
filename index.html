@@ -36879,13 +36879,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             let comparisonHtml = '';
+            // JAVÍTÁS: a `Number.isFinite(Rm)` ellenőrzés csak a benchmark-hozam
+            // mezőt zárta ki, de az `m2` (akár rendkívül nagy, de a fenti
+            // véges-ellenőrzésen átment) és egy EGYENKÉNT véges, de ellentétes
+            // előjelű extrém `Rm` különbsége (`diff = m2 - Rm`) önmagában is
+            // túlcsordulhat Infinity-be — ezt korábban ellenőrzés nélkül,
+            // szó szerint "Infinity"-ként jelenítettük meg a verdikt szövegében.
+            // Az app többi kalkulátorának mintájával konzisztensen, a `diff`-et is
+            // véges-ellenőrzésnek vetjük alá, mielőtt megjelenítenénk.
             if (Number.isFinite(Rm)) {
                 const diff = m2 - Rm;
-                const colorClass = diff >= 0 ? 'text-neon-green' : 'text-neon-red';
-                const verdict = diff >= 0
-                    ? `A kockázattal korrigált teljesítmény (M2) ${diff.toFixed(2)} százalékponttal FELÜLTELJESÍTETTE a benchmarkot.`
-                    : `A kockázattal korrigált teljesítmény (M2) ${Math.abs(diff).toFixed(2)} százalékponttal ALULTELJESÍTETTE a benchmarkot.`;
-                comparisonHtml = `<p class="text-[10px] font-semibold ${colorClass} mt-2">${verdict}</p>`;
+                if (Number.isFinite(diff)) {
+                    const colorClass = diff >= 0 ? 'text-neon-green' : 'text-neon-red';
+                    const verdict = diff >= 0
+                        ? `A kockázattal korrigált teljesítmény (M2) ${diff.toFixed(2)} százalékponttal FELÜLTELJESÍTETTE a benchmarkot.`
+                        : `A kockázattal korrigált teljesítmény (M2) ${Math.abs(diff).toFixed(2)} százalékponttal ALULTELJESÍTETTE a benchmarkot.`;
+                    comparisonHtml = `<p class="text-[10px] font-semibold ${colorClass} mt-2">${verdict}</p>`;
+                }
             }
 
             out.innerHTML = `
