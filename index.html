@@ -1113,6 +1113,87 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.8);
         }
 
+        /* ===== VILÁGOS TÉMA (Light theme) =====
+           Az app teljes felülete sötét alapra épül, a színek Tailwind
+           dark-900/dark-800/stb. háttér- és slate-* szöveg-osztályokkal
+           vannak kódolva mindenhol — EZREK helyen, egyedi elemenként
+           lehetetlen lenne végigjavítani anélkül, hogy destabilizálnánk
+           valamelyik védett képernyőt. Ehelyett ugyanazt a trükköt
+           alkalmazzuk, mint az akcentszín-választónál: egy html[data-theme
+           ="light"] attribútum-kapuzott felülírás-blokk, ami a leggyakrabban
+           újrahasznosított felület-/szöveg-osztályokat írja át világosra —
+           additív, semmilyen meglévő szabályt nem töröl, és egyetlen
+           attribútum ki/bekapcsolásával 100%-ban visszafordítható. Csak a
+           globálisan újrahasznosított osztályokat célozza (lásd a kommentben
+           lévő darabszámokat a kódbázisban), nem egyedi komponens-stílusokat.
+
+           FONTOS: a desktop nézet védett, nem módosítható kérés nélkül —
+           a desktopon jóval kevesebb dark-* osztály fedi le a teljes
+           felületet (más az elrendezés), ezért egy globális felülírás ott
+           csak foltokban, befejezetlenül hatna (pl. a fejléc logó-sávja
+           fehér folttá válna, a többi sötét maradna). Ezért az egész blokk
+           @media (max-width: 1023px) mögé kerül — pontosan ugyanaz a
+           törésvonal, mint a deszktop gyorsbillentyűknél (>=1024) és az
+           onboarding tournál (<1024) —, így a funkció kizárólag mobilon/
+           tableten aktív, a desktop nézet 100%-ban érintetlen marad. */
+        @media (max-width: 1023px) {
+        html[data-theme="light"] body { background-color: #f1f5f9 !important; color: #1e293b !important; }
+        html[data-theme="light"] #viewport-stage { background: #f1f5f9 !important; }
+        /* Néhány egyedi, hex-kóddal (nem Tailwind dark-* osztállyal) írt
+           háttér/elhalványulás-effekt is sötét alapra épül — ezeket is a
+           sima dark-* osztályokkal egy helyen, a fenti blokkban kezeljük. */
+        html[data-theme="light"] #academy-module-rail::after,
+        html[data-theme="light"] #academy-lesson-list-panel::after { background: linear-gradient(to bottom, transparent, rgba(248,250,252,0.95)) !important; }
+        html[data-theme="light"] .academy-module-collapse-bar { background: rgba(226, 232, 240, 0.92) !important; border-bottom-color: rgba(203, 213, 225, 0.5) !important; color: #b45309 !important; }
+        html[data-theme="light"] .bg-dark-950 { background-color: #f1f5f9 !important; }
+        html[data-theme="light"] .bg-dark-900 { background-color: #f8fafc !important; }
+        html[data-theme="light"] .bg-dark-850 { background-color: #ffffff !important; }
+        html[data-theme="light"] .bg-dark-800 { background-color: #f1f5f9 !important; }
+        html[data-theme="light"] .bg-dark-750 { background-color: #e2e8f0 !important; }
+        html[data-theme="light"] .bg-dark-600 { background-color: #cbd5e1 !important; }
+        html[data-theme="light"] .border-dark-750 { border-color: #e2e8f0 !important; }
+        html[data-theme="light"] .border-dark-800 { border-color: #e2e8f0 !important; }
+        html[data-theme="light"] .border-dark-700 { border-color: #cbd5e1 !important; }
+        html[data-theme="light"] .border-dark-600 { border-color: #94a3b8 !important; }
+        html[data-theme="light"] .text-white { color: #0f172a !important; }
+        html[data-theme="light"] .text-slate-200 { color: #1e293b !important; }
+        html[data-theme="light"] .text-slate-300 { color: #334155 !important; }
+        html[data-theme="light"] .text-slate-400 { color: #64748b !important; }
+        html[data-theme="light"] .text-slate-500 { color: #64748b !important; }
+        html[data-theme="light"] .text-slate-600 { color: #94a3b8 !important; }
+        html[data-theme="light"] .text-slate-700 { color: #94a3b8 !important; }
+        html[data-theme="light"] .glass-card { background: rgba(255, 255, 255, 0.75) !important; border-color: rgba(15, 23, 42, 0.08) !important; }
+        html[data-theme="light"] .glass-dropdown { background: rgba(255, 255, 255, 0.98) !important; border-color: rgba(0, 150, 170, 0.25) !important; box-shadow: 0 20px 40px rgba(100, 116, 139, 0.25) !important; }
+        html[data-theme="light"] ::-webkit-scrollbar-track { background: #e2e8f0 !important; }
+        html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #cbd5e1 !important; }
+
+        /* A fenti alap-osztályok mellett az app rengeteg helyen az
+           opacitás-variáns Tailwind osztályokat használja (pl. bg-dark-950/95
+           a lenavigációnál) — ezek a compilált CSS-ben KÜLÖN szelektorok,
+           a sima ".bg-dark-950" szabály nem fedi le őket, ezért mindegyik
+           ténylegesen előforduló kombinációt külön fel kell sorolni. */
+        html[data-theme="light"] .bg-dark-950\/95,
+        html[data-theme="light"] .bg-dark-950\/90,
+        html[data-theme="light"] .bg-dark-950\/80,
+        html[data-theme="light"] .bg-dark-950\/70,
+        html[data-theme="light"] .bg-dark-950\/60 { background-color: rgba(248, 250, 252, 0.95) !important; }
+        html[data-theme="light"] .bg-dark-900\/95,
+        html[data-theme="light"] .bg-dark-900\/60,
+        html[data-theme="light"] .bg-dark-900\/50,
+        html[data-theme="light"] .bg-dark-900\/40,
+        html[data-theme="light"] .bg-dark-900\/30 { background-color: rgba(241, 245, 249, 0.92) !important; }
+        html[data-theme="light"] .bg-dark-850\/70,
+        html[data-theme="light"] .bg-dark-850\/60,
+        html[data-theme="light"] .bg-dark-850\/50,
+        html[data-theme="light"] .bg-dark-850\/40 { background-color: rgba(255, 255, 255, 0.85) !important; }
+        html[data-theme="light"] .bg-dark-800\/60 { background-color: rgba(241, 245, 249, 0.85) !important; }
+        html[data-theme="light"] .border-dark-750\/60,
+        html[data-theme="light"] .border-dark-750\/50,
+        html[data-theme="light"] .border-dark-750\/40 { border-color: rgba(226, 232, 240, 0.9) !important; }
+        html[data-theme="light"] .border-dark-800\/60 { border-color: rgba(226, 232, 240, 0.9) !important; }
+        html[data-theme="light"] .border-dark-700\/60 { border-color: rgba(203, 213, 225, 0.9) !important; }
+        } /* /@media (max-width: 1023px) — világos téma vége */
+
         /* Custom Floating Micro Icon Button Styling */
         .micro-icon-btn {
             position: relative;
@@ -15183,6 +15264,11 @@ Mean-reversion,2.5</textarea>
                 <div id="text-size-picker" class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750"></div>
                 <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">A teljes felület méretezése akadálymentesítési céllal. Csak erre a munkamenetre vonatkozik.</p>
             </div>
+            <div class="glass-card rounded-xl p-3 lg:hidden">
+                <div class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-sun mr-2 text-slate-500"></i>Megjelenés</div>
+                <div id="theme-mode-picker" class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750"></div>
+                <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">Sötét vagy világos felület (csak mobilon/tableten érhető el). Csak erre a munkamenetre vonatkozik.</p>
+            </div>
             <button onclick="toggleProfileDiagnostics()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
                 <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-screwdriver-wrench text-slate-500 mr-2"></i><span data-i18n="profile_diagnostics">Speciális / Diagnosztika</span></span>
                 <i id="profile-diagnostics-chevron" class="fa-solid fa-chevron-down text-slate-500 text-xs"></i>
@@ -16511,6 +16597,35 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 wrapper.style.height = (window.innerHeight / zoom) + 'px';
             }
         });
+
+        const THEME_MODES = { dark: 'Sötét', light: 'Világos' };
+        let currentThemeMode = 'dark';
+        function setThemeMode(mode) {
+            if (!THEME_MODES[mode]) return;
+            // A világos téma kizárólag mobil/tablet nézetben él (lásd a CSS
+            // @media (max-width: 1023px) kapuját) — a desktop nézet védett,
+            // ezért széles viewporton a kérés figyelmen kívül marad és
+            // mindig sötét marad, hogy sose keletkezzen félkész, foltos
+            // állapot a desktop felületen.
+            if (mode === 'light' && window.innerWidth >= 1024) return;
+            currentThemeMode = mode;
+            if (mode === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            renderThemeModePicker();
+        }
+        window.addEventListener('resize', () => {
+            if (currentThemeMode === 'light' && window.innerWidth >= 1024) setThemeMode('dark');
+        });
+        function renderThemeModePicker() {
+            const container = document.getElementById('theme-mode-picker');
+            if (!container) return;
+            container.innerHTML = Object.keys(THEME_MODES).map(m => `
+                <button onclick="setThemeMode('${m}')" aria-pressed="${m === currentThemeMode}" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition ${m === currentThemeMode ? 'bg-neon-cyan/15 text-neon-cyan' : 'text-slate-400'}">${THEME_MODES[m]}</button>
+            `).join('');
+        }
 
         function setLanguage(lang) {
             if (!TRANSLATIONS[lang]) return;
@@ -48518,6 +48633,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function renderProfileScreen() {
             renderAccentThemePicker();
             renderTextSizePicker();
+            renderThemeModePicker();
             const nameEl = document.getElementById('profile-name');
             const emailEl = document.getElementById('profile-email');
             const premStatusEl = document.getElementById('profile-premium-status');
