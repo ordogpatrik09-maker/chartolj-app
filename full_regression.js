@@ -91,11 +91,17 @@ check('academy_modules_count', () => {
 // definícióra egyesítettük (96→94, szintén nem regresszió), ÉS a
 // normalizálást kiterjesztettük a zárójeles rész levágására, hogy ez a
 // hibaosztály a jövőben automatikusan elkapható legyen.
+// JAVÍTÁS (2026-11-20): a Bitcoin Dominancia & Altcoin-Rotáció
+// Kalkulátorhoz (504-es lecke, btcdom-modal) tartozó fogalomnak eddig
+// NEM volt szószedet-tétele, holott minden más önálló kalkulátorral
+// rendelkező fő fogalomnak van — ez tartalmi hiányosság volt, nem
+// duplikátum-tisztítás, ezért a várt szám szándékosan 94-ről 95-re NŐTT
+// (ez sem regresszió).
 check('glossary_terms_count', () => {
     const src = extractBalanced(html, 'const GLOSSARY_TERMS = ', '[', ']');
     const data = new Function('return ' + src)();
     if (!Array.isArray(data)) throw new Error('GLOSSARY_TERMS nem tömb');
-    if (data.length !== 94) throw new Error(`Várt 94 szószedet-tétel, kapott ${data.length}`);
+    if (data.length !== 95) throw new Error(`Várt 95 szószedet-tétel, kapott ${data.length}`);
     const terms = data.map(t => t.term.toLowerCase().replace(/\([^)]*\)/g, '').replace(/[^a-z0-9áéíóöőúüű]+/g, ''));
     const dupes = terms.filter((t, i) => terms.indexOf(t) !== i);
     if (dupes.length > 0) throw new Error(`Duplikált szószedet-tétel(ek): ${[...new Set(dupes)].join(', ')}`);
