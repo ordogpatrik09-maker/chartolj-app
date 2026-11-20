@@ -40224,7 +40224,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const breakevenPFrac = probDenom > 0 ? (totalCostDragFrac / probDenom) : Infinity;
 
             const fmtPct = (frac) => isFinite(frac) ? `${(frac * 100).toFixed(1)}%` : 'nem érhető el (0 osztó)';
-            const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+            // JAVÍTÁS: egy kis, negatív (pl. -0.3) Nettó eredmény a
+            // `maximumFractionDigits: 0`-s kerekítés UTÁN "$-0"-ként jelent
+            // meg — a toLocaleString() (és a toFixed() is) megtartja a
+            // negatív előjelet akkor is, ha a kerekített MAGNITÚDÓ pontosan
+            // 0, holott a "-0 dollár" vizuálisan értelmetlen/megtévesztő a
+            // felhasználónak (azt sugallja, a kalkulátor hibás). A kerekítés
+            // UTÁN explicit -0 → +0 normalizálással (a `=== 0` JS-ben nem
+            // különbözteti meg a ±0-t, így a ternary mindig +0-t ad vissza)
+            // kerüljük el ezt — a tényleges, 1$ vagy nagyobb negatív
+            // összegek kerekítését/előjelét ez NEM érinti.
+            const fmtMoney = (n) => {
+                const rounded = Math.round(n);
+                const safe = rounded === 0 ? 0 : rounded;
+                return `$${safe.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+            };
 
             let colorClass, verdict;
             if (netBenefit > 0) {
@@ -44585,6 +44599,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a "Maradék" dollár-összegek (akár a közös büdzsénél,
+            // akár az egyes stratégiáknál) kis, negatív %-os túllépés esetén
+            // (pl. -0.3%) a `maximumFractionDigits: 0`-s kerekítés UTÁN
+            // "-0 $"-ként jelentek meg — a toLocaleString() megtartja a
+            // negatív előjelet akkor is, ha a kerekített MAGNITÚDÓ pontosan
+            // 0, holott a "-0 dollár" vizuálisan értelmetlen/megtévesztő
+            // (azt sugallja, a kalkulátor hibás). Kerekítés UTÁN explicit
+            // -0 → +0 normalizálással (a `=== 0` JS-ben nem különbözteti meg
+            // a ±0-t, így a ternary mindig +0-t ad vissza) kerüljük el ezt —
+            // a tényleges, 1$ vagy nagyobb negatív összegek előjelét/
+            // kerekítését ez NEM érinti.
+            const fmtUsd = (n) => {
+                const rounded = Math.round(n);
+                return (rounded === 0 ? 0 : rounded).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            };
+
             const totalUsedPct = strategies.reduce((a, s) => a + s.used, 0);
             const totalRemainingPct = budgetPct - totalUsedPct;
             const totalUtilizationPct = budgetPct > 0 ? (totalUsedPct / budgetPct * 100) : 0;
@@ -44611,7 +44641,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <div class="h-full ${totalRemainingPct < 0 ? 'bg-neon-red' : totalUtilizationPct >= 80 ? 'bg-amber-400' : 'bg-neon-green'}" style="width:${Math.min(100, Math.max(2, totalUtilizationPct))}%"></div>
                     </div>
                     <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Felhasznált / Teljes büdzsé:</span><span class="text-white">${totalUsedPct.toFixed(2)}% / ${budgetPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Maradék közös büdzsé:</span><span class="font-bold ${overallColor}">${totalRemainingPct.toFixed(2)}% (${(balance * totalRemainingPct / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })} $)</span></div>
+                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Maradék közös büdzsé:</span><span class="font-bold ${overallColor}">${totalRemainingPct.toFixed(2)}% (${fmtUsd(balance * totalRemainingPct / 100)} $)</span></div>
                     <p class="text-[10px] font-semibold mt-2 ${overallColor}">${overallVerdict}</p>
                 </div>
                 <div class="space-y-2">
@@ -44621,9 +44651,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                                 <span class="font-bold text-white">${escapeHtml(r.name)}</span>
                                 <span class="font-extrabold ${r.colorClass}">${r.status}</span>
                             </div>
-                            <div class="flex justify-between text-slate-400"><span>Allokált (súly ${r.weight}):</span><span class="text-slate-200">${r.allocatedPct.toFixed(2)}% (${r.allocatedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })} $)</span></div>
-                            <div class="flex justify-between text-slate-400"><span>Ma felhasznált:</span><span class="text-slate-200">${r.used.toFixed(2)}% (${r.usedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })} $)</span></div>
-                            <div class="flex justify-between text-slate-400"><span>Maradék a saját részéből:</span><span class="font-bold ${r.colorClass}">${r.remainingPct.toFixed(2)}% (${r.remainingUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })} $)</span></div>
+                            <div class="flex justify-between text-slate-400"><span>Allokált (súly ${r.weight}):</span><span class="text-slate-200">${r.allocatedPct.toFixed(2)}% (${fmtUsd(r.allocatedUsd)} $)</span></div>
+                            <div class="flex justify-between text-slate-400"><span>Ma felhasznált:</span><span class="text-slate-200">${r.used.toFixed(2)}% (${fmtUsd(r.usedUsd)} $)</span></div>
+                            <div class="flex justify-between text-slate-400"><span>Maradék a saját részéből:</span><span class="font-bold ${r.colorClass}">${r.remainingPct.toFixed(2)}% (${fmtUsd(r.remainingUsd)} $)</span></div>
                         </div>
                     `).join('')}
                 </div>
