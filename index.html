@@ -20048,7 +20048,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rightSlopePositive = curve[curve.length - 1].payoff > curve[curve.length - 6].payoff + 1e-6;
             const isUnlimitedProfit = rightSlopePositive && ['long_call', 'protective_put', 'long_straddle', 'long_strangle'].includes(type);
 
-            const fmt = (n) => (n < 0 ? '-$' + Math.abs(n).toFixed(2) : '$' + n.toFixed(2));
+            // JAVÍTÁS: rendkívül kicsi (pl. 1e-10) kötési ár/prémió bemenetnél
+            // a `maxProfit`/`maxLoss` egy tetszőlegesen kicsi NEGATÍV
+            // lebegőpontos érték lehet, ami 2 tizedesjegyre kerekítve pontosan
+            // 0-ra kerekedik — a régi `fmt` az előjelet a KEREKÍTÉS ELŐTTI
+            // (`n < 0`) raw értékből olvasta ki, ezért "-$0.00" jelent meg,
+            // holott a megjelenített összeg maga nulla. A kerekített
+            // (megjelenítendő) magnitúdó alapján döntjük el az előjelet,
+            // konzisztensen a fájl többi "-0" javításával.
+            const fmt = (n) => {
+                const abs = Math.abs(n).toFixed(2);
+                return (n < 0 && abs !== '0.00') ? '-$' + abs : '$' + abs;
+            };
 
             out.innerHTML = `
                 <canvas id="os-payoff-chart" width="320" height="140" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
@@ -31252,6 +31263,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const actualReturnPct = (leveredFactor - 1) * 100;
             const decayPct = naiveReturnPct - actualReturnPct;
 
+            // JAVÍTÁS: rendkívül kicsi (pl. 1e-10×) tőkeáttétel és/vagy
+            // mögöttes hozamsor mellett a naiveReturnPct/actualReturnPct/decayPct
+            // egy tetszőlegesen kicsi NEGATÍV lebegőpontos maradék lehet, ami a
+            // kijelzési 3 tizedesjegyre kerekítve pontosan 0-ra kerekedik — a sima
+            // `.toFixed(3)` ettől függetlenül megtartja a "-" előjelet
+            // ("-0.000%"/"-0.000 pp"), ami valódi negatív decay/hozam látszatát
+            // kelti, miközben a megjelenített érték maga nulla. A fz3() a
+            // KEREKÍTETT (megjelenítendő) sztring alapján dönt, konzisztensen a
+            // fájl többi "-0" javításával.
+            const fz3 = (v) => { const s = v.toFixed(3); return s === '-0.000' ? '0.000' : s; };
+
             // JAVÍTÁS: egy szintaktikailag érvényes, de rendkívül nagy (pl. "1e308")
             // napi hozam vagy tőkeáttételi szorzó mellett a `naiveReturnPct = L *
             // underlyingReturnPct` szorzás (vagy a leveredDailyFactor szorzat-sorozat)
@@ -31278,32 +31300,32 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = 'Ennél a konkrét hozamsornál a volatility decay elhanyagolható (pl. mert nincs napról napra irányváltás, vagy a sorozat túl rövid/sima) — minél hosszabb és volatilisebb a sorozat, annál nagyobb eltérés várható.';
             } else if (Math.abs(underlyingReturnPct) < 0.5 && Math.abs(decayPct) > 0.1) {
                 colorClass = 'text-neon-red';
-                verdict = `🔸 A klasszikus csapda: a mögöttes eszköz nettó hozama gyakorlatilag ${underlyingReturnPct.toFixed(3)}% (vagyis közel oda tért vissza, ahonnan indult) — mégis, a ${L}× tőkeáttételes ETF nettó ${actualReturnPct.toFixed(3)}%-ot hozott. Ez a napi újraindexelés miatti volatility decay, nem díj vagy hiba.`;
+                verdict = `🔸 A klasszikus csapda: a mögöttes eszköz nettó hozama gyakorlatilag ${fz3(underlyingReturnPct)}% (vagyis közel oda tért vissza, ahonnan indult) — mégis, a ${L}× tőkeáttételes ETF nettó ${fz3(actualReturnPct)}%-ot hozott. Ez a napi újraindexelés miatti volatility decay, nem díj vagy hiba.`;
             } else if (decayPct > 0) {
                 colorClass = 'text-amber-400';
-                verdict = `A tényleges, napi compoundolt hozam (${actualReturnPct.toFixed(3)}%) elmarad a naiv "L×" elvárástól (${naiveReturnPct.toFixed(3)}%) — a különbség (${decayPct.toFixed(3)} százalékpont) a volatilitás okozta erózió.`;
+                verdict = `A tényleges, napi compoundolt hozam (${fz3(actualReturnPct)}%) elmarad a naiv "L×" elvárástól (${fz3(naiveReturnPct)}%) — a különbség (${fz3(decayPct)} százalékpont) a volatilitás okozta erózió.`;
             } else {
                 colorClass = 'text-neon-green';
-                verdict = `Ebben a konkrét (jellemzően egyirányú, trendező) sorozatban a napi compoundolás kedvezett a tőkeáttételes ETF-nek — a tényleges hozam (${actualReturnPct.toFixed(3)}%) meghaladta a naiv "L×" elvárást (${naiveReturnPct.toFixed(3)}%). Fontos: ez nem ellentmondás, csak azt jelzi, hogy a kumulatív hatás trendező, alacsony volatilitású piacon a másik irányba is elmozdulhat — hosszú távon azonban a volatilitás jelenléte miatt ez nem garantált.`;
+                verdict = `Ebben a konkrét (jellemzően egyirányú, trendező) sorozatban a napi compoundolás kedvezett a tőkeáttételes ETF-nek — a tényleges hozam (${fz3(actualReturnPct)}%) meghaladta a naiv "L×" elvárást (${fz3(naiveReturnPct)}%). Fontos: ez nem ellentmondás, csak azt jelzi, hogy a kumulatív hatás trendező, alacsony volatilitású piacon a másik irányba is elmozdulhat — hosszú távon azonban a volatilitás jelenléte miatt ez nem garantált.`;
             }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-orange-400/30 bg-orange-400/[0.05] p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Volatility Decay (naiv elvárás − tényleges hozam)</div>
-                    <div class="text-xl font-extrabold ${ruinDay !== null ? 'text-neon-red' : (decayPct > 0 ? 'text-amber-400' : 'text-neon-green')}">${ruinDay !== null ? '—' : decayPct.toFixed(3) + ' pp'}</div>
+                    <div class="text-xl font-extrabold ${ruinDay !== null ? 'text-neon-red' : (decayPct > 0 ? 'text-amber-400' : 'text-neon-green')}">${ruinDay !== null ? '—' : fz3(decayPct) + ' pp'}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Mögöttes eszköz nettó hozama (${returns.length} nap):</span>
-                        <span class="font-extrabold text-white text-sm">${underlyingReturnPct.toFixed(3)}%</span>
+                        <span class="font-extrabold text-white text-sm">${fz3(underlyingReturnPct)}%</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Naiv elvárás (${L}× a mögöttes hozamnak):</span>
-                        <span class="font-extrabold text-white text-sm">${naiveReturnPct.toFixed(3)}%</span>
+                        <span class="font-extrabold text-white text-sm">${fz3(naiveReturnPct)}%</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Tényleges, napi compoundolt ${isInverse ? 'inverz' : ''} ETF hozam:</span>
-                        <span class="font-extrabold ${ruinDay !== null ? 'text-neon-red' : 'text-white'} text-sm">${ruinDay !== null ? 'nullázódott (-100%)' : actualReturnPct.toFixed(3) + '%'}</span>
+                        <span class="font-extrabold ${ruinDay !== null ? 'text-neon-red' : 'text-white'} text-sm">${ruinDay !== null ? 'nullázódott (-100%)' : fz3(actualReturnPct) + '%'}</span>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3">
@@ -40589,19 +40611,33 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 overallVerdict = `A legrosszabb megadott forgatókönyvben (${worst.shock > 0 ? '+' : ''}${worst.shock}%) a veszteség a tőke kevesebb mint 20%-a — a jelenlegi pozícióméret ezekre a sokkokra viszonylag jól tolerálható, de ettől a stressz-teszt nem garancia a jövőre.`;
             }
 
-            const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            // JAVÍTÁS: rendkívül kicsi (pl. 1e-10) belépési ár/pozícióméret/
+            // számla tőke kombinációnál a `pnl`/`pnlPct` egy tetszőlegesen
+            // kicsi, de valódi NEGATÍV lebegőpontos érték lehet, ami a
+            // kijelzési 2 tizedesjegyre kerekítve pontosan 0-ra kerekedik — a
+            // régi `fmtMoney` az előjelet a KEREKÍTÉS ELŐTTI (`n < 0`) raw
+            // értékből olvasta ki, a sima `pnlPct.toFixed(2)` pedig semennyire
+            // nem védett, ezért "-$0.00"/"-0.00%" jelent meg, holott a
+            // megjelenített összeg/arány maga nulla. Ugyanaz a hibaosztály és
+            // javítási minta, mint a fájl többi "-0" javításánál: az előjelet
+            // a KEREKÍTETT (megjelenítendő) magnitúdó alapján döntjük el.
+            const fmtMoney = (n) => {
+                const rounded = Math.round(Math.abs(n) * 100) / 100;
+                return `${(n < 0 && rounded !== 0) ? '-' : ''}$${rounded.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            };
+            const fmtPct2 = (v) => { const s = v.toFixed(2); return s === '-0.00' ? '0.00' : s; };
 
             out.innerHTML = `
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
                         <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Legrosszabb eset (${worst.shock > 0 ? '+' : ''}${worst.shock}%)</div>
                         <div class="text-sm font-extrabold ${worst.pnl < 0 ? 'text-neon-red' : 'text-neon-green'}">${fmtMoney(worst.pnl)}</div>
-                        <div class="text-[9.5px] text-slate-500 mt-0.5">${worst.pnlPct.toFixed(2)}% a tőkéhez</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${fmtPct2(worst.pnlPct)}% a tőkéhez</div>
                     </div>
                     <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
                         <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Legjobb eset (${best.shock > 0 ? '+' : ''}${best.shock}%)</div>
                         <div class="text-sm font-extrabold ${best.pnl < 0 ? 'text-neon-red' : 'text-neon-green'}">${fmtMoney(best.pnl)}</div>
-                        <div class="text-[9.5px] text-slate-500 mt-0.5">${best.pnlPct.toFixed(2)}% a tőkéhez</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${fmtPct2(best.pnlPct)}% a tőkéhez</div>
                     </div>
                 </div>
                 <div class="space-y-1.5 mb-3">
@@ -42944,8 +42980,34 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
-            const fmt = (n, d = 2) => (n < 0 ? '-$' + Math.abs(n).toFixed(d) : '$' + n.toFixed(d));
-            const fmtNum = (n, d = 4) => (n >= 0 ? '+' : '') + n.toFixed(d);
+            // JAVÍTÁS: a Gamma (pdfD1 / (S × sigma × √T)) nevezője rendkívül
+            // kicsi (pl. 1e-10) árfolyam/volatilitás/napok-a-lejáratig
+            // bemenet-kombinációnál maga is rendkívül kicsivé válik — a
+            // hányados ettől még TECHNIKAILAG véges (átmegy a fenti
+            // Number.isFinite() ellenőrzésen), de a nagyságrendje (pl.
+            // ~7.6e27) olyan extrém, hogy a `.toFixed(4)` a JS specifikáció
+            // szerint (a Number.prototype.toFixed ≥1e21 abszolútértéknél
+            // visszavált `toString()`-re) nyers tudományos jelölésben
+            // ("7.62178156525926e+27") jelenítette meg egy "Greek"-nek szánt
+            // mezőben — ez egy oktatási eszköznél értelmezhetetlen és
+            // hibásnak tűnő kimenet, nem egy valódi, használható érzékenységi
+            // mutató. Egy ésszerű felső nagyságrend-korlát (minden Greekre és
+            // az árra is, konzisztensen) a fájl többi "extrém, de egyenként
+            // véges bemenet" javításának mintáját követi.
+            if ([g.price, g.delta, g.gamma, g.theta, g.vega, g.rho].some(v => Math.abs(v) > 1e12)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott paraméterek kombinációja (pl. rendkívül kicsi árfolyam, volatilitás vagy napok a lejáratig) olyan extrém nagyságrendű Greeket adna, hogy azok nem jeleníthetők meg értelmesen — adj meg reálisabb értékeket!</div>`;
+                return;
+            }
+
+            const fmt = (n, d = 2) => {
+                const abs = Math.abs(n).toFixed(d);
+                return (n < 0 && parseFloat(abs) !== 0) ? '-$' + abs : '$' + abs;
+            };
+            const fmtNum = (n, d = 4) => {
+                const fixed = n.toFixed(d);
+                const isZero = parseFloat(fixed) === 0;
+                return (n >= 0 || isZero ? '+' : '') + (isZero ? (0).toFixed(d) : fixed);
+            };
 
             out.innerHTML = `
                 <div class="rounded-xl bg-neon-purple/5 border border-neon-purple/30 p-3 mb-3">
@@ -43606,6 +43668,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: extrém kicsi (pl. 1e-10%) IV és/vagy évesítési faktor
+            // mellett az "iv - rvAnnualPct" egy tetszőlegesen kicsi NEGATÍV
+            // lebegőpontos maradék lehet, ami 2 tizedesjegyre kerekítve
+            // pontosan 0-ra kerekedik — a sima `.toFixed(2)` ettől
+            // függetlenül megtartja a "-" előjelet ("-0.00 pp"), miközben a
+            // fenti előjel-prefix logika ("+" vs "") ugyanekkor "" (nem "+")
+            // prefixet ad, így egy önellentmondó, megtévesztő "-0.00 pp"
+            // jelenik meg valódi negatív spread látszatával. A kerekített
+            // sztring alapján normalizáljuk, konzisztensen a fájl többi "-0"
+            // javításával.
+            const spreadFixed = spread.toFixed(2);
+            const spreadIsZero = spreadFixed === '-0.00';
+            const spreadDisplay = spreadIsZero ? '0.00' : spreadFixed;
+            const spreadNonNeg = spread >= 0 || spreadIsZero;
+
             let verdict, verdictColor;
             if (rvAnnualPct === 0) {
                 verdict = 'A realizált volatilitás NULLA (a megadott áraknak nincs elmozdulása) — az arány nem értelmezhető, csak a nyers spread (= IV) mutat valamit.';
@@ -43635,7 +43712,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-xs mb-3">
-                    <div class="flex justify-between"><span class="text-slate-400">IV − RV spread:</span><span class="font-bold ${spread >= 0 ? 'text-amber-400' : 'text-neon-cyan'}">${spread >= 0 ? '+' : ''}${spread.toFixed(2)} pp</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">IV − RV spread:</span><span class="font-bold ${spreadNonNeg ? 'text-amber-400' : 'text-neon-cyan'}">${spreadNonNeg ? '+' : ''}${spreadDisplay} pp</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">IV / RV arány:</span><span class="font-bold text-white">${ratio !== null ? ratio.toFixed(2) + 'x' : 'N/A (RV = 0)'}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Napi log-hozam szórás:</span><span class="text-slate-300">${(dailyStdev * 100).toFixed(3)}%</span></div>
                 </div>
@@ -44183,6 +44260,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
+            // JAVÍTÁS: a kamatos APY matematikailag SOSEM lehet kisebb a
+            // nominális APR-nél (n>=1, aprPct>=0 mellett a kamatos jóváírás
+            // csak növelheti vagy (n=1-nél) megtarthatja a hozamot) — de
+            // rendkívül kicsi (pl. 1e-10%) APR esetén a `periodicRate` már a
+            // double lebegőpontos felbontás ALATT van, így `1+periodicRate`
+            // pontosan 1.0-ra kerekedik, és a `Math.pow(1, n) - 1` pontosan
+            // 0-t ad, miközben az eredeti `aprPct` maga még nem pontosan 0 —
+            // emiatt az `apyVsAprDiffPct = apyPct - aprPct` egy tetszőlegesen
+            // kicsi NEGATÍV lebegőpontos maradék, amit a sima `.toFixed(2)`
+            // megtart ("-0.00pp" a "+" prefix helyett). Ugyanaz a "-0"
+            // megjelenítési hibaosztály, mint a fájl többi hasonló javításánál.
+            const apyDiffFixed = apyVsAprDiffPct.toFixed(2);
+            const apyDiffIsZero = apyDiffFixed === '-0.00';
+            const apyDiffDisplay = apyDiffIsZero ? '0.00' : apyDiffFixed;
+            const apyDiffNonNeg = apyVsAprDiffPct >= 0 || apyDiffIsZero;
+
             out.innerHTML = `
                 <div class="grid grid-cols-2 gap-2 mb-3">
                     <div class="glass-card rounded-xl p-3">
@@ -44192,7 +44285,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="glass-card rounded-xl p-3 border border-neon-green/30">
                         <div class="text-[10px] text-neon-green uppercase font-bold mb-1">Effektív APY (kamatos)</div>
                         <div class="text-sm font-extrabold text-neon-green font-mono">${apyPct.toFixed(2)}%</div>
-                        <div class="text-[10px] text-slate-500 font-mono mt-0.5">${apyVsAprDiffPct >= 0 ? '+' : ''}${apyVsAprDiffPct.toFixed(2)}pp az APR-hez képest</div>
+                        <div class="text-[10px] text-slate-500 font-mono mt-0.5">${apyDiffNonNeg ? '+' : ''}${apyDiffDisplay}pp az APR-hez képest</div>
                     </div>
                 </div>
                 <div class="flex items-center justify-between font-mono text-xs mb-1.5">
@@ -44337,10 +44430,29 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: rendkívül kicsi (pl. 1e-10%/1e-10$) találati arány/
+            // átlagos nyereség/veszteség kombinációnál az `expectancyDollar`
+            // egy tetszőlegesen kicsi, de valódi NEGATÍV érték lehet, ami 2
+            // tizedesjegyre kerekítve pontosan 0-ra kerekedik — a fenti
+            // ternary az előjelet a KEREKÍTÉS ELŐTTI (`expectancyDollar >= 0`)
+            // raw értékből olvasta ki (a `Math.abs()` csak a SZÁMJEGYEKRE
+            // hatott, a "+"/"-" prefix-választásra nem), ezért "-$0.00"
+            // jelent meg, holott a megjelenített dollár-összeg maga nulla.
+            // (Az "(…R)" érték NEM ugyanez a hiba — az `expectancyR` egy
+            // MÁSIK skálázású hányados, ami ugyanekkor valóban, nagyságrendileg
+            // -1.00R lehet, ezt a javítás nem érinti; az `expRNonNeg` védelem
+            // csak a saját, függetlenül előforduló kerekítés-határesetét fedi.)
+            const expDollarAbsFixed = Math.abs(expectancyDollar).toFixed(2);
+            const expDollarSign = (expectancyDollar >= 0 || expDollarAbsFixed === '0.00') ? '+' : '-';
+            const expRFixed = expectancyR.toFixed(2);
+            const expRIsZero = expRFixed === '-0.00';
+            const expRDisplay = expRIsZero ? '0.00' : expRFixed;
+            const expRNonNeg = expectancyR >= 0 || expRIsZero;
+
             out.innerHTML = `
                 <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Statisztikai várható érték / trade</div>
-                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${expectancyDollar >= 0 ? '+$' + expectancyDollar.toFixed(2) : '-$' + Math.abs(expectancyDollar).toFixed(2)} <span class="text-sm">(${expectancyR >= 0 ? '+' : ''}${expectancyR.toFixed(2)}R)</span></div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${expDollarSign}$${expDollarAbsFixed} <span class="text-sm">(${expRNonNeg ? '+' : ''}${expRDisplay}R)</span></div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2">
                     <div class="flex items-center justify-between font-mono text-xs">
