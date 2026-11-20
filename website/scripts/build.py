@@ -31,7 +31,7 @@ with open(os.path.join(ROOT, 'js/locales.js'), 'w', encoding='utf-8') as f:
 import hashlib
 def _ver():
     h = hashlib.md5()
-    for f in ('css/design-system.css', 'js/site.js', 'js/fx.js', 'js/scenes.js', 'js/charts.js', 'js/tools-math.js', 'js/config.js', 'js/markets.js', 'js/locales.js'):
+    for f in ('css/design-system.css', 'js/site.js', 'js/fx.js', 'js/scenes.js', 'js/xmas.js', 'js/charts.js', 'js/tools-math.js', 'js/config.js', 'js/markets.js', 'js/locales.js'):
         try: h.update(open(os.path.join(ROOT, f), 'rb').read())
         except OSError: pass
     return h.hexdigest()[:8]
@@ -96,7 +96,7 @@ def head(page, extra_ld=''):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>%(title)s</title>
 <meta name="description" content="%(desc)s">
-<meta name="theme-color" content="#0B0E14">
+<meta name="theme-color" content="#07150f">
 <meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Chartolj!">
@@ -184,13 +184,14 @@ def footer():
 <script src="js/site.js?v=%(ver)s"></script>
 <script src="js/fx.js?v=%(ver)s" defer></script>
 <script src="js/scenes.js?v=%(ver)s" defer></script>
+<script src="js/xmas.js?v=%(ver)s" defer></script>
 ''' % dict(ver=VER, helpspan=tx('help.label'), stk=tx('sticky.cta'), tag=tx('footer.tagline'), risk=tx('risk.short'), rights=tx('footer.rights'), fl=tx('footer.lang'), draft=tx('footer.draft'),
            c1=col('footer.product', [('index.html#platform', 'nav.platform'), ('markets.html', 'nav.markets'), ('academy.html', 'nav.learning'), ('tools.html', 'nav.tools'), ('learn.html', 'nav.learn'), ('premium.html', 'nav.pricing')]),
            c2=col('footer.company', [('about.html', 'nav.about'), ('faq.html', 'footer.faq'), ('contact.html', 'footer.contact')]),
            c3=col('footer.legal', [('privacy.html', 'footer.privacy'), ('terms.html', 'footer.terms'), ('risk.html', 'footer.risk'), ('cookies.html', 'footer.cookies')]))
 
 def cta_band():
-    return '<section class="section"><div class="container"><div class="cta-band dark reveal"><div>%s<p style="color:var(--c-text-2);margin-top:12px;max-width:520px">%s</p></div><a class="btn btn-primary btn-lg" data-app href="app/index.html">%s</a></div></div></section>' % (tx('cta.title', 'h2'), tx('cta.sub'), tx('cta.btn'))
+    return '<section class="section"><div class="container"><div class="cta-band dark reveal"><svg class="tree" viewBox="0 0 120 150" aria-hidden="true"><path d="M60 8 L82 46 H70 L96 86 H80 L108 126 H12 L40 86 H24 L50 46 H38Z" fill="#1f8a50" stroke="#0f5a32" stroke-width="2" stroke-linejoin="round"/><rect x="52" y="126" width="16" height="18" fill="#7a4a2a"/><path d="M60 0 l4 9 10 1 -8 7 3 10 -9 -6 -9 6 3 -10 -8 -7 10 -1Z" fill="#ffd25e"/><path d="M38 50 Q60 66 84 48 M28 88 Q60 108 94 86 M18 124 Q60 146 102 124" stroke="#fff" stroke-width="1.4" fill="none" opacity=".7"/><g><circle class="tl" cx="46" cy="60" r="4" fill="#ff3b4a"/><circle class="tl" cx="72" cy="62" r="4" fill="#ffd25e"/><circle class="tl" cx="60" cy="40" r="3.4" fill="#58b7ff"/><circle class="tl" cx="34" cy="98" r="4" fill="#ffd25e"/><circle class="tl" cx="62" cy="100" r="4.4" fill="#ff3b4a"/><circle class="tl" cx="88" cy="98" r="4" fill="#58b7ff"/><circle class="tl" cx="24" cy="130" r="4" fill="#ff8fd1"/><circle class="tl" cx="54" cy="132" r="4" fill="#ffd25e"/><circle class="tl" cx="84" cy="132" r="4" fill="#ff3b4a"/><circle class="tl" cx="102" cy="130" r="4" fill="#58b7ff"/></g></svg><div>%s<p style="color:var(--c-text-2);margin-top:12px;max-width:520px">%s</p></div><a class="btn btn-primary btn-lg" data-app href="app/index.html">%s</a></div></div></section>' % (tx('cta.title', 'h2'), tx('cta.sub'), tx('cta.btn'))
 
 def page_hero(page, title_key, sub_key, wide=False, eyebrow=None):
     return '<section class="page-hero dark%s"><div class="container">%s%s%s</div></section>' % (' wide' if wide else '', ('<div class="eyebrow">%s</div>' % tx(eyebrow)) if eyebrow else '', tx(title_key, 'h1'), tx(sub_key, 'p'))
@@ -221,6 +222,7 @@ def cinema():
     bars = ''.join('<i data-c="%s" style="--h:%d;--d:%d"></i>' % ('a' if i % 3 == 0 else ('b' if i % 3 == 1 else 'c'), h_, (i * 37) % 11) for i, h_ in enumerate([22,34,18,12,9,26,14,6,5,3,38,52,60,24,70,34,48,92,66,44,30,18,40,58,26,34,60,36,20,12,24,16,8,6]))
     return '''<section class="hero hero-x dark" id="top"><div class="hx-glow" aria-hidden="true"></div><div class="container hx-grid">
   <div class="hx-copy">
+    <p class="xmas-tag">&#10022; %(xg)s</p>
     <h1><span class="dim">%(l1)s</span><span class="bright">%(l2)s</span></h1>
     <p class="hx-sub">%(sub)s</p>
     <p class="hx-cta"><a class="btn btn-pill" data-app href="app/index.html">%(cta)s</a><a class="link-arrow" href="academy.html">%(cta2)s</a></p>
@@ -236,7 +238,7 @@ def cinema():
 <section class="strip-sec dark"><div class="strip" aria-hidden="true"><div class="strip-track">%(strip)s%(strip)s</div></div></section>
 
 <section class="scene scene-bars dark" id="sbars"><div class="sb-pin"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></div></section>
-''' % dict(alt=esc(hu('hero2.tab1')), c1l=t('chip.bal'), c2l=t('chip.pos'), l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'),
+''' % dict(xg=t('xmas.greet'), alt=esc(hu('hero2.tab1')), c1l=t('chip.bal'), c2l=t('chip.pos'), l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'),
         g1=t('cx.g1'), g2=t('cx.g2'), gsub=t('cx.gsub'), p1=t('cx.p1'), p2=t('cx.p2'), alt1=esc(hu('hero2.tab2')), alt2=esc(hu('hero2.tab1')),
         strip=''.join('<span>%s</span>' % x for x in ['%d %s' % (N_LESSONS, t('facts.lessons')), '%d %s' % (N_Q, t('facts.questions')), '%d %s' % (N_TOOLS, t('facts.tools')), t('cx.s1'), t('cx.s2'), t('cx.s3')]),
         b1=t('cx.b1'), b2=t('cx.b2'), b3=t('cx.b3'), bars=bars)

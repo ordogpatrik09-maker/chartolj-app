@@ -609,3 +609,6 @@ s('cx.s3', 'Három nyelven', 'In three languages', 'In drei Sprachen')
 s('cx.b1', 'A hibák természetesek.', 'Mistakes are natural.', 'Fehler sind normal.')
 s('cx.b2', 'A piac kiszámíthatatlan.', 'The market is unpredictable.', 'Der Markt ist unberechenbar.')
 s('cx.b3', 'A kulcs a döntéseidben rejlik.', 'The key is in your decisions.', 'Der Schlüssel liegt in deinen Entscheidungen.')
+
+s('xmas.greet', 'Kellemes ünnepeket kíván a Chartolj! csapata!', 'Happy holidays from the Chartolj! team!', 'Frohe Feiertage wünscht das Chartolj!-Team!')
+s('xmas.snow', 'Havazás ki/be', 'Toggle snow', 'Schnee an/aus')
