@@ -16194,6 +16194,19 @@ Mean-reversion,2.5</textarea>
                     <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
                 </span>
             </button>
+            <!-- Admin panel belépési pont: KIZÁRÓLAG akkor jelenik meg, ha a
+                 bejelentkezett felhasználó email-címe szerepel az
+                 ADMIN_EMAIL_ALLOWLIST tömbben (lásd isAdminUser()) — lásd
+                 renderProfileScreen(). FONTOS: ez önmagában CSAK UI-rejtés,
+                 a tényleges jogosultság-ellenőrzés a get_admin_app_stats()
+                 szerveroldali SECURITY DEFINER függvényben történik (lásd
+                 supabase/migrations/018_admin_stats.sql) — a gomb
+                 elrejtése/megjelenítése a böngésző konzoljából megkerülhető
+                 lenne, de az RPC akkor is elutasítaná a nem-admin hívót. -->
+            <button id="profile-admin-btn" onclick="openAdminPanel()" class="hidden w-full glass-card rounded-xl p-3 flex items-center justify-between border-amber-500/30 hover:border-amber-500/60 transition">
+                <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-user-shield mr-2"></i>Admin panel</span>
+                <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+            </button>
             <!-- JAVÍTÁS: a "Stratégiai kalkulátorok" (Eszközök) menü eddig
                  KIZÁRÓLAG a desktop fejléken (hidden lg:flex) élt — mobilon
                  (ahol maga az app neve szerint futnia KELL) a felhasználónak
@@ -17051,6 +17064,27 @@ Mean-reversion,2.5</textarea>
             </div>
             <div id="trade-journal-content" class="flex-grow overflow-y-auto space-y-2 pr-1 font-mono text-xs"></div>
             <p class="text-[9.5px] text-slate-600 pt-2 shrink-0">A riport a demó-kereskedési fiókod SAJÁT, lezárt pozícióiból (Lezárt Pozíciók fül) készül, élőben — oktatási célra, nem valós pénzügyi teljesítmény-értékelés.</p>
+        </div>
+    </div>
+
+    <!-- ================= ADMIN PANEL (kizárólag az ADMIN_EMAIL_ALLOWLIST
+         email-címeinek) ================= Tisztán OLVASÁS-csak, aggregált
+         app-statisztikát mutat — a get_admin_app_stats() szerveroldali
+         SECURITY DEFINER RPC-ből (lásd 018_admin_stats.sql), ami
+         önállóan is kikényszeríti az admin-ellenőrzést. -->
+    <div id="admin-panel-modal" class="hidden fixed inset-0 z-[97] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] max-h-[85%] flex flex-col p-4">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-amber-400"></i> Admin panel
+                </h3>
+                <button onclick="closeAdminPanel()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="admin-panel-content" class="flex-grow overflow-y-auto space-y-2 pr-1"></div>
+            <button onclick="loadAdminStats()" class="mt-2 shrink-0 text-[10.5px] font-bold text-slate-500 hover:text-neon-cyan transition self-start"><i class="fa-solid fa-rotate mr-1"></i>Frissítés</button>
+            <p class="text-[9.5px] text-slate-600 pt-2 shrink-0">Csak OLVASÁS: összesített, anonim app-statisztika. A jogosultságot a szerver (adatbázis) is önállóan ellenőrzi, nem csak ez a felület.</p>
         </div>
     </div>
 
@@ -52886,6 +52920,80 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             return !!(typeof sb !== 'undefined' && sb && typeof currentUser !== 'undefined' && currentUser && !currentUser.guest && currentUser.id);
         }
 
+        // ================= ADMIN PANEL =================
+        // FONTOS: ez a tömb CSAK a kliensoldali UI-gomb megjelenítését
+        // vezérli — a tényleges jogosultság-kényszerítés a
+        // get_admin_app_stats() szerveroldali SECURITY DEFINER RPC-ben
+        // történik (lásd supabase/migrations/018_admin_stats.sql), ami
+        // SAJÁT, egymástól FÜGGETLENÜL karbantartott admin-email listával
+        // dolgozik. Admin-hozzáférés módosításakor MINDKETTŐT frissíteni
+        // kell. Kisbetűsre normalizálva hasonlítunk össze.
+        const ADMIN_EMAIL_ALLOWLIST = ['ordog.patrik.09@gmail.com'];
+        function isAdminUser() {
+            return !!(isLoggedInRealUser() && currentUser.email &&
+                ADMIN_EMAIL_ALLOWLIST.includes(String(currentUser.email).toLowerCase()));
+        }
+
+        function openAdminPanel() {
+            if (!isAdminUser()) { showNotification('Nincs jogosultságod ehhez.'); return; }
+            document.getElementById('admin-panel-modal').classList.remove('hidden');
+            loadAdminStats();
+        }
+        function closeAdminPanel() {
+            document.getElementById('admin-panel-modal').classList.add('hidden');
+        }
+
+        async function loadAdminStats() {
+            const out = document.getElementById('admin-panel-content');
+            if (!out) return;
+            if (!isAdminUser()) {
+                out.innerHTML = `<div class="text-center text-xs text-slate-500 py-6">Nincs jogosultságod ehhez a nézethez.</div>`;
+                return;
+            }
+            out.innerHTML = `<div class="text-center text-xs text-slate-500 py-6"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Betöltés...</div>`;
+
+            let stats = null;
+            let errorMsg = null;
+            try {
+                const { data, error } = await sb.rpc('get_admin_app_stats');
+                if (error) {
+                    errorMsg = error.message || 'Ismeretlen hiba a szerver oldalán.';
+                } else {
+                    stats = data;
+                }
+            } catch (e) {
+                errorMsg = (e && e.message) ? e.message : 'A statisztika-lekérés nem sikerült (hálózati hiba).';
+            }
+
+            if (!stats) {
+                out.innerHTML = `
+                    <div class="text-center text-xs text-amber-400 py-4"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Nem sikerült betölteni a statisztikát.</div>
+                    <div class="text-center text-[10px] text-slate-600 px-2">${escapeHtml(errorMsg || '')}</div>
+                    <div class="text-center text-[10px] text-slate-600 px-2 mt-1">Ez a sandbox-környezet nem éri el a Supabase-t, ezért itt mindig ez a hiba várható — éles, bejelentkezett admin-munkamenetben a fenti RPC valós adatot ad vissza.</div>
+                `;
+                return;
+            }
+
+            const row = (label, value, icon, color) => `
+                <div class="glass-card rounded-lg p-2.5 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-400"><i class="fa-solid ${icon} mr-1.5 ${color || 'text-slate-500'}"></i>${label}</span>
+                    <span class="text-sm font-mono font-bold text-white">${value}</span>
+                </div>`;
+
+            out.innerHTML = [
+                row('Összes regisztrált felhasználó', (stats.total_users ?? 0).toLocaleString('hu-HU'), 'fa-users', 'text-neon-cyan'),
+                row('Új (7 nap)', (stats.new_users_7d ?? 0).toLocaleString('hu-HU'), 'fa-user-plus', 'text-neon-green'),
+                row('Új (30 nap)', (stats.new_users_30d ?? 0).toLocaleString('hu-HU'), 'fa-user-plus', 'text-neon-green'),
+                row('Aktív Prémium előfizető', (stats.premium_active ?? 0).toLocaleString('hu-HU'), 'fa-crown', 'text-amber-400'),
+                row('Türelmi időszakban (fizetési gond)', (stats.premium_grace_period ?? 0).toLocaleString('hu-HU'), 'fa-triangle-exclamation', 'text-amber-400'),
+                row('Átlagos XP / felhasználó', (stats.avg_xp ?? 0).toLocaleString('hu-HU'), 'fa-star', 'text-neon-purple'),
+                row('Összes teljesített lecke', (stats.total_lessons_completed ?? 0).toLocaleString('hu-HU'), 'fa-graduation-cap', 'text-neon-purple'),
+                row('Demó kereskedések (összesen)', (stats.total_demo_trades ?? 0).toLocaleString('hu-HU'), 'fa-chart-line', 'text-neon-cyan'),
+                row('Napi aktív felhasználó (DAU)', (stats.dau ?? 0).toLocaleString('hu-HU'), 'fa-bolt', 'text-neon-green'),
+                row('Heti aktív felhasználó (WAU)', (stats.wau ?? 0).toLocaleString('hu-HU'), 'fa-bolt', 'text-neon-green'),
+            ].join('') + (stats.generated_at ? `<div class="text-center text-[9.5px] text-slate-600 pt-1">Frissítve: ${new Date(stats.generated_at).toLocaleString('hu-HU')}</div>` : '');
+        }
+
         function renderLeaderboardDemoLabel(isDemo) {
             const el = document.getElementById('leaderboard-demo-note');
             if (el) el.classList.toggle('hidden', !isDemo);
@@ -53457,6 +53565,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const emailEl = document.getElementById('profile-email');
             const premStatusEl = document.getElementById('profile-premium-status');
             const authBtn = document.getElementById('profile-auth-btn');
+            const adminBtn = document.getElementById('profile-admin-btn');
+            if (adminBtn) adminBtn.classList.toggle('hidden', !isAdminUser());
 
             if (currentUser) {
                 nameEl.textContent = currentUser.guest ? T('profile_guest') : currentUser.name;
