@@ -869,3 +869,20 @@ h1, h2, .two, .litlines p, .hero-x h1, .page-hero h1, .prodscene-t, .story-step 
 .bento-x .bt > p, .bento-sec .section-head > p, .band-head p { display: none; }
 .bt { min-height: 0; } .bt-term { min-height: 0; }
 .bento-sec .section-head { margin-bottom: var(--s-6); }
+
+/* ===== v21: product hero ===== */
+.hx-dev { position: relative; perspective: 1600px; min-height: 420px; }
+.hx-win { border-radius: 18px; overflow: hidden; background: #0b0e14; border: 1px solid rgba(255,255,255,.14); box-shadow: 0 40px 120px rgba(47,107,255,.35), 0 0 0 1px rgba(255,255,255,.04); transform: rotateY(-12deg) rotateX(5deg); transform-origin: 70% 50%; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+.hx-dev:hover .hx-win { transform: rotateY(-6deg) rotateX(2deg); }
+.hx-win img { display: block; width: 100%; height: auto; }
+.hx-ph { position: absolute; left: -7%; bottom: -9%; width: 27%; border-radius: 26px; overflow: hidden; border: 1px solid rgba(255,255,255,.18); box-shadow: 0 30px 70px rgba(0,0,0,.65); background: #000; }
+.hx-ph img { display: block; width: 100%; height: auto; }
+.hx-chip { position: absolute; display: grid; gap: 2px; padding: 12px 16px; border-radius: 16px; background: rgba(14,18,28,.82); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 18px 50px rgba(0,0,0,.5); animation: hxFloat 6s ease-in-out infinite; }
+.hx-chip small { color: #929BAA; font-size: .72rem; } .hx-chip b { font-family: var(--f-mono); font-size: 1.05rem; }
+.hx-chip.c1 { top: -4%; left: 2%; } .hx-chip.c2 { right: -3%; bottom: 8%; animation-delay: -3s; }
+@keyframes hxFloat { 50% { transform: translateY(-9px); } }
+@media (max-width: 900px) { .hx-dev { min-height: 0; margin-top: 24px; } .hx-win { transform: none; } .hx-ph { left: auto; right: 4%; width: 24%; bottom: -6%; } .hx-chip.c1 { left: 0; } .hx-chip.c2 { right: 0; } }
+@media (prefers-reduced-motion: reduce) { .hx-chip { animation: none; } .hx-win { transition: none; } }
+.hx-win { transform: rotateY(-9deg) rotateX(4deg) scale(.93); transform-origin: center; }
+.hx-dev:hover .hx-win { transform: rotateY(-4deg) rotateX(2deg) scale(.95); }
+@media (max-width: 900px) { .hx-win { transform: none; } .hx-dev:hover .hx-win { transform: none; } }

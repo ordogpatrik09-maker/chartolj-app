@@ -225,22 +225,18 @@ def cinema():
     <p class="hx-sub">%(sub)s</p>
     <p class="hx-cta"><a class="btn btn-pill" data-app href="app/index.html">%(cta)s</a><a class="link-arrow" href="academy.html">%(cta2)s</a></p>
   </div>
-  <div class="hx-stage" aria-hidden="false">
-    <div class="glass g-search" data-par="-0.05"><p class="g-title">%(gs)s</p><div class="g-chips">%(chips)s<em class="badge badge-sim">DEMO</em></div><ul class="g-q">%(qs)s</ul></div>
-    <div class="glass g-stat" data-par="0.04"><p class="g-title">%(gst)s</p>
-      <svg viewBox="0 0 240 120" class="g-chart" role="img" aria-label="%(gst)s"><path class="g-line" pathLength="1" d="M4 100 L24 98 L40 40 L58 38 L76 42 L96 38 L112 40 L128 104 L142 96 L158 92 L172 80 L190 70 L206 52 L236 30"/></svg>
-      <em class="badge badge-sim">DEMO</em></div>
-    <div class="glass g-stop" data-par="-0.02"><div class="g-row"><b>Stop loss</b><span class="g-mode">%(mode)s</span><span class="g-toggle"><i></i></span></div>
-      <div class="g-field"><span>%(f1)s</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
-      <div class="g-field g-num"><span class="num">309,50</span><span class="g-pm"><i>&minus;</i><i>+</i></span></div>
-      <div class="g-row g-foot"><span>%(f2)s <b class="num">50,00 $</b></span><span>%(f3)s <b class="num">2,85 (1,95%%)</b></span></div></div>
+  <div class="hx-dev" data-par="-0.02">
+    <div class="hx-win"><div class="browser-bar"><i></i><i></i><i></i><span>chartolj.app</span></div><img src="assets/app-desktop.webp" width="1440" height="900" alt="%(alt)s" fetchpriority="high"></div>
+    <div class="hx-ph" data-par="0.05"><img src="assets/app-home.webp" width="780" height="1688" alt="%(alt2)s"></div>
+    <div class="hx-chip c1" data-par="-0.06"><small>%(c1l)s</small><b class="num">$100 000</b><em class="badge badge-sim">DEMO</em></div>
+    <div class="hx-chip c2" data-par="0.04"><small>%(c2l)s</small><b class="num up">LONG BTC/USDT</b></div>
   </div>
   <p class="hx-plat">%(plat)s</p></div></section>
 
 <section class="strip-sec dark"><div class="strip" aria-hidden="true"><div class="strip-track">%(strip)s%(strip)s</div></div></section>
 
 <section class="scene scene-bars dark" id="sbars"><div class="sb-pin"><div class="container"><div class="litlines" id="litlines"><p>%(b1)s</p><p>%(b2)s</p><p>%(b3)s</p></div></div><div class="bars" aria-hidden="true">%(bars)s</div></div></section>
-''' % dict(l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'),
+''' % dict(alt=esc(hu('hero2.tab1')), c1l=t('chip.bal'), c2l=t('chip.pos'), l1=t('cx.h1'), l2=t('cx.h2'), sub=t('cx.sub'), cta=t('cx.cta'), cta2=t('cx.cta2'), gs=t('cx.gs'), gst=t('cx.gst'), chips=chips, qs=qs, mode=t('cx.mode'), f1=t('cx.f1'), f2=t('cx.f2'), f3=t('cx.f3'), plat=t('cx.plat'),
         g1=t('cx.g1'), g2=t('cx.g2'), gsub=t('cx.gsub'), p1=t('cx.p1'), p2=t('cx.p2'), alt1=esc(hu('hero2.tab2')), alt2=esc(hu('hero2.tab1')),
         strip=''.join('<span>%s</span>' % x for x in ['%d %s' % (N_LESSONS, t('facts.lessons')), '%d %s' % (N_Q, t('facts.questions')), '%d %s' % (N_TOOLS, t('facts.tools')), t('cx.s1'), t('cx.s2'), t('cx.s3')]),
         b1=t('cx.b1'), b2=t('cx.b2'), b3=t('cx.b3'), bars=bars)
