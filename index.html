@@ -22559,14 +22559,33 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (stats.episodeCount === 0 && !stats.hasOngoingEpisode) {
                 return `<div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50"><div class="text-xs font-bold text-neon-green">✅ Nem volt lezárt visszaesés-episód az egyenleg-görbén (minden pont elérte vagy meghaladta az addigi csúcsot).</div></div>`;
             }
+            // JAVÍTÁS (audit, folyamatos minőségi kör): ha episodeCount===0, de VAN
+            // egy még folyamatban lévő (nem lezárt) episód — azaz a backtest/
+            // stratégia az ELSŐ, soha nem felépült visszaesés KÖZEPÉN ér véget —,
+            // az "Átlagos"/"Leghosszabb 'alulvízben' idő" és az "Átlagos"/
+            // "Legnagyobb visszaesés mélysége" mezők korábban a runAutoDrawdown-
+            // DurationAnalysis()-ban 0-ra inicializált avgDepthPct/maxDepthPct/
+            // avgDurationToRecovery/maxDurationToRecovery értékeket jelenítették
+            // meg valódi, kiszámolt statisztikaként ("-0.00%", "0.0 periódus") —
+            // ez EGY TELJESEN REÁLIS (nem szélsőséges) egyenleg-görbén is
+            // előjön, pl. [100,100,99,98,97]-nél, ahol sosem jutott vissza az
+            // induló csúcs fölé. 0 lezárt episódból nincs mit átlagolni/
+            // maximalizálni, ezért ezt a 4 mezőt "N/A"-ként jelenítjük meg,
+            // amíg a valódi, lezáratlan episód adatait a lenti figyelmeztető
+            // sor külön, helyesen már korábban is megmutatta.
+            const hasClosedEpisodes = stats.episodeCount > 0;
+            const avgDurationDisplay = hasClosedEpisodes ? `${fmt(stats.avgDurationToRecovery, 1)} periódus` : 'N/A (nincs lezárt episód)';
+            const maxDurationDisplay = hasClosedEpisodes ? `${stats.maxDurationToRecovery} periódus` : 'N/A (nincs lezárt episód)';
+            const avgDepthDisplay = hasClosedEpisodes ? `-${fmt(stats.avgDepthPct)}%` : 'N/A (nincs lezárt episód)';
+            const maxDepthDisplay = hasClosedEpisodes ? `-${fmt(stats.maxDepthPct)}%` : 'N/A (nincs lezárt episód)';
             return `
                 <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
                     <div class="text-xs font-bold text-neon-blue">Drawdown-Duration Elemzés (${stats.episodeCount} lezárt episód)</div>
                     <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos "alulvízben" idő</div><div class="font-bold text-white">${fmt(stats.avgDurationToRecovery, 1)} periódus</div></div>
-                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Leghosszabb "alulvízben" idő</div><div class="font-bold text-neon-amber">${stats.maxDurationToRecovery} periódus</div></div>
-                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos visszaesés mélysége</div><div class="font-bold text-white">-${fmt(stats.avgDepthPct)}%</div></div>
-                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Legnagyobb visszaesés mélysége</div><div class="font-bold text-neon-red">-${fmt(stats.maxDepthPct)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos "alulvízben" idő</div><div class="font-bold text-white">${avgDurationDisplay}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Leghosszabb "alulvízben" idő</div><div class="font-bold text-neon-amber">${maxDurationDisplay}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos visszaesés mélysége</div><div class="font-bold text-white">${avgDepthDisplay}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Legnagyobb visszaesés mélysége</div><div class="font-bold text-neon-red">${maxDepthDisplay}</div></div>
                     </div>
                     ${stats.hasOngoingEpisode ? `<div class="text-xs font-bold text-neon-amber mt-1">⚠️ A backtest végén egy MÉG LEZÁRATLAN visszaesés van: -${fmt(stats.ongoingEpisode.depthPct)}%, ${stats.ongoingEpisode.durationSoFar} periódus óta tart.</div>` : ''}
                     <div class="text-xs text-gray-500 mt-1">"Alulvízben" (underwater) idő: az eredeti csúcstól addig a periódusig tart, amíg az egyenleg újra elér egy magasabb csúcsot. Ez gyakran fontosabb, mint a max. drawdown MÉRTÉKE önmagában — egy hosszú ideig tartó, lassú visszakapaszkodás is komoly türelmi próba lehet.</div>
