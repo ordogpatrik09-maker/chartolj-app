@@ -46926,7 +46926,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             trend_down:        { label: 'Csökkenő trend', note: 'tartós esés — a trend szerinti döntés a short vagy a kimaradás volt.' },
             choppy:            { label: 'Oldalazó piac', note: 'nincs tartós irány — a kitörés-követő belépők gyakran visszafordultak.' },
             volatile_reversal: { label: 'Fordulatos nap', note: 'az erős trend a nap közepén megfordult — a stop-loss és a nyereségvédelem itt különösen számított.' },
-            news_shock:        { label: 'Hírsokk', note: 'hirtelen, nagy ugrás — ezt előre nem lehetett tudni, stop-loss nélkül különösen kockázatos.' }
+            news_shock:        { label: 'Hírsokk', note: 'hirtelen, nagy ugrás — ezt előre nem lehetett tudni, stop-loss nélkül különösen kockázatos.' },
+            // A kézzel kurált "történelmi" alakzatok (lásd REPLAY_HISTORICAL_SEGMENTS
+            // lejjebb) is ide kerülnek, hogy a nap végi értékelés ugyanúgy egy olvasható
+            // címkét és magyarázó szöveget kapjon, ne a nyers segment-id-t.
+            crash_2020:        { label: '2020-as villámzuhanás (illusztratív)', note: 'nyugodt emelkedés után hirtelen, pánikszerű zuhanás — a korai stop-loss itt mentette meg a tőkét.' },
+            bull_top_2021:     { label: '2021-es eufórikus csúcs (illusztratív)', note: 'parabolikus emelkedés, majd éles fordulat — a nyereség idő előtti realizálása itt védett a visszaadástól.' },
+            bear_market_2022:  { label: '2022-es elhúzódó medvepiac (illusztratív)', note: 'hosszan tartó lemorzsolódás rövid visszapattanásokkal — a türelem és a short-oldal itt számított.' },
+            v_recovery_2023:   { label: '2023-as V-alakú visszapattanás (illusztratív)', note: 'éles esés után gyors, megszakítás nélküli felpattanás — a korai pánik-zárás itt volt a leggyakoribb hiba.' }
         };
 
         function getReplayReasons() { return DRILL_REASONS.filter(r => r.id !== 'nosetup'); }
@@ -47135,6 +47142,98 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { id: 'volatile_reversal', label: 'Fordulatos nap',     icon: 'fa-rotate',             note: 'Erős trend, majd megfordulás' },
             { id: 'news_shock',        label: 'Hírsokk',            icon: 'fa-bolt',               note: 'Váratlan, hirtelen nagy elmozdulás' },
         ];
+
+        // ================= KÉZZEL KURÁLT "TÖRTÉNELMI" SZEGMENSEK =================
+        // A sandbox nem ér el élő piaci-adat API-kat, így valódi, letöltött
+        // történelmi OHLC-sorozatot nem tudunk beépíteni. Ehelyett néhány
+        // jól ismert, KÉZZEL megtervezett árfolyam-ALAKZATOT (fázisokra
+        // bontott irány+volatilitás-sorozatot) kínálunk, amik egy-egy híres
+        // piaci esemény JELLEGZETES LEFUTÁSÁT idézik — nem az adott nap
+        // tényleges, pontos árait. Ezt a felületen is egyértelműen jelezzük
+        // ("illusztratív, nem valódi historikus adat"), hogy ne keltsen
+        // félrevezető benyomást a felhasználóban a tanulási célú szimuláció
+        // mellett. Minden fázis: { len: hány gyertya, drift: %/gyertya
+        // átlagos irány, vol: %-os volatilitás } — ugyanazt a
+        // replayRandNormal() zaj-generátort használja, mint a procedurális
+        // piactípusok, csak a fázisok KÉZZEL megtervezett sorrendje adja a
+        // jellegzetes makró-alakzatot.
+        const REPLAY_HISTORICAL_SEGMENTS = [
+            {
+                id: 'crash_2020', label: '2020-as villámzuhanás', icon: 'fa-triangle-exclamation',
+                note: 'Nyugodt emelkedés, majd hirtelen, pánikszerű ~35%-os zuhanás és volatilis fenék-keresés.',
+                phases: [
+                    { len: 0.30, drift: 0.12, vol: 0.4 },
+                    { len: 0.12, drift: -3.2, vol: 2.2 },
+                    { len: 0.33, drift: -0.15, vol: 1.6 },
+                    { len: 0.25, drift: 0.35, vol: 1.1 }
+                ]
+            },
+            {
+                id: 'bull_top_2021', label: '2021-es eufórikus csúcs', icon: 'fa-rocket',
+                note: 'Gyorsuló, parabolikus emelkedés ("melt-up"), majd éles, gyors fordulat lefelé.',
+                phases: [
+                    { len: 0.35, drift: 0.45, vol: 0.6 },
+                    { len: 0.25, drift: 0.9, vol: 0.9 },
+                    { len: 0.15, drift: 0.2, vol: 1.3 },
+                    { len: 0.25, drift: -0.9, vol: 1.4 }
+                ]
+            },
+            {
+                id: 'bear_market_2022', label: '2022-es elhúzódó medvepiac', icon: 'fa-arrow-trend-down',
+                note: 'Hosszan tartó, lépcsőzetes lemorzsolódás, időnkénti rövid "halott macska" visszapattanásokkal.',
+                phases: [
+                    { len: 0.22, drift: -0.5, vol: 0.9 },
+                    { len: 0.12, drift: 0.55, vol: 0.8 },
+                    { len: 0.22, drift: -0.55, vol: 1.0 },
+                    { len: 0.12, drift: 0.5, vol: 0.8 },
+                    { len: 0.32, drift: -0.35, vol: 0.85 }
+                ]
+            },
+            {
+                id: 'v_recovery_2023', label: '2023-as V-alakú visszapattanás', icon: 'fa-check-double',
+                note: 'Éles esés, majd gyors, szinte megszakítás nélküli V-alakú visszaemelkedés az eredeti szintig és tovább.',
+                phases: [
+                    { len: 0.25, drift: -0.8, vol: 1.3 },
+                    { len: 0.10, drift: 0, vol: 0.9 },
+                    { len: 0.40, drift: 0.75, vol: 0.9 },
+                    { len: 0.25, drift: 0.25, vol: 0.6 }
+                ]
+            }
+        ];
+        let replaySelectedHistorical = null; // null = procedurális piactípus, különben egy REPLAY_HISTORICAL_SEGMENTS.id
+
+        function generateHistoricalReplayCandles(segment, n, volMultiplier) {
+            volMultiplier = volMultiplier || 1;
+            const basePrice = 100;
+            let price = basePrice;
+            const candles = [];
+            // A fázisok arányait (len, összegük 1.0) a kért teljes gyertyaszámra
+            // vetítjük le, kerekítési maradékot az utolsó fázishoz adva, hogy a
+            // végösszeg pontosan n legyen.
+            let assigned = 0;
+            const phaseLens = segment.phases.map((p, i) => {
+                if (i === segment.phases.length - 1) return n - assigned;
+                const l = Math.max(1, Math.round(p.len * n));
+                assigned += l;
+                return l;
+            });
+            segment.phases.forEach((phase, pIdx) => {
+                const len = phaseLens[pIdx];
+                const vol = phase.vol * volMultiplier;
+                for (let i = 0; i < len; i++) {
+                    const changePct = phase.drift + replayRandNormal() * vol;
+                    const open = price;
+                    let close = open * (1 + changePct / 100);
+                    if (close <= 1) close = 1;
+                    const wick = Math.abs(replayRandNormal()) * vol * 0.5;
+                    const high = Math.max(open, close) * (1 + wick / 100);
+                    const low = Math.min(open, close) * (1 - wick / 100);
+                    candles.push({ o: +open.toFixed(2), h: +high.toFixed(2), l: +Math.max(low, 0.5).toFixed(2), c: +close.toFixed(2) });
+                    price = close;
+                }
+            });
+            return candles;
+        }
 
         let replaySelectedMarket = 'random';
         const DAILY_QUOTES = ["A kereskedés 20% stratégia, 80% pszichológia.","A legjobb belépési pont az, amit előre megterveztél.","Egy vesztes pozíció nem gyengeség — a ragaszkodás hozzá az.","A stop-loss nem cost, hanem biztosítás.","A piac nem jutalmaz sokat, aki sokat kereskedik.","Türelem: várj a magas valószínűségű setupokra.","Nem a nyerési arány számít, hanem a hozam/kockázat aránya."];
@@ -51422,8 +51521,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-[10px] font-bold text-slate-500 uppercase mb-2">Piactípus célzása</div>
                     <div class="flex flex-wrap justify-center gap-1.5 mb-4">
                         ${REPLAY_MARKET_TYPES.map(m => `
-                            <button onclick="replaySelectedMarket='${m.id}'; renderReplayIntro();" title="${m.note}" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${m.id === replaySelectedMarket ? 'bg-neon-purple/15 border-neon-purple/40 text-neon-purple' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">
+                            <button onclick="replaySelectedMarket='${m.id}'; replaySelectedHistorical=null; renderReplayIntro();" title="${m.note}" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${m.id === replaySelectedMarket && !replaySelectedHistorical ? 'bg-neon-purple/15 border-neon-purple/40 text-neon-purple' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">
                                 <i class="fa-solid ${m.icon} mr-1"></i>${m.label}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="text-[10px] font-bold text-slate-500 uppercase mb-2">Vagy: híres piaci alakzatok (illusztratív, nem valódi historikus adat)</div>
+                    <div class="flex flex-wrap justify-center gap-1.5 mb-4">
+                        ${REPLAY_HISTORICAL_SEGMENTS.map(seg => `
+                            <button onclick="replaySelectedHistorical='${seg.id}'; renderReplayIntro();" title="${seg.note}" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${seg.id === replaySelectedHistorical ? 'bg-amber-500/15 border-amber-500/40 text-amber-400' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">
+                                <i class="fa-solid ${seg.icon} mr-1"></i>${seg.label}
                             </button>
                         `).join('')}
                     </div>
@@ -51552,13 +51659,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         function startReplaySession(difficultyKey, marketOverride) {
             const diff = REPLAY_DIFFICULTIES[difficultyKey] || REPLAY_DIFFICULTIES.medium;
-            const chosenMarket = marketOverride || replaySelectedMarket;
-            const gen = generateReplayCandles(diff.sessionLength, diff.volMultiplier, chosenMarket === 'random' ? null : chosenMarket);
+            let type, candles;
+            if (replaySelectedHistorical) {
+                const segment = REPLAY_HISTORICAL_SEGMENTS.find(s => s.id === replaySelectedHistorical);
+                if (segment) {
+                    type = segment.id;
+                    candles = generateHistoricalReplayCandles(segment, diff.sessionLength, diff.volMultiplier);
+                }
+            }
+            if (!candles) {
+                const chosenMarket = marketOverride || replaySelectedMarket;
+                const gen = generateReplayCandles(diff.sessionLength, diff.volMultiplier, chosenMarket === 'random' ? null : chosenMarket);
+                type = gen.type;
+                candles = gen.candles;
+            }
             replaySession = {
-                type: gen.type,
+                type,
                 difficulty: difficultyKey || 'medium',
                 autoplayMs: diff.autoplayMs,
-                candles: gen.candles,
+                candles,
                 revealedCount: diff.warmup,
                 position: null,   // { side: 'LONG'|'SHORT', entryIdx, entryPrice, stopPrice, targetPrice, size }
                 trades: [],
