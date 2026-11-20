@@ -44432,10 +44432,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 positions.push({ name, riskPct });
             }
 
-            if (isNaN(dailyLimitPct) || dailyLimitPct <= 0 || isNaN(usedTodayPct) || usedTodayPct < 0 ||
+            // JAVÍTÁS: a dailyLimitPct/usedTodayPct bemeneteket korábban isNaN()-nal
+            // ellenőriztük, nem Number.isFinite()-tal — mivel isNaN(Infinity) === false,
+            // egy szélsőségesen nagy (pl. 1e400, ami parseFloat-tal Infinity-re kerekedik)
+            // "Napi veszteséglimit (%)" vagy "Mai eddig felhasznált veszteség (%)" érték
+            // átment az érvényesség-ellenőrzésen, és az alábbi szekvenciális-kockázat
+            // számítások (seqUsedOfLimitPct, seqRemainingPct) Infinity/-Infinity-t
+            // adtak, amit a kimenet szó szerint "Infinity%"-ként jelenített meg.
+            // Ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            if (!Number.isFinite(dailyLimitPct) || dailyLimitPct <= 0 || !Number.isFinite(usedTodayPct) || usedTodayPct < 0 ||
                 isNaN(correlation) || correlation < -1 || correlation > 1 ||
                 positions.length < 1 || positions.length > 10 || hasInvalidLine) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív napi veszteséglimitet, nem-negatív mai felhasznált veszteséget, -1 és 1 közti korrelációt, és 1-10 ÉRVÉNYES pozíciót "Név,Kockázat%" formátumban (pozitív kockázat), soronként egyet!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív, véges napi veszteséglimitet, nem-negatív, véges mai felhasznált veszteséget, -1 és 1 közti korrelációt, és 1-10 ÉRVÉNYES pozíciót "Név,Kockázat%" formátumban (pozitív kockázat), soronként egyet!</div>`;
                 return;
             }
 
@@ -44452,6 +44460,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // --- 1) SZEKVENCIÁLIS KOCKÁZAT (napi limit) ---
             const seqUsedOfLimitPct = (usedTodayPct / dailyLimitPct) * 100;
             const seqRemainingPct = dailyLimitPct - usedTodayPct;
+
+            // JAVÍTÁS: a fenti Number.isFinite()-os bemenet-ellenőrzés csak a NYERS
+            // dailyLimitPct/usedTodayPct értékeket szűri ki Infinity esetén — egy
+            // szélsőségesen kicsi (pl. 1e-300), de önmagában VÉGES napi limit és egy
+            // szélsőségesen nagy (pl. 1e200), de önmagában VÉGES mai felhasznált
+            // veszteség kombinációja az osztásban (usedTodayPct / dailyLimitPct)
+            // még így is túlcsordulhat Infinity-re. Ugyanaz a hibaosztály, mint a
+            // Napi Limit Kalkulátor limitAmount/usedPct-jénél korábban javítva.
+            if (!Number.isFinite(seqUsedOfLimitPct) || !Number.isFinite(seqRemainingPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott napi veszteséglimit és a mai felhasznált veszteség szélsőséges nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a szekvenciális kockázat Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű %-okat!</div>`;
+                return;
+            }
+
             let seqStatus, seqColor;
             if (seqUsedOfLimitPct >= 100) { seqStatus = 'TÚLLÉPVE'; seqColor = 'text-neon-red'; }
             else if (seqUsedOfLimitPct >= 70) { seqStatus = 'FIGYELEM'; seqColor = 'text-amber-400'; }
