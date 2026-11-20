@@ -1586,8 +1586,8 @@
                         <button onclick="closeToolsDropdown(); openToolModal('dailylimit-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gauge-high"></i></span>
                             <div>
-                                <div class="text-xs font-bold text-white">Napi veszteséglimit</div>
-                                <div class="text-[10px] text-slate-400">Mikor kell leállnod a mai napra?</div>
+                                <div class="text-xs font-bold text-white">Napi / Heti / Havi veszteséglimit</div>
+                                <div class="text-[10px] text-slate-400">Mikor kell leállnod — háromszintű vészleállító</div>
                             </div>
                         </button>
                         <button onclick="closeToolsDropdown(); openToolModal('sessions-modal'); renderMarketSessions();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
@@ -4081,31 +4081,68 @@
     </div>
 
     <!-- Napi Veszteséglimit Tracker -->
+    <!-- ================= TÖBBSZINTŰ (NAPI/HETI/HAVI) VESZTESÉGLIMIT — VÉSZLEÁLLÍTÓ RENDSZER (OKTATÁSI) =================
+         Korábban ez a modal KIZÁRÓLAG a napi limitet kezelte, miközben a
+         157. lecke ("Többszintű Vészleállító Rendszer") CTA-ja már egy
+         háromszintű — napi/heti/havi — rendszert ígért a felhasználónak
+         ("Állítsd be élesben a napi, heti és havi veszteséglimitedet, mint
+         egy háromszintű védelmi rendszert"). Ez a bővítés ténylegesen
+         megépíti ezt a háromszintű rendszert, a lecke tartalmában leírt
+         "lassú vérzés" jelenség (minden nap pontosan a napi limitig
+         veszítve, az összeg hetente/havonta messze meghaladja azt, amit
+         elfogadhatónak tartanánk) bemutatására. A heti/havi eredmény MÁR
+         TARTALMAZZA a mai napot (kumulatív, nem a mai nélküli összeg). -->
     <div id="dailylimit-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
         <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
             <div class="flex items-center justify-between mb-1">
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-gauge-high text-neon-cyan"></i> Napi Veszteséglimit
+                    <i class="fa-solid fa-gauge-high text-neon-cyan"></i> Napi / Heti / Havi Veszteséglimit
                 </h3>
                 <button onclick="closeToolModal('dailylimit-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a számládat, a napi limitedet és a mai eredményedet — megmondja, mennyi mozgásterred maradt, vagy hogy le kell-e állnod.</p>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Háromszintű vészleállító rendszer: a napi limit önmagában nem véd a "lassú vérzés" ellen, amikor több rossz nap halmozódik fel egy héten/hónapon belül. Add meg mindhárom szintet — ha BÁRMELYIKET eléred, az adott időszakra leállsz.</p>
 
             <label class="text-[11px] font-semibold text-slate-400" for="dl-balance">Számla mérete (USDT)</label>
             <input type="number" inputmode="decimal" id="dl-balance" value="10000" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
 
-            <label class="text-[11px] font-semibold text-slate-400" for="dl-limit-pct">Napi veszteséglimit (%)</label>
-            <input type="number" inputmode="decimal" id="dl-limit-pct" value="3" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="dl-today-pnl">Mai eddigi eredmény (USDT, veszteségnél negatív szám)</label>
-            <input type="number" inputmode="decimal" id="dl-today-pnl" value="-150" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+            <div class="grid grid-cols-2 gap-2 mb-1">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="dl-limit-pct">Napi limit (%)</label>
+                    <input type="number" inputmode="decimal" id="dl-limit-pct" value="3" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="dl-today-pnl">Mai eredmény</label>
+                    <input type="number" inputmode="decimal" id="dl-today-pnl" value="-150" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-1">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="dl-weekly-limit-pct">Heti limit (%)</label>
+                    <input type="number" inputmode="decimal" id="dl-weekly-limit-pct" value="7" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="dl-weekly-pnl">E héten eddig</label>
+                    <input type="number" inputmode="decimal" id="dl-weekly-pnl" value="-550" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-1">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="dl-monthly-limit-pct">Havi limit (%)</label>
+                    <input type="number" inputmode="decimal" id="dl-monthly-limit-pct" value="12" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="dl-monthly-pnl">E hónapban eddig</label>
+                    <input type="number" inputmode="decimal" id="dl-monthly-pnl" value="-900" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+            <p class="text-[9.5px] text-slate-600 mt-1 mb-3 leading-relaxed">A "heti" és "havi" eredmény KUMULATÍV, és már tartalmazza a mai napot (pl. ha ma -150-et vesztettél, és a hét korábbi napjain -400-at, a heti mező -550 legyen, nem -400).</p>
 
             <button onclick="calcDailyLimit()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
                 Ellenőrzés
             </button>
 
             <div id="dl-result" role="status" aria-live="polite" class="mt-4"></div>
-            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy oktatási eszköz, nem befektetési tanácsadás — a saját, előre eldöntött limitedet mindig te határozod meg.</p>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy oktatási eszköz, nem befektetési tanácsadás — a saját, előre eldöntött limitjeidet mindig te határozod meg.</p>
         </div>
     </div>
 
@@ -14312,11 +14349,11 @@ Mean-reversion,2.5</textarea>
                             <div class="text-[10px] text-slate-400">Megéri-e a trade a vállalt kockázatot?</div>
                         </div>
                     </button>
-                    <button onclick="closeMobileToolsModal(); openToolModal('dailylimit-modal')" data-tool-title="napi veszteséglimit" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                    <button onclick="closeMobileToolsModal(); openToolModal('dailylimit-modal')" data-tool-title="napi heti havi veszteséglimit vészleállító kill switch" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
                         <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-high"></i></span>
                         <div>
-                            <div class="text-xs font-bold text-white">Napi veszteséglimit</div>
-                            <div class="text-[10px] text-slate-400">Mikor kell leállnod a mai napra?</div>
+                            <div class="text-xs font-bold text-white">Napi / Heti / Havi veszteséglimit</div>
+                            <div class="text-[10px] text-slate-400">Mikor kell leállnod — háromszintű vészleállító</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('dailygoal-modal')" data-tool-title="napi cél követő" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -25889,76 +25926,113 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         // --- Napi Veszteséglimit Tracker ---
+        // ================= TÖBBSZINTŰ (NAPI/HETI/HAVI) VESZTESÉGLIMIT =================
+        // BŐVÍTÉS (157. lecke — "Többszintű Vészleállító Rendszer"): a lecke CTA-ja
+        // már korábban egy háromszintű (napi/heti/havi) rendszert ígért, de a modal
+        // eddig kizárólag a napi szintet számolta — ez a bővítés ezt a hiányzó
+        // funkciót pótolja, a lecke "lassú vérzés" fogalmát (minden nap PONTOSAN a
+        // napi limitig veszítve, az összeg hetente/havonta messze meghaladhatja azt,
+        // amit elfogadhatónak tartanánk) valós számokkal demonstrálva. A heti/havi
+        // eredmény mező KUMULATÍV és már tartalmazza a mai napot.
         function calcDailyLimit() {
             const balance = parseFloat(document.getElementById('dl-balance').value) || 0;
-            const limitPct = parseFloat(document.getElementById('dl-limit-pct').value) || 0;
-            // JAVÍTÁS: a todayPnl-t korábban `parseFloat(...) || 0`-val olvastuk ki,
-            // ÉS az alábbi érvényesség-ellenőrzés is ezt a MÁR 0-ra cserélt értéket
-            // nézte Number.isFinite()-tal — mivel a 0 véges szám, egy törölt/üres
-            // vagy nem-numerikus "Mai eddigi eredmény" mező CSENDBEN "break-even"
-            // (0) napi eredményként jelent meg, hibaüzenet nélkül (0 ugyanis
-            // önmagában is érvényes, valós bemenet lenne — ezért nem lehet a
-            // fallback UTÁNI értéken megkülönböztetni az "érvénytelen bemenet"
-            // esetet a "valóban 0 a mai P&L" esettől). Ugyanaz a hibaosztály, mint
-            // amit korábban a Teljes Portfólió Szimulátor "years" mezőjénél
-            // javítottunk: a nyers, parseFloat-olt értéket kell Number.isFinite()-
-            // tal ellenőrizni, MIELŐTT bármilyen `|| 0` fallback lefutna.
+            const dailyLimitPct = parseFloat(document.getElementById('dl-limit-pct').value) || 0;
+            const weeklyLimitPct = parseFloat(document.getElementById('dl-weekly-limit-pct').value) || 0;
+            const monthlyLimitPct = parseFloat(document.getElementById('dl-monthly-limit-pct').value) || 0;
+            // JAVÍTÁS: a *Pnl mezőket korábban `parseFloat(...) || 0`-val olvastuk ki,
+            // ÉS az érvényesség-ellenőrzés is ezt a MÁR 0-ra cserélt értéket nézte
+            // Number.isFinite()-tal — mivel a 0 véges szám, egy törölt/üres vagy
+            // nem-numerikus eredmény-mező CSENDBEN "break-even" (0) eredményként
+            // jelent meg, hibaüzenet nélkül (0 ugyanis önmagában is érvényes, valós
+            // bemenet lenne — ezért nem lehet a fallback UTÁNI értéken megkülönböztetni
+            // az "érvénytelen bemenet" esetet a "valóban 0 az eredmény" esettől).
+            // Ugyanaz a hibaosztály, mint amit korábban a Teljes Portfólió Szimulátor
+            // "years" mezőjénél javítottunk: a nyers, parseFloat-olt értéket kell
+            // Number.isFinite()-tal ellenőrizni, MIELŐTT bármilyen `|| 0` fallback
+            // lefutna. Most mindhárom (napi/heti/havi) eredmény-mezőre vonatkozik.
             const todayPnlRaw = parseFloat(document.getElementById('dl-today-pnl').value);
+            const weeklyPnlRaw = parseFloat(document.getElementById('dl-weekly-pnl').value);
+            const monthlyPnlRaw = parseFloat(document.getElementById('dl-monthly-pnl').value);
             const todayPnl = todayPnlRaw || 0;
+            const weeklyPnl = weeklyPnlRaw || 0;
+            const monthlyPnl = monthlyPnlRaw || 0;
             const out = document.getElementById('dl-result');
 
-            if (balance <= 0 || limitPct <= 0 || !Number.isFinite(balance) || !Number.isFinite(limitPct) || !Number.isFinite(todayPnlRaw)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számla-egyenleget, limitet és napi eredményt!</div>`;
+            if (balance <= 0 || dailyLimitPct <= 0 || weeklyLimitPct <= 0 || monthlyLimitPct <= 0 ||
+                !Number.isFinite(balance) || !Number.isFinite(dailyLimitPct) || !Number.isFinite(weeklyLimitPct) || !Number.isFinite(monthlyLimitPct) ||
+                !Number.isFinite(todayPnlRaw) || !Number.isFinite(weeklyPnlRaw) || !Number.isFinite(monthlyPnlRaw)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számla-egyenleget, mindhárom (napi/heti/havi) limit %-ot, és mindhárom (napi/heti/havi) eredményt!</div>`;
                 return;
             }
 
-            const limitAmount = balance * (limitPct / 100);
-            const usedAmount = Math.max(0, -todayPnl);
-            const usedPct = (usedAmount / limitAmount) * 100;
-            const remaining = limitAmount - usedAmount;
+            // JAVÍTÁS: egyenként véges, de extrém kicsi balance/limitPct mellett a
+            // limitAmount alulcsordulhat 0-ra (pl. 1e-308 * 1e-310), ami 0/0 = NaN-t
+            // ad a usedPct-ben — ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátorokban (közbenső szorzás/osztás szivárgása), csak itt
+            // alulcsordulásként, nem túlcsordulásként. Most mindhárom szintre.
+            function buildTier(label, limitPct, pnl) {
+                const limitAmount = balance * (limitPct / 100);
+                const usedAmount = Math.max(0, -pnl);
+                const usedPct = (usedAmount / limitAmount) * 100;
+                const remaining = limitAmount - usedAmount;
+                const valid = Number.isFinite(limitAmount) && limitAmount > 0 && Number.isFinite(usedPct) && Number.isFinite(remaining);
+                return { label, pnl, limitAmount, usedAmount, usedPct, remaining, valid };
+            }
 
-            // JAVÍTÁS: egyenként véges, de extrém kicsi balance/limitPct
-            // mellett a limitAmount alulcsordulhat 0-ra (pl. 1e-308 * 1e-310),
-            // ami 0/0 = NaN-t ad a usedPct-ben — ugyanaz a hibaosztály, mint
-            // a korábban javított kalkulátorokban (közbenső szorzás/osztás
-            // szivárgása), csak itt alulcsordulásként, nem túlcsordulásként.
-            if (!Number.isFinite(limitAmount) || limitAmount <= 0 || !Number.isFinite(usedPct) || !Number.isFinite(remaining)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott egyenleg/limit % kombinációból nem számítható értelmes napi limit (túl kicsi vagy túl szélsőséges érték).</div>`;
+            const tiers = [
+                buildTier('Napi', dailyLimitPct, todayPnl),
+                buildTier('Heti', weeklyLimitPct, weeklyPnl),
+                buildTier('Havi', monthlyLimitPct, monthlyPnl)
+            ];
+
+            const invalidTier = tiers.find(t => !t.valid);
+            if (invalidTier) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidTier.label.toLowerCase()} szint egyenleg/limit % kombinációjából nem számítható értelmes limit (túl kicsi vagy túl szélsőséges érték).</div>`;
                 return;
             }
+
+            // Az átfogó verdikt a legszorítóbb (legnagyobb usedPct-ű) szint alapján
+            // szól — pontosan a lecke tanítása: ha BÁRMELYIK szintet eléred, leállsz.
+            const worst = tiers.reduce((a, b) => (b.usedPct > a.usedPct ? b : a));
+            const anyLoss = tiers.some(t => t.pnl < 0);
 
             let statusHtml;
-            if (todayPnl >= 0) {
-                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">Ma eddig nyereségben vagy — a napi limit még nem releváns, de a fegyelem akkor is számít.</p>`;
-            } else if (usedPct >= 100) {
-                statusHtml = `<p class="text-[10px] font-extrabold mt-2 text-neon-red">🚦 ELÉRTED (vagy túllépted) a napi veszteséglimitet — állj le a mai napra, ahogy a Kockázatkezelés modulban tanultad!</p>`;
-            } else if (usedPct >= 70) {
-                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ Közel jársz a napi limithez — érdemes fokozott óvatossággal, kisebb tétekkel folytatnod, vagy leállnod.</p>`;
+            if (!anyLoss) {
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">Mindhárom időszakban (nap/hét/hónap) nyereségben vagy vagy nullán állsz — egyik limit sem releváns most, de a fegyelem akkor is számít.</p>`;
+            } else if (worst.usedPct >= 100) {
+                const breached = tiers.filter(t => t.usedPct >= 100).map(t => t.label.toLowerCase()).join(', ');
+                statusHtml = `<p class="text-[10px] font-extrabold mt-2 text-neon-red">🚦 ELÉRTED (vagy túllépted) a következő szint(ek)et: ${breached} — állj le az adott időszakra, ahogy a Kockázatkezelés modulban tanultad! Minél magasabb szintet érsz el, annál hosszabb szünetet tarts, mielőtt visszatérnél.</p>`;
+            } else if (worst.usedPct >= 70) {
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ A ${worst.label.toLowerCase()} szint közel van a limithez (${Math.min(worst.usedPct, 999).toFixed(0)}%) — érdemes fokozott óvatossággal, kisebb tétekkel folytatnod, vagy leállnod.</p>`;
             } else {
-                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-slate-400">Még van mozgástered a mai limiten belül — de a fegyelem sosem árt.</p>`;
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-slate-400">Mindhárom szinten belül vagy — de a fegyelem sosem árt. A legszorítóbb jelenleg a ${worst.label.toLowerCase()} szint (${Math.min(worst.usedPct, 999).toFixed(0)}%).</p>`;
             }
 
-            out.innerHTML = `
-                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Napi veszteséglimit:</span><span class="text-white">$${limitAmount.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Eddig felhasznált:</span><span class="text-neon-red">$${usedAmount.toLocaleString('en-US', {maximumFractionDigits: 2})} (${Math.min(usedPct, 999).toFixed(0)}%)</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Még rendelkezésre áll:</span><span class="font-bold ${remaining >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">$${remaining.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
-                    <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-1">
-                        <div class="h-full ${usedPct >= 100 ? 'bg-neon-red' : usedPct >= 70 ? 'bg-amber-400' : 'bg-neon-green'} transition-all" style="width:${Math.min(100, usedPct).toFixed(4)}%"></div>
-                    </div>
-                </div>
-                ${statusHtml}
-            `;
             // JAVÍTÁS (egyedi-mezős extrém-érték audit — nyers tudományos jelölés
             // szivárgása): egy rendkívül kicsi (pl. "1e-10" P&L-ből vagy "1e15"
             // egyenlegből adódó) usedPct érték sablon-stringbe illesztve a JS
-            // `Number.prototype.toString()` ALAPÉRTELMEZETT viselkedése miatt
-            // nyers tudományos jelölésként (pl. "4.999999999999999e-10") jelent
-            // meg a progress bar `style="width:...%"` attribútumában — ugyanaz a
+            // `Number.prototype.toString()` ALAPÉRTELMEZETT viselkedése miatt nyers
+            // tudományos jelölésként (pl. "4.999999999999999e-10") jelenne meg a
+            // progress bar `style="width:...%"` attribútumában — ugyanaz a
             // hibaosztály, mint a korábban javított kalkulátoroknál, csak itt egy
-            // CSS-attribútumban, nem a látható szövegben. A `.toFixed(4)` mindig
-            // fix tizedesjegyes alakot ad (sosem exponenciálisat), ami emellett a
-            // sávot is pontosan a megjelenített (kerekített) %-kal egyezteti.
+            // CSS-attribútumban, nem a látható szövegben. A `.toFixed(4)` mindig fix
+            // tizedesjegyes alakot ad (sosem exponenciálisat), ami emellett a sávot
+            // is pontosan a megjelenített (kerekített) %-kal egyezteti.
+            const tierRows = tiers.map(t => `
+                <div class="flex justify-between"><span class="text-slate-400">${t.label} limit:</span><span class="text-white">$${t.limitAmount.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">${t.label} felhasznált:</span><span class="${t.pnl < 0 ? 'text-neon-red' : 'text-neon-green'}">$${t.usedAmount.toLocaleString('en-US', {maximumFractionDigits: 2})} (${Math.min(t.usedPct, 999).toFixed(0)}%)</span></div>
+                <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-0.5 mb-1.5">
+                    <div class="h-full ${t.usedPct >= 100 ? 'bg-neon-red' : t.usedPct >= 70 ? 'bg-amber-400' : 'bg-neon-green'} transition-all" style="width:${Math.min(100, t.usedPct).toFixed(4)}%"></div>
+                </div>
+            `).join('');
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-1 font-mono text-xs">
+                    ${tierRows}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Legszorítóbb szint most:</span><span class="font-bold ${worst.remaining >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${worst.label} ($${worst.remaining.toLocaleString('en-US', {maximumFractionDigits: 2})} marad)</span></div>
+                </div>
+                ${statusHtml}
+            `;
         }
 
         // ================= PIACI SZEKCIÓK ÓRÁJA (OKTATÁSI) =================
