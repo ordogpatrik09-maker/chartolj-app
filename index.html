@@ -25410,21 +25410,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const riskAmount = bal * (riskPct / 100);
             const posSize = riskAmount / (slPct / 100);
-            // JAVÍTÁS: a bal/riskPct/slPct mezők egyenként véges double-ök
-            // lehetnek (pl. mindhárom kb. 1e308), de a riskAmount/posSize
+            const tpPctRaw = rr > 0 ? slPct * rr : 0;
+            // JAVÍTÁS: a bal/riskPct/slPct/rr mezők egyenként véges double-ök
+            // lehetnek (pl. mindegyik kb. 1e308), de a riskAmount/posSize/tpPct
             // SZORZÁSBA/OSZTÁSBA már túlcsordulhat a double tartományán —
             // ezt a fenti, csak a NYERS bemeneteket ellenőrző Number.isFinite()
             // nem kapja el, mert maguk a bemenetek véges számok. Explicit
             // ellenőrzés a SZÁMÍTOTT eredményeken, mielőtt a UI-ba kerülnének,
             // ugyanaz a hibaosztály, mint a korábban javított Likvidációs
-            // Ár / Greeks / IV kalkulátoroknál.
-            if (!Number.isFinite(riskAmount) || !Number.isFinite(posSize)) {
+            // Ár / Greeks / IV kalkulátoroknál. A tpPctRaw-t KORÁBBAN ez a
+            // guard nem ellenőrizte, ezért szélsőséges (de egyenként véges)
+            // Stop-Loss %/R:R mellett a "Javasolt TP" sorban nyers
+            // "+Infinity%" jelent meg, és az "Alkalmazás a kereskedési
+            // panelen" gomb egy Infinity TP%-ot adott át az
+            // applyPositionSizeToTrading()-nek, ami érvénytelen TP-árat
+            // írt volna a kereskedési panelre.
+            if (!Number.isFinite(riskAmount) || !Number.isFinite(posSize) || !Number.isFinite(tpPctRaw)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékekkel a számítás túllépi a kezelhető tartományt — adj meg kisebb, reálisabb számokat!</div>`;
                 return;
             }
             const capped = posSize > bal;
             const finalSize = Math.min(posSize, bal);
-            const tpPct = rr > 0 ? +(slPct * rr).toFixed(2) : 0;
+            const tpPct = rr > 0 ? +tpPctRaw.toFixed(2) : 0;
             const highRisk = riskPct > 5;
 
             out.innerHTML = `
