@@ -40256,6 +40256,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const fmtUsd = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
             const fmtPct = (n, d = 2) => `${zeroSafeRound(n, d).toFixed(d)}%`;
+            // JAVÍTÁS (extrém, de egyenként véges mezőpár-kombináció audit): a lenti
+            // BTC/Altcoin kapitalizáció-VÁLTOZÁS %-ok (ellentétben a dominancia/
+            // részesedés/elmozdulás %-okkal, amik matematikailag mindig [0,100],
+            // illetve [-100,100] tartományban maradnak) NINCSENEK felülről
+            // korlátozva: egy extrém kicsi (de pozitív) korábbi kapitalizáció-mező
+            // és egy nagyságrendekkel nagyobb jelenlegi mező kombinációjánál (pl.
+            // elgépelt extra nullák) a hányados (a) vagy tényleges Infinity-be
+            // csordulhat (pl. 1e300 és 1e-10 EGYENKÉNT véges, de a hányaduk már
+            // nem — ugyanaz a hibaosztály, mint a korábbi "Meztelen Opció" / "4
+            // kalkulátor" Infinity-audit köröknél), (b) vagy 1e21 alatt marad, de a
+            // `.toFixed()` ott is nyers tudományos jelölésre vált (pl. "5e+23%" —
+            // ugyanaz a hibaosztály, mint az Osztalék Növekedési Modell `fmtDiv`/
+            // `fmtPctDiv` auditjánál). Emiatt (a)-ra explicit `Number.isFinite`
+            // ellenőrzéssel, (b)-re `.toLocaleString()`-re váltással védünk — csak
+            // ennél a két (matematikailag nem korlátos) mezőnél, a fenti, eleve
+            // korlátos `fmtPct`-et használó sorok NEM érintettek.
+            const fmtChangePct = (n, d = 2) => `${zeroSafeRound(n, d).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d })}%`;
+            const EXTREME_RATIO_NA = 'N/A (túl extrém bemenet-arány a megbízható összehasonlításhoz)';
 
             let trendHtml = '';
             if (prevProvided) {
@@ -40266,8 +40284,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // korábbi altcoin-kapitalizáció pontosan 0 (azaz korábban a
                 // BTC = 100% volt), a relatív változás % nullával osztana —
                 // ezt explicit `null`-ra (N/A) kezeljük Infinity/NaN helyett.
-                const altCapChangePct = prevAltMarketCap > 0 ? ((altMarketCap - prevAltMarketCap) / prevAltMarketCap) * 100 : null;
-                const btcCapChangePct = ((btcCap - prevBtcCap) / prevBtcCap) * 100;
+                const altCapChangePctRaw = prevAltMarketCap > 0 ? ((altMarketCap - prevAltMarketCap) / prevAltMarketCap) * 100 : null;
+                const btcCapChangePctRaw = ((btcCap - prevBtcCap) / prevBtcCap) * 100;
+                // lásd fenti JAVÍTÁS: a két változás-% mezőt explicit véges-ellenőrzés
+                // mögé tesszük, mielőtt egyáltalán megjelenítenénk.
+                const altCapChangePctOverflow = altCapChangePctRaw !== null && !Number.isFinite(altCapChangePctRaw);
+                const btcCapChangePctOverflow = !Number.isFinite(btcCapChangePctRaw);
 
                 let trendLabel, trendColor;
                 if (deltaPP > 1) {
@@ -40284,8 +40306,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 trendHtml = `
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Korábbi BTC-dominancia:</span><span class="text-white">${fmtPct(prevDominance)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Dominancia-elmozdulás:</span><span class="font-bold ${deltaPP > 0 ? 'text-amber-400' : (deltaPP < 0 ? 'text-neon-purple' : 'text-white')}">${deltaPP >= 0 ? '+' : ''}${fmtPct(deltaPP)} pont</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">BTC kapitalizáció változása:</span><span class="text-white">${btcCapChangePct >= 0 ? '+' : ''}${fmtPct(btcCapChangePct)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Altcoin kapitalizáció változása:</span><span class="text-white">${altCapChangePct === null ? 'N/A (korábban 0 volt az altcoin-kapitalizáció)' : `${altCapChangePct >= 0 ? '+' : ''}${fmtPct(altCapChangePct)}`}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">BTC kapitalizáció változása:</span><span class="text-white">${btcCapChangePctOverflow ? EXTREME_RATIO_NA : `${btcCapChangePctRaw >= 0 ? '+' : ''}${fmtChangePct(btcCapChangePctRaw)}`}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Altcoin kapitalizáció változása:</span><span class="text-white">${altCapChangePctRaw === null ? 'N/A (korábban 0 volt az altcoin-kapitalizáció)' : (altCapChangePctOverflow ? EXTREME_RATIO_NA : `${altCapChangePctRaw >= 0 ? '+' : ''}${fmtChangePct(altCapChangePctRaw)}`)}</span></div>
                     <div class="mt-2 p-2 rounded-lg bg-dark-850 border border-dark-750 text-[11px] font-semibold ${trendColor}">${trendLabel}</div>
                 `;
             }
