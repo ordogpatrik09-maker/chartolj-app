@@ -23,6 +23,17 @@
     var w = document.createElement('div'); w.className = 'garland-wrap'; w.setAttribute('aria-hidden', 'true'); w.innerHTML = svg; h.appendChild(w);
   }
 
+  function secLights() {
+    document.querySelectorAll('footer.footer, .cta-band').forEach(function (el) {
+      if (el.querySelector(':scope > .garland-wrap')) return;
+      var w = document.createElement('div'); w.className = 'garland-wrap garland-sec'; w.setAttribute('aria-hidden', 'true');
+      var W = Math.max(320, el.clientWidth || innerWidth), seg = 84, n = Math.ceil(W / seg), cols = ['#ff3b4a', '#ffd25e', '#3ddc84', '#58b7ff', '#ff8fd1'], d = 'M0,2', b = '';
+      for (var i = 0; i < n; i++) { var x0 = i * seg; d += ' Q' + (x0 + seg / 2) + ',26 ' + (x0 + seg) + ',2'; for (var k = 1; k <= 2; k++) { var t = k / 3, xx = x0 + seg * t, yy = (1 - t) * (1 - t) * 2 + 2 * (1 - t) * t * 26 + t * t * 2; b += '<g class="bulb" style="animation-delay:' + (((i * 2 + k) % 5) * -0.55).toFixed(2) + 's"><rect x="' + (xx - 1.5) + '" y="' + (yy - 1) + '" width="3" height="5" fill="#223"/><ellipse cx="' + xx + '" cy="' + (yy + 9) + '" rx="4.2" ry="6" fill="' + cols[(i * 2 + k) % 5] + '"/></g>'; } }
+      w.innerHTML = '<svg class="garland" aria-hidden="true" width="100%" height="46" viewBox="0 0 ' + W + ' 46" preserveAspectRatio="none"><path d="' + d + '" fill="none" stroke="#cfd8ee" stroke-width="1.4"/>' + b + '</svg>';
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative'; el.insertBefore(w, el.firstChild);
+    });
+  }
+
   /* ---------- snow ---------- */
   var cv, cx, flakes = [], raf = 0, W = 0, H = 0;
   function snowInit() {
@@ -35,7 +46,7 @@
       for (var i = 0; i < flakes.length; i++) {
         var f = flakes[i]; f.y += f.v; f.s += .012; f.x += Math.sin(f.s) * .5;
         if (f.y > H + 6) { flakes[i] = mk(false); flakes[i].x = Math.random() * W; continue; }
-        cx.globalAlpha = f.a; cx.fillStyle = '#fff'; cx.shadowColor = 'rgba(30,50,100,.6)'; cx.shadowBlur = 3; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 6.283); cx.fill();
+        cx.globalAlpha = f.a; cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(f.x, f.y, f.r, 0, 6.283); cx.fill();
       }
       raf = requestAnimationFrame(tick);
     }
@@ -67,7 +78,7 @@
   }
 
   function boot() {
-    lights(); snowInit(); toggle();
+    lights(); secLights(); snowInit(); toggle();
     if (!reduce && on()) { snowInit.start(); setTimeout(fly, 2500); setInterval(fly, 32000); }
     else snowInit.stop();
     var rt; addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { var g = document.querySelector('.garland-wrap'); if (g) g.remove(); lights(); }, 250); });
