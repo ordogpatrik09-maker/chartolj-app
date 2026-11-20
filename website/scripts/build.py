@@ -96,7 +96,7 @@ def head(page, extra_ld=''):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>%(title)s</title>
 <meta name="description" content="%(desc)s">
-<meta name="theme-color" content="#07150f">
+<meta name="theme-color" content="#FFFFFF">
 <meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Chartolj!">
@@ -149,7 +149,7 @@ def header(page):
     return '''<header class="nav" role="banner">
   <div class="topstrip"><div class="container"><span>%(strip)s</span><a href="risk.html">%(stripmore)s</a></div></div>
   <div class="container nav-inner">
-    <a class="brand" href="index.html" aria-label="Chartolj!"><img src="assets/logo-64.png" width="30" height="30" alt="" style="border-radius:8px"><span>CHARTOLJ<b>!</b></span></a>
+    <a class="brand" href="index.html" aria-label="Chartolj!"><img src="assets/logo-192.png" width="48" height="48" alt=""><span>CHARTOLJ<b>!</b></span></a>
     <nav class="nav-links" aria-label="Main">%(links)s</nav>
     <div class="nav-actions">
       <div class="lang"><button type="button" aria-haspopup="true" aria-expanded="false">%(gl)s <span class="cur">HU</span></button>
@@ -169,7 +169,7 @@ def footer():
     return '''</main>
 <footer class="footer dark"><div class="container">
   <div class="foot-grid">
-    <div><a class="brand" href="index.html"><img src="assets/logo-64.png" width="30" height="30" alt="" style="border-radius:8px"><span>CHARTOLJ<b>!</b></span></a><p>%(tag)s</p></div>
+    <div><a class="brand" href="index.html"><img src="assets/logo-192.png" width="48" height="48" alt=""><span>CHARTOLJ<b>!</b></span></a><p>%(tag)s</p></div>
     %(c1)s%(c2)s%(c3)s
   </div>
   <div class="risk-strip" role="note">%(risk)s</div>
