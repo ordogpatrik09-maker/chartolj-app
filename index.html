@@ -42224,6 +42224,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const fmt = (n) => { n = n || 0; return n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }); };
             const buyerMaxLossTotal = premium * SHARES_PER_CONTRACT * contracts;
 
+            // JAVÍTÁS (audit — Infinity-szivárgás): a fenti bemenet-validáció
+            // csak az underlying/strike/premium/contracts mezőket ellenőrzi
+            // egyenként — de a belőlük számolt szorzatok (marginPerContract,
+            // totalMargin, buyerMaxLossTotal, putMaxLossTotal, illetve a P&L
+            // táblázat sorainak sellerPnlTotal értékei) extrém, de EGYENKÉNT
+            // véges bemeneteknél (pl. underlying=strike=premium=1e250,
+            // contracts=1e60) túlcsordulhatnak. A fenti fmt() "n = n || 0"
+            // mintája ezt csendben, hibajelzés nélkül "$∞"-ként jelenítette
+            // volna meg. Explicit véges-ellenőrzéssel ugyanazt a felhasználóbarát
+            // hibaüzenetet adjuk, mint egy érvénytelen bemenetnél.
+            const nakedOptFiniteCheck = [marginPerContract, totalMargin, buyerMaxLossTotal, ...rows.map(r => r.sellerPnlTotal)];
+            if (!isCall) nakedOptFiniteCheck.push(putMaxLossTotal);
+            if (!nakedOptFiniteCheck.every(Number.isFinite)) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árfolyammal/kötési árral/prémiummal/kontraktusszámmal a számítás túlcsordul — adj meg visszafogottabb, reálisabb értékeket!</div>`;
+                return;
+            }
+
             const rowsHtml = rows.map(r => `
                 <div class="flex items-center justify-between font-mono text-[10.5px] py-1 border-b border-dark-750/60 last:border-0">
                     <span class="text-slate-500">${r.move > 0 ? '+' : ''}${r.move}% → $${r.newPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
