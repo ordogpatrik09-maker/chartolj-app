@@ -3684,7 +3684,24 @@
                         </div>
                         <div>
                             <span class="text-[10px] text-neon-red font-bold block mb-1">Stop Loss (USD)</span>
-                            <input type="number" inputmode="decimal" id="input-sl-price" placeholder="pl. 92000" min="0.01" step="0.01" aria-label="Stop Loss ár (USD)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red">
+                            <input type="number" inputmode="decimal" id="input-sl-price" placeholder="pl. 92000" min="0.01" step="0.01" oninput="updatePositionSizeCalc()" aria-label="Stop Loss ár (USD)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red">
+                        </div>
+
+                        <!-- Pozícióméret-kalkulátor: a Stop Loss megadása mellé —
+                             ez a professzionális kockázatkezelés alapja ("mennyit
+                             kockáztatok, nem mekkora a pozícióm"), de eddig a
+                             felhasználónak KÉZZEL kellett volna kiszámolnia a
+                             helyes pozícióméretet a SL-távolságból. -->
+                        <div class="glass-card rounded-lg p-2.5 border border-dark-750">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase"><i class="fa-solid fa-calculator mr-1"></i>Pozícióméret a kockázatból</span>
+                                <span class="text-[10px] font-mono text-amber-400" id="risk-calc-pct-label">1%</span>
+                            </div>
+                            <input type="range" id="risk-calc-pct" min="0.25" max="5" step="0.25" value="1" oninput="updatePositionSizeCalc()" class="w-full" aria-label="Kockáztatott egyenleg-százalék">
+                            <div class="flex items-center justify-between mt-1.5">
+                                <span class="text-[10px] text-slate-500" id="risk-calc-result">Add meg a Stop Loss árat a számításhoz.</span>
+                                <button type="button" onclick="applyPositionSizeCalc()" id="risk-calc-apply-btn" disabled class="shrink-0 ml-2 px-2 py-1 rounded-lg text-[10px] font-bold bg-dark-800 text-neon-cyan hover:bg-dark-750 transition disabled:opacity-40 disabled:cursor-not-allowed">Alkalmaz</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -53909,10 +53926,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const keys = Object.keys(tradingJournal).sort();
             if (keys.length === 0) { showNotification('Még nincs rögzített napi bejegyzésed.'); return; }
             const escapeCsv = (s) => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
-            const rows = [['Dátum', 'Napi P&L ($)', 'Jegyzet'].map(escapeCsv).join(',')];
+            // JAVÍTÁS (bug-audit): a lelkiállapot- és stratégia-tagelés (lásd
+            // renderJournalMoodStats / renderJournalStrategyStats) korábban NEM
+            // jelent meg az exportált CSV-ben, pedig a felhasználó ténylegesen
+            // rögzíti ezeket az adatokat — exportáláskor adatvesztésnek tűnt.
+            const moodLabel = (id) => { const m = JOURNAL_MOODS.find(x => x.id === id); return m ? m.label.replace(/^[^\s]+\s/, '') : ''; };
+            const strategyLabel = (id) => { const s = JOURNAL_STRATEGIES.find(x => x.id === id); return s ? s.label.replace(/^[^\s]+\s/, '') : ''; };
+            const rows = [['Dátum', 'Napi P&L ($)', 'Lelkiállapot', 'Stratégia', 'Jegyzet'].map(escapeCsv).join(',')];
             keys.forEach(k => {
                 const e = tradingJournal[k];
-                rows.push([k, Number(e.pnl).toFixed(2), e.note || ''].map(escapeCsv).join(','));
+                rows.push([k, Number(e.pnl).toFixed(2), moodLabel(e.mood), strategyLabel(e.strategy), e.note || ''].map(escapeCsv).join(','));
             });
             const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -55527,6 +55550,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             document.getElementById('limit-price-group').classList.toggle('hidden', mode === 'market');
             updateExecuteButtonLabel();
+            if (typeof updatePositionSizeCalc === 'function') updatePositionSizeCalc();
         }
 
         function updateLeverageDisplay() {
@@ -55590,6 +55614,72 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             renderOrderPlanReminder(margin);
         }
 
+        // ================= POZÍCIÓMÉRET-KALKULÁTOR (ÚJ FUNKCIÓ) =================
+        // Professzionális kockázatkezelés alapja: "mennyit vagyok hajlandó
+        // kockáztatni (az EGYENLEGEM %-ában), ha a Stop Loss-om beüt?" — ebből
+        // vissza lehet számolni a pozícióméretet, ahelyett hogy a felhasználó
+        // tetszőleges összeget adna meg, és csak UTÁNA derülne ki, mekkora a
+        // tényleges kockázata. Képlet (tőkeáttétel NÉLKÜL számolva, mert az
+        // SL-távolság %-a már tartalmazza az árfolyam-elmozdulást):
+        //   kockáztatott összeg ($) = egyenleg × kockázat%
+        //   SL-távolság (%)         = |belépő ár − SL ár| / belépő ár
+        //   ajánlott pozícióméret   = kockáztatott összeg / SL-távolság (%)
+        // Ez PONTOSAN az az összeg, aminél a pozíció SL-en történő zárása
+        // (p.amount × pct, lásd updatePositionsPnL) épp a kívánt kockáztatott
+        // összeget veszíti el — a leverage csak a szükséges MARGÓT csökkenti,
+        // magát a kockázatot nem (hiszen a veszteség az árfolyam-elmozduláson,
+        // nem a tőkeáttételen múlik, amíg a pozíció nem likvidálódik előbb).
+        function updatePositionSizeCalc() {
+            const pctEl = document.getElementById('risk-calc-pct');
+            const labelEl = document.getElementById('risk-calc-pct-label');
+            const resultEl = document.getElementById('risk-calc-result');
+            const applyBtn = document.getElementById('risk-calc-apply-btn');
+            if (!pctEl || !resultEl) return;
+            const riskPct = parseFloat(pctEl.value) || 1;
+            labelEl.textContent = riskPct + '%';
+
+            const slVal = parseFloat(document.getElementById('input-sl-price').value);
+            const entryPrice = currentOrderMode === 'limit'
+                ? (parseFloat(document.getElementById('input-limit-price').value) || currentAsset.price)
+                : currentAsset.price;
+
+            if (!Number.isFinite(slVal) || slVal <= 0 || !Number.isFinite(entryPrice) || entryPrice <= 0) {
+                resultEl.textContent = 'Add meg a Stop Loss árat a számításhoz.';
+                applyBtn.disabled = true;
+                applyBtn.dataset.suggestedAmount = '';
+                return;
+            }
+            const slDistancePct = Math.abs(entryPrice - slVal) / entryPrice;
+            if (slDistancePct < 0.0005) {
+                resultEl.textContent = 'A Stop Loss túl közel van a belépő árhoz.';
+                applyBtn.disabled = true;
+                applyBtn.dataset.suggestedAmount = '';
+                return;
+            }
+            const riskAmount = accountBalance * (riskPct / 100);
+            const suggestedPositionSize = riskAmount / slDistancePct;
+            resultEl.innerHTML = `Javasolt méret: <strong class="text-neon-cyan font-mono">$${suggestedPositionSize.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong> (kockázat: $${riskAmount.toFixed(2)})`;
+            applyBtn.disabled = false;
+            applyBtn.dataset.suggestedAmount = String(suggestedPositionSize);
+        }
+
+        function applyPositionSizeCalc() {
+            const applyBtn = document.getElementById('risk-calc-apply-btn');
+            const suggested = parseFloat(applyBtn && applyBtn.dataset.suggestedAmount);
+            if (!Number.isFinite(suggested) || suggested <= 0) return;
+            // A javasolt összeg a TELJES pozícióméret (nem a margó) — ha ez
+            // tőkeáttétellel osztva is meghaladná az elérhető egyenleget, a
+            // ténylegesen köthető maximumra korlátozzuk, hogy ne generáljon a
+            // felhasználó egy olyan méretet, amit a végrehajtáskor úgyis
+            // elutasítana a "Nincs elegendő demó egyenleg" ellenőrzés.
+            const lev = parseInt(document.getElementById('leverage-slider').value) || 1;
+            const maxAffordable = accountBalance * lev;
+            const finalAmount = Math.max(10, Math.min(suggested, maxAffordable));
+            document.getElementById('input-trade-amount').value = finalAmount.toFixed(0);
+            updateOrderCalculations();
+            showNotification(`Pozícióméret beállítva: $${finalAmount.toFixed(0)}`);
+        }
+
         // A jelen ügylet margója hány %-át teszi ki a jelenlegi egyenlegnek —
         // ÉS hány trade-et nyitott már ma a felhasználó a saját Terve szerinti
         // limithez képest. Csak akkor jelenik meg, ha már van kitöltött Terv.
@@ -55642,6 +55732,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function toggleTPSLInputs() {
             const checked = document.getElementById('toggle-tpsl').checked;
             document.getElementById('tpsl-inputs').classList.toggle('hidden', !checked);
+            if (checked && typeof updatePositionSizeCalc === 'function') updatePositionSizeCalc();
         }
 
         // Duplikált-kattintás védelem (74. pont): a gombot AZONNAL, szinkron
