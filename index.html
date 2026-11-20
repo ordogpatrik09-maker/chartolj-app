@@ -52999,7 +52999,47 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 row('Demó kereskedések (összesen)', (stats.total_demo_trades ?? 0).toLocaleString('hu-HU'), 'fa-chart-line', 'text-neon-cyan'),
                 row('Napi aktív felhasználó (DAU)', (stats.dau ?? 0).toLocaleString('hu-HU'), 'fa-bolt', 'text-neon-green'),
                 row('Heti aktív felhasználó (WAU)', (stats.wau ?? 0).toLocaleString('hu-HU'), 'fa-bolt', 'text-neon-green'),
-            ].join('') + (stats.generated_at ? `<div class="text-center text-[9.5px] text-slate-600 pt-1">Frissítve: ${new Date(stats.generated_at).toLocaleString('hu-HU')}</div>` : '');
+            ].join('') + renderAdminFunnelSection(stats) +
+            (stats.generated_at ? `<div class="text-center text-[9.5px] text-slate-600 pt-1">Frissítve: ${new Date(stats.generated_at).toLocaleString('hu-HU')}</div>` : '');
+        }
+
+        // A termék-tölcsér (hány EGYEDI felhasználó érte el az egyes
+        // mérföldköveket) — a teljes regisztrált-felhasználó számhoz
+        // viszonyított %-os sávval, hogy azonnal látszódjon, hol esik
+        // ki a legtöbb felhasználó (pl. onboarding kész -> első lecke
+        // -> első demó kereskedés).
+        function renderAdminFunnelSection(stats) {
+            const funnel = stats.funnel;
+            if (!funnel || typeof funnel !== 'object') return '';
+            const total = Math.max(stats.total_users ?? 0, 1);
+            const FUNNEL_LABELS = {
+                onboarding_completed: 'Onboarding befejezve',
+                first_lesson_completed: 'Első lecke kész',
+                lesson_completed: 'Bármely lecke kész (összesen)',
+                first_replay_completed: 'Első Replay kész',
+                replay_completed: 'Bármely Replay kész (összesen)',
+                demo_trade_executed: 'Első demó kereskedés',
+                premium_activated: 'Prémium aktiválva',
+            };
+            const FUNNEL_ORDER = ['onboarding_completed', 'first_lesson_completed', 'demo_trade_executed', 'first_replay_completed', 'premium_activated', 'lesson_completed', 'replay_completed'];
+            const rows = FUNNEL_ORDER.filter(k => k in funnel).map(k => {
+                const count = funnel[k] || 0;
+                const pct = Math.min(100, Math.round((count / total) * 100));
+                return `
+                    <div class="py-1.5">
+                        <div class="flex items-center justify-between text-[10.5px] mb-1">
+                            <span class="text-slate-400">${FUNNEL_LABELS[k] || k}</span>
+                            <span class="font-mono font-bold text-white">${count.toLocaleString('hu-HU')} <span class="text-slate-600">(${pct}%)</span></span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-dark-800 overflow-hidden"><div class="h-full bg-neon-cyan rounded-full" style="width:${pct}%"></div></div>
+                    </div>`;
+            }).join('');
+            if (!rows) return '';
+            return `
+                <div class="glass-card rounded-lg p-2.5 mt-1">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fa-solid fa-filter mr-1"></i>Felhasználói tölcsér (egyedi felhasználók, az összeshez viszonyítva)</div>
+                    ${rows}
+                </div>`;
         }
 
         function renderLeaderboardDemoLabel(isDemo) {

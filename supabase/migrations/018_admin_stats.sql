@@ -58,6 +58,24 @@ BEGIN
         'total_demo_trades', (SELECT count(*) FROM public.user_events WHERE event_name = 'demo_trade_executed'),
         'dau', (SELECT count(DISTINCT user_id) FROM public.user_events WHERE created_at >= now() - interval '1 day'),
         'wau', (SELECT count(DISTINCT user_id) FROM public.user_events WHERE created_at >= now() - interval '7 days'),
+        -- Termék-tölcsér: az index.html-ben ténylegesen naplózott
+        -- logEvent(...) esemény-nevek EGYEDI felhasználó szerinti
+        -- lefedettsége — ez mutatja meg, hol esnek ki a felhasználók
+        -- (pl. hányan fejezik be az onboardingot, de sosem jutnak el az
+        -- első demó kereskedésig).
+        'funnel', (
+            SELECT jsonb_object_agg(e.name, coalesce(c.cnt, 0))
+            FROM (VALUES
+                ('onboarding_completed'), ('first_lesson_completed'), ('lesson_completed'),
+                ('first_replay_completed'), ('replay_completed'), ('demo_trade_executed'),
+                ('premium_activated')
+            ) AS e(name)
+            LEFT JOIN (
+                SELECT event_name, count(DISTINCT user_id) AS cnt
+                FROM public.user_events
+                GROUP BY event_name
+            ) c ON c.event_name = e.name
+        ),
         'generated_at', now()
     ) INTO v_result;
 
