@@ -16040,6 +16040,7 @@ Mean-reversion,2.5</textarea>
                 <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750 mb-3">
                     <button id="leaderboard-tab-global" onclick="setLeaderboardTab('global')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Globális</button>
                     <button id="leaderboard-tab-friends" onclick="setLeaderboardTab('friends')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Barátok</button>
+                    <button id="leaderboard-tab-league" onclick="setLeaderboardTab('league')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Liga</button>
                 </div>
                 <div id="leaderboard-global-panel">
                     <div id="leaderboard-list" class="space-y-1.5"></div>
@@ -16052,6 +16053,15 @@ Mean-reversion,2.5</textarea>
                         <button onclick="addFriendByCode()" class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-dark-800 text-neon-cyan hover:bg-dark-750 transition shrink-0">+ Hozzáad</button>
                     </div>
                     <p id="friends-demo-note" class="text-[9.5px] text-slate-600 mt-3 leading-relaxed">Jelentkezz be, és kérd el a barátod meghívókódját (Meghívás gomb) — utána mindkettőtöknél valódi, megosztott XP-verseny jelenik meg.</p>
+                </div>
+                <div id="leaderboard-league-panel" class="hidden">
+                    <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750 mb-2.5">
+                        <button id="league-period-weekly" onclick="setLeagueSeasonPeriod('weekly')" class="flex-1 py-1 rounded-lg text-[10.5px] font-bold transition">Heti</button>
+                        <button id="league-period-monthly" onclick="setLeagueSeasonPeriod('monthly')" class="flex-1 py-1 rounded-lg text-[10.5px] font-bold transition">Havi</button>
+                    </div>
+                    <p id="league-period-ends-note" class="text-[9.5px] text-slate-500 mb-2"></p>
+                    <div id="league-list" class="space-y-1.5"></div>
+                    <p id="league-demo-note" class="text-[9.5px] text-slate-600 mt-3 leading-relaxed">A liga az IDŐSZAKON BELÜL (ettől a héttől/hónaptól) szerzett XP-t rangsorolja, nem az összes idők XP-jét — mindenki egyenlő eséllyel indul minden új időszak elején. Jelentkezz be, hogy a valódi, más felhasználóktól származó liga-adatot lásd.</p>
                 </div>
             </div>
 
@@ -52809,9 +52819,87 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const inactiveClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
             document.getElementById('leaderboard-tab-global').className = tab === 'global' ? activeClass : inactiveClass;
             document.getElementById('leaderboard-tab-friends').className = tab === 'friends' ? activeClass : inactiveClass;
+            document.getElementById('leaderboard-tab-league').className = tab === 'league' ? activeClass : inactiveClass;
             document.getElementById('leaderboard-global-panel').classList.toggle('hidden', tab !== 'global');
             document.getElementById('leaderboard-friends-panel').classList.toggle('hidden', tab !== 'friends');
+            document.getElementById('leaderboard-league-panel').classList.toggle('hidden', tab !== 'league');
             if (tab === 'friends') renderFriendsList();
+            if (tab === 'league') renderLeague();
+        }
+
+        // ================= SZEZONÁLIS LIGA (heti/havi XP-verseny) =================
+        // A 016_seasonal_leaderboard.sql migráció get_seasonal_leaderboard RPC-jét
+        // hívja — ez az IDŐSZAKON BELÜL szerzett XP-t rangsorolja (nem az összes
+        // idők XP-jét), ezért minden új hét/hónap elején mindenki egyenlő eséllyel
+        // indul, függetlenül attól, mióta aktív a fiókja. Vendég módban / ha a
+        // migráció még nem fut le, ugyanaz az őszinte demo-fallback minta, mint a
+        // globális ranglistánál.
+        let leagueSeasonPeriod = 'weekly';
+        function setLeagueSeasonPeriod(period) {
+            leagueSeasonPeriod = period;
+            const activeClass = 'flex-1 py-1 rounded-lg text-[10.5px] font-bold bg-dark-800 text-neon-cyan transition';
+            const inactiveClass = 'flex-1 py-1 rounded-lg text-[10.5px] font-bold text-slate-400 hover:text-white transition';
+            document.getElementById('league-period-weekly').className = period === 'weekly' ? activeClass : inactiveClass;
+            document.getElementById('league-period-monthly').className = period === 'monthly' ? activeClass : inactiveClass;
+            renderLeague();
+        }
+        async function renderLeague() {
+            const el = document.getElementById('league-list');
+            const endsNoteEl = document.getElementById('league-period-ends-note');
+            if (!el) return;
+            const medals = ['🥇', '🥈', '🥉'];
+            setLeagueSeasonPeriod._rendered = true;
+
+            if (isLoggedInRealUser()) {
+                try {
+                    const { data, error } = await sb.rpc('get_seasonal_leaderboard', { p_period_type: leagueSeasonPeriod, p_limit: 50 });
+                    if (!error && Array.isArray(data)) {
+                        const rows = data.map(r => ({ name: r.display_name || 'Trader', xp: r.period_xp || 0, isMe: r.user_id === currentUser.id }))
+                            .sort((a, b) => b.xp - a.xp);
+                        el.innerHTML = rows.length ? rows.map((r, i) => {
+                            const rank = i + 1;
+                            const medal = medals[i] || (rank + '.');
+                            return `
+                            <div class="flex items-center justify-between px-2.5 py-2 rounded-lg ${r.isMe ? 'bg-neon-cyan/10 border border-neon-cyan/40' : 'hover:bg-dark-850/50'} transition">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="w-6 text-center text-xs font-bold ${rank <= 3 ? '' : 'text-slate-500'} shrink-0">${medal}</span>
+                                    <span class="text-xs font-bold ${r.isMe ? 'text-neon-cyan' : 'text-slate-200'} truncate">${escapeHtml(r.name)}${r.isMe ? ' (Te)' : ''}</span>
+                                </div>
+                                <span class="text-xs font-mono font-bold text-amber-400 shrink-0">+${r.xp.toLocaleString('hu-HU')} XP</span>
+                            </div>`;
+                        }).join('') : `<div class="text-center text-slate-600 text-xs py-4">Még senki nem szerzett XP-t ebben az időszakban.</div>`;
+                        if (endsNoteEl && data[0] && data[0].period_ends_at) {
+                            const endsDate = new Date(data[0].period_ends_at);
+                            endsNoteEl.textContent = `Az időszak vége: ${endsDate.toLocaleDateString('hu-HU')}`;
+                        } else if (endsNoteEl) {
+                            endsNoteEl.textContent = '';
+                        }
+                        document.getElementById('league-demo-note').classList.add('hidden');
+                        return;
+                    }
+                } catch (e) { /* csendes fallback a demo-mezőnyre */ }
+            }
+
+            // Fallback: demo mezőny (vendég user, vagy a backend-migráció még nem fut le)
+            const peers = getOrCreateLeaderboardPeers();
+            const myName = (typeof currentUser !== 'undefined' && currentUser && currentUser.name) ? currentUser.name : 'Vendég';
+            const rows = [...peers, { name: myName, xp: Math.round(academyXP * 0.15), isMe: true }]
+                .map(p => ({ ...p, xp: Math.round((p.xp || 0) * 0.12) }))
+                .sort((a, b) => b.xp - a.xp);
+            el.innerHTML = rows.map((r, i) => {
+                const rank = i + 1;
+                const medal = medals[i] || (rank + '.');
+                return `
+                <div class="flex items-center justify-between px-2.5 py-2 rounded-lg ${r.isMe ? 'bg-neon-cyan/10 border border-neon-cyan/40' : 'hover:bg-dark-850/50'} transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-6 text-center text-xs font-bold ${rank <= 3 ? '' : 'text-slate-500'} shrink-0">${medal}</span>
+                        <span class="text-xs font-bold ${r.isMe ? 'text-neon-cyan' : 'text-slate-200'} truncate">${escapeHtml(r.name)}${r.isMe ? ' (Te)' : ''}</span>
+                    </div>
+                    <span class="text-xs font-mono font-bold text-amber-400 shrink-0">+${r.xp.toLocaleString('hu-HU')} XP</span>
+                </div>`;
+            }).join('');
+            if (endsNoteEl) endsNoteEl.textContent = '';
+            document.getElementById('league-demo-note').classList.remove('hidden');
         }
 
         function getFriends() {
