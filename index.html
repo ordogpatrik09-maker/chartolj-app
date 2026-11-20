@@ -32532,11 +32532,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ? 'Pozitív KVO — a rövid-távú pénzáramlás erősebb a hosszú-távúnál, bullish momentumra utal.'
                 : 'Negatív KVO — a rövid-távú pénzáramlás gyengébb a hosszú-távúnál, bearish momentumra utal.';
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a Volume Force EMA-i és a KVO (a kettő
+            // különbsége) egy valódi nulla-vonal-keresztezésnél legitim
+            // módon nullához nagyon közeli (akár előjelesen negatív) értéket
+            // vesz fel — a `.toLocaleString()` ezt "-0"-ként jelenítené meg
+            // "0" helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">EMA34 (Volume Force):</span><span class="text-white">${ema34Last.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA55 (Volume Force):</span><span class="text-white">${ema55Last.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Klinger Oscillator (KVO):</span><span class="${colorClass} font-extrabold text-sm">${kvo >= 0 ? '+' : ''}${kvo.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">EMA34 (Volume Force):</span><span class="text-white">${zeroSafeRound(ema34Last, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA55 (Volume Force):</span><span class="text-white">${zeroSafeRound(ema55Last, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Klinger Oscillator (KVO):</span><span class="${colorClass} font-extrabold text-sm">${kvo >= 0 ? '+' : ''}${zeroSafeRound(kvo, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -32793,10 +32799,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ? 'Pozitív EMV — az ár kevés ellenállással, "könnyen" mozog felfelé, egészséges trendre utal.'
                 : 'Negatív EMV — az ár "nehezen", nagy volumen-ellenállással mozog lefelé, küzdelmes piaci körülményekre utal.';
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): az EMV "könnyen/nehezen mozog" jellegéből adódóan
+            // legitim módon nullához nagyon közeli (akár előjelesen negatív)
+            // értéket is felvehet — a `.toLocaleString()` ezt "-0"-ként
+            // jelenítené meg "0" helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Utolsó (1 periódusos) EMV:</span><span class="text-white">${lastRaw.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított EMV (SMA${period}):</span><span class="${colorClass} font-extrabold text-sm">${smoothed >= 0 ? '+' : ''}${smoothed.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Utolsó (1 periódusos) EMV:</span><span class="text-white">${zeroSafeRound(lastRaw, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított EMV (SMA${period}):</span><span class="${colorClass} font-extrabold text-sm">${smoothed >= 0 ? '+' : ''}${zeroSafeRound(smoothed, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -32874,10 +32885,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ? 'A Fisher vonal a jelvonal (előző érték) fölé emelkedett — potenciális felfelé irányuló fordulójelzés.'
                 : 'A Fisher vonal a jelvonal (előző érték) alá esett — potenciális lefelé irányuló fordulójelzés.';
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a Fisher Transform egy valódi nulla-vonal-
+            // keresztezésnél legitim módon nullához nagyon közeli (akár
+            // előjelesen negatív) értéket vesz fel — a `.toLocaleString()`
+            // ezt "-0"-ként jelenítené meg "0" helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Fisher (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastFisher >= 0 ? '+' : ''}${lastFisher.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (előző érték):</span><span class="text-white">${signalFisher >= 0 ? '+' : ''}${signalFisher.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Fisher (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastFisher >= 0 ? '+' : ''}${zeroSafeRound(lastFisher, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (előző érték):</span><span class="text-white">${signalFisher >= 0 ? '+' : ''}${zeroSafeRound(signalFisher, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${crossUp ? 'text-neon-green' : 'text-neon-red'}">${verdict}</p>
                 ${extremeNote}
@@ -32958,10 +32974,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ? 'A KST a nulla vonal felett van — hosszabb távú momentum pozitív.'
                 : 'A KST a nulla vonal alatt van — hosszabb távú momentum negatív.';
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a KST egy valódi nulla-vonal-keresztezésnél
+            // legitim módon nullához nagyon közeli (akár előjelesen negatív)
+            // értéket vesz fel — a `.toLocaleString()` ezt "-0"-ként
+            // jelenítené meg "0" helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">KST (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastKst >= 0 ? '+' : ''}${lastKst.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (SMA9):</span><span class="text-white">${lastSignal >= 0 ? '+' : ''}${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">KST (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastKst >= 0 ? '+' : ''}${zeroSafeRound(lastKst, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (SMA9):</span><span class="text-white">${lastSignal >= 0 ? '+' : ''}${zeroSafeRound(lastSignal, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${crossUp ? 'text-neon-green' : 'text-neon-red'}">${verdict}</p>
                 <p class="text-[10px] text-slate-400 mt-1">${zeroLineNote}</p>
@@ -33046,10 +33067,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict += rising ? ' A TSI emelkedik az előző értékéhez képest.' : ' A TSI csökken az előző értékéhez képest.';
             }
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a TSI egy valódi nulla-vonal-keresztezésnél
+            // legitim módon nullához nagyon közeli (akár előjelesen negatív)
+            // értéket vesz fel — a `.toLocaleString()` ezt "-0"-ként
+            // jelenítené meg "0" helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">TSI (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastTsi >= 0 ? '+' : ''}${lastTsi.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    ${lastSignal !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (EMA7):</span><span class="text-white">${lastSignal >= 0 ? '+' : ''}${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>` : ''}
+                    <div class="flex justify-between"><span class="text-slate-400">TSI (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${lastTsi >= 0 ? '+' : ''}${zeroSafeRound(lastTsi, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    ${lastSignal !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (EMA7):</span><span class="text-white">${lastSignal >= 0 ? '+' : ''}${zeroSafeRound(lastSignal, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>` : ''}
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -33573,11 +33599,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ? 'A VWMACD a jelvonal fölé emelkedett — bullish momentumjelzés, magas volumenű napok konszenzusával megerősítve.'
                 : 'A VWMACD a jelvonal alá esett — bearish momentumjelzés, magas volumenű napok konszenzusával megerősítve.';
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): ugyanaz a hibaosztály, mint a MACD kalkulátornál
+            // — a VWMACD vonal/jelvonal/hisztogram egy valódi nulla-vonal-
+            // keresztezésnél legitim módon nullához nagyon közeli (akár
+            // előjelesen negatív) értéket vesz fel, amit a `.toLocaleString()`
+            // "-0"-ként jelenítene meg "0" helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">VWMACD vonal:</span><span class="text-white">${lastVwmacd.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (SMA9):</span><span class="text-white">${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Histogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${histogram.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">VWMACD vonal:</span><span class="text-white">${zeroSafeRound(lastVwmacd, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (SMA9):</span><span class="text-white">${zeroSafeRound(lastSignal, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Histogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${zeroSafeRound(histogram, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -33684,11 +33716,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict += strengthening ? ' A hisztogram tágul, a momentum erősödik.' : ' A hisztogram szűkül, a momentum gyengül.';
             }
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a MACD vonal, a jelvonal és a hisztogram egy
+            // VALÓDI nulla-vonal-keresztezésnél (bullish/bearish váltás)
+            // legitim módon nullához nagyon közeli (akár előjelesen negatív)
+            // értéket vesz fel — a `.toLocaleString()` ezt "-0"-ként
+            // jelenítené meg "0" helyett, a `>= 0 ? '+' : ''` előjel-logika
+            // mellett is (mert egy kis negatív érték nem `>= 0`, tehát nem
+            // kap "+"-t, de a `.toLocaleString()` így is "-0"-t írna ki).
+            // `zeroSafeRound` ezt a kiíráskor normalizálja, minden más (nem-
+            // nulla) értéket változatlanul hagyva.
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-neon-purple/30 bg-neon-purple/[0.05] p-3 mb-3 font-mono text-xs space-y-2">
-                    <div class="flex justify-between"><span class="text-slate-400">MACD (${fastPeriod},${slowPeriod}) vonal:</span><span class="text-white">${lastMacd.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (EMA${signalPeriod}):</span><span class="text-white">${lastSignal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Hisztogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${histogram.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">MACD (${fastPeriod},${slowPeriod}) vonal:</span><span class="text-white">${zeroSafeRound(lastMacd, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelvonal (EMA${signalPeriod}):</span><span class="text-white">${zeroSafeRound(lastSignal, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Hisztogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${zeroSafeRound(histogram, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -33757,9 +33799,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 colorClass = 'text-neon-yellow';
             }
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a Béta (cov/varM) egy gyengén korreláló eszköznél
+            // legitim módon nullához közeli vagy pontosan (lebegőpontos
+            // kerekítésből adódóan) negatív nulla is lehet, amit a
+            // `.toLocaleString()` — a `.toFixed()`-del ellentétben — "-0"-
+            // ként jelenítene meg "0" helyett. `zeroSafeRound` ezt a
+            // kiíráskor normalizálja, minden más (nem-nulla) Béta-értéket
+            // változatlanul hagyva.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Béta:</span><span class="${colorClass} font-extrabold text-sm">${beta.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Béta:</span><span class="${colorClass} font-extrabold text-sm">${zeroSafeRound(beta, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -33850,9 +33900,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 colorClass = 'text-neon-yellow';
             }
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a Béta (cov/varM, ugyanaz a hibaosztály, mint a
+            // Béta-kalkulátornál) egy gyengén korreláló eszköznél nullához
+            // közeli vagy lebegőpontos kerekítésből adódóan pontosan negatív
+            // nulla is lehet — `zeroSafeRound`-dal normalizálva a kiíráskor
+            // nem szivárog "-0" a `.toLocaleString()`-en keresztül. (Az R²/
+            // szórás-mezők mindig négyzetek/Math.sqrt eredmények, ezért
+            // sosem lehetnek negatívak — azokat nem kell normalizálni.)
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Béta:</span><span class="text-white font-bold">${beta.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Béta:</span><span class="text-white font-bold">${zeroSafeRound(beta, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">R² (korreláció²):</span><span class="text-white font-bold">${rsq.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Teljes szórás (eszköz):</span><span class="text-white font-bold">${stdA.toLocaleString(undefined, { maximumFractionDigits: 4 })}%</span></div>
                     <div class="h-px bg-dark-750 my-1"></div>
@@ -34136,12 +34194,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const finalStop = stops[stops.length - 1];
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a `prices[]` sorozatra és a `stops[]`-ra (ami
+            // `ár - távolság`) nincs pozitív korlátozás — egy literális "-0"
+            // bemenet, vagy egy a nullához nagyon közeli (de attól eltérő)
+            // kezdő stop-szint a `.toLocaleString()`-en keresztül "-0"-ként
+            // jelent volna meg "0" helyett. `zeroSafeRound` ezt a kiíráskor
+            // normalizálja, minden más (nem-nulla) árat/szintet
+            // változatlanul hagyva.
+            const priceSafeAt = (i) => zeroSafeRound(prices[i], 4);
+            const stops0Safe = zeroSafeRound(stops[0], 4);
+            const finalStopSafe = zeroSafeRound(finalStop, 4);
             let verdict, colorClass;
             if (triggeredAt !== null) {
-                verdict = `A trailing stop a(z) ${triggeredAt + 1}. gyertyánál (ár: ${prices[triggeredAt].toLocaleString(undefined, { maximumFractionDigits: 4 })}) triggerelt volna, ${finalStop.toLocaleString(undefined, { maximumFractionDigits: 4 })}-es stop szinten.`;
+                verdict = `A trailing stop a(z) ${triggeredAt + 1}. gyertyánál (ár: ${priceSafeAt(triggeredAt).toLocaleString(undefined, { maximumFractionDigits: 4 })}) triggerelt volna, ${finalStopSafe.toLocaleString(undefined, { maximumFractionDigits: 4 })}-es stop szinten.`;
                 colorClass = 'text-neon-red';
             } else {
-                verdict = `A trailing stop a teljes idősoron NEM triggerelt — a pozíció a végén is nyitva maradt volna, utolsó stop szint: ${finalStop.toLocaleString(undefined, { maximumFractionDigits: 4 })}.`;
+                verdict = `A trailing stop a teljes idősoron NEM triggerelt — a pozíció a végén is nyitva maradt volna, utolsó stop szint: ${finalStopSafe.toLocaleString(undefined, { maximumFractionDigits: 4 })}.`;
                 colorClass = 'text-neon-green';
             }
 
@@ -34152,8 +34221,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Stop-távolság:</span><span class="text-white">${distanceLabel}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kezdő stop:</span><span class="text-white">${stops[0].toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó/trigger stop:</span><span class="${colorClass} font-extrabold text-sm">${finalStop.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kezdő stop:</span><span class="text-white">${stops0Safe.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó/trigger stop:</span><span class="${colorClass} font-extrabold text-sm">${finalStopSafe.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -34697,6 +34766,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (candles.length < 1) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 gyertya szükséges (Nyitó,Magas,Alacsony,Záró formátumban)!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó OHLC-konzisztencia-validáció): a Magas/
+            // Alacsony mezőkre eddig nem volt szerkezeti ellenőrzés — egy
+            // Magas < Nyitó/Záró (vagy Alacsony > Nyitó/Záró) érvénytelen
+            // gyertyánál a felső/alsó kanóc (`upper`/`lower`) a lenti
+            // `metrics()`-ben NEGATÍV lett, ami a nullához közeli esetben
+            // "-0"-s kanóc-%-ot szivárogtatott ki, egyébként pedig egy
+            // fogalmilag értelmetlen (negatív hosszúságú) kanócot. Ugyanaz a
+            // hibaosztály, mint a Donchian/DeMarker/Zig Zag kalkulátoroknál
+            // már korábban javított "hiányzó Magas/Alacsony validáció".
+            const invalidCandleIdx = candles.findIndex(([o, h, l, c]) => h < Math.max(o, c) || l > Math.min(o, c));
+            if (invalidCandleIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidCandleIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
                 return;
             }
 
@@ -35815,7 +35899,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     for (let j = i + 1; j < arr.length; j++) {
                         const p1 = arr[i].price, p2 = arr[j].price;
                         const avg = (p1 + p2) / 2;
-                        const diffPct = Math.abs(p1 - p2) / avg * 100;
+                        // JAVÍTÁS: a nevezőben korábban a nyers `avg` állt — ha két
+                        // swing-ár egyaránt NEGATÍV (pl. egy bázispontos spread vagy
+                        // más, lényegében negatív is lehető árszint esetén), az avg
+                        // is negatív, és a számlálóban lévő Math.abs(p1-p2) (mindig
+                        // ≥0) osztva egy negatív nevezővel egy ÉRTELMETLEN, negatív
+                        // "különbség %"-ot ad (pl. "Δ-66.667%"), miközben a diffPct
+                        // fogalmilag egy mindig nem-negatív tolerancia-mérőszám.
+                        // Math.abs(avg)-re cserélve a nevező is mindig ≥0, azonos
+                        // (pozitív vagy mindkettő negatív) előjelű swingeknél a
+                        // viselkedés NEM változik, csak a korábban hibás,
+                        // ellentétes előjelű esetben lesz helyes (mindig ≥0) %.
+                        const diffPct = Math.abs(p1 - p2) / Math.abs(avg) * 100;
                         // JAVÍTÁS: szélsőséges, de egyenként véges ár-bemenetnél a
                         // |p1-p2| különbség túlcsordulhat Infinity-re, vagy az
                         // avg pontosan 0 lehet (ellentétes extrém előjelű swingek
@@ -35842,11 +35937,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): az átlag-szint (avg) két negatív swing-ár esetén
+            // negatív, és ha a két ár elég közel van egymáshoz, az átlag
+            // nagyon kis negatív szám is lehet, amit a `.toLocaleString()` —
+            // a `.toFixed()`-del ellentétben — "-0"-ként jelenít meg a
+            // megadott tizedesjegy-pontosságon "0" helyett. `zeroSafeRound`
+            // ezt a kiíráskor normalizálja, minden más (nem-nulla) szintet
+            // változatlanul hagyva.
             const rowsHtml = (pairs, label, color) => pairs.map(p => `
                 <div class="flex justify-between font-mono text-[10px] py-1 border-b border-dark-750/50">
                     <span class="${color} font-semibold">${label}</span>
                     <span class="text-slate-400">#${p.i1} & #${p.i2}</span>
-                    <span class="text-white">${p.avg.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                    <span class="text-white">${zeroSafeRound(p.avg, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
                     <span class="text-slate-500">(Δ${p.diffPct.toFixed(3)}%)</span>
                 </div>
             `).join('');
@@ -35939,6 +36042,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 CHOCH_DOWN: { text: 'CHoCH (karakterváltás, lefelé)', color: 'text-neon-amber', badge: 'bg-neon-amber/15 border-neon-amber/40 text-neon-amber' }
             };
 
+            // JAVÍTÁS (literális "-0" bemenet audit, textarea-alapú lista-
+            // kalkulátorok köre): a swing-ár mezőre nincs pozitív/nullánál
+            // nagyobb korlátozás (jogosan, mert egy swing bármilyen árszinten
+            // lehet), így egy literális "-0" bemenet simán átmegy a
+            // validáción, és a `parseFloat` a JS negatív nullát (`-0`) adja
+            // vissza, amit a `.toLocaleString()` — a `.toFixed()`-del
+            // ellentétben — megtart a kiírt stringben ("-0" "0" helyett).
+            // `zeroSafeRound` a megadott tizedesjegyre kerekítve ellenőrzi,
+            // hogy a kerekített érték numerikusan 0 — ha igen, literál `0`-t
+            // ad, minden más (nem-nulla) árat változatlanul hagyva.
             const rows = events.map(ev => {
                 const meta = ev.event ? EVENT_META[ev.event] : null;
                 const badgeHtml = meta
@@ -35948,7 +36061,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex items-center justify-between font-mono text-[10px] py-1.5 border-b border-dark-750/50 gap-2">
                         <span class="text-slate-500 shrink-0">#${ev.s.idx}</span>
                         <span class="font-bold shrink-0 ${ev.s.type === 'HIGH' ? 'text-slate-300' : 'text-slate-400'}">${ev.s.type === 'HIGH' ? 'Csúcs' : 'Mélypont'}</span>
-                        <span class="text-white shrink-0">${ev.s.price.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                        <span class="text-white shrink-0">${zeroSafeRound(ev.s.price, 4).toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
                         <span class="text-right flex-1">${badgeHtml}</span>
                     </div>
                 `;
@@ -37070,11 +37183,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 crossNote = '<p class="text-[10px] font-bold text-neon-red mt-2">⚡ Nulla vonal lefelé keresztezés — klasszikus bearish AO-jelzés.</p>';
             }
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): az AO fogalmilag is egy nulla-vonal körül
+            // ingadozó oszcillátor — egy valódi keresztezésnél legitim módon
+            // nullához nagyon közeli (akár előjelesen negatív) értéket vesz
+            // fel, amit a `.toLocaleString()` "-0"-ként jelenítene meg "0"
+            // helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3 font-mono text-xs space-y-2">
                     <div class="flex justify-between"><span class="text-slate-400">Feldolgozott gyertyák:</span><span class="text-white">${n}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző AO-sáv:</span><span class="text-slate-300">${prevAO >= 0 ? '+' : ''}${prevAO.toLocaleString(undefined, { maximumFractionDigits: 5 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">AO (utolsó sáv):</span><span class="${zeroColorClass} font-extrabold text-sm">${lastAO >= 0 ? '+' : ''}${lastAO.toLocaleString(undefined, { maximumFractionDigits: 5 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző AO-sáv:</span><span class="text-slate-300">${prevAO >= 0 ? '+' : ''}${zeroSafeRound(prevAO, 5).toLocaleString(undefined, { maximumFractionDigits: 5 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">AO (utolsó sáv):</span><span class="${zeroColorClass} font-extrabold text-sm">${lastAO >= 0 ? '+' : ''}${zeroSafeRound(lastAO, 5).toLocaleString(undefined, { maximumFractionDigits: 5 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Hisztogram iránya:</span><span class="${histColor} font-bold">${rising ? 'Emelkedő (zöld sáv)' : 'Csökkenő (piros sáv)'}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${zeroColorClass}">${verdict}</p>
@@ -38294,10 +38413,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = 'Nulla közeli, simított Force Index — kiegyensúlyozott vételi/eladási erő, nincs kifejezett irány.';
             }
 
+            // JAVÍTÁS (literális "-0" bemenet / nullára kerekedő kis negatív
+            // érték audit): a nyers és simított Force Index (árváltozás ×
+            // volumen) egy kiegyensúlyozott vételi/eladási erőnél legitim
+            // módon nullához nagyon közeli (akár előjelesen negatív) értéket
+            // vesz fel — a `.toLocaleString()` ezt "-0"-ként jelenítené meg
+            // "0" helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Legutóbbi nyers Force Index:</span><span class="${latestRawForce >= 0 ? 'text-neon-green' : 'text-neon-red'}">${latestRawForce >= 0 ? '+' : ''}${latestRawForce.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított Force Index (${period} EMA):</span><span class="font-extrabold ${colorClass} text-sm">${smoothedForce >= 0 ? '+' : ''}${smoothedForce.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Legutóbbi nyers Force Index:</span><span class="${latestRawForce >= 0 ? 'text-neon-green' : 'text-neon-red'}">${latestRawForce >= 0 ? '+' : ''}${zeroSafeRound(latestRawForce, 2).toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított Force Index (${period} EMA):</span><span class="font-extrabold ${colorClass} text-sm">${smoothedForce >= 0 ? '+' : ''}${zeroSafeRound(smoothedForce, 2).toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
