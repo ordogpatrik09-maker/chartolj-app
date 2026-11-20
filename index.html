@@ -30205,6 +30205,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             // Bankjegy-bontás centekben (lebegőpontos kerekítési hibák elkerülésére).
             let remainingCents = Math.round(risk * 100);
+
+            // JAVÍTÁS (audit — két-mezős kombinált extrém-érték sweep, ugyanaz a
+            // hibaosztály, mint a fenti tradesToMaxLoss-nál már javított eset):
+            // a `risk > equity` ellenőrzés nem fogja ki, ha risk ÉS equity
+            // EGYÜTT, EGYENKÉNT véges, de rendkívül nagy (pl. mindkettő 1e308) —
+            // ilyenkor a riskPct arányuk még véges marad, de a `risk * 100`
+            // (centekre váltás) túlcsordul Infinity-re. A lenti ciklus ekkor
+            // "Infinity" db bankjegyet, majd (Infinity - Infinity miatt) "NaN"
+            // maradékot számolna — mindkettő szó szerint megjelenne a
+            // felhasználó előtt a "Kis címletek" bontásban és az "Összesen
+            // ennyi bankjegy" sorban.
+            if (!Number.isFinite(remainingCents)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott kockáztatott összeg túl nagy egy érvényes bankjegy-bontáshoz (centekre váltás túlcsordulna) — adj meg reálisabb nagyságrendű kockázatot!</div>`;
+                return;
+            }
+
             const billDenomsCents = [10000, 5000, 2000, 1000, 500, 100];
             const billLabels = ['$100', '$50', '$20', '$10', '$5', '$1'];
             const billCounts = [];
@@ -32388,6 +32404,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const timeRange = x2 - x1;
             const priceRange = y2 - y1;
+
+            // JAVÍTÁS (audit — két-mezős kombinált extrém-érték sweep, ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál): y1 és y2
+            // EGYENKÉNT véges (átment a fenti isFinite-ellenőrzésen), de ha a
+            // kettő lebegőpontos skálán rendkívül távol van egymástól (pl.
+            // y1=1e308, y2=-1e308), a KÜLÖNBSÉGÜK (priceRange) túlcsordulhat
+            // Infinity-re. A 0%-os (bázisvonal) sor ekkor "0 × Infinity" miatt
+            // kifejezetten NaN-t ad (nem csak Infinity-t), a többi sor pedig a
+            // slope-on keresztül ±Infinity-t — mindkettő szó szerint
+            // megjelenne a felhasználó előtt a korábbi védelem nélkül.
+            if (!Number.isFinite(priceRange)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az A és B pont ára közötti különbség szélsőséges (de egyenként véges) árak esetén túlcsordulást okozott a lebegőpontos számábrázolásban — adj meg reálisabb nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const isUpSwing = y2 > y1;
             const ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 
@@ -32396,6 +32427,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const priceAtTarget = y1 + slope * (target - x1);
                 return { r, priceAtTarget };
             });
+
+            // Védelmi védővonal: még ha priceRange véges is, egy rendkívül nagy
+            // (de egyenként véges) célgyertya-sorszám (target) × slope szorzás
+            // elvben túlcsordulhatna — ugyanazt a mintát követve, mint a fenti
+            // kalkulátorok (pl. Mass Index, RVI) záró véges-ellenőrzése.
+            if (rows.some(row => !Number.isFinite(row.priceAtTarget))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott pontok és célgyertya-sorszám szélsőséges kombinációja túlcsordulást okozott a lebegőpontos számábrázolásban — adj meg reálisabb nagyságrendű árakat/sorszámokat!</div>`;
+                return;
+            }
 
             const rowsHtml = rows.map(({ r, priceAtTarget }) => {
                 const highlight = r === 0.618;
@@ -37177,7 +37217,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
-            const fmt = (v) => v.toLocaleString('hu-HU', { maximumFractionDigits: 4 });
+            // JAVÍTÁS (audit — két-mezős kombinált extrém-érték sweep): a fenti
+            // len1-ellenőrzés csak az 1. hullám hosszát fogja ki — a LENTI
+            // kódban sok további, len1/len3/net13-ra épülő ár-projekció
+            // (pl. a 3. hullám ×2.618/×4.236 cél-projekciója, vagy az "1-3.
+            // hullám nettó" ×0.618 projekció) EZEKTŐL FÜGGETLENÜL is
+            // túlcsordulhat Infinity-re, ha a P0-P5 pontok egyenként véges,
+            // de egymástól (lebegőpontos skálán) rendkívül távoli, ellentétes
+            // előjelű extrém értékek. A `fmt()` segédfüggvényt ezért magát
+            // tesszük véges-biztonságossá (minden hívási helyén egységesen),
+            // nem minden egyes hívást külön-külön — ha egy ár-projekció
+            // túlcsordul, a számérték helyén most konzisztensen a fájlban
+            // már bevált "—" jelenik meg, nem a `.toLocaleString()` által
+            // visszaadott "∞"/"-∞" szimbólum.
+            const fmt = (v) => Number.isFinite(v) ? v.toLocaleString('hu-HU', { maximumFractionDigits: 4 }) : '—';
             const row = (label, val, cls) => `
                 <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
                     <span class="text-slate-400">${label}:</span>
@@ -37228,12 +37281,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (hasP2 && hasP3) {
                 len3 = Math.abs(p3 - p2);
+
+                // JAVÍTÁS (audit — két-mezős kombinált extrém-érték sweep,
+                // ugyanaz a hibaosztály, mint a korábban javított
+                // kalkulátoroknál): két egyenként véges, de ellentétes előjelű
+                // extrém P2/P3 pont mellett a 3. hullám hossza (len3 =
+                // |P3-P2|) túlcsordulhat Infinity-re. A "Arány az 1.
+                // hullámhoz" sorban a `.toFixed(2)` Infinity esetén szó
+                // szerint "Infinity" SZÖVEGET adna vissza (nem "∞"
+                // szimbólumot), és a len3-ra épülő lenti 4. hullám
+                // retracement-célárak is végtelenné válnának — ugyanazt a
+                // "—" fallback-konvenciót követjük, mint amit ez a kalkulátor
+                // a 2./4. hullám visszahúzódás-aránynál (retrace2/retrace4)
+                // már korábban bevezetett.
                 const ratio3to1 = len3 / len1;
 
                 html += `<div class="glass-card rounded-xl p-3 mb-3">`;
                 html += `<p class="text-[10px] font-bold text-sky-400 mb-1">3. hullám elemzés</p>`;
                 html += row('3. hullám hossza', fmt(len3));
-                html += row('Arány az 1. hullámhoz', '×' + ratio3to1.toFixed(2));
+                html += row('Arány az 1. hullámhoz', Number.isFinite(ratio3to1) ? '×' + ratio3to1.toFixed(2) : '—');
                 html += `</div>`;
 
                 const fracs4 = [0.236, 0.382, 0.5];
@@ -40315,7 +40381,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
-            const fmtBps = (pct) => `${(pct * 100).toFixed(2)} bps`;
+            // JAVÍTÁS (audit — két-mezős kombinált extrém-érték sweep, ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál): a fenti
+            // "every(Number.isFinite)" ellenőrzés a blendedRatePct/takerFeePct
+            // ÉRTÉKÉT nézi, de maga az fmtBps "pct × 100" szorzása (a %-ot
+            // bázispontra váltva) EZT a véges, de rendkívül nagy (pl. ~4e307)
+            // értéket is túlcsordíthatja Infinity-re, amit a sablonsztring
+            // szó szerint "Infinity bps"-ként jelenítene meg.
+            const fmtBps = (pct) => {
+                const bps = pct * 100;
+                return Number.isFinite(bps) ? `${bps.toFixed(2)} bps` : '—';
+            };
 
             let extraSavingsNote;
             if (makerFeePct < takerFeePct) {
