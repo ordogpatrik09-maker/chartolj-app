@@ -1,0 +1,917 @@
+[
+ {
+  "slug": "stop-loss",
+  "t": [
+   "Mi az a stop-loss, és hogyan használd?",
+   "What is a stop-loss and how do you use it?",
+   "Was ist ein Stop-Loss und wie nutzt du ihn?"
+  ],
+  "d": "A stop-loss megbízás előre meghatározott árszinten zárja a pozíciót, hogy a veszteség ne nőjön tovább.",
+  "b": [
+   [
+    "p",
+    "A stop-loss egy előre megadott árszint, amelynél a pozíciót automatikusan zárják. Célja, hogy egy rossz döntés vesztesége korlátozott maradjon, és ne a hangulatod döntsön a kilépésről."
+   ],
+   [
+    "h",
+    "Hova tedd?"
+   ],
+   [
+    "p",
+    "A stopot ne a „kényelmes veszteségedhez”, hanem a piachoz igazítsd: olyan szintre, ahol az eredeti elképzelésed érvényét veszti (például egy támasz alá vagy egy kitörési szint mögé). Ha a stop túl közel van, a szokásos ármozgás is kiüti."
+   ],
+   [
+    "h",
+    "Kapcsolat a pozíciómérettel"
+   ],
+   [
+    "p",
+    "Először a stop távolságát határozd meg, és csak utána számold ki a pozícióméretet úgy, hogy a stop elérésekor a veszteség a tervezett kockázat (például a számla 1%-a) legyen. Fordítva nem működik: a méretet nem érdemes a stophoz illeszteni."
+   ],
+   [
+    "h",
+    "Mire figyelj?"
+   ],
+   [
+    "ul",
+    [
+     "Gyors piacon az ár átugorhatja a stopot, ezért a tényleges veszteség nagyobb lehet a tervezettnél (csúszás, gap).",
+     "Ne told hátrébb a stopot veszteség közben, mert ez épp a védelmet számolja fel.",
+     "Szimulált környezetben a végrehajtás egyszerűsített, valós piacon eltérhet."
+    ]
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "A stop-loss is a predefined price level at which a position is closed automatically. Its purpose is to keep the loss from a wrong decision limited, so your mood does not decide when you exit."
+   ],
+   [
+    "h",
+    "Where to place it"
+   ],
+   [
+    "p",
+    "Do not set the stop at a “comfortable loss”; align it with the market: at a level where your original idea is no longer valid (for example below support or behind a breakout level). If the stop is too tight, ordinary price movement will trigger it."
+   ],
+   [
+    "h",
+    "Link to position size"
+   ],
+   [
+    "p",
+    "Define the stop distance first, and only then calculate the position size so that the loss at the stop equals the planned risk (for example 1% of the account). It does not work the other way round: do not fit the size to the stop."
+   ],
+   [
+    "h",
+    "What to watch out for"
+   ],
+   [
+    "ul",
+    [
+     "In a fast market the price can jump over the stop, so the actual loss can exceed the planned one (slippage, gaps).",
+     "Do not move the stop further away while in a loss; that removes the very protection it provides.",
+     "Execution in a simulated environment is simplified and can differ in real markets."
+    ]
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Ein Stop-Loss ist ein vorab festgelegtes Preisniveau, bei dem eine Position automatisch geschlossen wird. Sein Zweck ist es, den Verlust einer falschen Entscheidung zu begrenzen, damit nicht deine Stimmung über den Ausstieg entscheidet."
+   ],
+   [
+    "h",
+    "Wo setzt du ihn?"
+   ],
+   [
+    "p",
+    "Setze den Stop nicht auf einen „bequemen Verlust“, sondern richte ihn am Markt aus: an einem Niveau, bei dem deine ursprüngliche Idee ungültig wird (z. B. unter einer Unterstützung oder hinter einem Ausbruchsniveau). Ist der Stop zu eng, löst ihn schon die übliche Kursbewegung aus."
+   ],
+   [
+    "h",
+    "Zusammenhang mit der Positionsgröße"
+   ],
+   [
+    "p",
+    "Lege zuerst den Stop-Abstand fest und berechne erst danach die Positionsgröße so, dass der Verlust beim Stop dem geplanten Risiko entspricht (z. B. 1 % des Kontos). Umgekehrt funktioniert es nicht: Passe die Größe nicht dem Stop an."
+   ],
+   [
+    "h",
+    "Worauf du achten solltest"
+   ],
+   [
+    "ul",
+    [
+     "In einem schnellen Markt kann der Kurs den Stop überspringen, daher kann der tatsächliche Verlust höher sein als geplant (Slippage, Gaps).",
+     "Verschiebe den Stop nicht weiter weg, während du im Verlust bist; das hebt genau den Schutz auf.",
+     "Die Ausführung in einer simulierten Umgebung ist vereinfacht und kann am echten Markt abweichen."
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "poziciomeret",
+  "t": [
+   "Hogyan számold ki a pozícióméretet?",
+   "How to calculate position size",
+   "So berechnest du die Positionsgröße"
+  ],
+  "d": "A pozícióméret a kockázati összeg és az egy egységre jutó stop-távolság hányadosa.",
+  "b": [
+   [
+    "p",
+    "A pozícióméret azt mondja meg, mekkora tételt nyiss ahhoz, hogy a stop elérésekor a veszteséged pontosan a tervezett kockázat legyen."
+   ],
+   [
+    "h",
+    "A képlet"
+   ],
+   [
+    "p",
+    "Kockázati összeg = számlaméret × kockázat%. Pozícióméret (egység) = kockázati összeg ÷ |belépő ár − stop ár|."
+   ],
+   [
+    "h",
+    "Példa"
+   ],
+   [
+    "p",
+    "Számla: 10 000, kockázat: 1%, így a kockázati összeg 100. Belépő ár: 100, stop: 95, a távolság 5. A pozícióméret 100 ÷ 5 = 20 egység, névértéke 20 × 100 = 2 000."
+   ],
+   [
+    "h",
+    "Tanulság"
+   ],
+   [
+    "p",
+    "Ugyanaz a 100-as kockázat mellett szélesebb stophoz kisebb méret tartozik, szűkebbhez nagyobb. A tőkeáttétel ezt nem változtatja: csak a szükséges fedezetet (margint) csökkenti, a kockázat összegét nem."
+   ],
+   [
+    "p",
+    "A Chartolj! eszköztárában a pozícióméret-kalkulátor ezt számolja ki helyetted."
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "Position size tells you how large a trade to open so that the loss at your stop equals exactly the planned risk."
+   ],
+   [
+    "h",
+    "The formula"
+   ],
+   [
+    "p",
+    "Risk amount = account size × risk %. Position size (units) = risk amount ÷ |entry price − stop price|."
+   ],
+   [
+    "h",
+    "Example"
+   ],
+   [
+    "p",
+    "Account: 10,000, risk: 1%, so the risk amount is 100. Entry price: 100, stop: 95, distance 5. Position size is 100 ÷ 5 = 20 units, with a notional value of 20 × 100 = 2,000."
+   ],
+   [
+    "h",
+    "Takeaway"
+   ],
+   [
+    "p",
+    "For the same risk of 100, a wider stop means a smaller size and a tighter stop a larger one. Leverage does not change this: it only reduces the required margin, not the risk amount."
+   ],
+   [
+    "p",
+    "The position size calculator in the Chartolj! toolkit does this calculation for you."
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Die Positionsgröße sagt dir, wie groß ein Trade sein muss, damit der Verlust beim Stop genau dem geplanten Risiko entspricht."
+   ],
+   [
+    "h",
+    "Die Formel"
+   ],
+   [
+    "p",
+    "Risikobetrag = Kontogröße × Risiko %. Positionsgröße (Einheiten) = Risikobetrag ÷ |Einstiegskurs − Stop-Kurs|."
+   ],
+   [
+    "h",
+    "Beispiel"
+   ],
+   [
+    "p",
+    "Konto: 10.000, Risiko: 1 %, also beträgt der Risikobetrag 100. Einstiegskurs: 100, Stop: 95, Abstand 5. Die Positionsgröße ist 100 ÷ 5 = 20 Einheiten, der Nominalwert 20 × 100 = 2.000."
+   ],
+   [
+    "h",
+    "Fazit"
+   ],
+   [
+    "p",
+    "Bei gleichem Risiko von 100 gehört zu einem weiteren Stop eine kleinere Größe, zu einem engeren eine größere. Der Hebel ändert daran nichts: Er senkt nur die benötigte Margin, nicht den Risikobetrag."
+   ],
+   [
+    "p",
+    "Der Positionsgrößen-Rechner im Chartolj!-Werkzeugkasten berechnet das für dich."
+   ]
+  ]
+ },
+ {
+  "slug": "tokeattetel",
+  "t": [
+   "Mi az a tőkeáttétel, és miért kockázatos?",
+   "What is leverage and why is it risky?",
+   "Was ist Hebel und warum ist er riskant?"
+  ],
+  "d": "A tőkeáttétel kisebb fedezettel nagyobb pozíciót tesz lehetővé, a nyereséget és a veszteséget is felnagyítva.",
+  "b": [
+   [
+    "p",
+    "A tőkeáttétel (leverage) lehetővé teszi, hogy a saját tőkénél nagyobb pozíciót nyiss. 10x áttétellel 1 000 egység fedezet mellett 10 000 egység értékű pozíció nyitható."
+   ],
+   [
+    "h",
+    "Kétélű fegyver"
+   ],
+   [
+    "p",
+    "A nyereség és a veszteség is a teljes pozícióméret után keletkezik. 10x áttétel mellett a piac 10%-os kedvezőtlen mozgása a fedezet teljes elvesztését jelentheti, ezért a kényszerzárási (likvidációs) szint közel kerülhet."
+   ],
+   [
+    "h",
+    "Mire használd?"
+   ],
+   [
+    "p",
+    "Az áttétel nem a kockázatot, hanem a szükséges fedezetet határozza meg. A kockázatot a stop és a pozícióméret szabja meg. Kezdőként alacsony áttétellel és mindig stoppal érdemes gyakorolni."
+   ],
+   [
+    "ul",
+    [
+     "Számold ki előre a becsült likvidációs szintet.",
+     "Ne használd ki a maximális áttételt.",
+     "Vedd figyelembe a díjakat és a finanszírozási költségeket."
+    ]
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "Leverage lets you open a position larger than your own capital. With 10x leverage, a margin of 1,000 units allows a position worth 10,000 units."
+   ],
+   [
+    "h",
+    "A double-edged sword"
+   ],
+   [
+    "p",
+    "Profit and loss both arise on the full position size. With 10x leverage, a 10% adverse market move can mean losing the entire margin, so the forced-closure (liquidation) level can be close."
+   ],
+   [
+    "h",
+    "What to use it for"
+   ],
+   [
+    "p",
+    "Leverage determines the required margin, not the risk. Risk is set by the stop and the position size. As a beginner, practise with low leverage and always with a stop."
+   ],
+   [
+    "ul",
+    [
+     "Calculate the estimated liquidation level in advance.",
+     "Do not use the maximum leverage.",
+     "Take fees and financing costs into account."
+    ]
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Der Hebel (Leverage) ermöglicht dir, eine Position zu eröffnen, die größer ist als dein Eigenkapital. Mit 10x Hebel erlaubt eine Margin von 1.000 Einheiten eine Position im Wert von 10.000 Einheiten."
+   ],
+   [
+    "h",
+    "Ein zweischneidiges Schwert"
+   ],
+   [
+    "p",
+    "Gewinn und Verlust entstehen auf die gesamte Positionsgröße. Bei 10x Hebel kann eine ungünstige Marktbewegung von 10 % den Verlust der gesamten Margin bedeuten, daher kann das Zwangsschließungsniveau (Liquidation) nah liegen."
+   ],
+   [
+    "h",
+    "Wofür du ihn nutzt"
+   ],
+   [
+    "p",
+    "Der Hebel bestimmt die benötigte Margin, nicht das Risiko. Das Risiko legen Stop und Positionsgröße fest. Übe als Einsteiger mit niedrigem Hebel und immer mit Stop."
+   ],
+   [
+    "ul",
+    [
+     "Berechne das geschätzte Liquidationsniveau im Voraus.",
+     "Nutze nicht den maximalen Hebel.",
+     "Berücksichtige Gebühren und Finanzierungskosten."
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "kockazat-hozam",
+  "t": [
+   "A kockázat/hozam arány és a nyerési ráta",
+   "Risk/reward ratio and win rate",
+   "Chance-Risiko-Verhältnis und Trefferquote"
+  ],
+  "d": "A kockázat/hozam arány azt mutatja, hány egység nyereség jut egy egység kockázatra.",
+  "b": [
+   [
+    "p",
+    "A kockázat/hozam arány (R:R) a potenciális nyereség és a potenciális veszteség hányadosa. Ha 50-et kockáztatsz 150 lehetséges nyereségért, az arány 1:3."
+   ],
+   [
+    "h",
+    "Mennyi találat kell?"
+   ],
+   [
+    "p",
+    "A nullszaldós nyerési ráta = 1 ÷ (1 + R), ahol R a nyereség/veszteség arány. 1:1 mellett ez 50%, 1:2 mellett kb. 33,3%, 1:3 mellett 25%. Díjak és csúszás nélkül számolva."
+   ],
+   [
+    "h",
+    "Elvárható érték"
+   ],
+   [
+    "p",
+    "Az elvárt eredmény egy ügyletre: nyerési ráta × átlagos nyereség − (1 − nyerési ráta) × átlagos veszteség. Csak akkor van pozitív kimenetel, ha ez a szám nullánál nagyobb, és ehhez a múltbeli adatok megbízhatóak."
+   ],
+   [
+    "p",
+    "Fontos: a magas R:R önmagában nem garancia. Ha a kitűzött célt ritkán éri el az ár, a tényleges nyerési ráta alacsony lesz."
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "The risk/reward ratio (R:R) is the potential profit divided by the potential loss. If you risk 50 for a possible 150 profit, the ratio is 1:3."
+   ],
+   [
+    "h",
+    "How many wins do you need?"
+   ],
+   [
+    "p",
+    "The break-even win rate = 1 ÷ (1 + R), where R is the profit/loss ratio. At 1:1 this is 50%, at 1:2 about 33.3%, at 1:3 25%. Calculated without fees and slippage."
+   ],
+   [
+    "h",
+    "Expected value"
+   ],
+   [
+    "p",
+    "The expected result per trade: win rate × average profit − (1 − win rate) × average loss. The outcome is only positive if this number is above zero, and that requires reliable historical data."
+   ],
+   [
+    "p",
+    "Important: a high R:R is no guarantee on its own. If price rarely reaches your target, the actual win rate will be low."
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Das Chance-Risiko-Verhältnis (R:R) ist der mögliche Gewinn geteilt durch den möglichen Verlust. Riskierst du 50 für einen möglichen Gewinn von 150, beträgt das Verhältnis 1:3."
+   ],
+   [
+    "h",
+    "Wie viele Treffer brauchst du?"
+   ],
+   [
+    "p",
+    "Die Break-even-Trefferquote = 1 ÷ (1 + R), wobei R das Gewinn/Verlust-Verhältnis ist. Bei 1:1 sind das 50 %, bei 1:2 etwa 33,3 %, bei 1:3 25 %. Berechnet ohne Gebühren und Slippage."
+   ],
+   [
+    "h",
+    "Erwartungswert"
+   ],
+   [
+    "p",
+    "Das erwartete Ergebnis pro Trade: Trefferquote × durchschnittlicher Gewinn − (1 − Trefferquote) × durchschnittlicher Verlust. Das Ergebnis ist nur positiv, wenn diese Zahl über null liegt, und dafür braucht es verlässliche historische Daten."
+   ],
+   [
+    "p",
+    "Wichtig: Ein hohes R:R allein ist keine Garantie. Erreicht der Kurs dein Ziel selten, bleibt die tatsächliche Trefferquote niedrig."
+   ]
+  ]
+ },
+ {
+  "slug": "szimulalt-kereskedes",
+  "t": [
+   "Mire jó a szimulált kereskedés, és mik a korlátai?",
+   "What simulated trading is good for, and its limits",
+   "Wofür simulierter Handel gut ist und wo seine Grenzen liegen"
+  ],
+  "d": "A szimulált kereskedés kockázatmentesen gyakoroltatja a folyamatot, de a valós piac pszichológiáját és végrehajtását nem adja vissza.",
+  "b": [
+   [
+    "p",
+    "A szimulált (demó) kereskedés virtuális egyenleggel működik. Segít megérteni a felületet, a megbízástípusokat és a kockázatkezelés mechanikáját anélkül, hogy valódi pénzt veszélyeztetnél."
+   ],
+   [
+    "h",
+    "Előnyök"
+   ],
+   [
+    "ul",
+    [
+     "Biztonságos környezetben próbálhatod ki a stratégiádat.",
+     "Gyorsan tanulsz a hibáidból, napló vezetésével még gyorsabban.",
+     "Megismered az indikátorokat és a kalkulátorokat."
+    ]
+   ],
+   [
+    "h",
+    "Korlátok"
+   ],
+   [
+    "ul",
+    [
+     "Nincs valódi tét, ezért az érzelmi nyomás hiányzik.",
+     "A végrehajtás egyszerűsített: csúszás, részleges teljesülés, likviditás eltérhet.",
+     "A jó szimulált eredmény nem jelent garanciát valós eredményre."
+    ]
+   ],
+   [
+    "p",
+    "A Chartolj! szimulált kereskedése oktatási célú. Nem bróker, és nem ad befektetési tanácsot."
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "Simulated (demo) trading works with a virtual balance. It helps you understand the interface, order types and the mechanics of risk management without risking real money."
+   ],
+   [
+    "h",
+    "Advantages"
+   ],
+   [
+    "ul",
+    [
+     "You can test your strategy in a safe environment.",
+     "You learn from mistakes quickly, even faster with a trading journal.",
+     "You get to know indicators and calculators."
+    ]
+   ],
+   [
+    "h",
+    "Limits"
+   ],
+   [
+    "ul",
+    [
+     "There is no real stake, so the emotional pressure is missing.",
+     "Execution is simplified: slippage, partial fills and liquidity can differ.",
+     "A good simulated result does not guarantee a real one."
+    ]
+   ],
+   [
+    "p",
+    "Chartolj! simulated trading is for education. It is not a broker and does not give investment advice."
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Simulierter (Demo-)Handel arbeitet mit einem virtuellen Guthaben. Er hilft dir, die Oberfläche, Ordertypen und die Mechanik des Risikomanagements zu verstehen, ohne echtes Geld zu riskieren."
+   ],
+   [
+    "h",
+    "Vorteile"
+   ],
+   [
+    "ul",
+    [
+     "Du kannst deine Strategie in einer sicheren Umgebung testen.",
+     "Du lernst schnell aus Fehlern, mit einem Handelsjournal noch schneller.",
+     "Du lernst Indikatoren und Rechner kennen."
+    ]
+   ],
+   [
+    "h",
+    "Grenzen"
+   ],
+   [
+    "ul",
+    [
+     "Es gibt keinen echten Einsatz, daher fehlt der emotionale Druck.",
+     "Die Ausführung ist vereinfacht: Slippage, Teilausführung und Liquidität können abweichen.",
+     "Ein gutes simuliertes Ergebnis garantiert kein echtes."
+    ]
+   ],
+   [
+    "p",
+    "Der simulierte Handel von Chartolj! dient der Bildung. Er ist kein Broker und gibt keine Anlageberatung."
+   ]
+  ]
+ },
+ {
+  "slug": "kelly",
+  "t": [
+   "A Kelly-kritérium: mekkora tétet vállalj?",
+   "The Kelly criterion: how much should you stake?",
+   "Das Kelly-Kriterium: Wie hoch sollte dein Einsatz sein?"
+  ],
+  "d": "A Kelly-képlet a nyerési valószínűségből és a nyereség/veszteség arányból számol optimális tétarányt.",
+  "b": [
+   [
+    "p",
+    "A Kelly-kritérium egy matematikai módszer arra, hogy a számla mekkora részét tedd egy ügyletre, ha ismered a nyerési valószínűséget és a nyereség/veszteség arányt."
+   ],
+   [
+    "h",
+    "A képlet"
+   ],
+   [
+    "p",
+    "f = W − (1 − W) ÷ R, ahol W a nyerési valószínűség, R pedig az átlagos nyereség és az átlagos veszteség hányadosa."
+   ],
+   [
+    "h",
+    "Példa"
+   ],
+   [
+    "p",
+    "Ha W = 60% és R = 1,5, akkor f = 0,6 − 0,4 ÷ 1,5 = 0,333, vagyis a számla 33,3%-a. A gyakorlatban ennek csak a töredékét szokás használni: a fél-Kelly 16,7%."
+   ],
+   [
+    "h",
+    "Mire figyelj?"
+   ],
+   [
+    "ul",
+    [
+     "A képlet pontos bemeneteket feltételez, a valós becslések bizonytalanok.",
+     "A teljes Kelly nagy ingadozással jár, ezért óvatosabb a törtrész használata.",
+     "Ha az eredmény negatív, a képlet szerint nincs előnyöd, és nem érdemes kereskedni."
+    ]
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "The Kelly criterion is a mathematical method for deciding what fraction of your account to put into a trade, if you know the win probability and the profit/loss ratio."
+   ],
+   [
+    "h",
+    "The formula"
+   ],
+   [
+    "p",
+    "f = W − (1 − W) ÷ R, where W is the win probability and R is the ratio of average profit to average loss."
+   ],
+   [
+    "h",
+    "Example"
+   ],
+   [
+    "p",
+    "With W = 60% and R = 1.5, f = 0.6 − 0.4 ÷ 1.5 = 0.333, i.e. 33.3% of the account. In practice only a fraction of this is used: half-Kelly is 16.7%."
+   ],
+   [
+    "h",
+    "What to watch out for"
+   ],
+   [
+    "ul",
+    [
+     "The formula assumes exact inputs, while real estimates are uncertain.",
+     "Full Kelly comes with large swings, so using a fraction is more cautious.",
+     "If the result is negative, the formula says you have no edge and should not trade."
+    ]
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Das Kelly-Kriterium ist eine mathematische Methode, um zu bestimmen, welchen Anteil deines Kontos du in einen Trade steckst, wenn du die Gewinnwahrscheinlichkeit und das Gewinn/Verlust-Verhältnis kennst."
+   ],
+   [
+    "h",
+    "Die Formel"
+   ],
+   [
+    "p",
+    "f = W − (1 − W) ÷ R, wobei W die Gewinnwahrscheinlichkeit und R das Verhältnis von durchschnittlichem Gewinn zu durchschnittlichem Verlust ist."
+   ],
+   [
+    "h",
+    "Beispiel"
+   ],
+   [
+    "p",
+    "Bei W = 60 % und R = 1,5 ist f = 0,6 − 0,4 ÷ 1,5 = 0,333, also 33,3 % des Kontos. In der Praxis nutzt man nur einen Bruchteil davon: Halb-Kelly sind 16,7 %."
+   ],
+   [
+    "h",
+    "Worauf du achten solltest"
+   ],
+   [
+    "ul",
+    [
+     "Die Formel setzt exakte Eingaben voraus, echte Schätzungen sind jedoch unsicher.",
+     "Volles Kelly bringt große Schwankungen mit sich, daher ist ein Bruchteil vorsichtiger.",
+     "Ist das Ergebnis negativ, hast du laut Formel keinen Vorteil und solltest nicht handeln."
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "drawdown",
+  "t": [
+   "Drawdown: miért nehéz behozni a veszteséget?",
+   "Drawdown: why is a loss hard to recover?",
+   "Drawdown: Warum ist ein Verlust schwer aufzuholen?"
+  ],
+  "d": "Az x% veszteség visszaszerzéséhez x ÷ (1 − x) nyereség kell, ami nagyobb veszteségnél gyorsan növekszik.",
+  "b": [
+   [
+    "p",
+    "A drawdown a számlaérték csúcsról mért visszaesése. A veszteség visszaszerzéséhez mindig nagyobb százalékos nyereség kell, mint amekkorát elvesztettél, mert a nyereség már a lecsökkent összegre számolódik."
+   ],
+   [
+    "h",
+    "A képlet"
+   ],
+   [
+    "p",
+    "Szükséges nyereség = d ÷ (1 − d), ahol d a veszteség tört formában."
+   ],
+   [
+    "h",
+    "Néhány érték"
+   ],
+   [
+    "ul",
+    [
+     "10% veszteség után 11,1% nyereség kell.",
+     "20% veszteség után 25% nyereség kell.",
+     "50% veszteség után 100% nyereség kell."
+    ]
+   ],
+   [
+    "h",
+    "Tanulság"
+   ],
+   [
+    "p",
+    "A mély veszteség aránytalanul nehezen hozható vissza, ezért a kockázatkezelés célja elsősorban a nagy drawdown elkerülése, nem a nyereség maximalizálása."
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "Drawdown is the decline in account value from a peak. Recovering a loss always requires a larger percentage gain than the loss itself, because the gain is calculated on the reduced amount."
+   ],
+   [
+    "h",
+    "The formula"
+   ],
+   [
+    "p",
+    "Required gain = d ÷ (1 − d), where d is the loss as a fraction."
+   ],
+   [
+    "h",
+    "A few values"
+   ],
+   [
+    "ul",
+    [
+     "After a 10% loss you need an 11.1% gain.",
+     "After a 20% loss you need a 25% gain.",
+     "After a 50% loss you need a 100% gain."
+    ]
+   ],
+   [
+    "h",
+    "Takeaway"
+   ],
+   [
+    "p",
+    "A deep loss is disproportionately hard to recover, so the main goal of risk management is avoiding large drawdowns, not maximising profit."
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Der Drawdown ist der Rückgang des Kontowerts vom Höchststand. Um einen Verlust aufzuholen, braucht es immer einen größeren prozentualen Gewinn als den Verlust selbst, weil der Gewinn auf den verringerten Betrag berechnet wird."
+   ],
+   [
+    "h",
+    "Die Formel"
+   ],
+   [
+    "p",
+    "Benötigter Gewinn = d ÷ (1 − d), wobei d der Verlust als Bruchteil ist."
+   ],
+   [
+    "h",
+    "Einige Werte"
+   ],
+   [
+    "ul",
+    [
+     "Nach 10 % Verlust braucht es 11,1 % Gewinn.",
+     "Nach 20 % Verlust braucht es 25 % Gewinn.",
+     "Nach 50 % Verlust braucht es 100 % Gewinn."
+    ]
+   ],
+   [
+    "h",
+    "Fazit"
+   ],
+   [
+    "p",
+    "Ein tiefer Verlust ist überproportional schwer aufzuholen, daher ist das Hauptziel des Risikomanagements, große Drawdowns zu vermeiden, nicht den Gewinn zu maximieren."
+   ]
+  ]
+ },
+ {
+  "slug": "rsi",
+  "t": [
+   "Az RSI indikátor alapjai",
+   "RSI indicator basics",
+   "Grundlagen des RSI-Indikators"
+  ],
+  "d": "Az RSI 0 és 100 között méri a legutóbbi emelkedések és esések arányát, a szokásos beállítás 14 periódus.",
+  "b": [
+   [
+    "p",
+    "A relatív erősségi index (RSI) egy lendületet mérő indikátor, amely 0 és 100 közötti értéket ad. Az általános beállítás 14 periódus."
+   ],
+   [
+    "h",
+    "A számítás lényege"
+   ],
+   [
+    "p",
+    "RSI = 100 − 100 ÷ (1 + RS), ahol RS a periódusok átlagos emelkedésének és átlagos esésének hányadosa (Wilder-féle simítással)."
+   ],
+   [
+    "h",
+    "Hogyan értelmezik?"
+   ],
+   [
+    "ul",
+    [
+     "70 felett gyakran „túlvett” állapotról beszélnek, 30 alatt „túladottról”.",
+     "Ezek megegyezések, nem előrejelzések: erős trendben az RSI hosszan maradhat szélsőséges zónában.",
+     "Önmagában ritkán elég, érdemes trenddel és kockázatkezeléssel együtt használni."
+    ]
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "The Relative Strength Index (RSI) is a momentum indicator that returns a value between 0 and 100. The common setting is 14 periods."
+   ],
+   [
+    "h",
+    "The idea behind the calculation"
+   ],
+   [
+    "p",
+    "RSI = 100 − 100 ÷ (1 + RS), where RS is the ratio of the average gain to the average loss over the periods (with Wilder smoothing)."
+   ],
+   [
+    "h",
+    "How is it interpreted?"
+   ],
+   [
+    "ul",
+    [
+     "Above 70 people often speak of “overbought”, below 30 of “oversold”.",
+     "These are conventions, not forecasts: in a strong trend the RSI can stay in an extreme zone for a long time.",
+     "It is rarely enough on its own; use it together with trend and risk management."
+    ]
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Der Relative-Stärke-Index (RSI) ist ein Momentum-Indikator mit einem Wert zwischen 0 und 100. Die übliche Einstellung sind 14 Perioden."
+   ],
+   [
+    "h",
+    "Die Idee hinter der Berechnung"
+   ],
+   [
+    "p",
+    "RSI = 100 − 100 ÷ (1 + RS), wobei RS das Verhältnis des durchschnittlichen Anstiegs zum durchschnittlichen Rückgang über die Perioden ist (mit Wilder-Glättung)."
+   ],
+   [
+    "h",
+    "Wie wird er gedeutet?"
+   ],
+   [
+    "ul",
+    [
+     "Über 70 spricht man oft von „überkauft“, unter 30 von „überverkauft“.",
+     "Das sind Konventionen, keine Prognosen: In einem starken Trend kann der RSI lange in einer Extremzone bleiben.",
+     "Er reicht selten allein; nutze ihn zusammen mit Trend und Risikomanagement."
+    ]
+   ]
+  ]
+ },
+ {
+  "slug": "mozgoatlag",
+  "t": [
+   "Mozgóátlagok: SMA és EMA",
+   "Moving averages: SMA and EMA",
+   "Gleitende Durchschnitte: SMA und EMA"
+  ],
+  "d": "Az egyszerű és az exponenciális mozgóátlag az árak átlagát simítja, az EMA a friss adatokat jobban súlyozza.",
+  "b": [
+   [
+    "p",
+    "A mozgóátlag az utolsó n periódus záróárainak átlaga, amely kisimítja az ármozgást és megmutatja a trend irányát."
+   ],
+   [
+    "h",
+    "SMA és EMA"
+   ],
+   [
+    "p",
+    "Az egyszerű mozgóátlag (SMA) minden periódust egyformán súlyoz. Az exponenciális (EMA) a frissebb árakat jobban súlyozza: az együtthatója 2 ÷ (n + 1), ezért gyorsabban reagál."
+   ],
+   [
+    "h",
+    "Használat"
+   ],
+   [
+    "ul",
+    [
+     "A gyorsabb átlag a lassabb fölé kerülése gyakran emelkedő lendületet jelez, a fordítottja csökkenőt.",
+     "Az átlagok késnek, mert múltbeli adatokból számolnak.",
+     "Oldalazó piacon sok téves jelzést adnak."
+    ]
+   ]
+  ],
+  "b_en": [
+   [
+    "p",
+    "A moving average is the average of the closing prices of the last n periods, which smooths price movement and shows the direction of the trend."
+   ],
+   [
+    "h",
+    "SMA and EMA"
+   ],
+   [
+    "p",
+    "The simple moving average (SMA) weights every period equally. The exponential one (EMA) weights recent prices more: its multiplier is 2 ÷ (n + 1), so it reacts faster."
+   ],
+   [
+    "h",
+    "Use"
+   ],
+   [
+    "ul",
+    [
+     "A faster average crossing above a slower one often signals rising momentum, and the reverse signals falling momentum.",
+     "Averages lag because they are calculated from past data.",
+     "In a sideways market they give many false signals."
+    ]
+   ]
+  ],
+  "b_de": [
+   [
+    "p",
+    "Ein gleitender Durchschnitt ist der Durchschnitt der Schlusskurse der letzten n Perioden; er glättet die Kursbewegung und zeigt die Trendrichtung."
+   ],
+   [
+    "h",
+    "SMA und EMA"
+   ],
+   [
+    "p",
+    "Der einfache gleitende Durchschnitt (SMA) gewichtet jede Periode gleich. Der exponentielle (EMA) gewichtet aktuelle Kurse stärker: Sein Faktor ist 2 ÷ (n + 1), daher reagiert er schneller."
+   ],
+   [
+    "h",
+    "Anwendung"
+   ],
+   [
+    "ul",
+    [
+     "Kreuzt ein schnellerer Durchschnitt einen langsameren nach oben, deutet das oft auf steigendes Momentum hin, umgekehrt auf fallendes.",
+     "Durchschnitte hinken hinterher, weil sie aus vergangenen Daten berechnet werden.",
+     "In einem Seitwärtsmarkt liefern sie viele Fehlsignale."
+    ]
+   ]
+  ]
+ }
+]

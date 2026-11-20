@@ -75,18 +75,28 @@ check('academy_modules_count', () => {
     return { moduleCount: data.length };
 });
 
-// 3) GLOSSARY_TERMS — 96 szószedet-tétel.
+// 3) GLOSSARY_TERMS — 94 szószedet-tétel.
 // JAVÍTÁS (2026-11-06): korábban 98 tétel volt, de ebből 2 pár valódi
 // duplikátum ("Kelly Kritérium"/"Kelly-kritérium" és kétszer "Profit
 // Factor", eltérő, részben inkonzisztens definíciókkal) — ezeket egy-egy
 // összevont, teljesebb definícióra egyesítettük, ezért a várt szám
 // szándékosan 98-ról 96-ra csökkent (nem regresszió).
+// JAVÍTÁS (2026-11-12): a fenti tisztítás után is megmaradt még 2 pár
+// valódi duplikátum ("Revenge Trading (Bosszú-kereskedés)"/"Revenge
+// trading" és "Seed Phrase (Helyreállító Kifejezés)"/"Seed phrase") —
+// ezeket a normalizáló regex NEM kapta el, mert az egyik tag nevében
+// zárójeles magyar alcím volt, ami a két normalizált alakot
+// különbözővé tette, miközben a definíciók valójában ugyanazt a
+// fogalmat írták le kétszer. Ezeket is egy-egy összevont, teljesebb
+// definícióra egyesítettük (96→94, szintén nem regresszió), ÉS a
+// normalizálást kiterjesztettük a zárójeles rész levágására, hogy ez a
+// hibaosztály a jövőben automatikusan elkapható legyen.
 check('glossary_terms_count', () => {
     const src = extractBalanced(html, 'const GLOSSARY_TERMS = ', '[', ']');
     const data = new Function('return ' + src)();
     if (!Array.isArray(data)) throw new Error('GLOSSARY_TERMS nem tömb');
-    if (data.length !== 96) throw new Error(`Várt 96 szószedet-tétel, kapott ${data.length}`);
-    const terms = data.map(t => t.term.toLowerCase().replace(/[^a-z0-9áéíóöőúüű]+/g, ''));
+    if (data.length !== 94) throw new Error(`Várt 94 szószedet-tétel, kapott ${data.length}`);
+    const terms = data.map(t => t.term.toLowerCase().replace(/\([^)]*\)/g, '').replace(/[^a-z0-9áéíóöőúüű]+/g, ''));
     const dupes = terms.filter((t, i) => terms.indexOf(t) !== i);
     if (dupes.length > 0) throw new Error(`Duplikált szószedet-tétel(ek): ${[...new Set(dupes)].join(', ')}`);
     return { glossaryCount: data.length };
