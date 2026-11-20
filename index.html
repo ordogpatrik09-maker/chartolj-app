@@ -27366,11 +27366,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         function _renderDownsideStatsBlock(label, stats, accentClass) {
             const ratioText = stats.downsideRatio === null ? 'n/a (szórás = 0)' : `${stats.downsideRatio.toFixed(1)}%`;
+            // JAVÍTÁS: nagyon kis, nullára kerekedő negatív átlaghozamnál (pl.
+            // -0.000015%) a .toFixed(3) a "-0.000" string-et adná vissza —
+            // explicit -0 → +0 normalizálással kerüljük el ezt (ugyanaz a
+            // mintázat, mint a fmtPct3Signed()-ben a Bizonyossági Egyenérték
+            // Kalkulátorban, lásd 33eafa2). A szórás/downside deviation
+            // mezők négyzetgyökből jönnek, sosem negatívak, nem érintettek.
+            const meanRounded = Math.round(stats.mean * 1000) / 1000;
+            const meanSafe = meanRounded === 0 ? 0 : meanRounded;
             return `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-[11px]">
                     <div class="text-[10px] font-extrabold uppercase ${accentClass} mb-1">${label}</div>
                     <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${stats.n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Átlagos hozam:</span><span class="${stats.mean >= 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.mean >= 0 ? '+' : ''}${stats.mean.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos hozam:</span><span class="${meanSafe >= 0 ? 'text-neon-green' : 'text-neon-red'}">${meanSafe >= 0 ? '+' : ''}${meanSafe.toFixed(3)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Teljes szórás:</span><span class="text-white">${stats.stdDev.toFixed(3)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Downside deviation:</span><span class="font-extrabold ${accentClass}">${stats.downsideDeviation.toFixed(3)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">MAR alatti időszakok:</span><span class="text-white">${stats.downsidePeriods} / ${stats.n}</span></div>
