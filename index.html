@@ -36102,6 +36102,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — hiányzó OHLC-konzisztencia-validáció): a Magas/
+            // Alacsony mezőkre eddig nem volt szerkezeti ellenőrzés — egy érvénytelen
+            // gyertyánál (Magas < Nyitó/Záró, vagy Alacsony > Nyitó/Záró) a lenti
+            // `metrics()`-ben a tartomány (`rng`) és a test-% (`bodyPct`) fogalmilag
+            // értelmetlen (akár 100% fölötti) értéket adna, amely csendben,
+            // hibajelzés nélkül téves Ladder/Breakaway minta-felismerést okozna.
+            // Ugyanaz a hibaosztály, mint a Candle Pattern / Heikin-Ashi
+            // kalkulátoroknál már korábban javított "hiányzó Magas/Alacsony validáció".
+            const invalidLadderIdx = candles.findIndex(([o, h, l, c]) => h < Math.max(o, c) || l > Math.min(o, c));
+            if (invalidLadderIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidLadderIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
+                return;
+            }
+
             function metrics(ohlc) {
                 const [o, h, l, c] = ohlc;
                 const rng = (h - l) > 0 ? (h - l) : 1e-9;
@@ -36320,6 +36334,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // már javított mintával.
             if (candles.length < 1 || !Number.isFinite(numBins) || numBins < 2 || numBins > 200) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 1 gyertya (Magas,Alacsony,Volumen), és egy 2 és 200 közötti sávszám szükséges!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció): a Magas/
+            // Alacsony mezőkre eddig nem volt szerkezeti ellenőrzés — egy érvénytelen
+            // (Magas < Alacsony) gyertyánál a lenti sáv-átfedés ellenőrzés (`h > binLow
+            // && l < binHigh`) egy felcserélt, nem létező ártartományra osztaná szét a
+            // volument, csendben, hibajelzés nélkül torzítva a teljes profilt és a
+            // POC/Value Area kimenetet. Ugyanaz a hibaosztály, mint a Donchian Csatorna
+            // / Heikin-Ashi kalkulátoroknál már korábban javított "hiányzó Magas/
+            // Alacsony validáció".
+            const invalidVpIdx = candles.findIndex(([h, l]) => h <= 0 || l <= 0 || h < l);
+            if (invalidVpIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidVpIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
@@ -36555,6 +36583,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (candles.length < 3) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Legalább 3 gyertya szükséges (Nyitó,Magas,Alacsony,Záró) az FVG kereséséhez!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó OHLC-konzisztencia-validáció): a Magas/
+            // Alacsony mezőkre eddig nem volt szerkezeti ellenőrzés — egy érvénytelen
+            // gyertyánál (Magas < Nyitó/Záró, vagy Alacsony > Nyitó/Záró) a lenti
+            // rés-felismerés (l3 > h1 / h3 < l1) egy valójában nem létező ártartomány-
+            // résből számolna FVG-t. Ugyanaz a hibaosztály, mint a Candle Pattern /
+            // Heikin-Ashi kalkulátoroknál már korábban javított "hiányzó Magas/
+            // Alacsony validáció".
+            const invalidFvgIdx = candles.findIndex(([o, h, l, c]) => h < Math.max(o, c) || l > Math.min(o, c));
+            if (invalidFvgIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidFvgIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
                 return;
             }
 
@@ -38616,6 +38657,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (!period || period < 1 || candles.length < period + 6) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább (periódus + 6) érvényes gyertyát "Nyitó,Záró,Magas,Alacsony" formátumban, soronként egyet, és egy érvényes (legalább 1) SMA periódust!</div>`;
+                return;
+            }
+
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony bemenet-validáció): a Magas/
+            // Alacsony mezőkre eddig nem volt szerkezeti ellenőrzés — egy érvénytelen
+            // gyertyánál (Magas < Nyitó/Záró, vagy Alacsony > Nyitó/Záró) a denSeries
+            // (Magas-Alacsony alapú súlyozott tartomány-nevező) fogalmilag értelmetlen,
+            // akár negatív is lehet, ami az RVI előjelét megbízhatatlanná/félrevezetővé
+            // teszi. Ugyanaz a hibaosztály, mint a Candle Pattern / Heikin-Ashi
+            // kalkulátoroknál már korábban javított "hiányzó OHLC-konzisztencia-validáció".
+            const invalidRviIdx = candles.findIndex(c => c.high < Math.max(c.open, c.close) || c.low > Math.min(c.open, c.close));
+            if (invalidRviIdx !== -1) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidRviIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
                 return;
             }
 
