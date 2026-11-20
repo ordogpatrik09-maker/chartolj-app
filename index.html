@@ -25669,11 +25669,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Eddig felhasznált:</span><span class="text-neon-red">$${usedAmount.toLocaleString('en-US', {maximumFractionDigits: 2})} (${Math.min(usedPct, 999).toFixed(0)}%)</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Még rendelkezésre áll:</span><span class="font-bold ${remaining >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">$${remaining.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                     <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-1">
-                        <div class="h-full ${usedPct >= 100 ? 'bg-neon-red' : usedPct >= 70 ? 'bg-amber-400' : 'bg-neon-green'} transition-all" style="width:${Math.min(100, usedPct)}%"></div>
+                        <div class="h-full ${usedPct >= 100 ? 'bg-neon-red' : usedPct >= 70 ? 'bg-amber-400' : 'bg-neon-green'} transition-all" style="width:${Math.min(100, usedPct).toFixed(4)}%"></div>
                     </div>
                 </div>
                 ${statusHtml}
             `;
+            // JAVÍTÁS (egyedi-mezős extrém-érték audit — nyers tudományos jelölés
+            // szivárgása): egy rendkívül kicsi (pl. "1e-10" P&L-ből vagy "1e15"
+            // egyenlegből adódó) usedPct érték sablon-stringbe illesztve a JS
+            // `Number.prototype.toString()` ALAPÉRTELMEZETT viselkedése miatt
+            // nyers tudományos jelölésként (pl. "4.999999999999999e-10") jelent
+            // meg a progress bar `style="width:...%"` attribútumában — ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál, csak itt egy
+            // CSS-attribútumban, nem a látható szövegben. A `.toFixed(4)` mindig
+            // fix tizedesjegyes alakot ad (sosem exponenciálisat), ami emellett a
+            // sávot is pontosan a megjelenített (kerekített) %-kal egyezteti.
         }
 
         // ================= PIACI SZEKCIÓK ÓRÁJA (OKTATÁSI) =================
@@ -37486,7 +37496,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // túlcsordul, a számérték helyén most konzisztensen a fájlban
             // már bevált "—" jelenik meg, nem a `.toLocaleString()` által
             // visszaadott "∞"/"-∞" szimbólum.
-            const fmt = (v) => Number.isFinite(v) ? v.toLocaleString('hu-HU', { maximumFractionDigits: 4 }) : '—';
+            //
+            // JAVÍTÁS (egyedi-mezős extrém-érték audit — "-0" szivárgás): egy
+            // nullához rendkívül közeli (pl. "-1e-10"), de nem pontosan 0 P0-P5
+            // pont (vagy egy ilyenre kerekedő ár-projekció) a `maximumFractionDigits:
+            // 4`-es kerekítés UTÁN "-0"-ként jelenne meg (a `.toLocaleString()`
+            // megtartja a "-" előjelet negatív, de 4 tizedesre nullára kerekedő
+            // bemenetnél) — ugyanaz a hibaosztály, mint a korábban javított
+            // kalkulátoroknál. A meglévő, erre a célra bevezetett
+            // `zeroSafeRound()` segédfüggvényt alkalmazzuk itt is, a `fmt()`
+            // EGYETLEN közös pontján — így minden, ezen keresztül megjelenített
+            // érték (nem csak a P1 "Átfedési határ" sor) egységesen védett.
+            const fmt = (v) => Number.isFinite(v) ? zeroSafeRound(v, 4).toLocaleString('hu-HU', { maximumFractionDigits: 4 }) : '—';
             const row = (label, val, cls) => `
                 <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
                     <span class="text-slate-400">${label}:</span>
