@@ -16177,6 +16177,7 @@ Mean-reversion,2.5</textarea>
                 <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750">
                     <button id="lang-btn-hu" onclick="setLanguage('hu')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Magyar</button>
                     <button id="lang-btn-en" onclick="setLanguage('en')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">English</button>
+                    <button id="lang-btn-ro" onclick="setLanguage('ro')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Română</button>
                 </div>
             </div>
             <div class="glass-card rounded-xl p-3">
@@ -17438,6 +17439,35 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 greeting_morning_guest: 'Good morning!', greeting_morning_user: 'Good morning, {name}!',
                 greeting_day_guest: 'Good afternoon!', greeting_day_user: 'Good afternoon, {name}!',
                 greeting_evening_guest: 'Good evening!', greeting_evening_user: 'Good evening, {name}!'
+            },
+            ro: {
+                nav_home: 'Acasă', nav_trade: 'Tranzacționare', nav_academy: 'Academie',
+                nav_progress: 'Progres', nav_profile: 'Profil',
+                home_greeting_guest: 'Bun venit!', home_greeting_user: 'Bun venit, {name}!',
+                home_subtitle: 'Ești gata pentru următorul exercițiu?',
+                home_progress_label: 'Progresul tău', home_lessons_suffix: 'lecții',
+                home_quick_actions: 'Acțiuni rapide', home_action_trade: 'Tranzacție demo',
+                home_action_academy: 'Învață', home_action_progress: 'Progres',
+                home_market_overview: 'Listă de urmărire', home_market_simulated: '(date simulate)',
+                home_market_demo_label: 'Date DEMO',
+                progress_title: 'Progresul tău', progress_xp: 'XP', progress_coins: 'Monede',
+                progress_lessons: 'Lecții finalizate', progress_ranks: 'Ranguri obținute',
+                progress_ranks_missions: 'Ranguri, Misiuni & Teme', progress_badges: 'Insigne',
+                profile_title: 'Profil', profile_guest: 'Vizitator', profile_no_account: 'Neautentificat',
+                profile_login: 'Autentificare', profile_login_register: 'Autentificare / Înregistrare',
+                profile_logout: 'Deconectare', profile_premium: 'Chartolj Premium',
+                profile_diagnostics: 'Avansat / Diagnosticare', profile_premium_active: 'Premium activ',
+                profile_free_plan: 'Plan gratuit', profile_language: 'Limbă',
+                premium_badge: 'PREMIUM', free_badge: 'GRATUIT',
+                academy_tab_lessons: 'Lecții', academy_tab_gallery: 'Modele Grafice',
+                academy_tab_whatif: 'Ce ar fi dacă...', academy_tab_drill: 'Chart Drill',
+                academy_tab_replay: 'Simulator Replay', academy_tab_mistakes: 'Greșeli',
+                academy_tab_ai_analyzer: 'Analiză AI Grafic', academy_tab_hungarian: 'Piața Maghiară',
+                academy_new_badge: 'Nou',
+                greeting_night_guest: 'Noapte bună!', greeting_night_user: 'Noapte bună, {name}!',
+                greeting_morning_guest: 'Bună dimineața!', greeting_morning_user: 'Bună dimineața, {name}!',
+                greeting_day_guest: 'Bună ziua!', greeting_day_user: 'Bună ziua, {name}!',
+                greeting_evening_guest: 'Bună seara!', greeting_evening_user: 'Bună seara, {name}!'
             }
         };
 
@@ -53228,11 +53258,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const huBtn = document.getElementById('lang-btn-hu');
             const enBtn = document.getElementById('lang-btn-en');
-            if (huBtn && enBtn) {
+            const roBtn = document.getElementById('lang-btn-ro');
+            if (huBtn && enBtn && roBtn) {
                 const activeClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
                 const inactiveClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
                 huBtn.className = currentLang === 'hu' ? activeClass : inactiveClass;
                 enBtn.className = currentLang === 'en' ? activeClass : inactiveClass;
+                roBtn.className = currentLang === 'ro' ? activeClass : inactiveClass;
             }
         }
 
