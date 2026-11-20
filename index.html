@@ -3680,11 +3680,25 @@
                     <div id="tpsl-inputs" class="hidden space-y-2">
                         <div>
                             <span class="text-[10px] text-neon-green font-bold block mb-1">Take Profit (USD)</span>
-                            <input type="number" inputmode="decimal" id="input-tp-price" placeholder="pl. 98000" min="0.01" step="0.01" aria-label="Take Profit ár (USD)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-green">
+                            <input type="number" inputmode="decimal" id="input-tp-price" placeholder="pl. 98000" min="0.01" step="0.01" oninput="updateRRRatioDisplay()" aria-label="Take Profit ár (USD)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-green">
                         </div>
                         <div>
                             <span class="text-[10px] text-neon-red font-bold block mb-1">Stop Loss (USD)</span>
-                            <input type="number" inputmode="decimal" id="input-sl-price" placeholder="pl. 92000" min="0.01" step="0.01" oninput="updatePositionSizeCalc()" aria-label="Stop Loss ár (USD)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red">
+                            <input type="number" inputmode="decimal" id="input-sl-price" placeholder="pl. 92000" min="0.01" step="0.01" oninput="updatePositionSizeCalc(); updateRRRatioDisplay()" aria-label="Stop Loss ár (USD)" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-neon-red">
+                        </div>
+
+                        <!-- Risk/Reward arány élő kijelzése: a TP és SL megadott ára
+                             alapján, a jelenlegi belépő árhoz viszonyítva — a cél, hogy
+                             a felhasználó NYITÁS ELŐTT lássa, érdemes-e egyáltalán
+                             belépnie (pl. 1:0.5 arány esetén statisztikailag rossz az
+                             ügylet, még magas találati arány mellett is). Nem
+                             duplikálja az önálló "Risk/Reward Kalkulátor" modált (az
+                               kézi, utólagos, elemzés-célú bemenetekkel dolgozik) — ez
+                             a jegyen belül, élőben, a tényleges TP/SL mezőkből számol.
+                        -->
+                        <div id="rr-ratio-display" class="hidden glass-card rounded-lg px-2.5 py-1.5 border border-dark-750 flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase"><i class="fa-solid fa-scale-balanced mr-1"></i>Risk / Reward</span>
+                            <span class="text-xs font-mono font-bold" id="rr-ratio-value">—</span>
                         </div>
 
                         <!-- Pozícióméret-kalkulátor: a Stop Loss megadása mellé —
@@ -55551,6 +55565,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('limit-price-group').classList.toggle('hidden', mode === 'market');
             updateExecuteButtonLabel();
             if (typeof updatePositionSizeCalc === 'function') updatePositionSizeCalc();
+            if (typeof updateRRRatioDisplay === 'function') updateRRRatioDisplay();
         }
 
         function updateLeverageDisplay() {
@@ -55680,6 +55695,40 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             showNotification(`Pozícióméret beállítva: $${finalAmount.toFixed(0)}`);
         }
 
+        // Élő Risk/Reward arány a kitöltött TP és SL árak alapján, a tényleges
+        // belépő árhoz (limit módban a limit árhoz, piaci módban a jelenlegi
+        // árhoz) viszonyítva. Csak akkor jelenik meg, ha MINDKÉT ár megadott —
+        // ha csak egy van kitöltve, az arány nem értelmezhető, ezért elrejtjük
+        // a sávot a félrevezető "fél eredmény" helyett.
+        function updateRRRatioDisplay() {
+            const wrap = document.getElementById('rr-ratio-display');
+            const valEl = document.getElementById('rr-ratio-value');
+            if (!wrap || !valEl) return;
+            const tpVal = parseFloat(document.getElementById('input-tp-price').value);
+            const slVal = parseFloat(document.getElementById('input-sl-price').value);
+            if (!Number.isFinite(tpVal) || tpVal <= 0 || !Number.isFinite(slVal) || slVal <= 0) {
+                wrap.classList.add('hidden');
+                return;
+            }
+            const entryPrice = currentOrderMode === 'limit'
+                ? (parseFloat(document.getElementById('input-limit-price').value) || currentAsset.price)
+                : currentAsset.price;
+            if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
+                wrap.classList.add('hidden');
+                return;
+            }
+            const riskDist = Math.abs(entryPrice - slVal);
+            const rewardDist = Math.abs(tpVal - entryPrice);
+            if (riskDist < entryPrice * 0.0005) {
+                wrap.classList.add('hidden');
+                return;
+            }
+            const rr = rewardDist / riskDist;
+            wrap.classList.remove('hidden');
+            valEl.textContent = '1 : ' + rr.toFixed(2);
+            valEl.className = 'text-xs font-mono font-bold ' + (rr >= 2 ? 'text-neon-green' : rr >= 1 ? 'text-amber-400' : 'text-neon-red');
+        }
+
         // A jelen ügylet margója hány %-át teszi ki a jelenlegi egyenlegnek —
         // ÉS hány trade-et nyitott már ma a felhasználó a saját Terve szerinti
         // limithez képest. Csak akkor jelenik meg, ha már van kitöltött Terv.
@@ -55733,6 +55782,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const checked = document.getElementById('toggle-tpsl').checked;
             document.getElementById('tpsl-inputs').classList.toggle('hidden', !checked);
             if (checked && typeof updatePositionSizeCalc === 'function') updatePositionSizeCalc();
+            if (checked && typeof updateRRRatioDisplay === 'function') updateRRRatioDisplay();
+            if (!checked) document.getElementById('rr-ratio-display')?.classList.add('hidden');
         }
 
         // Duplikált-kattintás védelem (74. pont): a gombot AZONNAL, szinkron
