@@ -25729,6 +25729,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rorPct = Math.min(100, Math.max(0, ror * 100));
 
             const expectancy = (W * rr) - L; // várható érték egységenként (= edge)
+            const expectancyPct = expectancy * 100;
 
             // JAVÍTÁS: a `units` (100/riskPct) egy rendkívül kicsi, de
             // egyenként véges riskPct mellett túlcsordulhat Infinity-re —
@@ -25737,8 +25738,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // értéket igen. Ugyanaz a hibaosztály, mint a korábban javított
             // kalkulátoroknál: egyenként véges bemenet, közbenső osztás
             // szivárgása.
-            if (!Number.isFinite(units) || !Number.isFinite(rorPct) || !Number.isFinite(expectancy)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott kockázat % túl szélsőséges érvényes csőd-kockázat számításhoz!</div>`;
+            //
+            // JAVÍTÁS #2: egy extrém, de egyenként véges Risk/Reward arány
+            // (pl. "1e308") mellett az `expectancy` (W*rr-L) maga még VÉGES
+            // marad (a rr*0.45 nagyságrendileg a double tartományon belül
+            // van), de a KIJELZETT "Statisztikai előny" a *100 szorzás UTÁN
+            // már túlcsordulhat Infinity-re — a fenti isFinite(expectancy)
+            // ellenőrzés ezt nem fogta el, mert a nem-szorzott értéket
+            // nézte. Ugyanaz a hibaosztály, mint a Liquidation Price "distPct"
+            // vagy a Gordon-modell "diffPct" javításánál: a kijelzésre
+            // használt, SZÁRMAZTATOTT értéket kell véges-ellenőrizni, nem
+            // csak a köztes számítást.
+            if (!Number.isFinite(units) || !Number.isFinite(rorPct) || !Number.isFinite(expectancy) || !Number.isFinite(expectancyPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott Risk/Reward arány vagy kockázat % túl szélsőséges érvényes csőd-kockázat számításhoz!</div>`;
                 return;
             }
 
@@ -25759,7 +25771,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Statisztikai előny (edge):</span><span class="${expectancy > 0 ? 'text-neon-green' : 'text-neon-red'}">${expectancy > 0 ? '+' : ''}${(expectancy * 100).toFixed(1)}% / trade</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Statisztikai előny (edge):</span><span class="${expectancy > 0 ? 'text-neon-green' : 'text-neon-red'}">${expectancy > 0 ? '+' : ''}${expectancyPct.toFixed(1)}% / trade</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Kockázati egységek a tőkében:</span><span class="text-white">${units.toFixed(0)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Csőd-kockázat (becslés):</span><span class="font-extrabold ${colorClass} text-sm">${rorPct < 0.1 && rorPct > 0 ? '<0.1' : rorPct.toFixed(1)}%</span></div>
                     <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-1">
@@ -28334,20 +28346,34 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = '🚨 Nagyon magas P/E — jelentős jövőbeli növekedési várakozást tükröz, vagy komoly túlárazottságot jelez. Érdemes alaposan megvizsgálni a növekedési kilátásokat (pl. PEG rátával) a puszta P/E helyett.';
             }
 
+            // JAVÍTÁS: egy rendkívül KICSI, de pozitív, véges iparági átlag
+            // P/E (pl. "1e-308") átmegy az `industryAvg > 0` feltételen, de
+            // a (peRatio-industryAvg)/industryAvg osztás a nullához közeli
+            // nevező miatt túlcsordulhat Infinity-re — a kijelzett "Eltérés"
+            // mezőben szó szerint "Infinity%-kal MAGASABB"-ként jelenne meg,
+            // miközben az "Iparági átlag P/E" mező kerekítve "0.00"-t mutat
+            // (ami önmagában megtévesztő is lenne). Ugyanaz a hibaosztály,
+            // mint a Gordon-modell "diffPct" javításánál — itt egy ÚJ,
+            // `showIndustry` jelzővel zárjuk ki a teljes (megtévesztő)
+            // iparági-összehasonlítás blokkot, nem csak a diffPct sort.
             let industryHtml = '';
+            let showIndustry = false;
             if (industryAvg > 0) {
                 const diffPct = ((peRatio - industryAvg) / industryAvg) * 100;
-                const diffLabel = diffPct >= 0
-                    ? `${diffPct.toFixed(1)}%-kal MAGASABB, mint az iparági átlag`
-                    : `${Math.abs(diffPct).toFixed(1)}%-kal ALACSONYABB, mint az iparági átlag`;
-                industryHtml = `<div class="flex justify-between"><span class="text-slate-400">Eltérés az iparági átlagtól:</span><span class="${diffPct >= 0 ? 'text-amber-400' : 'text-neon-cyan'}">${diffLabel}</span></div>`;
+                if (Number.isFinite(diffPct)) {
+                    showIndustry = true;
+                    const diffLabel = diffPct >= 0
+                        ? `${diffPct.toFixed(1)}%-kal MAGASABB, mint az iparági átlag`
+                        : `${Math.abs(diffPct).toFixed(1)}%-kal ALACSONYABB, mint az iparági átlag`;
+                    industryHtml = `<div class="flex justify-between"><span class="text-slate-400">Eltérés az iparági átlagtól:</span><span class="${diffPct >= 0 ? 'text-amber-400' : 'text-neon-cyan'}">${diffLabel}</span></div>`;
+                }
             }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">EPS (egy részvényre jutó nyereség):</span><span class="text-neon-green">$${eps.toFixed(4)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">P/E ráta:</span><span class="font-extrabold ${colorClass} text-sm">${peRatio.toFixed(2)}</span></div>
-                    ${industryAvg > 0 ? `<div class="flex justify-between"><span class="text-slate-400">Iparági átlag P/E:</span><span class="text-white">${industryAvg.toFixed(2)}</span></div>` : ''}
+                    ${showIndustry ? `<div class="flex justify-between"><span class="text-slate-400">Iparági átlag P/E:</span><span class="text-white">${industryAvg.toFixed(2)}</span></div>` : ''}
                     ${industryHtml}
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
@@ -30202,6 +30228,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lossBudget = (maxLossPct / 100) * equity;
             const tradesToMaxLoss = Math.ceil(lossBudget / risk);
 
+            // JAVÍTÁS: a fenti "risk > equity" ellenőrzés nem fogja ki azt az
+            // esetet, amikor a risk egy rendkívül KICSI, de pozitív, véges
+            // szám (pl. "1e-308") — ilyenkor a `risk <= 0` feltétel sem igaz,
+            // tehát átmegy a validáción, de a lossBudget/risk osztás a double
+            // tartományát túlcsordítva Infinity-t ad. A Math.ceil(Infinity)
+            // is Infinity, amit a sablonsztring ${tradesToMaxLoss} szó
+            // szerint "Infinity db"-ként jelenítene meg — pontosan az a
+            // forgatókönyv, amit a fájl tetején lévő JAVÍTÁS-megjegyzés már
+            // leírt, de a hozzá tartozó védelem korábban csak a `risk<=0`
+            // esetet fogta ki, a rendkívül kicsi (de pozitív) risk-et nem.
+            if (!Number.isFinite(tradesToMaxLoss)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott kockáztatott összeg túl kicsi a számlatőkéhez képest egy érvényes "hány trade-ig tart ki a tőke" számításhoz — adj meg reálisabb nagyságrendű kockázatot!</div>`;
+                return;
+            }
+
             let colorClass, verdict;
             if (riskPct > 5) {
                 colorClass = 'text-neon-red';
@@ -31624,6 +31665,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const diffPct = ((fairValue - price) / price) * 100;
+
+            // JAVÍTÁS: a fenti `price <= 0` ellenőrzés egy rendkívül KICSI,
+            // de pozitív, véges árfolyamot (pl. "1e-308") átenged — ilyenkor
+            // a fairValue maga véges marad, de a (fairValue-price)/price
+            // osztás a nevezőben lévő, nullához közeli price miatt
+            // túlcsordulhat Infinity-re, ami a kijelzett "Eltérés" mezőben
+            // szó szerint "+Infinity%"-ként jelenne meg — ugyanaz a
+            // hibaosztály, mint a Liquidation Price kalkulátor "distPct"
+            // javításánál (1/entry nagyságrendje miatti túlcsordulás).
+            if (!Number.isFinite(diffPct)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott jelenlegi árfolyam túl közel van a nullához ahhoz, hogy az eltérés %-ban kifejezhető legyen — adj meg egy reálisabb árfolyamot!</div>`;
+                return;
+            }
 
             // Érzékenységi tábla: ±1 és ±2 százalékpontos diszkontráta-eltolás
             // hatása a fair value-ra, ugyanazzal a g-vel. Egy sor érvénytelen
@@ -35673,11 +35727,27 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const cdOverAbPct = CD / AB * 100;
             const bcRetracePct = BC / AB * 100;
+            const direction = (B - A) > 0 ? 1 : -1;
+            const projectedD = C + direction * AB;
+
+            // JAVÍTÁS: a fenti ellenőrzés csak azt zárja ki, ha az AB/BC/CD
+            // lábhosszak ÖNMAGUKBAN túlcsordulnak — egy extrém, de egyenként
+            // véges C vagy D pont (pl. "1e308") mellett a CD (vagy BC) láb
+            // hossza simán véges maradhat (pl. ~1e308), miközben az AB láb
+            // normál nagyságrendű (pl. 20) — ilyenkor a CD/AB (vagy BC/AB)
+            // ARÁNY, nem a lábhossz maga, csordul túl Infinity-re, amit a
+            // kijelzett "BC visszahúzódás" / "CD láb / AB láb" mezőben szó
+            // szerint "Infinity%"-ként jelenne meg. Ugyanaz a hibaosztály,
+            // mint a korábban javított kalkulátoroknál: a bemenet és a
+            // köztes lábhossz véges, de a RÁ ÉPÜLŐ arány szivárog.
+            if (!Number.isFinite(cdOverAbPct) || !Number.isFinite(bcRetracePct) || !Number.isFinite(projectedD)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott pontok mérete túl eltérő nagyságrendű ahhoz, hogy az AB=CD arányok véges %-ban kifejezhetők legyenek — adj meg hasonló nagyságrendű árakat!</div>`;
+                return;
+            }
+
             const diff = Math.abs(cdOverAbPct - 100);
             const tolerancePct = 5;
             const isValid = diff <= tolerancePct;
-            const direction = (B - A) > 0 ? 1 : -1;
-            const projectedD = C + direction * AB;
             const biasLabel = direction > 0 ? 'Bullish AB=CD (a D pont várt alja)' : 'Bearish AB=CD (a D pont várt teteje)';
 
             const verdict = isValid
@@ -37023,18 +37093,39 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (Math.abs(dRetrace - 0.886) <= tol) matches.push('Bat');
             if (dRetrace >= 1.27 - tol && dRetrace <= 1.618 + tol) matches.push('Butterfly');
 
-            const row = (label, val) => `
+            // JAVÍTÁS: a fenti [XA,AB,BC,CD,AD].every(Number.isFinite)
+            // ellenőrzés csak a LÁBHOSSZ-KÜLÖNBSÉGEKET nézi — egy extrém, de
+            // egyenként véges B/C/D pont (pl. "1e308") mellett egy ARÁNY
+            // (pl. |BC|/|AB|) maga simán véges maradhat (akár csak néhány
+            // nagyságrendnyi), de a kijelzéshez használt *100 szorzás UTÁN
+            // már túlcsordulhat Infinity-re — ugyanaz a hibaosztály, mint a
+            // Risk of Ruin "Statisztikai előny" mezőjének javításánál: a
+            // SZÁRMAZTATOTT, kijelzésre használt értéket kell véges-
+            // ellenőrizni, nem csak a köztes arányt magát.
+            const row = (label, val) => {
+                const pct = val === null ? null : val * 100;
+                const display = (pct === null || !Number.isFinite(pct)) ? '—' : pct.toFixed(1) + '%';
+                return `
                 <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
                     <span class="text-slate-400">${label}:</span>
-                    <span class="font-extrabold text-white text-sm">${val === null ? '—' : (val * 100).toFixed(1) + '%'}</span>
+                    <span class="font-extrabold text-white text-sm">${display}</span>
                 </div>
             `;
+            };
+
+            // JAVÍTÁS: a verdikt-szöveg a dRetrace*100-at a row()-tól
+            // FÜGGETLENÜL, közvetlenül formázta — a row() fenti véges-
+            // ellenőrzése ezt a külön előfordulást nem fedezte le, így egy
+            // extrém D pont mellett a verdikt szövegében is szó szerint
+            // "Infinity%" jelenhetett meg.
+            const dRetracePct = dRetrace * 100;
+            const dRetraceDisplay = Number.isFinite(dRetracePct) ? dRetracePct.toFixed(1) + '%' : 'túl szélsőséges ahhoz, hogy véges %-ban kifejezhető legyen';
 
             let verdictHtml;
             if (matches.length > 0) {
-                verdictHtml = `<p class="text-[10px] font-semibold text-neon-green">Egyezés: <span class="text-sm">${matches.join(' / ')}</span> minta (D-visszahúzódás ${(dRetrace * 100).toFixed(1)}%, ±5%-os tolerencián belül).</p>`;
+                verdictHtml = `<p class="text-[10px] font-semibold text-neon-green">Egyezés: <span class="text-sm">${matches.join(' / ')}</span> minta (D-visszahúzódás ${dRetraceDisplay}, ±5%-os tolerencián belül).</p>`;
             } else {
-                verdictHtml = `<p class="text-[10px] font-semibold text-neon-red">Nincs egyezés a 3 klasszikus mintával (D-visszahúzódás ${(dRetrace * 100).toFixed(1)}%) — valószínűleg nem valódi harmonikus alakzat, csak véletlen árfolyam-mozgás.</p>`;
+                verdictHtml = `<p class="text-[10px] font-semibold text-neon-red">Nincs egyezés a 3 klasszikus mintával (D-visszahúzódás ${dRetraceDisplay}) — valószínűleg nem valódi harmonikus alakzat, csak véletlen árfolyam-mozgás.</p>`;
             }
 
             out.innerHTML = `
@@ -37104,13 +37195,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (hasP2) {
                 const len2 = Math.abs(p2 - p1);
-                const retrace2 = len2 / len1 * 100;
+                // JAVÍTÁS: a fenti isFinite(len1) ellenőrzés csak a (véges)
+                // 1. hullám hosszát nézi — egy extrém, de egyenként véges P2
+                // pont (pl. "1e308") mellett a len2 (|P2-P1|) hossza is véges
+                // marad, de a len2/len1 ARÁNY (ha len1 normál nagyságrendű,
+                // len2 pedig extrém) túlcsordulhat Infinity-re, amit a
+                // "Visszahúzódás az 1. hullámból" mezőben szó szerint
+                // "Infinity%"-ként jelenítene meg. Ugyanaz a hibaosztály,
+                // mint az ABCD/Harmonic-mintázat kalkulátorok hasonló
+                // lábhossz-arány javításánál — null-ra váltunk (meglévő "—"
+                // megjelenítési konvenció, lásd lejjebb a 4. hullámnál), nem
+                // hagyva Infinity-t valódi %-ként kiszivárogni.
+                const retrace2Raw = len2 / len1 * 100;
+                const retrace2 = Number.isFinite(retrace2Raw) ? retrace2Raw : null;
                 const rule1Bad = dir === 1 ? (p2 < p0) : (p2 > p0);
                 if (rule1Bad) violations.push('a 2. hullám 100%-nál jobban visszahúzta az 1. hullámot');
 
                 html += `<div class="glass-card rounded-xl p-3 mb-3">`;
                 html += `<p class="text-[10px] font-bold text-sky-400 mb-1">2. hullám elemzés</p>`;
-                html += row('Visszahúzódás az 1. hullámból', retrace2.toFixed(1) + '%', rule1Bad ? 'text-neon-red' : ((retrace2 >= 38.2 && retrace2 <= 78.6) ? 'text-neon-green' : 'text-amber-400'));
+                html += row('Visszahúzódás az 1. hullámból', retrace2 !== null ? retrace2.toFixed(1) + '%' : '—', rule1Bad ? 'text-neon-red' : ((retrace2 !== null && retrace2 >= 38.2 && retrace2 <= 78.6) ? 'text-neon-green' : 'text-amber-400'));
                 html += `</div>`;
 
                 const mults3 = [1.0, 1.618, 2.618, 4.236];
@@ -37146,7 +37249,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             if (hasP2 && hasP3 && hasP4) {
                 const len4 = Math.abs(p4 - p3);
-                const retrace4 = len3 ? (len4 / len3 * 100) : null;
+                // JAVÍTÁS: ugyanaz a hibaosztály, mint a 2. hullám
+                // "retrace2" javításánál — egy extrém, de egyenként véges P4
+                // pont mellett a len4 (|P4-P3|) véges marad, de a len4/len3
+                // arány (ha len3 normál nagyságrendű) túlcsordulhat
+                // Infinity-re, amit a "Visszahúzódás a 3. hullámból" mezőben
+                // szó szerint "Infinity%"-ként jelenítene meg. A meglévő
+                // `len3 ? ... : null` mintát bővítjük a nem-véges eredmény
+                // kiszűrésével is — a renderelő kód már helyesen kezeli a
+                // null esetet ("—").
+                const retrace4Raw = len3 ? (len4 / len3 * 100) : null;
+                const retrace4 = (retrace4Raw !== null && Number.isFinite(retrace4Raw)) ? retrace4Raw : null;
                 const overlapBad = dir === 1 ? (p4 < p1) : (p4 > p1);
                 if (overlapBad) violations.push('a 4. hullám belenyúlt az 1. hullám ártartományába (átfedés)');
 
@@ -41241,6 +41354,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ? (costAtStartOnly - costAtAvg)
                 : (costAtAvg - costAtStartOnly);
 
+            // JAVÍTÁS: a fenti validáció csak azt ellenőrzi, hogy a totalSize/
+            // startPrice/endPrice bemenetek ÖNMAGUKBAN végesek — egy extrém,
+            // de egyenként véges totalSize (pl. "1e308") mellett a
+            // costAtStartOnly/costAtAvg (totalSize * ár) szorzás TÚLCSORDUL
+            // Infinity-re, és a savingsVsStartOnly (Infinity - Infinity)
+            // NaN-t ad, ami szó szerint "$NaN"-ként jelent meg a Megtakarítás/
+            // Többlet mezőben — ugyanaz a hibaosztály, mint a korábban
+            // javított kalkulátoroknál: a bemenet véges, de egy rá épülő
+            // köztes szorzás/kivonás szivárog. Az avgPrice/sizePerTranche is
+            // ide tartozik (extrém startPrice/endPrice mellett az átlagár is
+            // túlcsordulhat, amit a "∞" jelenítene meg helyesen, de a MELLETTE
+            // lévő savings mező NaN-ra fordulna).
+            if (!Number.isFinite(avgPrice) || !Number.isFinite(sizePerTranche) || !Number.isFinite(costAtStartOnly) || !Number.isFinite(costAtAvg) || !Number.isFinite(savingsVsStartOnly)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott pozícióméret és árszintek kombinációja túl szélsőséges érvényes tranche-terv számításához — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
             const fmt = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 4 });
 
             let rowsHtml = '';
@@ -44067,6 +44197,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rrRatio = avgWin / avgLoss;
             const isPositive = expectancyDollar > 0;
             const breakEvenWinRate = (avgLoss / (avgWin + avgLoss)) * 100;
+
+            // JAVÍTÁS: a fenti felső korlát (avgWin/avgLoss <= 1e9) csak a
+            // TÚL NAGY bemenetet zárja ki — egy rendkívül KICSI, de pozitív,
+            // véges avgLoss (pl. "1e-308") átmegy mindkét ellenőrzésen
+            // (`avgLoss <= 0` hamis, `avgLoss > 1e9` is hamis), de az
+            // expectancyR (expectancyDollar/avgLoss) és az rrRatio
+            // (avgWin/avgLoss) a nullához közeli nevező miatt túlcsordulhat
+            // Infinity-re — a kijelzett "(+InfinityR)" és "1:Infinity"
+            // mezőkben, VALAMINT a verdikt-szövegben ("Infinityx nagyobbak")
+            // szó szerint megjelenne. Ugyanaz a hibaosztály, mint a fenti
+            // felső korlát JAVÍTÁS-a, csak a tartomány másik végén.
+            if (!Number.isFinite(expectancyR) || !Number.isFinite(rrRatio) || !Number.isFinite(breakEvenWinRate)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Az átlagos veszteség túl kicsi az átlagos nyereséghez képest egy érvényes R-multiplikátor/Risk:Reward számításhoz — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
