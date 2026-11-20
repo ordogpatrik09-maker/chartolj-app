@@ -26994,6 +26994,29 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: negatív (pl. kockázat-kereső, A < 0) kockázatkerülési
+            // együttható és/vagy nagyon alacsony szórás mellett a
+            // riskPremiumPct (= 0.5 × A × variancia × 100) és a cePct/meanPct
+            // tetszőlegesen kicsi, de NEGATÍV maradék lehet, ami a megjelenítési
+            // tizedesjegyre (3) kerekítve pontosan 0-ra kerekedik — a sima
+            // `toFixed(3)` ekkor is megtartja a "-" előjelet (pl.
+            // (-0.0000001).toFixed(3) === "-0.000"), így "-0.000%" jelent meg
+            // "0.000%" helyett, ami azt sugallja, van tényleges negatív érték,
+            // miközben a megjelenített szám maga nulla. Kerekítés UTÁN explicit
+            // -0 → +0 normalizálással (a `=== 0` JS-ben nem különbözteti meg a
+            // ±0-t, a ternary mindig +0-t ad vissza) kerüljük ezt el — a valódi,
+            // 0,001%-nál nagyobb magnitúdójú negatív értékek előjelét/
+            // kerekítését ez NEM érinti.
+            const fmtPct3 = (v) => {
+                const rounded = Math.round(v * 1000) / 1000;
+                return (rounded === 0 ? 0 : rounded).toFixed(3);
+            };
+            const fmtPct3Signed = (v) => {
+                const rounded = Math.round(v * 1000) / 1000;
+                const safe = rounded === 0 ? 0 : rounded;
+                return `${safe >= 0 ? '+' : ''}${safe.toFixed(3)}`;
+            };
+
             let verdictColor, verdict;
             if (cePct < 0 && meanPct > 0) {
                 verdictColor = 'text-neon-red';
@@ -27015,11 +27038,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Várható hozam E[r]:</span><span class="text-white">${meanPct.toFixed(3)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Szórás:</span><span class="text-white">${stdDevPct.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Várható hozam E[r]:</span><span class="text-white">${fmtPct3(meanPct)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Szórás:</span><span class="text-white">${fmtPct3(stdDevPct)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Kockázatkerülési együttható (A):</span><span class="text-white">${A}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Bizonyossági Egyenérték (CE):</span><span class="font-extrabold ${cePct >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${cePct >= 0 ? '+' : ''}${cePct.toFixed(3)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázati prémium (E[r] - CE):</span><span class="font-extrabold ${verdictColor} text-sm">${riskPremiumPct >= 0 ? '+' : ''}${riskPremiumPct.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Bizonyossági Egyenérték (CE):</span><span class="font-extrabold ${cePct >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtPct3Signed(cePct)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázati prémium (E[r] - CE):</span><span class="font-extrabold ${verdictColor} text-sm">${fmtPct3Signed(riskPremiumPct)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${verdictColor}">${verdict}</p>
             `;
@@ -45295,7 +45318,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdictText = 'A mai nettó áramlás a megszokott sávban van — nincs kifejezett kiugrás.';
             }
 
-            const fmtNum = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`;
+            // JAVÍTÁS: kis, negatív (nullára kerekedő) mai nettó áramlás,
+            // historikus átlag, Z-score vagy kumulatív nettó áramlás esetén a
+            // sima `v.toFixed(2)` megtartja a "-" előjelet akkor is, ha a
+            // kerekített MAGNITÚDÓ pontosan 0 (pl. (-0.001).toFixed(2) ===
+            // "-0.00") — a "-0.00" vizuálisan értelmetlen/megtévesztő,
+            // mintha lenne tényleges negatív áramlás/Z-score, miközben a
+            // megjelenített szám maga nulla. Kerekítés UTÁN explicit -0 → +0
+            // normalizálással (a `=== 0` JS-ben nem különbözteti meg a ±0-t)
+            // kerüljük ezt el; a valódi, 0,01-nél nagyobb magnitúdójú negatív
+            // értékek előjelét/kerekítését ez NEM érinti.
+            const fmtNum = (v) => {
+                const rounded = Math.round(v * 100) / 100;
+                const safe = rounded === 0 ? 0 : rounded;
+                return `${safe >= 0 ? '+' : ''}${safe.toFixed(2)}`;
+            };
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
@@ -45303,7 +45340,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Historikus átlag:</span><span class="text-white">${fmtNum(mean)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Historikus szórás:</span><span class="text-white">${std.toFixed(2)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Mai nettó áramlás:</span><span class="text-white font-bold">${fmtNum(today)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Z-score:</span><span class="font-extrabold ${verdictClass} text-sm">${z >= 0 ? '+' : ''}${z.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Z-score:</span><span class="font-extrabold ${verdictClass} text-sm">${fmtNum(z)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kumulatív nettó áramlás (teljes periódus):</span><span class="${cumulative >= 0 ? 'text-neon-red' : 'text-neon-green'} font-bold">${fmtNum(cumulative)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${verdictClass}">${verdictText}</p>
