@@ -35512,6 +35512,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function calcLeverageSweepBacktest() {
             const out = document.getElementById('leveragesweep-result');
             if (!out) return;
+            // JAVÍTÁS: a tőkeáttétel-szintek a felhasználó szabadszöveges
+            // `ls-levels` mezőjéből (parseFloat-tal) érkeznek, felső/alsó
+            // korlát nélkül — egy extrém kicsi (pl. "0.0000001") vagy extrém
+            // nagy (pl. "1e21"+) token nyers `${r.leverage}` interpolációval
+            // nyers tudományos jelölésként ("1e-7×") szivárgott volna ki a
+            // táblázat minden sorába és a "Legjobb szint"/"Első likvidációs
+            // szint" dobozokba is. A `toLocaleString` SOHA nem vált
+            // tudományos jelölésre, ezért ezt kell használni a leverage
+            // címkék megjelenítésére, nem a sima template-interpolációt.
+            const fmtLev = v => v.toLocaleString('en-US', { maximumFractionDigits: 8 });
 
             if (typeof candleData === 'undefined' || !candleData || candleData.length < 20) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Nincs elég betöltött árfolyamadat a jelenlegi charton (legalább 20 gyertya szükséges) — válts hosszabb idősíkra!</div>`;
@@ -35574,12 +35584,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // jelöltek köréből, konzisztensen az app többi kalkulátorával.
             const rows = sweep.results.map(r => {
                 if (r.liquidated) {
-                    return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-red font-semibold">${r.leverage}×:</span><span class="text-neon-red font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>LIKVIDÁLÓDOTT (${r.liquidatedAtTradeIndex + 1}. trade-nél)</span></div>`;
+                    return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-red font-semibold">${fmtLev(r.leverage)}×:</span><span class="text-neon-red font-bold"><i class="fa-solid fa-skull-crossbones mr-1"></i>LIKVIDÁLÓDOTT (${r.liquidatedAtTradeIndex + 1}. trade-nél)</span></div>`;
                 }
                 if (!Number.isFinite(r.totalReturnPct) || !Number.isFinite(r.maxDrawdownPct)) {
-                    return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${r.leverage}×:</span><span class="text-amber-400 font-semibold">túl extrém a számszerűsítéshez</span></div>`;
+                    return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${fmtLev(r.leverage)}×:</span><span class="text-amber-400 font-semibold">túl extrém a számszerűsítéshez</span></div>`;
                 }
-                return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${r.leverage}×:</span><span class="${r.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${r.totalReturnPct >= 0 ? '+' : ''}${r.totalReturnPct.toFixed(2)}% · DD ${r.maxDrawdownPct.toFixed(2)}%</span></div>`;
+                return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${fmtLev(r.leverage)}×:</span><span class="${r.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${r.totalReturnPct >= 0 ? '+' : ''}${r.totalReturnPct.toFixed(2)}% · DD ${r.maxDrawdownPct.toFixed(2)}%</span></div>`;
             }).join('');
 
             const firstLiquidation = sweep.results.find(r => r.liquidated);
@@ -35591,10 +35601,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${rows}
                 </div>
                 <div class="glass-card rounded-xl border ${firstLiquidation ? 'border-neon-red/30 bg-neon-red/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
-                    ${bestResult ? `<div class="flex justify-between"><span class="text-slate-400">Legjobb (likvidáció nélküli) szint:</span><span class="text-white font-bold">${bestResult.leverage}× (${bestResult.totalReturnPct >= 0 ? '+' : ''}${bestResult.totalReturnPct.toFixed(2)}%)</span></div>` : ''}
-                    ${firstLiquidation ? `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Első likvidációs szint:</span><span class="text-neon-red font-bold">${firstLiquidation.leverage}×</span></div>` : ''}
+                    ${bestResult ? `<div class="flex justify-between"><span class="text-slate-400">Legjobb (likvidáció nélküli) szint:</span><span class="text-white font-bold">${fmtLev(bestResult.leverage)}× (${bestResult.totalReturnPct >= 0 ? '+' : ''}${bestResult.totalReturnPct.toFixed(2)}%)</span></div>` : ''}
+                    ${firstLiquidation ? `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Első likvidációs szint:</span><span class="text-neon-red font-bold">${fmtLev(firstLiquidation.leverage)}×</span></div>` : ''}
                 </div>
-                <p class="text-[10px] text-slate-400 leading-relaxed">${firstLiquidation ? `A ${firstLiquidation.leverage}×-os (és afölötti) tőkeáttételnél EBBEN A TRADE-SOROZATBAN volt olyan egyetlen mozgás, ami önmagában elérte vagy meghaladta volna a 100%-os veszteséget — vagyis a számla likvidálódott volna. Ez konkrétan mutatja, hogy a tőkeáttétel növelése egy ponton túl NEM lineárisan, hanem UGRÁSSZERŰEN növeli a totális veszteség kockázatát.` : `Ezen a konkrét trade-sorozaton egyik vizsgált tőkeáttétel-szint sem vezetett volna likvidációhoz — de ez NEM garancia a jövőre: egyetlen, a múltban nem látott méretű hirtelen mozgás bármelyik szinten likvidációt okozhat.`}</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${firstLiquidation ? `A ${fmtLev(firstLiquidation.leverage)}×-os (és afölötti) tőkeáttételnél EBBEN A TRADE-SOROZATBAN volt olyan egyetlen mozgás, ami önmagában elérte vagy meghaladta volna a 100%-os veszteséget — vagyis a számla likvidálódott volna. Ez konkrétan mutatja, hogy a tőkeáttétel növelése egy ponton túl NEM lineárisan, hanem UGRÁSSZERŰEN növeli a totális veszteség kockázatát.` : `Ezen a konkrét trade-sorozaton egyik vizsgált tőkeáttétel-szint sem vezetett volna likvidációhoz — de ez NEM garancia a jövőre: egyetlen, a múltban nem látott méretű hirtelen mozgás bármelyik szinten likvidációt okozhat.`}</p>
             `;
         }
 
