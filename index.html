@@ -17119,6 +17119,15 @@ Mean-reversion,2.5</textarea>
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
+            <!-- Egyedi felhasználó keresése email alapján — admin_lookup_user()
+                 RPC-n keresztül (lásd supabase/migrations/019_admin_user_lookup.sql),
+                 ugyanazzal a szerveroldali admin-ellenőrzéssel védve, mint a
+                 fenti statisztika. Csak diagnosztikai/support célú, OLVASÁS-csak. -->
+            <div class="shrink-0 flex gap-1.5 mb-2">
+                <input type="email" id="admin-user-search-input" placeholder="felhasználó email-címe..." class="flex-grow bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" onkeydown="if(event.key==='Enter'){ event.preventDefault(); adminLookupUser(); }">
+                <button onclick="adminLookupUser()" class="shrink-0 px-3 rounded-lg text-xs font-bold bg-dark-800 text-amber-400 hover:bg-dark-750 transition"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+            <div id="admin-user-lookup-result" class="hidden shrink-0 mb-2"></div>
             <div id="admin-panel-content" class="flex-grow overflow-y-auto space-y-2 pr-1"></div>
             <button onclick="loadAdminStats()" class="mt-2 shrink-0 text-[10.5px] font-bold text-slate-500 hover:text-neon-cyan transition self-start"><i class="fa-solid fa-rotate mr-1"></i>Frissítés</button>
             <p class="text-[9.5px] text-slate-600 pt-2 shrink-0">Csak OLVASÁS: összesített, anonim app-statisztika. A jogosultságot a szerver (adatbázis) is önállóan ellenőrzi, nem csak ez a felület.</p>
@@ -53367,10 +53376,54 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function openAdminPanel() {
             if (!isAdminUser()) { showNotification('Nincs jogosultságod ehhez.'); return; }
             document.getElementById('admin-panel-modal').classList.remove('hidden');
+            const searchInput = document.getElementById('admin-user-search-input');
+            const resultEl = document.getElementById('admin-user-lookup-result');
+            if (searchInput) searchInput.value = '';
+            if (resultEl) { resultEl.classList.add('hidden'); resultEl.innerHTML = ''; }
             loadAdminStats();
         }
         function closeAdminPanel() {
             document.getElementById('admin-panel-modal').classList.add('hidden');
+        }
+
+        async function adminLookupUser() {
+            if (!isAdminUser()) { showNotification('Nincs jogosultságod ehhez.'); return; }
+            const input = document.getElementById('admin-user-search-input');
+            const resultEl = document.getElementById('admin-user-lookup-result');
+            if (!input || !resultEl) return;
+            const email = (input.value || '').trim();
+            if (!email) { showNotification('Adj meg egy email-címet.'); return; }
+
+            resultEl.classList.remove('hidden');
+            resultEl.innerHTML = `<div class="text-center text-xs text-slate-500 py-3"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Keresés...</div>`;
+
+            let data = null, errorMsg = null;
+            try {
+                const res = await sb.rpc('admin_lookup_user', { p_email: email });
+                if (res.error) errorMsg = res.error.message || 'Ismeretlen hiba.';
+                else data = res.data;
+            } catch (e) {
+                errorMsg = (e && e.message) ? e.message : 'A keresés nem sikerült (hálózati hiba).';
+            }
+
+            if (errorMsg) {
+                resultEl.innerHTML = `<div class="glass-card rounded-lg p-2.5 text-[11px] text-amber-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${escapeHtml(errorMsg)}</div>`;
+                return;
+            }
+            if (!data || !data.found) {
+                resultEl.innerHTML = `<div class="glass-card rounded-lg p-2.5 text-[11px] text-slate-500 text-center">Nincs ilyen email-címmel regisztrált felhasználó.</div>`;
+                return;
+            }
+
+            const fmtDate = (d) => d ? new Date(d).toLocaleString('hu-HU') : '—';
+            resultEl.innerHTML = `
+                <div class="glass-card rounded-lg p-2.5 border border-amber-500/30 space-y-1">
+                    <div class="text-xs font-bold text-white">${escapeHtml(data.display_name || 'Névtelen')}</div>
+                    <div class="text-[10.5px] text-slate-400">Regisztráció: ${fmtDate(data.created_at)}</div>
+                    <div class="text-[10.5px] text-slate-400">XP: <span class="font-mono text-white">${(data.mobile_xp ?? 0).toLocaleString('hu-HU')}</span> &nbsp;·&nbsp; Teljesített leckék: <span class="font-mono text-white">${data.lessons_completed ?? 0}</span></div>
+                    <div class="text-[10.5px] text-slate-400">Előfizetés: <span class="font-mono text-white">${escapeHtml(data.subscription_status || 'free')}</span></div>
+                    <div class="text-[10.5px] text-slate-400">Utolsó aktivitás: ${fmtDate(data.last_event_at)}</div>
+                </div>`;
         }
 
         async function loadAdminStats() {
