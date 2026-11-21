@@ -25077,7 +25077,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // — ugyanaz a mintázat, mint a fenti whatif-modal/badges-modal stb.,
         // NEM tartozik a fentebb felsorolt, szándékos kivételek közé (azok
         // mindegyikénél NINCS "mégse"/"kihagyás" útvonal, itt VAN).
+        // MINŐSÉGJAVÍTÁS (automatizált ESC-lefedettség audit): az
+        // admin-panel-modal (role="dialog" aria-modal="true", saját
+        // openAdminPanel()/closeAdminPanel() páros) eddig KIMARADT ebből a
+        // listából — sem az openToolModal()-mintát, sem a korábbi listát nem
+        // használja. A closeAdminPanel() csak elrejti a modalt, nincs benne
+        // el nem mentett állapot vagy destruktív lépés (a felhasználó-keresés
+        // mezője és eredménye újranyitáskor az openAdminPanel() által mindig
+        // újra üresre áll), ezért az ESC itt is biztonságosan a meglévő X
+        // gombbal AZONOS útvonalat hívhatja.
         const _escClosableOtherModals = {
+            'admin-panel-modal': () => closeAdminPanel(),
             'onboarding-tour-overlay': () => endOnboardingTour(),
             'badges-modal': () => closeBadgesPanel(),
             'trade-journal-modal': () => closeTradeJournalDashboard(),
