@@ -45077,7 +45077,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // kicsi NEGATÍV lebegőpontos maradék, amit a sima `.toFixed(2)`
             // megtart ("-0.00pp" a "+" prefix helyett). Ugyanaz a "-0"
             // megjelenítési hibaosztály, mint a fájl többi hasonló javításánál.
-            const apyDiffFixed = apyVsAprDiffPct.toFixed(2);
+            // JAVÍTÁS (audit — nyers tudományos jelölés szivárgás): a mezőnek
+            // nincs HTML "max" attribútuma, és a kézzel beírható extrém (de a
+            // fenti Number.isFinite() ellenőrzésen átmenő, mert nem Infinity)
+            // APR — pl. napi (n=365) jóváírással egy ~5200%-os APR — a
+            // `apyPct`/`apyVsAprDiffPct` értékét >=1e21 nagyságrendbe hajtja.
+            // Ezen a tartományon a natív `.toFixed()` MAGA IS nyers
+            // tudományos jelölésre vált (pl. "1.2964761706548044e+23pp" a
+            // formázott "129,647,617,065,480,440,000,000.00pp" helyett),
+            // függetlenül az előtte álló véges-ellenőrzéstől — pontosan
+            // ugyanaz a hibaosztály, mint a Monte Carlo Szimulátor medián/
+            // percentilis javításánál. `.toLocaleString()`-re váltva, a
+            // `minimumFractionDigits`-et is beállítva 2-re, hogy a "-0.00"
+            // string-összehasonlítás (lásd lent) bit-egyezően ugyanazt az
+            // eredményt adja, mint korábban a `.toFixed(2)`.
+            const apyDiffFixed = apyVsAprDiffPct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const apyDiffIsZero = apyDiffFixed === '-0.00';
             const apyDiffDisplay = apyDiffIsZero ? '0.00' : apyDiffFixed;
             const apyDiffNonNeg = apyVsAprDiffPct >= 0 || apyDiffIsZero;
@@ -45092,11 +45106,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="grid grid-cols-2 gap-2 mb-3">
                     <div class="glass-card rounded-xl p-3">
                         <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Hirdetett APR</div>
-                        <div class="text-sm font-extrabold text-white font-mono">${aprPct.toFixed(2)}%</div>
+                        <div class="text-sm font-extrabold text-white font-mono">${aprPct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</div>
                     </div>
                     <div class="glass-card rounded-xl p-3 border border-neon-green/30">
                         <div class="text-[10px] text-neon-green uppercase font-bold mb-1">Effektív APY (kamatos)</div>
-                        <div class="text-sm font-extrabold text-neon-green font-mono">${apyPct.toFixed(2)}%</div>
+                        <div class="text-sm font-extrabold text-neon-green font-mono">${apyPct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</div>
                         <div class="text-[10px] text-slate-500 font-mono mt-0.5">${apyDiffNonNeg ? '+' : ''}${apyDiffDisplay}pp az APR-hez képest</div>
                     </div>
                 </div>
@@ -45258,7 +45272,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // csak a saját, függetlenül előforduló kerekítés-határesetét fedi.)
             const expDollarAbsFixed = Math.abs(expectancyDollar).toFixed(2);
             const expDollarSign = (expectancyDollar >= 0 || expDollarAbsFixed === '0.00') ? '+' : '-';
-            const expRFixed = expectancyR.toFixed(2);
+            // JAVÍTÁS (audit — nyers tudományos jelölés szivárgás): az
+            // "Átlagos veszteség" mezőnek van min="0.01" HTML attribútuma,
+            // de ez (mint az app többi number-inputjánál is) nem akadályozza
+            // meg, hogy a felhasználó ennél kisebb, pozitív, véges értéket
+            // (pl. "1e-19") írjon be — a JS-es validáció csak `avgLoss <= 0`-t
+            // zár ki. Egy ilyen rendkívül kicsi avgLoss mellett az
+            // `expectancyR = expectancyDollar / avgLoss` egyénként véges
+            // marad (átmegy a fenti `Number.isFinite()` ellenőrzésen), de
+            // elérheti a >=1e21 nagyságrendet, ahol a natív `.toFixed()` MAGA
+            // IS nyers tudományos jelölésre vált (pl. "(+1.2e+21R)" a
+            // formázott "(+1,200,000,000,000,000,000,000R)" helyett) —
+            // ugyanaz a hibaosztály, mint a Staking/Yield APY vs APR
+            // Kalkulátornál. `.toLocaleString()`-re váltva, a
+            // `minimumFractionDigits`-et is 2-re állítva, hogy a lenti
+            // "-0.00" string-összehasonlítás bit-egyezően ugyanazt az
+            // eredményt adja, mint korábban a `.toFixed(2)`.
+            const expRFixed = expectancyR.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const expRIsZero = expRFixed === '-0.00';
             const expRDisplay = expRIsZero ? '0.00' : expRFixed;
             const expRNonNeg = expectancyR >= 0 || expRIsZero;
