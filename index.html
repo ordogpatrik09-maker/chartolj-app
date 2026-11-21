@@ -20329,10 +20329,34 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const out = document.getElementById('os-result');
             const params = osReadParams(type);
 
-            // Validáció: minden beolvasott számérték legyen véges és nemnegatív
-            const invalid = Object.values(params).some(x => !Number.isFinite(x) || x < 0);
+            // Validáció: minden beolvasott számérték legyen véges, ÉS a
+            // kötési ár / részvény belépő ár jellegű mezők (ahol a 0 vagy
+            // negatív érték gazdaságilag értelmetlen — egy opciónak vagy
+            // részvénynek nem lehet $0 vagy negatív ára) SZIGORÚAN
+            // pozitívak legyenek, a prémium-jellegű mezők pedig (ahol a 0
+            // egy szélsőséges, de valós "elhanyagolható értékű opció"
+            // esetet jelent) legalább nemnegatívak.
+            // JAVÍTÁS (minőségjavítási kör, hiányzó input-validáció):
+            // korábban MINDEN mező csak "nemnegatív" (x < 0) ellenőrzést
+            // kapott, ami a strike/entryPrice mezőknél a 0-t is átengedte.
+            // Ez nem okozott hibát/NaN-t, de egy csendben FÉLREVEZETŐ
+            // eredményhez vezetett: a lejjebb számolt `centerPrice` (ami
+            // pontosan ezekből az árakból adódik) 0-ra esett, ami egy 0
+            // HOSSZÚSÁGÚ mintavételezési tartományt ([0, 0]) eredményezett
+            // — a kirajzolt "Max. profit"/"Max. veszteség" ekkor a 0 árnál
+            // vett EGYETLEN kifizetést mutatta a teljes (degenerált)
+            // tartományon át, FÜGGETLENÜL attól, hogy a stratégia
+            // valójában korlátlan profitú lenne (pl. egy $0 strike-ú Long
+            // Call bármilyen pozitív árnál ITM, tehát a valós max. profit
+            // korlátlan — a kalkulátor ennek ellenére egy állandó, negatív
+            // "-$prémium" veszteséget jelzett ki "Korlátlan" helyett).
+            const PRICE_LIKE_KEYS = new Set(['strike', 'entryPrice', 'strikeLow', 'strikeHigh', 'callStrike', 'putStrike']);
+            const invalid = Object.entries(params).some(([key, x]) => {
+                if (!Number.isFinite(x)) return true;
+                return PRICE_LIKE_KEYS.has(key) ? x <= 0 : x < 0;
+            });
             if (invalid) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nemnegatív értékeket minden mezőben!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges értékeket — a kötési ár és a belépő ár mezők NEM lehetnek nulla vagy negatívak, a prémium mezők legalább nullák lehetnek!</div>`;
                 return;
             }
 
