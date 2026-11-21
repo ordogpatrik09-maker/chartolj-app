@@ -20336,6 +20336,35 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (minőségjavítási kör, hiányzó input-validáció): a Bull
+            // Call / Bear Put Spread és a Long Strangle mezői explicit
+            // "alsó"/"felső" (ill. call/put) feliratot kapnak, és az
+            // osPayoffAtPrice() a két strike helyes SORRENDJÉT feltételezi.
+            // Ha a felhasználó felcseréli őket (pl. a "felső" mezőbe ír
+            // kisebb számot, mint az "alsó" mezőbe), a kirajzolt görbe NEM
+            // hibát/NaN-t ad, hanem egy csendben ÉRVÉNYES, de a feliratnak
+            // és a választott stratégia nevének ELLENTMONDÓ kifizetést
+            // (pl. "Bull Call Spread" néven valójában egy lefelé nyereséges
+            // görbét) — ez tipikus, észrevehetetlen felhasználói hiba a
+            // meglévő "nemnegatív érték" ellenőrzés mellett is, ezért itt
+            // külön, stratégia-specifikus sorrend-ellenőrzést kell végezni.
+            const strikeOrderError = (() => {
+                if (type === 'bull_call_spread' && params.strikeLow >= params.strikeHigh) {
+                    return 'Az alsó strike-nak KISEBBNEK kell lennie a felső strike-nál egy Bull Call Spreadnél!';
+                }
+                if (type === 'bear_put_spread' && params.strikeLow >= params.strikeHigh) {
+                    return 'Az alsó strike-nak KISEBBNEK kell lennie a felső strike-nál egy Bear Put Spreadnél!';
+                }
+                if (type === 'long_strangle' && params.putStrike >= params.callStrike) {
+                    return 'A put kötési árának (alsó) KISEBBNEK kell lennie a call kötési áránál (felső) egy Long Strangle-nél!';
+                }
+                return null;
+            })();
+            if (strikeOrderError) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${strikeOrderError}</div>`;
+                return;
+            }
+
             // Középponti referenciaár a tartomány kiszámításához (a releváns
             // strike(ok) átlaga, vagy a saját belépő ár fedezett pozícióknál).
             let centerPrice;
