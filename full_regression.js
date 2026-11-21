@@ -97,23 +97,20 @@ check('academy_modules_count', () => {
 // rendelkező fő fogalomnak van — ez tartalmi hiányosság volt, nem
 // duplikátum-tisztítás, ezért a várt szám szándékosan 94-ről 95-re NŐTT
 // (ez sem regresszió).
-// JAVÍTÁS (2026-11-21): auditáltam a LESSONS_DATA-t olyan leckékre,
-// amelyek egy önálló, néven nevezett fogalmat tanítanak ÉS saját
-// kalkulátorral is rendelkeznek (a btcdom-mintához hasonlóan), de a
-// Szószedetben nem szerepelnek — 6 ilyen leckét találtam (338: Mass
-// Index, 353: Denomination Effect, 371: Relative Vigor Index (RVI),
-// 392: Path Dependency, 495: Volatility Ratio Indikátor, 498: Trend
-// Exhaustion Index). Ez is tartalmi hiányosság, nem duplikátum, ezért a
-// várt szám szándékosan 95-ről 101-re NŐTT (nem regresszió). Megjegyzés:
-// a 204 DIRECT_MODAL_TOOLS calculator túlnyomó többsége (pl. CCI, MFI,
-// Williams %R, Vortex, Aroon) szándékosan NEM kapott egyedi
-// szószedet-tételt — a Szószedet a leckék által néven tanított
-// fogalmakat fedi le, nem minden kalkulátort egy-egy tételként.
+// JAVÍTÁS (2026-11-21, felhasználói kérésre VISSZAVONVA): a korábbi
+// javítás 6 tételt (Mass Index, Denomination Effect, RVI, Path
+// Dependency, Volatility Ratio Indikátor, Trend Exhaustion Index) adott
+// hozzá a Szószedethez. A felhasználó ezeket ("Legyél szörszálhasogató,
+// mik a fölösleges dolgok az appban") kifejezetten fölöslegesnek,
+// túl-niche-nek ítélte, és kérte a kalkulátorokkal/leckékkel együtt
+// (btcdom-modal, option-strategy-modal, stb.) való eltávolításukat —
+// ezért a várt szám szándékosan VISSZACSÖKKENT 101-ről 95-re (nem
+// regresszió, hanem egy korábbi bővítés tudatos visszavonása).
 check('glossary_terms_count', () => {
     const src = extractBalanced(html, 'const GLOSSARY_TERMS = ', '[', ']');
     const data = new Function('return ' + src)();
     if (!Array.isArray(data)) throw new Error('GLOSSARY_TERMS nem tömb');
-    if (data.length !== 101) throw new Error(`Várt 101 szószedet-tétel, kapott ${data.length}`);
+    if (data.length !== 95) throw new Error(`Várt 95 szószedet-tétel, kapott ${data.length}`);
     const terms = data.map(t => t.term.toLowerCase().replace(/\([^)]*\)/g, '').replace(/[^a-z0-9áéíóöőúüű]+/g, ''));
     const dupes = terms.filter((t, i) => terms.indexOf(t) !== i);
     if (dupes.length > 0) throw new Error(`Duplikált szószedet-tétel(ek): ${[...new Set(dupes)].join(', ')}`);
@@ -201,6 +198,12 @@ check('lessons_cards_and_quiz_integrity', () => {
 check('lesson_tool_map_integrity', () => {
     const modalIds = new Set([...html.matchAll(/id="([a-zA-Z0-9-]*-modal)"/g)].map(m => m[1]));
     const chartToggleTools = new Set(['rsi', 'bollinger', 'ema', 'trendline', 'fibonacci']);
+    // 'trade-risk-live' egy szándékos sentinel (nem egy valódi modal id) —
+    // a tryToolFromLesson() külön ágon kezeli: bezárja az Academy-t, megnyitja
+    // a mobil kereskedési jegyet, és rákapcsol a TP/SL mezőkre (lásd a
+    // Pozícióméret/RR kalkulátor-modalok eltávolítását, amik helyett ez a
+    // már létező, élő kereskedési-jegy kalkulátorra irányít át).
+    const sentinelTools = new Set(['alerts-modal', 'trade-risk-live']);
 
     const dmtMatch = html.match(/const DIRECT_MODAL_TOOLS = (\[[^\]]*\]);/);
     if (!dmtMatch) throw new Error('DIRECT_MODAL_TOOLS tömb nem található');
@@ -215,9 +218,9 @@ check('lesson_tool_map_integrity', () => {
         const idx = parseInt(k, 10);
         if (!(idx >= 0 && idx <= 551)) issues.push(`Lecke-index tartományon kívül: ${k}`);
         const tool = map[k].tool;
-        const valid = modalIds.has(tool) || chartToggleTools.has(tool);
+        const valid = modalIds.has(tool) || chartToggleTools.has(tool) || sentinelTools.has(tool);
         if (!valid) { issues.push(`Lecke #${k}: érvénytelen tool hivatkozás "${tool}"`); return; }
-        if (tool !== 'alerts-modal' && !chartToggleTools.has(tool) && !directModalTools.includes(tool)) {
+        if (!sentinelTools.has(tool) && !chartToggleTools.has(tool) && !directModalTools.includes(tool)) {
             issues.push(`Lecke #${k}: tool "${tool}" sem a DIRECT_MODAL_TOOLS-ban, sem chart-toggle nem — a tryToolFromLesson()-ben lekezeletlen maradna`);
         }
     });

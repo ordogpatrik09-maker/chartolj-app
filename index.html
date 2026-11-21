@@ -1569,20 +1569,12 @@
                 <div id="tools-dropdown" class="hidden absolute top-12 right-0 w-64 glass-dropdown rounded-xl p-2 z-50">
                     <div class="text-[10px] font-bold text-slate-400 uppercase px-2 py-1">Stratégiai kalkulátorok</div>
                     <div class="space-y-1 mt-1">
-                        <button onclick="closeToolsDropdown(); openToolModal('poscalc-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
-                            <span class="w-8 h-8 rounded-lg bg-neon-red/10 text-neon-red border border-neon-red/30 flex items-center justify-center text-sm"><i class="fa-solid fa-calculator"></i></span>
-                            <div>
-                                <div class="text-xs font-bold text-white">Pozícióméret kalkulátor</div>
-                                <div class="text-[10px] text-slate-400">Mennyit kockáztass egyetlen trade-en?</div>
-                            </div>
-                        </button>
-                        <button onclick="closeToolsDropdown(); openToolModal('rr-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
-                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-scale-balanced"></i></span>
-                            <div>
-                                <div class="text-xs font-bold text-white">Risk/Reward kalkulátor</div>
-                                <div class="text-[10px] text-slate-400">Megéri-e a trade a vállalt kockázatot?</div>
-                            </div>
-                        </button>
+                        <!-- Önálló Pozícióméret- és Risk/Reward kalkulátor SZÁNDÉKOSAN
+                             eltávolítva: a kereskedési jegyen (Trade fül, TP/SL blokk)
+                             időközben élő, a tényleges SL/TP árakból és egyenlegből
+                             számoló pozícióméret-kalkulátor és RR-arány kijelzés lett,
+                             ami kiváltja ezeket — a kézi, másolással dolgozó verzió
+                             feleslegesen duplikálta ugyanazt. -->
                         <button onclick="closeToolsDropdown(); openToolModal('dailylimit-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-gauge-high"></i></span>
                             <div>
@@ -1728,13 +1720,6 @@
                             <div>
                                 <div class="text-xs font-bold text-white">Bizonyossági Egyenérték (CE) Kalkulátor</div>
                                 <div class="text-[10px] text-slate-400">Mennyi biztos hozam ér annyit, mint a szóródó?</div>
-                            </div>
-                        </button>
-                        <button onclick="closeToolsDropdown(); openToolModal('downdev-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
-                            <span class="w-8 h-8 rounded-lg bg-rose-400/10 text-rose-400 border border-rose-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-trend-down"></i></span>
-                            <div>
-                                <div class="text-xs font-bold text-white">Downside Deviation Kalkulátor</div>
-                                <div class="text-[10px] text-slate-400">Csak a lefelé irányuló szórás — 2 stratégia összevetve</div>
                             </div>
                         </button>
                         <button onclick="closeToolsDropdown(); openToolModal('calmar-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
@@ -2899,7 +2884,6 @@
                                 <div class="text-[10px] text-slate-400">Hol állsz a 210k-blokkos halving-cikluson belül?</div>
                             </div>
                         </button>
-                        <button onclick="closeToolsDropdown(); openToolModal('btcdom-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-brands fa-bitcoin"></i></span>
                             <div>
                                 <div class="text-xs font-bold text-white">Bitcoin Dominancia & Altcoin-Rotáció</div>
@@ -2995,13 +2979,6 @@
                             <div>
                                 <div class="text-xs font-bold text-white">Opciós Kifizetés Kalkulátor</div>
                                 <div class="text-[10px] text-slate-400">Call/put nyereség-veszteség lejáratkor</div>
-                            </div>
-                        </button>
-                        <button onclick="closeToolsDropdown(); openToolModal('option-strategy-modal'); renderOptionStrategyInputs()" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
-                            <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-area"></i></span>
-                            <div>
-                                <div class="text-xs font-bold text-white">Opciós Stratégia-vizualizáló</div>
-                                <div class="text-[10px] text-slate-400">Spread, Straddle, Covered Call görbékkel</div>
                             </div>
                         </button>
                         <button onclick="closeToolsDropdown(); openToolModal('nakedoption-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
@@ -3970,37 +3947,6 @@
     </div>
 
     <!-- Pozícióméret Kalkulátor -->
-    <div id="poscalc-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
-            <div class="flex items-center justify-between mb-1">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-calculator text-neon-red"></i> Pozícióméret Kalkulátor
-                </h3>
-                <button onclick="closeToolModal('poscalc-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg, mekkora egyenleggel dolgozol, mennyit hajlandó vagy kockáztatni, és milyen messze van a stop-loss — a kalkulátor kiszámolja a helyes pozícióméretet.</p>
-
-            <label class="text-[11px] font-semibold text-slate-400" for="ps-balance">Számla egyenleg (USDT)</label>
-            <input type="number" inputmode="decimal" id="ps-balance" value="10000" step="100" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="ps-risk">Kockázat / trade (%)</label>
-            <input type="number" inputmode="decimal" id="ps-risk" value="1" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="ps-sl">Stop-loss távolság (%)</label>
-            <input type="number" inputmode="decimal" id="ps-sl" value="2" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="ps-rr">Risk : Reward arány</label>
-            <input type="number" inputmode="decimal" id="ps-rr" value="2" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-red/50">
-
-            <button onclick="calcPositionSize()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-red text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
-                Számolás
-            </button>
-
-            <div id="ps-result" role="status" aria-live="polite" class="mt-4"></div>
-            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy oktatási eszköz, nem befektetési tanácsadás. Az eredmény matematikai számítás, nem garancia a piaci kimenetelre.</p>
-        </div>
-    </div>
-
     <!-- Árfolyam-riasztások -->
     <div id="alerts-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
         <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
@@ -4042,43 +3988,11 @@
     </div>
 
     <!-- Kamatoskamat Szimulátor -->
-    <!-- Risk/Reward Kalkulátor -->
-    <div id="rr-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
-            <div class="flex items-center justify-between mb-1">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-scale-balanced text-neon-green"></i> Risk/Reward Kalkulátor
-                </h3>
-                <button onclick="closeToolModal('rr-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg a belépési, stop-loss és take-profit szinteket — megmutatja, megéri-e a trade a vállalt kockázatot.</p>
-
-            <label class="text-[11px] font-semibold text-slate-400">Irány</label>
-            <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750 mt-1 mb-3">
-                <button id="rr-dir-long" onclick="setRRDirection('long')" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-neon-green transition">Long</button>
-                <button id="rr-dir-short" onclick="setRRDirection('short')" class="flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">Short</button>
-            </div>
-
-            <label class="text-[11px] font-semibold text-slate-400" for="rr-entry">Belépési ár</label>
-            <input type="number" inputmode="decimal" id="rr-entry" value="100" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="rr-stop">Stop-loss ár</label>
-            <input type="number" inputmode="decimal" id="rr-stop" value="98" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="rr-target">Take-profit ár</label>
-            <input type="number" inputmode="decimal" id="rr-target" value="106" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="rr-size">Pozícióméret (darab/egység) — opcionális</label>
-            <input type="number" inputmode="decimal" id="rr-size" value="10" step="any" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
-
-            <button onclick="calcRR()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
-                Számolás
-            </button>
-
-            <div id="rr-result" role="status" aria-live="polite" class="mt-4"></div>
-            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ökölszabály: legalább 1:1.5-1:2 arány alatt a legtöbb kereskedő nem lép be — így egy alacsonyabb találati aránnyal is nyereséges maradhatsz hosszú távon.</p>
-        </div>
-    </div>
+    <!-- Önálló Pozícióméret- és Risk/Reward Kalkulátor (poscalc-modal, rr-modal)
+         SZÁNDÉKOSAN eltávolítva: a kereskedési jegyen (Trade fül, TP/SL blokk)
+         élő, a tényleges SL/TP árakból és egyenlegből számoló pozícióméret-
+         kalkulátor és RR-arány kijelzés lett — a kézi, másolással dolgozó
+         önálló verzió feleslegesen duplikálta ugyanazt a funkciót. -->
 
     <!-- Napi Veszteséglimit Tracker -->
     <!-- ================= TÖBBSZINTŰ (NAPI/HETI/HAVI) VESZTESÉGLIMIT — VÉSZLEÁLLÍTÓ RENDSZER (OKTATÁSI) =================
@@ -4755,56 +4669,6 @@
 
             <div id="certeq-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Minél nagyobb A, annál inkább "levon" a kalkulátor a várható hozamból a szóródás (variancia) büntetéseként. Ha a CE a várható hozam alá, akár NEGATÍVBA fordul, miközben a várható hozam pozitív, az azt jelzi: egy kockázatkerülő döntéshozó inkább egy biztos, akár alacsonyabb hozamot választana, mint ezt a szóródó sorozatot. Az A kockázatkerülési együttható szubjektív — minden kereskedő máshogy ítéli meg a saját kockázatvállalási hajlandóságát.</p>
-        </div>
-    </div>
-
-    <!-- ================= DOWNSIDE DEVIATION KALKULÁTOR (OKTATÁSI) =================
-         A Sortino Ráta kalkulátor (lásd sortino-modal) a downside deviationt
-         már KISZÁMOLJA belsőleg, de csak egy arányszám (a Sortino-ráta)
-         nevezőjeként jeleníti meg — SOHA nem mutatja meg önmagában a
-         teljes szórással egy táblázatban összevetve, és nem enged két
-         stratégiát EGYMÁS MELLETT nézni. Ez a hiányzó tanulási lépés: a
-         megfelelő tanulsága ("Downside Deviation — A Sortino Alapját Adó
-         Számítás" és a hozzá tartozó "Két Hasonló Stratégiánál" esettanulmány)
-         pontosan azt mutatja be, hogy KÉT, azonos TELJES szórású sorozat
-         teljesen eltérő downside deviationt (lefelé irányuló kockázatot)
-         rejthet — ezt a jelenséget csak egy 2-stratégiás, side-by-side
-         összehasonlító nézet tudja valóban szemléltetni, egy egyszerű
-         arányszám nem. Formula (population momentumok, pontosan a Sortino
-         kalkulátorral azonos "teljes mintaszámra vonatkozó" definíció):
-         átlag = (1/n) × Σ r_i, teljes szórás = sqrt((1/n) × Σ (r_i - átlag)²),
-         downside deviation (küszöb = MAR) = sqrt((1/n) × Σ min(0, r_i - MAR)²).
-         A "downside arány" (downside deviation / teljes szórás) megmutatja,
-         a teljes ingadozás hány százaléka számít valóban "rossz" (lefelé
-         irányuló) kockázatnak — minél alacsonyabb, annál inkább felfelé
-         "aszimmetrikus" (kedvező) a volatilitás. Ez ÖNÁLLÓ kalkulátor,
-         saját számítással — NEM hívja a calcSortino() függvényt, és nem
-         módosít semmilyen már létező mutatót vagy állapotot. -->
-    <div id="downdev-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
-            <div class="flex items-center justify-between mb-1">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-arrow-trend-down text-rose-400"></i> Downside Deviation Kalkulátor
-                </h3>
-                <button onclick="closeToolModal('downdev-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A teljes szórás EGYFORMÁN bünteti a felfelé és lefelé irányuló ingadozást — a downside deviation CSAK a küszöb (MAR) alatti hozamokat nézi. Add meg az "A" stratégia hozamait, opcionálisan egy "B" stratégiáét is (azonos küszöbbel összevetve), hogy lásd: azonos teljes szórás mögött mennyire eltérő lehet a valós, lefelé irányuló kockázat.</p>
-
-            <label class="text-[11px] font-semibold text-slate-400" for="downdev-returns-a">"A" stratégia időszaki hozamai (%, vesszővel elválasztva)</label>
-            <textarea id="downdev-returns-a" rows="3" placeholder="pl. 3.0, -3.0, 3.0, -3.0, 3.0, -3.0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">3.0, -3.0, 3.0, -3.0, 3.0, -3.0, 3.0, -3.0</textarea>
-
-            <label class="text-[11px] font-semibold text-slate-400" for="downdev-returns-b">"B" stratégia időszaki hozamai (%, opcionális — hagyd üresen, ha csak "A"-t nézed)</label>
-            <textarea id="downdev-returns-b" rows="3" placeholder="pl. 0.86, 0.86, 0.86, 0.86, 0.86, 0.86, 0.86, -8.21" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">0.86, 0.86, 0.86, 0.86, 0.86, 0.86, 0.86, -8.21</textarea>
-
-            <label class="text-[11px] font-semibold text-slate-400" for="downdev-mar">Küszöb / MAR (%, az "elfogadhatónak" tekintett minimum időszaki hozam)</label>
-            <input type="number" inputmode="decimal" id="downdev-mar" value="0" step="0.1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-rose-400/50">
-
-            <button onclick="calcDownsideDeviation()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-rose-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
-                Kiszámolás
-            </button>
-
-            <div id="downdev-result" role="status" aria-live="polite" class="mt-4"></div>
-            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A "downside arány" (downside deviation / teljes szórás) mutatja, a teljes ingadozás hány százaléka számít lefelé irányuló kockázatnak — 100% közeli érték esetén a volatilitás túlnyomó része "rossz" (veszteség-jellegű), alacsony érték esetén inkább "jó" (nyereség-jellegű) kilengésekből áll. Ez pontosan az a mutató, ami a Sortino Ráta nevezőjében rejtőzik — itt önmagában, két sorozat közt összevetve látható.</p>
         </div>
     </div>
 
@@ -8517,48 +8381,6 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
         </div>
     </div>
 
-    <!-- ================= OPCIÓS STRATÉGIA-VIZUALIZÁLÓ (TÖBBLÁBÚ, DIAGRAMOS, NAGY KITERJESZTÉS) =================
-         A meglévő "Opciós Kifizetés Kalkulátor" (optionpayoff-modal) csak EGY
-         vásárolt call/put lejáratkori kifizetését számolja, egyetlen számmal.
-         Ez az új eszköz ennek a hiányzó, nagyobb testvére: 7 klasszikus,
-         TÖBBLÁBÚ stratégia (Fedezett Call, Védő Put, Bull Call Spread, Bear
-         Put Spread, Long Straddle, Long Strangle, egyszerű Long Call/Put)
-         teljes kifizetési GÖRBÉJÉT rajzolja fel egy árfolyam-tartományon,
-         canvas diagrammal, + max. profit/veszteség/break-even pontokkal.
-         Teljesen önálló, új kód — nem módosítja a meglévő egylábú kalkulátort. -->
-    <div id="option-strategy-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div class="glass-dropdown rounded-2xl w-full max-w-md p-5 max-h-[85%] overflow-y-auto">
-            <div class="flex items-center justify-between mb-1">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-chart-area text-neon-purple"></i> Opciós Stratégia-vizualizáló
-                </h3>
-                <button onclick="closeToolModal('option-strategy-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Válassz egy klasszikus, TÖBBLÁBÚ opciós stratégiát, és lásd a teljes lejáratkori kifizetési görbéjét az árfolyam függvényében — nem csak egy pontot, mint az egyszerű kalkulátor.</p>
-
-            <label class="text-[11px] font-semibold text-slate-400" for="os-strategy-type">Stratégia</label>
-            <select id="os-strategy-type" onchange="renderOptionStrategyInputs()" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 text-xs text-white focus:outline-none focus:border-neon-purple/50">
-                <option value="long_call">Long Call (vásárolt call)</option>
-                <option value="long_put">Long Put (vásárolt put)</option>
-                <option value="covered_call">Fedezett Call (Covered Call)</option>
-                <option value="protective_put">Védő Put (Protective Put)</option>
-                <option value="bull_call_spread">Bull Call Spread</option>
-                <option value="bear_put_spread">Bear Put Spread</option>
-                <option value="long_straddle">Long Straddle</option>
-                <option value="long_strangle">Long Strangle</option>
-            </select>
-
-            <div id="os-inputs" class="space-y-2.5 mb-4"></div>
-
-            <button onclick="runOptionStrategyVisualizer()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-purple text-white shadow-lg hover:brightness-110 active:scale-[0.98] transition">
-                Kifizetési görbe megjelenítése
-            </button>
-
-            <div id="os-result" role="status" aria-live="polite" class="mt-4"></div>
-            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Egyszerűsített, oktatási közelítés: csak a LEJÁRATKORI kifizetést mutatja (nincs benne idő-érték, implikált volatilitás vagy a lejárat előtti árváltozás hatása), és 1 kontraktus/részvény-egységre számol, tranzakciós díjak nélkül.</p>
-        </div>
-    </div>
-
     <!-- ================= PÁRKERESKEDÉS (PAIRS TRADING) SZIMULÁTOR (NAGY KITERJESZTÉS) =================
          A Párkereskedés koncepciója eddig csak egy Akadémia-leckében szerepelt,
          ESZKÖZ nélkül. Ez pótolja: KÉT korrelált (szintetikusan generált,
@@ -9504,47 +9326,6 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="halving-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy EGYSZERŰSÍTETT, lineáris becslés, ÁLLANDÓ átlagos blokkidőt feltételezve — a valóságban a hálózati hash-rate és a nehézségi szint (difficulty) folyton módosul, ezért a tényleges halving-dátum ettől eltérhet. A "ciklus-fázis" és a hozzá kötött elméleti várakozások (pl. hogy a ciklus vége felé jár a csúcs) NEM garanciák, csak a múltbeli (mindössze 4 megfigyelt) ciklus mintázatán alapuló, erősen bizonytalan heurisztikák — a múltbeli mintázat nem jósolja meg a jövőt.</p>
-        </div>
-    </div>
-
-    <!-- ================= BITCOIN DOMINANCIA & ALTCOIN-ROTÁCIÓ KALKULÁTOR =================
-         Az 504-es lecke (A Kriptopiac Alapjai, "Tőkésítés és dominancia" kártya)
-         elmagyarázza, hogy a BTC piaci dominancia (BTC piaci kapitalizáció / teljes
-         kriptopiaci kapitalizáció) a piac makro-"hangulatát" jelzi: ha nő, a tőke
-         jellemzően az altcoinokból a Bitcoinba menekül — de eddig NEM volt hozzá
-         eszköz, ami ezt SZÁMSZERŰSÍTI. Ez a kalkulátor kiszámolja a jelenlegi
-         dominanciát, és opcionálisan (egy korábbi időpont adatai alapján) a
-         dominancia-elmozdulás IRÁNYÁT és nagyságát is. -->
-    <div id="btcdom-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
-            <div class="flex items-center justify-between mb-1">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fa-brands fa-bitcoin text-amber-400"></i> Bitcoin Dominancia & Altcoin-Rotáció
-                </h3>
-                <button onclick="closeToolModal('btcdom-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">A Bitcoin (BTC) piaci dominanciája (BTC piaci kapitalizáció / teljes kriptopiaci kapitalizáció) jelzi a piac "hangulatát": ha nő, a tőke jellemzően a kockázatosabb altcoinokból a relatíve biztonságosabb Bitcoinba menekül. Add meg a jelenlegi kapitalizációkat, és opcionálisan egy korábbi időpont adatait is, hogy lásd az elmozdulás irányát.</p>
-
-            <label class="text-[11px] font-semibold text-slate-400" for="btcdom-btccap">Bitcoin piaci kapitalizáció ($)</label>
-            <input type="number" inputmode="decimal" id="btcdom-btccap" value="1900000000000" step="1000000000" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="btcdom-totalcap">Teljes kriptopiaci kapitalizáció ($)</label>
-            <input type="number" inputmode="decimal" id="btcdom-totalcap" value="3600000000000" step="1000000000" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
-
-            <p class="text-[10px] font-semibold text-slate-500 mt-2 mb-1">Korábbi időpont (opcionális — a rotáció irányához)</p>
-
-            <label class="text-[11px] font-semibold text-slate-400" for="btcdom-prevbtccap">BTC piaci kapitalizáció korábban ($, opcionális — hagyd 0-n, ha nincs)</label>
-            <input type="number" inputmode="decimal" id="btcdom-prevbtccap" value="0" step="1000000000" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
-
-            <label class="text-[11px] font-semibold text-slate-400" for="btcdom-prevtotalcap">Teljes kriptopiaci kapitalizáció korábban ($, opcionális — hagyd 0-n, ha nincs)</label>
-            <input type="number" inputmode="decimal" id="btcdom-prevtotalcap" value="0" step="1000000000" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
-
-            <button onclick="calcBtcDominance()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
-                Kiszámolás
-            </button>
-
-            <div id="btcdom-result" role="status" aria-live="polite" class="mt-4"></div>
-            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A BTC-dominancia egy ÖKÖLSZABÁLY-jellegű makro-jelzés, NEM egzakt előrejelzés — rövid távon sokféle okból (pl. új stablecoin-kibocsátás, egy nagy altcoin hirtelen árfolyam-ugrása) mozoghat anélkül, hogy valódi tőke-"rotáció" történne. A ±1 százalékpontos küszöb ebben a kalkulátorban egy egyszerűsített, önkényesen választott határ a zaj kiszűrésére, nem egy hivatalos definíció.</p>
         </div>
     </div>
 
@@ -14335,20 +14116,10 @@ Mean-reversion,2.5</textarea>
                     <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform" id="tools-cat-sizing-chevron"></i>
                 </button>
                 <div id="tools-cat-sizing" class="hidden p-2 pt-2 space-y-1.5 bg-dark-900/30 border-t border-dark-800">
-                    <button onclick="closeMobileToolsModal(); openToolModal('poscalc-modal')" data-tool-title="pozícióméret kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
-                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-calculator"></i></span>
-                        <div>
-                            <div class="text-xs font-bold text-white">Pozícióméret kalkulátor</div>
-                            <div class="text-[10px] text-slate-400">Mennyit kockáztass egyetlen trade-en?</div>
-                        </div>
-                    </button>
-                    <button onclick="closeMobileToolsModal(); openToolModal('rr-modal')" data-tool-title="risk/reward kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
-                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-scale-balanced"></i></span>
-                        <div>
-                            <div class="text-xs font-bold text-white">Risk/Reward kalkulátor</div>
-                            <div class="text-[10px] text-slate-400">Megéri-e a trade a vállalt kockázatot?</div>
-                        </div>
-                    </button>
+                    <!-- Önálló Pozícióméret- és Risk/Reward kalkulátor SZÁNDÉKOSAN
+                         eltávolítva: a kereskedési jegyen (Trade fül) időközben élő,
+                         a tényleges SL/TP árakból és egyenlegből számoló verzió lett,
+                         ami kiváltja ezeket. -->
                     <button onclick="closeMobileToolsModal(); openToolModal('dailylimit-modal')" data-tool-title="napi heti havi veszteséglimit vészleállító kill switch" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
                         <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-gauge-high"></i></span>
                         <div>
@@ -14588,13 +14359,6 @@ Mean-reversion,2.5</textarea>
                             <div class="text-[10px] text-slate-400">Mennyi biztos hozam ér annyit, mint a szóródó?</div>
                         </div>
                     </button>
-                    <button onclick="closeMobileToolsModal(); openToolModal('downdev-modal')" data-tool-title="downside deviation kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
-                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrow-trend-down"></i></span>
-                        <div>
-                            <div class="text-xs font-bold text-white">Downside Deviation Kalkulátor</div>
-                            <div class="text-[10px] text-slate-400">Csak a lefelé irányuló szórás — 2 stratégia összevetve</div>
-                        </div>
-                    </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('calmar-modal')" data-tool-title="calmar ratio kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
                         <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-mountain"></i></span>
                         <div>
@@ -14720,13 +14484,6 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Opciós Kifizetés Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Call/put nyereség-veszteség lejáratkor</div>
-                        </div>
-                    </button>
-                    <button onclick="closeMobileToolsModal(); openToolModal('option-strategy-modal'); renderOptionStrategyInputs()" data-tool-title="opciós stratégia-vizualizáló" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
-                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-chart-area"></i></span>
-                        <div>
-                            <div class="text-xs font-bold text-white">Opciós Stratégia-vizualizáló</div>
-                            <div class="text-[10px] text-slate-400">Spread, Straddle, Covered Call görbékkel</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('nakedoption-modal')" data-tool-title="meztelen opció kockázat kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -15842,7 +15599,6 @@ Mean-reversion,2.5</textarea>
                             <div class="text-[10px] text-slate-400">On-chain beáramlás/kiáramlás kiugró mozgásának mérése</div>
                         </div>
                     </button>
-                    <button onclick="closeMobileToolsModal(); openToolModal('btcdom-modal')" data-tool-title="bitcoin dominancia & altcoin-rotáció" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
                         <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-brands fa-bitcoin"></i></span>
                         <div>
                             <div class="text-xs font-bold text-white">Bitcoin Dominancia & Altcoin-Rotáció</div>
@@ -16108,7 +15864,6 @@ Mean-reversion,2.5</textarea>
                 <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750 mb-3">
                     <button id="leaderboard-tab-global" onclick="setLeaderboardTab('global')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Globális</button>
                     <button id="leaderboard-tab-friends" onclick="setLeaderboardTab('friends')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Barátok</button>
-                    <button id="leaderboard-tab-league" onclick="setLeaderboardTab('league')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Liga</button>
                 </div>
                 <div id="leaderboard-global-panel">
                     <div id="leaderboard-list" class="space-y-1.5"></div>
@@ -16121,15 +15876,6 @@ Mean-reversion,2.5</textarea>
                         <button onclick="addFriendByCode()" class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-dark-800 text-neon-cyan hover:bg-dark-750 transition shrink-0">+ Hozzáad</button>
                     </div>
                     <p id="friends-demo-note" class="text-[9.5px] text-slate-600 mt-3 leading-relaxed">Jelentkezz be, és kérd el a barátod meghívókódját (Meghívás gomb) — utána mindkettőtöknél valódi, megosztott XP-verseny jelenik meg.</p>
-                </div>
-                <div id="leaderboard-league-panel" class="hidden">
-                    <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750 mb-2.5">
-                        <button id="league-period-weekly" onclick="setLeagueSeasonPeriod('weekly')" class="flex-1 py-1 rounded-lg text-[10.5px] font-bold transition">Heti</button>
-                        <button id="league-period-monthly" onclick="setLeagueSeasonPeriod('monthly')" class="flex-1 py-1 rounded-lg text-[10.5px] font-bold transition">Havi</button>
-                    </div>
-                    <p id="league-period-ends-note" class="text-[9.5px] text-slate-500 mb-2"></p>
-                    <div id="league-list" class="space-y-1.5"></div>
-                    <p id="league-demo-note" class="text-[9.5px] text-slate-600 mt-3 leading-relaxed">A liga az IDŐSZAKON BELÜL (ettől a héttől/hónaptól) szerzett XP-t rangsorolja, nem az összes idők XP-jét — mindenki egyenlő eséllyel indul minden új időszak elején. Jelentkezz be, hogy a valódi, más felhasználóktól származó liga-adatot lásd.</p>
                 </div>
             </div>
 
@@ -16268,7 +16014,6 @@ Mean-reversion,2.5</textarea>
                 <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750">
                     <button id="lang-btn-hu" onclick="setLanguage('hu')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Magyar</button>
                     <button id="lang-btn-en" onclick="setLanguage('en')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">English</button>
-                    <button id="lang-btn-ro" onclick="setLanguage('ro')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Română</button>
                 </div>
             </div>
             <div class="glass-card rounded-xl p-3">
@@ -17561,35 +17306,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 greeting_day_guest: 'Good afternoon!', greeting_day_user: 'Good afternoon, {name}!',
                 greeting_evening_guest: 'Good evening!', greeting_evening_user: 'Good evening, {name}!'
             },
-            ro: {
-                nav_home: 'Acasă', nav_trade: 'Tranzacționare', nav_academy: 'Academie',
-                nav_progress: 'Progres', nav_profile: 'Profil',
-                home_greeting_guest: 'Bun venit!', home_greeting_user: 'Bun venit, {name}!',
-                home_subtitle: 'Ești gata pentru următorul exercițiu?',
-                home_progress_label: 'Progresul tău', home_lessons_suffix: 'lecții',
-                home_quick_actions: 'Acțiuni rapide', home_action_trade: 'Tranzacție demo',
-                home_action_academy: 'Învață', home_action_progress: 'Progres',
-                home_market_overview: 'Listă de urmărire', home_market_simulated: '(date simulate)',
-                home_market_demo_label: 'Date DEMO',
-                progress_title: 'Progresul tău', progress_xp: 'XP', progress_coins: 'Monede',
-                progress_lessons: 'Lecții finalizate', progress_ranks: 'Ranguri obținute',
-                progress_ranks_missions: 'Ranguri, Misiuni & Teme', progress_badges: 'Insigne',
-                profile_title: 'Profil', profile_guest: 'Vizitator', profile_no_account: 'Neautentificat',
-                profile_login: 'Autentificare', profile_login_register: 'Autentificare / Înregistrare',
-                profile_logout: 'Deconectare', profile_premium: 'Chartolj Premium',
-                profile_diagnostics: 'Avansat / Diagnosticare', profile_premium_active: 'Premium activ',
-                profile_free_plan: 'Plan gratuit', profile_language: 'Limbă',
-                premium_badge: 'PREMIUM', free_badge: 'GRATUIT',
-                academy_tab_lessons: 'Lecții', academy_tab_gallery: 'Modele Grafice',
-                academy_tab_whatif: 'Ce ar fi dacă...', academy_tab_drill: 'Chart Drill',
-                academy_tab_replay: 'Simulator Replay', academy_tab_mistakes: 'Greșeli',
-                academy_tab_ai_analyzer: 'Analiză AI Grafic', academy_tab_hungarian: 'Piața Maghiară',
-                academy_new_badge: 'Nou',
-                greeting_night_guest: 'Noapte bună!', greeting_night_user: 'Noapte bună, {name}!',
-                greeting_morning_guest: 'Bună dimineața!', greeting_morning_user: 'Bună dimineața, {name}!',
-                greeting_day_guest: 'Bună ziua!', greeting_day_user: 'Bună ziua, {name}!',
-                greeting_evening_guest: 'Bună seara!', greeting_evening_user: 'Bună seara, {name}!'
-            }
         };
 
         // IDEIGLENESEN nem olvasunk/írunk localStorage-ba a nyelvi beállításhoz
@@ -20206,327 +19922,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 `;
             }).join('');
-        }
-
-        // ================= OPCIÓS STRATÉGIA-VIZUALIZÁLÓ MOTORJA (OKTATÁSI, NAGY KITERJESZTÉS) =================
-        // Minden stratégia lejáratkori, 1 egységre (részvény/kontraktus)
-        // vetített, NETTÓ kifizetését adja vissza egy adott lejárati
-        // árfolyamon (price). Klasszikus, jól ismert zárt formulák —
-        // mindegyik független Python-implementációval kereszt-ellenőrzött.
-        function osPayoffAtPrice(strategyType, p, price) {
-            if (strategyType === 'long_call') {
-                return Math.max(0, price - p.strike) - p.premium;
-            }
-            if (strategyType === 'long_put') {
-                return Math.max(0, p.strike - price) - p.premium;
-            }
-            if (strategyType === 'covered_call') {
-                // Birtokolt részvény + eladott (short) call
-                return (price - p.entryPrice) + p.premium - Math.max(0, price - p.strike);
-            }
-            if (strategyType === 'protective_put') {
-                // Birtokolt részvény + vásárolt (long) put
-                return (price - p.entryPrice) - p.premium + Math.max(0, p.strike - price);
-            }
-            if (strategyType === 'bull_call_spread') {
-                // Vásárolt call (alsó strike) + eladott call (felső strike)
-                const netCost = p.premiumLow - p.premiumHigh;
-                return Math.max(0, price - p.strikeLow) - Math.max(0, price - p.strikeHigh) - netCost;
-            }
-            if (strategyType === 'bear_put_spread') {
-                // Vásárolt put (felső strike) + eladott put (alsó strike)
-                const netCost = p.premiumHigh - p.premiumLow;
-                return Math.max(0, p.strikeHigh - price) - Math.max(0, p.strikeLow - price) - netCost;
-            }
-            if (strategyType === 'long_straddle') {
-                // Vásárolt call + vásárolt put, AZONOS strike-on
-                return Math.max(0, price - p.strike) + Math.max(0, p.strike - price) - (p.callPremium + p.putPremium);
-            }
-            if (strategyType === 'long_strangle') {
-                // Vásárolt call (felső strike) + vásárolt put (alsó strike)
-                return Math.max(0, price - p.callStrike) + Math.max(0, p.putStrike - price) - (p.callPremium + p.putPremium);
-            }
-            return 0;
-        }
-
-        function renderOptionStrategyInputs() {
-            const type = document.getElementById('os-strategy-type').value;
-            const el = document.getElementById('os-inputs');
-            const fieldHtml = (id, label, value, step) => `
-                <div><label class="text-[10px] text-slate-500" for="${id}">${label}</label><input type="number" inputmode="decimal" id="${id}" value="${value}" step="${step || '0.1'}" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-2 py-1.5 mt-0.5 font-mono text-xs text-white focus:outline-none"></div>
-            `;
-
-            if (type === 'long_call' || type === 'long_put') {
-                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
-                    ${fieldHtml('os-strike', 'Kötési ár (Strike)', 100, 1)}
-                    ${fieldHtml('os-premium', 'Prémium ($/egység)', 5, 0.1)}
-                </div>`;
-            } else if (type === 'covered_call' || type === 'protective_put') {
-                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
-                    ${fieldHtml('os-entry-price', 'Saját belépő ár (részvény)', 100, 1)}
-                    ${fieldHtml('os-strike', 'Opció kötési ára (Strike)', type === 'covered_call' ? 110 : 90, 1)}
-                </div>
-                <div class="mt-2">${fieldHtml('os-premium', type === 'covered_call' ? 'Kapott prémium (eladott call)' : 'Kifizetett prémium (vásárolt put)', 4, 0.1)}</div>`;
-            } else if (type === 'bull_call_spread') {
-                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
-                    ${fieldHtml('os-strike-low', 'Alsó strike (vásárolt call)', 100, 1)}
-                    ${fieldHtml('os-strike-high', 'Felső strike (eladott call)', 115, 1)}
-                </div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    ${fieldHtml('os-premium-low', 'Fizetett prémium (alsó)', 7, 0.1)}
-                    ${fieldHtml('os-premium-high', 'Kapott prémium (felső)', 2, 0.1)}
-                </div>`;
-            } else if (type === 'bear_put_spread') {
-                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
-                    ${fieldHtml('os-strike-high', 'Felső strike (vásárolt put)', 100, 1)}
-                    ${fieldHtml('os-strike-low', 'Alsó strike (eladott put)', 85, 1)}
-                </div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    ${fieldHtml('os-premium-high', 'Fizetett prémium (felső)', 6, 0.1)}
-                    ${fieldHtml('os-premium-low', 'Kapott prémium (alsó)', 2, 0.1)}
-                </div>`;
-            } else if (type === 'long_straddle') {
-                el.innerHTML = `
-                    ${fieldHtml('os-strike', 'Közös kötési ár (Strike)', 100, 1)}
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        ${fieldHtml('os-call-premium', 'Call prémium', 5, 0.1)}
-                        ${fieldHtml('os-put-premium', 'Put prémium', 5, 0.1)}
-                    </div>`;
-            } else if (type === 'long_strangle') {
-                el.innerHTML = `<div class="grid grid-cols-2 gap-2">
-                    ${fieldHtml('os-call-strike', 'Call kötési ára (felső)', 110, 1)}
-                    ${fieldHtml('os-put-strike', 'Put kötési ára (alsó)', 90, 1)}
-                </div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    ${fieldHtml('os-call-premium', 'Call prémium', 3, 0.1)}
-                    ${fieldHtml('os-put-premium', 'Put prémium', 3, 0.1)}
-                </div>`;
-            }
-        }
-
-        function osReadParams(type) {
-            const v = (id) => parseFloat(document.getElementById(id).value);
-            if (type === 'long_call' || type === 'long_put') {
-                return { strike: v('os-strike'), premium: v('os-premium') };
-            }
-            if (type === 'covered_call' || type === 'protective_put') {
-                return { entryPrice: v('os-entry-price'), strike: v('os-strike'), premium: v('os-premium') };
-            }
-            if (type === 'bull_call_spread') {
-                return { strikeLow: v('os-strike-low'), strikeHigh: v('os-strike-high'), premiumLow: v('os-premium-low'), premiumHigh: v('os-premium-high') };
-            }
-            if (type === 'bear_put_spread') {
-                return { strikeLow: v('os-strike-low'), strikeHigh: v('os-strike-high'), premiumLow: v('os-premium-low'), premiumHigh: v('os-premium-high') };
-            }
-            if (type === 'long_straddle') {
-                return { strike: v('os-strike'), callPremium: v('os-call-premium'), putPremium: v('os-put-premium') };
-            }
-            if (type === 'long_strangle') {
-                return { callStrike: v('os-call-strike'), putStrike: v('os-put-strike'), callPremium: v('os-call-premium'), putPremium: v('os-put-premium') };
-            }
-            return {};
-        }
-
-        const OS_STRATEGY_LABELS = {
-            long_call: 'Long Call', long_put: 'Long Put', covered_call: 'Fedezett Call (Covered Call)',
-            protective_put: 'Védő Put (Protective Put)', bull_call_spread: 'Bull Call Spread',
-            bear_put_spread: 'Bear Put Spread', long_straddle: 'Long Straddle', long_strangle: 'Long Strangle'
-        };
-
-        function runOptionStrategyVisualizer() {
-            const type = document.getElementById('os-strategy-type').value;
-            const out = document.getElementById('os-result');
-            const params = osReadParams(type);
-
-            // Validáció: minden beolvasott számérték legyen véges, ÉS a
-            // kötési ár / részvény belépő ár jellegű mezők (ahol a 0 vagy
-            // negatív érték gazdaságilag értelmetlen — egy opciónak vagy
-            // részvénynek nem lehet $0 vagy negatív ára) SZIGORÚAN
-            // pozitívak legyenek, a prémium-jellegű mezők pedig (ahol a 0
-            // egy szélsőséges, de valós "elhanyagolható értékű opció"
-            // esetet jelent) legalább nemnegatívak.
-            // JAVÍTÁS (minőségjavítási kör, hiányzó input-validáció):
-            // korábban MINDEN mező csak "nemnegatív" (x < 0) ellenőrzést
-            // kapott, ami a strike/entryPrice mezőknél a 0-t is átengedte.
-            // Ez nem okozott hibát/NaN-t, de egy csendben FÉLREVEZETŐ
-            // eredményhez vezetett: a lejjebb számolt `centerPrice` (ami
-            // pontosan ezekből az árakból adódik) 0-ra esett, ami egy 0
-            // HOSSZÚSÁGÚ mintavételezési tartományt ([0, 0]) eredményezett
-            // — a kirajzolt "Max. profit"/"Max. veszteség" ekkor a 0 árnál
-            // vett EGYETLEN kifizetést mutatta a teljes (degenerált)
-            // tartományon át, FÜGGETLENÜL attól, hogy a stratégia
-            // valójában korlátlan profitú lenne (pl. egy $0 strike-ú Long
-            // Call bármilyen pozitív árnál ITM, tehát a valós max. profit
-            // korlátlan — a kalkulátor ennek ellenére egy állandó, negatív
-            // "-$prémium" veszteséget jelzett ki "Korlátlan" helyett).
-            const PRICE_LIKE_KEYS = new Set(['strike', 'entryPrice', 'strikeLow', 'strikeHigh', 'callStrike', 'putStrike']);
-            const invalid = Object.entries(params).some(([key, x]) => {
-                if (!Number.isFinite(x)) return true;
-                return PRICE_LIKE_KEYS.has(key) ? x <= 0 : x < 0;
-            });
-            if (invalid) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges értékeket — a kötési ár és a belépő ár mezők NEM lehetnek nulla vagy negatívak, a prémium mezők legalább nullák lehetnek!</div>`;
-                return;
-            }
-
-            // JAVÍTÁS (minőségjavítási kör, hiányzó input-validáció): a Bull
-            // Call / Bear Put Spread és a Long Strangle mezői explicit
-            // "alsó"/"felső" (ill. call/put) feliratot kapnak, és az
-            // osPayoffAtPrice() a két strike helyes SORRENDJÉT feltételezi.
-            // Ha a felhasználó felcseréli őket (pl. a "felső" mezőbe ír
-            // kisebb számot, mint az "alsó" mezőbe), a kirajzolt görbe NEM
-            // hibát/NaN-t ad, hanem egy csendben ÉRVÉNYES, de a feliratnak
-            // és a választott stratégia nevének ELLENTMONDÓ kifizetést
-            // (pl. "Bull Call Spread" néven valójában egy lefelé nyereséges
-            // görbét) — ez tipikus, észrevehetetlen felhasználói hiba a
-            // meglévő "nemnegatív érték" ellenőrzés mellett is, ezért itt
-            // külön, stratégia-specifikus sorrend-ellenőrzést kell végezni.
-            const strikeOrderError = (() => {
-                if (type === 'bull_call_spread' && params.strikeLow >= params.strikeHigh) {
-                    return 'Az alsó strike-nak KISEBBNEK kell lennie a felső strike-nál egy Bull Call Spreadnél!';
-                }
-                if (type === 'bear_put_spread' && params.strikeLow >= params.strikeHigh) {
-                    return 'Az alsó strike-nak KISEBBNEK kell lennie a felső strike-nál egy Bear Put Spreadnél!';
-                }
-                if (type === 'long_strangle' && params.putStrike >= params.callStrike) {
-                    return 'A put kötési árának (alsó) KISEBBNEK kell lennie a call kötési áránál (felső) egy Long Strangle-nél!';
-                }
-                return null;
-            })();
-            if (strikeOrderError) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${strikeOrderError}</div>`;
-                return;
-            }
-
-            // Középponti referenciaár a tartomány kiszámításához (a releváns
-            // strike(ok) átlaga, vagy a saját belépő ár fedezett pozícióknál).
-            let centerPrice;
-            if (type === 'covered_call' || type === 'protective_put') centerPrice = params.entryPrice;
-            else if (type === 'bull_call_spread' || type === 'bear_put_spread') centerPrice = (params.strikeLow + params.strikeHigh) / 2;
-            else if (type === 'long_strangle') centerPrice = (params.callStrike + params.putStrike) / 2;
-            else centerPrice = params.strike;
-
-            // JAVÍTÁS: a "részvény + opció" kombinált stratégiáknál (Fedezett
-            // Call, Védő Put) a valódi, elméleti maximális veszteség a
-            // részvény NULLÁRA esésénél jelentkezik — ha a mintavételezett
-            // tartomány alja a középár 50%-ánál áll meg, a kirajzolt
-            // "Max. veszteség" csak a tartomány szélén mért érték lenne,
-            // nem a tényleges, oktatásilag fontos legrosszabb eset. Ezeknél
-            // a tartomány aljának 0-nak kell lennie, hogy a görbe és a
-            // belőle számolt max. veszteség ténylegesen helyes legyen.
-            const stockAnchoredTypes = ['covered_call', 'protective_put'];
-            const rangeLow = stockAnchoredTypes.includes(type) ? 0 : Math.max(0, centerPrice * 0.5);
-            const rangeHigh = centerPrice * 1.5;
-            const steps = 120;
-            const curve = [];
-            let maxProfit = -Infinity, maxLoss = Infinity;
-            let maxProfitPrice = centerPrice, maxLossPrice = centerPrice;
-            for (let i = 0; i <= steps; i++) {
-                const price = rangeLow + (rangeHigh - rangeLow) * (i / steps);
-                const payoff = osPayoffAtPrice(type, params, price);
-                curve.push({ price, payoff });
-                if (payoff > maxProfit) { maxProfit = payoff; maxProfitPrice = price; }
-                if (payoff < maxLoss) { maxLoss = payoff; maxLossPrice = price; }
-            }
-
-            // Break-even pont(ok): azok a szakaszok a görbén, ahol az előjel vált.
-            const breakEvens = [];
-            for (let i = 1; i < curve.length; i++) {
-                const a = curve[i - 1], b = curve[i];
-                if ((a.payoff <= 0 && b.payoff > 0) || (a.payoff >= 0 && b.payoff < 0)) {
-                    const t = a.payoff === b.payoff ? 0 : (0 - a.payoff) / (b.payoff - a.payoff);
-                    breakEvens.push(a.price + (b.price - a.price) * t);
-                }
-            }
-
-            // Unlimited-profit jelzés: ha a jobb szélen a meredekség tartósan
-            // pozitív (a kifizetés még a tartomány legvégén is nő), akkor a
-            // valós max. profit elméletileg korlátlan — ezt jelezzük, nem a
-            // mintavételezett tartomány-széli számot mutatjuk véglegesnek.
-            const rightSlopePositive = curve[curve.length - 1].payoff > curve[curve.length - 6].payoff + 1e-6;
-            const isUnlimitedProfit = rightSlopePositive && ['long_call', 'protective_put', 'long_straddle', 'long_strangle'].includes(type);
-
-            // JAVÍTÁS: rendkívül kicsi (pl. 1e-10) kötési ár/prémió bemenetnél
-            // a `maxProfit`/`maxLoss` egy tetszőlegesen kicsi NEGATÍV
-            // lebegőpontos érték lehet, ami 2 tizedesjegyre kerekítve pontosan
-            // 0-ra kerekedik — a régi `fmt` az előjelet a KEREKÍTÉS ELŐTTI
-            // (`n < 0`) raw értékből olvasta ki, ezért "-$0.00" jelent meg,
-            // holott a megjelenített összeg maga nulla. A kerekített
-            // (megjelenítendő) magnitúdó alapján döntjük el az előjelet,
-            // konzisztensen a fájl többi "-0" javításával.
-            const fmt = (n) => {
-                const abs = Math.abs(n).toFixed(2);
-                return (n < 0 && abs !== '0.00') ? '-$' + abs : '$' + abs;
-            };
-
-            out.innerHTML = `
-                <canvas id="os-payoff-chart" width="320" height="140" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
-                <div class="grid grid-cols-2 gap-2 mb-3">
-                    <div class="rounded-xl bg-neon-green/5 border border-neon-green/30 p-2.5">
-                        <div class="text-[9.5px] text-neon-green uppercase font-bold mb-0.5">Max. profit</div>
-                        <div class="text-sm font-extrabold text-white">${isUnlimitedProfit ? 'Korlátlan' : fmt(maxProfit)}</div>
-                    </div>
-                    <div class="rounded-xl bg-neon-red/5 border border-neon-red/30 p-2.5">
-                        <div class="text-[9.5px] text-neon-red uppercase font-bold mb-0.5">Max. veszteség</div>
-                        <div class="text-sm font-extrabold text-white">${fmt(maxLoss)}</div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between font-mono text-xs">
-                    <span class="text-slate-400">Break-even árfolyam${breakEvens.length > 1 ? '-ok' : ''}:</span>
-                    <span class="font-bold text-amber-400">${breakEvens.length ? breakEvens.map(p => '$' + p.toFixed(2)).join(' / ') : 'nincs (mindig nyereséges/veszteséges)'}</span>
-                </div>
-            `;
-
-            const canvas = document.getElementById('os-payoff-chart');
-            drawOptionPayoffChart(canvas, curve, breakEvens);
-        }
-
-        // Teljes payoff-görbe rajzolása — zöld, ahol pozitív a kifizetés,
-        // piros, ahol negatív, egy vízszintes nulla-vonallal és a break-even
-        // pont(ok) megjelölésével.
-        function drawOptionPayoffChart(canvas, curve, breakEvens) {
-            if (!canvas || !curve.length) return;
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width, h = canvas.height;
-            ctx.clearRect(0, 0, w, h);
-
-            const payoffs = curve.map(c => c.payoff);
-            const minY = Math.min(...payoffs, 0);
-            const maxY = Math.max(...payoffs, 0);
-            const rangeY = (maxY - minY) || 1;
-            const padding = 8;
-            const toX = (i) => padding + (w - 2 * padding) * (i / (curve.length - 1));
-            const toY = (val) => h - padding - ((val - minY) / rangeY) * (h - 2 * padding);
-
-            // Nulla-vonal
-            ctx.strokeStyle = 'rgba(148,163,184,0.35)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(padding, toY(0));
-            ctx.lineTo(w - padding, toY(0));
-            ctx.stroke();
-
-            // Payoff görbe szegmensenként színezve (zöld/piros előjel szerint)
-            for (let i = 1; i < curve.length; i++) {
-                const y0 = curve[i - 1].payoff, y1 = curve[i].payoff;
-                ctx.strokeStyle = (y0 + y1) / 2 >= 0 ? '#00ff9d' : '#ff4d6d';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.moveTo(toX(i - 1), toY(y0));
-                ctx.lineTo(toX(i), toY(y1));
-                ctx.stroke();
-            }
-
-            // Break-even pont(ok) jelölése
-            ctx.fillStyle = '#fbbf24';
-            breakEvens.forEach(bePrice => {
-                const priceLow = curve[0].price, priceHigh = curve[curve.length - 1].price;
-                const frac = (bePrice - priceLow) / (priceHigh - priceLow);
-                const x = padding + (w - 2 * padding) * frac;
-                ctx.beginPath();
-                ctx.arc(x, toY(0), 3.5, 0, Math.PI * 2);
-                ctx.fill();
-            });
         }
 
         // ================= PÁRKERESKEDÉS (PAIRS TRADING) SZIMULÁTOR MOTORJA (NAGY KITERJESZTÉS) =================
@@ -25443,11 +24838,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         let _toolModalTriggers = {};
         function openToolModal(id) {
             _toolModalTriggers[id] = document.activeElement;
-            if (id === 'poscalc-modal') {
-                document.getElementById('ps-balance').value = Math.round(accountBalance);
-                document.getElementById('ps-result').innerHTML = '';
-            }
-            if (id === 'rr-modal') document.getElementById('rr-result').innerHTML = '';
             if (id === 'settlement-modal') {
                 const dEl = document.getElementById('settlement-trade-date');
                 if (dEl && !dEl.value) {
@@ -25480,10 +24870,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // néma (üres) kalkulátort okozna. Itt, az ÖSSZES megnyitási út közös
             // pontján, idempotensen (csak ha még tényleg üres a konténer)
             // biztosítjuk, hogy a form sosem maradhat kitöltetlen.
-            if (id === 'option-strategy-modal') {
-                const el = document.getElementById('os-inputs');
-                if (el && !el.children.length && typeof renderOptionStrategyInputs === 'function') renderOptionStrategyInputs();
-            }
             if (id === 'backtest-modal') {
                 const el = document.getElementById('backtest-strategy-inputs');
                 if (el && !el.children.length && typeof renderBacktestStrategyInputs === 'function') renderBacktestStrategyInputs();
@@ -25842,181 +25228,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         });
 
         // --- Pozícióméret kalkulátor ---
-        function calcPositionSize() {
-            const bal = parseFloat(document.getElementById('ps-balance').value) || 0;
-            const riskPct = parseFloat(document.getElementById('ps-risk').value) || 0;
-            const slPct = parseFloat(document.getElementById('ps-sl').value) || 0;
-            const rr = parseFloat(document.getElementById('ps-rr').value) || 0;
-            const out = document.getElementById('ps-result');
-
-            if (bal <= 0 || riskPct <= 0 || slPct <= 0 || !Number.isFinite(bal) || !Number.isFinite(riskPct) || !Number.isFinite(slPct) || !Number.isFinite(rr)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, nullánál nagyobb és véges értékeket!</div>`;
-                return;
-            }
-
-            const riskAmount = bal * (riskPct / 100);
-            const posSize = riskAmount / (slPct / 100);
-            const tpPctRaw = rr > 0 ? slPct * rr : 0;
-            // JAVÍTÁS: a bal/riskPct/slPct/rr mezők egyenként véges double-ök
-            // lehetnek (pl. mindegyik kb. 1e308), de a riskAmount/posSize/tpPct
-            // SZORZÁSBA/OSZTÁSBA már túlcsordulhat a double tartományán —
-            // ezt a fenti, csak a NYERS bemeneteket ellenőrző Number.isFinite()
-            // nem kapja el, mert maguk a bemenetek véges számok. Explicit
-            // ellenőrzés a SZÁMÍTOTT eredményeken, mielőtt a UI-ba kerülnének,
-            // ugyanaz a hibaosztály, mint a korábban javított Likvidációs
-            // Ár / Greeks / IV kalkulátoroknál. A tpPctRaw-t KORÁBBAN ez a
-            // guard nem ellenőrizte, ezért szélsőséges (de egyenként véges)
-            // Stop-Loss %/R:R mellett a "Javasolt TP" sorban nyers
-            // "+Infinity%" jelent meg, és az "Alkalmazás a kereskedési
-            // panelen" gomb egy Infinity TP%-ot adott át az
-            // applyPositionSizeToTrading()-nek, ami érvénytelen TP-árat
-            // írt volna a kereskedési panelre.
-            if (!Number.isFinite(riskAmount) || !Number.isFinite(posSize) || !Number.isFinite(tpPctRaw)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékekkel a számítás túllépi a kezelhető tartományt — adj meg kisebb, reálisabb számokat!</div>`;
-                return;
-            }
-            const capped = posSize > bal;
-            const finalSize = Math.min(posSize, bal);
-            // JAVÍTÁS: tpPctRaw/riskAmount/finalSize egyenként véges, de >=1e21
-            // nagyságrendű érték esetén a natív .toFixed() nyers tudományos
-            // jelölésre ("1e+21") vált — ugyanaz a hibaosztály, mint a korábban
-            // javított CCI/P/E/Elder Ray stb. kalkulátoroknál. .toLocaleString()-re
-            // váltva mindenhol, konzisztensen.
-            const tpPct = rr > 0 ? +tpPctRaw.toFixed(2) : 0;
-            const highRisk = riskPct > 5;
-
-            out.innerHTML = `
-                ${highRisk ? `<div class="text-[11px] text-neon-red font-bold mb-3 p-2.5 rounded-lg bg-neon-red/10 border border-neon-red/30">⚠️ ${riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}% kockázat trade-enként rendkívül magas — a legtöbb tapasztalt kereskedő 1-2% alatt marad.</div>` : ''}
-                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Kockáztatott összeg:</span><span class="font-bold text-white">$${riskAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Javasolt pozícióméret:</span><span class="font-bold text-amber-400">$${finalSize.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
-                    ${tpPct > 0 ? `<div class="flex justify-between"><span class="text-slate-400">Javasolt TP (${rr.toLocaleString('en-US', { maximumFractionDigits: 4 })}:1 R:R):</span><span class="font-bold text-neon-green">+${tpPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>` : ''}
-                </div>
-                ${capped ? `<div class="text-[11px] text-neon-red mt-3">A számított méret meghaladja az egyenleget — a javaslat az egyenlegedre van korlátozva.</div>` : `
-                    <button onclick="applyPositionSizeToTrading(${finalSize.toFixed(2)}, ${slPct}, ${tpPct})" class="w-full mt-3 py-2 rounded-xl text-xs font-extrabold uppercase bg-dark-800 border border-neon-cyan/40 text-neon-cyan hover:bg-dark-750 transition">
-                        <i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Alkalmazás a kereskedési panelen
-                    </button>
-                `}
-            `;
-        }
-
-        function applyPositionSizeToTrading(amount, slPct, tpPct) {
-            document.getElementById('input-trade-amount').value = amount;
-
-            const price = currentAsset.price;
-            const isLong = currentTradeSide === 'long';
-            const slPrice = isLong ? price * (1 - slPct / 100) : price * (1 + slPct / 100);
-            const tpPrice = tpPct > 0 ? (isLong ? price * (1 + tpPct / 100) : price * (1 - tpPct / 100)) : null;
-
-            document.getElementById('toggle-tpsl').checked = true;
-            document.getElementById('tpsl-inputs').classList.remove('hidden');
-            document.getElementById('input-sl-price').value = slPrice.toFixed(2);
-            if (tpPrice !== null) document.getElementById('input-tp-price').value = tpPrice.toFixed(2);
-
-            updateOrderCalculations();
-            closeToolModal('poscalc-modal');
-            showNotification('Pozícióméret és SL/TP alkalmazva a kereskedési panelen!');
-            // JAVÍTÁS (mezőnkénti DOM-fuzzer sweep, kis-magnitúdójú extrém
-            // értékekkel): a "ps-sl" mezőnek nincs alsó korlátja, és a
-            // calcPositionSize csak a slPct > 0 feltételt ellenőrzi — egy
-            // rendkívül kicsi (pl. 0.0000001%), de érvényes stop-loss távolság
-            // esetén a slPct közvetlen sablonsztring-interpolációja a natív JS
-            // Number→String konverzió miatt nyers tudományos jelölésre váltott
-            // volna a naplóbejegyzésben ("SL 1e-7%" helyett "SL 0.0000001%").
-            const slPctSafe = zeroSafeRound(slPct, 6).toLocaleString('en-US', { maximumFractionDigits: 6 });
-            addSystemLog(`Eszközök: pozícióméret-kalkulátor eredménye alkalmazva ($${amount}, SL ${slPctSafe}%).`);
-        }
-
-        // --- Risk/Reward Kalkulátor ---
-        let rrDirection = 'long';
-        function setRRDirection(dir) {
-            rrDirection = dir;
-            const activeClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 transition';
-            document.getElementById('rr-dir-long').className = activeClass + (dir === 'long' ? ' text-neon-green' : ' text-slate-400 hover:text-white');
-            document.getElementById('rr-dir-long').classList.toggle('bg-dark-800', dir === 'long');
-            document.getElementById('rr-dir-short').className = activeClass + (dir === 'short' ? ' text-neon-red' : ' text-slate-400 hover:text-white');
-            document.getElementById('rr-dir-short').classList.toggle('bg-dark-800', dir === 'short');
-            if (dir === 'long') {
-                document.getElementById('rr-dir-long').classList.add('bg-dark-800');
-                document.getElementById('rr-dir-short').classList.remove('bg-dark-800');
-            } else {
-                document.getElementById('rr-dir-short').classList.add('bg-dark-800');
-                document.getElementById('rr-dir-long').classList.remove('bg-dark-800');
-            }
-        }
-
-        function calcRR() {
-            const entry = parseFloat(document.getElementById('rr-entry').value) || 0;
-            const stop = parseFloat(document.getElementById('rr-stop').value) || 0;
-            const target = parseFloat(document.getElementById('rr-target').value) || 0;
-            const size = parseFloat(document.getElementById('rr-size').value) || 0;
-            const out = document.getElementById('rr-result');
-
-            if (entry <= 0 || stop <= 0 || target <= 0 || !Number.isFinite(entry) || !Number.isFinite(stop) || !Number.isFinite(target) || !Number.isFinite(size)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges árakat és tételméretet!</div>`;
-                return;
-            }
-
-            const isLong = rrDirection === 'long';
-            const directionValid = isLong ? (stop < entry && target > entry) : (stop > entry && target < entry);
-
-            if (!directionValid) {
-                out.innerHTML = `<div class="glass-card rounded-xl p-3 text-xs text-neon-red font-semibold">
-                    ⚠️ ${isLong ? 'Long' : 'Short'} pozíciónál a stop-loss-nak ${isLong ? 'a belépési ár ALATT' : 'a belépési ár FÖLÖTT'}, a take-profitnak ${isLong ? 'FÖLÖTTE' : 'ALATTA'} kell lennie. Ellenőrizd az árakat.
-                </div>`;
-                return;
-            }
-
-            const riskPerUnit = Math.abs(entry - stop);
-            const rewardPerUnit = Math.abs(target - entry);
-            const ratio = riskPerUnit === 0 ? 0 : rewardPerUnit / riskPerUnit;
-            const riskPct = (riskPerUnit / entry) * 100;
-            const totalRisk = riskPerUnit * size;
-            const totalReward = rewardPerUnit * size;
-
-            // JAVÍTÁS: entry/stop/target egyenként véges, de a directionValid
-            // ellenőrzésen átcsúszó extrém kombinációja (pl. short pozíciónál
-            // egy irreálisan nagy, de a "stop > entry" feltételt kielégítő
-            // stop-loss) a belőlük számolt riskPerUnit/rewardPerUnit/ratio/
-            // riskPct/totalRisk/totalReward értékeket Infinity-re
-            // csordíthatja túl — ugyanaz a hibaosztály, mint a korábban
-            // javított kalkulátoroknál (pl. calcADLine, calcPivotPoints).
-            if (![riskPerUnit, rewardPerUnit, ratio, riskPct, totalRisk, totalReward].every(Number.isFinite)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak/tételméret túl szélsőségesek érvényes Risk/Reward-számításhoz!</div>`;
-                return;
-            }
-
-            let verdict, verdictColor;
-            if (ratio >= 2) { verdict = 'Kiváló arány'; verdictColor = 'text-neon-green'; }
-            else if (ratio >= 1.5) { verdict = 'Elfogadható arány'; verdictColor = 'text-amber-400'; }
-            else { verdict = 'Gyenge arány — a legtöbb tapasztalt kereskedő kerülné'; verdictColor = 'text-neon-red'; }
-
-            // Break-even találati arány: az a minimális win rate, ami mellett
-            // ennél az R/R aránynál a stratégia se nem nyer, se nem veszít
-            // hosszú távon. Képlet: 1 / (1 + R/R arány).
-            const breakEvenWinRatePct = (1 / (1 + ratio)) * 100;
-
-            // JAVÍTÁS: a "size" (tételméret) mezőt korábban nyers `${size}`
-            // interpolációval jelenítettük meg — egy nagyon kicsi (pl.
-            // "1e-10") bemenet a JS alapértelmezett szám→string konverziója
-            // miatt nyers tudományos jelölést adott ("1e-10 egység").
-            const sizeFmt = size.toLocaleString('en-US', { maximumFractionDigits: 8 });
-
-            out.innerHTML = `
-                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Kockázat / egység:</span><span class="text-neon-red">$${riskPerUnit.toLocaleString('en-US', {maximumFractionDigits: 4})} (${riskPct.toFixed(2)}%)</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Hozam / egység:</span><span class="text-neon-green">$${rewardPerUnit.toLocaleString('en-US', {maximumFractionDigits: 4})}</span></div>
-                    ${size > 0 ? `
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Teljes kockázat (${sizeFmt} egység):</span><span class="text-neon-red font-bold">$${totalRisk.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Teljes potenciális nyereség:</span><span class="text-neon-green font-bold">$${totalReward.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
-                    ` : ''}
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Risk/Reward arány:</span><span class="font-bold text-white text-sm">1 : ${ratio.toFixed(2)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Szükséges break-even találati arány:</span><span class="font-bold text-neon-cyan text-sm">${breakEvenWinRatePct.toFixed(1)}%</span></div>
-                </div>
-                <p class="text-[10px] font-semibold mt-2 ${verdictColor}">${verdict}</p>
-                <p class="text-[9.5px] text-slate-500 mt-1.5 leading-relaxed">Ennél az R/R aránynál legalább ${breakEvenWinRatePct.toFixed(1)}% találati arány szükséges ahhoz, hogy a stratégia hosszú távon ne veszítsen — minden efölötti találati arány pozitív matematikai előnyt (edge-et) jelent.</p>
-            `;
-        }
+        // SZÁNDÉKOSAN ELTÁVOLÍTVA: önálló Pozícióméret Kalkulátor (calcPositionSize,
+        // applyPositionSizeToTrading) és Risk/Reward Kalkulátor (setRRDirection,
+        // calcRR) — mindkettőt kiváltja a kereskedési jegyen (Trade fül, TP/SL
+        // blokk) élő, a tényleges SL/TP árakból és egyenlegből számoló
+        // pozícióméret-kalkulátor (updatePositionSizeCalc/applyPositionSizeCalc)
+        // és RR-arány kijelzés (updateRRRatioDisplay). A kézi, másolással dolgozó
+        // önálló verzió feleslegesen duplikálta ugyanazt a funkciót.
 
         // --- Napi Veszteséglimit Tracker ---
         // ================= TÖBBSZINTŰ (NAPI/HETI/HAVI) VESZTESÉGLIMIT =================
@@ -27595,133 +26813,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${verdictColor}">${verdict}</p>
             `;
-        }
-
-        // ================= DOWNSIDE DEVIATION KALKULÁTOR (OKTATÁSI) =================
-        // Egyetlen stratégiára (vagy opcionálisan két stratégiára, egymás
-        // mellett) kiszámolja a TELJES (populációs) szórást ÉS a downside
-        // deviationt (csak a MAR alatti hozamok négyzetes eltérése, n-nel
-        // osztva — pontosan ugyanaz a definíció, mint a calcSortino()
-        // függvényben, de ITT nem hívjuk azt, önálló, saját számítás).
-        // A cél a tanulási anyag (lásd a "Downside Deviation — A Sortino
-        // Alapját Adó Számítás" leckét és a hozzá tartozó esettanulmányt)
-        // konkrét demonstrálása: két, akár AZONOS teljes szórású sorozat
-        // downside deviationja jelentősen eltérhet, ha az egyik volatilitása
-        // inkább felfelé, a másiké inkább lefelé aszimmetrikus.
-        function _computeDownsideStats(raw, mar) {
-            const n = raw.length;
-            const mean = raw.reduce((a, b) => a + b, 0) / n;
-            const variance = raw.reduce((acc, r) => acc + Math.pow(r - mean, 2), 0) / n;
-            const stdDev = Math.sqrt(variance);
-            const sumSquaredDownside = raw.reduce((acc, r) => acc + Math.pow(Math.min(0, r - mar), 2), 0);
-            const downsideDeviation = Math.sqrt(sumSquaredDownside / n);
-            const downsidePeriods = raw.filter(r => r < mar).length;
-            const downsideRatio = stdDev > 0 ? (downsideDeviation / stdDev) * 100 : null;
-            return { n, mean, stdDev, downsideDeviation, downsidePeriods, downsideRatio };
-        }
-
-        function _renderDownsideStatsBlock(label, stats, accentClass) {
-            // JAVÍTÁS: nagyon kis, nullára kerekedő negatív átlaghozamnál (pl.
-            // -0.000015%) a .toFixed(3) a "-0.000" string-et adná vissza —
-            // explicit -0 → +0 normalizálással kerüljük el ezt (ugyanaz a
-            // mintázat, mint a fmtPct3Signed()-ben a Bizonyossági Egyenérték
-            // Kalkulátorban, lásd 33eafa2). A szórás/downside deviation
-            // mezők négyzetgyökből jönnek, sosem negatívak, nem érintettek.
-            // JAVÍTÁS 2: szélsőséges, de egyenként véges bemenetnél maguk a
-            // kerekítési lépések (`stats.mean * 1000` stb.) ÖNMAGUK
-            // túlcsordulhatnak -Infinity/Infinity-re (a bemeneti érték
-            // nagyságrendileg a double-tartomány felső határa közelében van) —
-            // ekkor a `.toFixed()` natív Infinity→"Infinity" string konverziója
-            // szivárogna ki, ugyanaz a hibaosztály, mint a korábban javított
-            // Bizonyossági Egyenérték Kalkulátorban. Minden mezőnél: ha a
-            // kerekítés túlcsordul, az EREDETI (nem kerekített) értéket
-            // formázzuk `.toLocaleString()`-tel, ami nagy, de véges számoknál
-            // sosem vált nyers tudományos jelölésre/Infinity-re.
-            const safeRound = (v, decimals) => {
-                const scale = Math.pow(10, decimals);
-                const rounded = Math.round(v * scale) / scale;
-                return Number.isFinite(rounded) ? (rounded === 0 ? 0 : rounded) : v;
-            };
-            const fmt3 = (v) => safeRound(v, 3).toLocaleString('en-US', { maximumFractionDigits: 3 });
-            const fmt1 = (v) => safeRound(v, 1).toLocaleString('en-US', { maximumFractionDigits: 1 });
-            const meanSafe = safeRound(stats.mean, 3);
-            const ratioText = stats.downsideRatio === null ? 'n/a (szórás = 0)' : `${fmt1(stats.downsideRatio)}%`;
-            return `
-                <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-[11px]">
-                    <div class="text-[10px] font-extrabold uppercase ${accentClass} mb-1">${label}</div>
-                    <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${stats.n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Átlagos hozam:</span><span class="${meanSafe >= 0 ? 'text-neon-green' : 'text-neon-red'}">${meanSafe >= 0 ? '+' : ''}${meanSafe.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Teljes szórás:</span><span class="text-white">${fmt3(stats.stdDev)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Downside deviation:</span><span class="font-extrabold ${accentClass}">${fmt3(stats.downsideDeviation)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">MAR alatti időszakok:</span><span class="text-white">${stats.downsidePeriods} / ${stats.n}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Downside arány:</span><span class="font-extrabold ${accentClass}">${ratioText}</span></div>
-                </div>
-            `;
-        }
-
-        function calcDownsideDeviation() {
-            const aEl = document.getElementById('downdev-returns-a');
-            const bEl = document.getElementById('downdev-returns-b');
-            const marEl = document.getElementById('downdev-mar');
-            const out = document.getElementById('downdev-result');
-            if (!aEl || !bEl || !marEl || !out) return;
-
-            const rawA = aEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
-            const rawB = bEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => Number.isFinite(n));
-            const mar = parseFloat(marEl.value);
-
-            if (rawA.length < 2 || isNaN(mar)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg legalább 2 érvényes, vesszővel elválasztott időszaki hozamot az "A" stratégiához és egy érvényes MAR-t!</div>`;
-                return;
-            }
-            // A "B" mező opcionális: vagy teljesen üres (csak "A"-t nézzük),
-            // vagy ha ki van töltve, legalább 2 érvényes értéket kell
-            // tartalmazzon — egyetlen, félreírt számmal nem indítjuk el a
-            // kétoszlopos összehasonlítást egy értelmezhetetlen "B"-vel.
-            const bProvided = bEl.value.trim().length > 0;
-            if (bProvided && rawB.length < 2) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A "B" stratégia mezője ki van töltve, de nincs benne legalább 2 érvényes, vesszővel elválasztott szám — vagy javítsd ki, vagy ürítsd ki teljesen, ha csak "A"-t akarod nézni!</div>`;
-                return;
-            }
-
-            const statsA = _computeDownsideStats(rawA, mar);
-            const statsB = bProvided ? _computeDownsideStats(rawB, mar) : null;
-
-            const allFiniteA = [statsA.mean, statsA.stdDev, statsA.downsideDeviation].every(Number.isFinite);
-            const allFiniteB = !statsB || [statsB.mean, statsB.stdDev, statsB.downsideDeviation].every(Number.isFinite);
-            if (!allFiniteA || !allFiniteB) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok és/vagy a MAR érték túl szélsőségesek érvényes számításhoz — a köztes eredmény (szórás vagy downside deviation) túlcsordul!</div>`;
-                return;
-            }
-
-            let blocksHtml = _renderDownsideStatsBlock(bProvided ? 'A stratégia' : 'Eredmény', statsA, 'text-rose-400');
-            let verdictHtml = '';
-
-            if (statsB) {
-                blocksHtml += _renderDownsideStatsBlock('B stratégia', statsB, 'text-neon-cyan');
-
-                const stdDevDiffPct = statsA.stdDev > 0 ? Math.abs(statsA.stdDev - statsB.stdDev) / statsA.stdDev * 100 : null;
-                const similarTotalVol = stdDevDiffPct !== null && stdDevDiffPct < 15;
-                const worseLabel = statsA.downsideDeviation > statsB.downsideDeviation ? 'A' : (statsB.downsideDeviation > statsA.downsideDeviation ? 'B' : null);
-
-                if (similarTotalVol && worseLabel) {
-                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ A két stratégia TELJES szórása közel azonos (≈${stdDevDiffPct.toFixed(0)}% eltérés), mégis a "${worseLabel}" stratégia downside deviationja magasabb — ez pontosan az a jelenség, amit a teljes szórás önmagában elrejt: azonos "zajszint" mögött eltérő lehet a valós, lefelé irányuló kockázat.</p>`;
-                } else if (worseLabel) {
-                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-cyan">A "${worseLabel}" stratégia downside deviationja a magasabb — ennek lefelé irányuló kockázata nagyobb a megadott MAR mellett.</p>`;
-                } else {
-                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">A két stratégia downside deviationja megegyezik a megadott MAR mellett.</p>`;
-                }
-            } else if (statsA.downsideRatio !== null) {
-                if (statsA.downsideRatio >= 80) {
-                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-red">🚨 A teljes ingadozás túlnyomó része (${statsA.downsideRatio.toFixed(0)}%) lefelé irányuló — a volatilitás elsősorban veszteség-jellegű kilengésekből áll.</p>`;
-                } else if (statsA.downsideRatio >= 50) {
-                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-amber-400">⚠️ A teljes ingadozás kb. fele (${statsA.downsideRatio.toFixed(0)}%) lefelé irányuló kockázat.</p>`;
-                } else {
-                    verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A teljes ingadozásnak csak ${statsA.downsideRatio.toFixed(0)}%-a lefelé irányuló — a volatilitás inkább "kedvező" (felfelé) aszimmetrikus.</p>`;
-                }
-            }
-
-            out.innerHTML = `<div class="${statsB ? 'grid grid-cols-1 gap-2' : ''}">${blocksHtml}</div>${verdictHtml}`;
         }
 
         // ================= CALMAR RATIO KALKULÁTOR (OKTATÁSI) =================
@@ -40603,124 +39694,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
-        // ================= BITCOIN DOMINANCIA & ALTCOIN-ROTÁCIÓ KALKULÁTOR =================
-        // dominance = btcCap / totalCap * 100
-        // altMarketCap = totalCap - btcCap ; altShare = 100 - dominance
-        // Opcionális korábbi időpont esetén: deltaPP = dominance - prevDominance
-        //   deltaPP > +1pp  → "Bitcoin-szezon" (tőke BTC felé rotál)
-        //   deltaPP < -1pp  → "Altcoin-szezon" (tőke altcoinok felé rotál)
-        //   egyébként       → "Oldalazó dominancia"
-        // A ±1 százalékpontos küszöb egy önkényesen választott zajszűrő, nem
-        // hivatalos definíció (ld. a modal alján a figyelmeztetést).
-        function calcBtcDominance() {
-            const ids = ['btcdom-btccap', 'btcdom-totalcap', 'btcdom-prevbtccap', 'btcdom-prevtotalcap'];
-            const els = ids.map(id => document.getElementById(id));
-            const out = document.getElementById('btcdom-result');
-            if (els.some(el => !el) || !out) return;
-
-            const [btcCap, totalCap, prevBtcCapRaw, prevTotalCapRaw] = els.map(el => parseFloat(el.value));
-
-            if (!Number.isFinite(btcCap) || btcCap <= 0 || !Number.isFinite(totalCap) || totalCap <= 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb BTC piaci kapitalizációt ÉS teljes kriptopiaci kapitalizációt!</div>`;
-                return;
-            }
-            if (btcCap > totalCap) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A BTC piaci kapitalizáció nem lehet nagyobb a teljes kriptopiaci kapitalizációnál!</div>`;
-                return;
-            }
-
-            // Az "üres" mező parseFloat('')-je NaN — ezt (és a sima 0-t) is
-            // "nincs megadva"-ként kezeljük, a HTML label-javaslatának
-            // ("hagyd 0-n, ha nincs") megfelelően.
-            const prevBtcCap = Number.isFinite(prevBtcCapRaw) ? prevBtcCapRaw : 0;
-            const prevTotalCap = Number.isFinite(prevTotalCapRaw) ? prevTotalCapRaw : 0;
-            if (prevBtcCap < 0 || prevTotalCap < 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A korábbi kapitalizáció-mezők nem lehetnek negatívak!</div>`;
-                return;
-            }
-            const prevProvided = prevBtcCap > 0 || prevTotalCap > 0;
-            if (prevProvided && !(prevBtcCap > 0 && prevTotalCap > 0)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A korábbi összehasonlításhoz MINDKÉT korábbi mezőt töltsd ki (vagy hagyd mindkettőt 0-n, ha nem kell a trend)!</div>`;
-                return;
-            }
-            if (prevProvided && prevBtcCap > prevTotalCap) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A korábbi BTC piaci kapitalizáció nem lehet nagyobb a korábbi teljes kriptopiaci kapitalizációnál!</div>`;
-                return;
-            }
-
-            const dominance = (btcCap / totalCap) * 100;
-            const altMarketCap = totalCap - btcCap;
-            const altShare = 100 - dominance;
-
-            const fmtUsd = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-            const fmtPct = (n, d = 2) => `${zeroSafeRound(n, d).toFixed(d)}%`;
-            // JAVÍTÁS (extrém, de egyenként véges mezőpár-kombináció audit): a lenti
-            // BTC/Altcoin kapitalizáció-VÁLTOZÁS %-ok (ellentétben a dominancia/
-            // részesedés/elmozdulás %-okkal, amik matematikailag mindig [0,100],
-            // illetve [-100,100] tartományban maradnak) NINCSENEK felülről
-            // korlátozva: egy extrém kicsi (de pozitív) korábbi kapitalizáció-mező
-            // és egy nagyságrendekkel nagyobb jelenlegi mező kombinációjánál (pl.
-            // elgépelt extra nullák) a hányados (a) vagy tényleges Infinity-be
-            // csordulhat (pl. 1e300 és 1e-10 EGYENKÉNT véges, de a hányaduk már
-            // nem — ugyanaz a hibaosztály, mint a korábbi "Meztelen Opció" / "4
-            // kalkulátor" Infinity-audit köröknél), (b) vagy 1e21 alatt marad, de a
-            // `.toFixed()` ott is nyers tudományos jelölésre vált (pl. "5e+23%" —
-            // ugyanaz a hibaosztály, mint az Osztalék Növekedési Modell `fmtDiv`/
-            // `fmtPctDiv` auditjánál). Emiatt (a)-ra explicit `Number.isFinite`
-            // ellenőrzéssel, (b)-re `.toLocaleString()`-re váltással védünk — csak
-            // ennél a két (matematikailag nem korlátos) mezőnél, a fenti, eleve
-            // korlátos `fmtPct`-et használó sorok NEM érintettek.
-            const fmtChangePct = (n, d = 2) => `${zeroSafeRound(n, d).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d })}%`;
-            const EXTREME_RATIO_NA = 'N/A (túl extrém bemenet-arány a megbízható összehasonlításhoz)';
-
-            let trendHtml = '';
-            if (prevProvided) {
-                const prevDominance = (prevBtcCap / prevTotalCap) * 100;
-                const deltaPP = dominance - prevDominance;
-                const prevAltMarketCap = prevTotalCap - prevBtcCap;
-                // JAVÍTÁS (nullára kerekedő kis negatív érték audit): ha a
-                // korábbi altcoin-kapitalizáció pontosan 0 (azaz korábban a
-                // BTC = 100% volt), a relatív változás % nullával osztana —
-                // ezt explicit `null`-ra (N/A) kezeljük Infinity/NaN helyett.
-                const altCapChangePctRaw = prevAltMarketCap > 0 ? ((altMarketCap - prevAltMarketCap) / prevAltMarketCap) * 100 : null;
-                const btcCapChangePctRaw = ((btcCap - prevBtcCap) / prevBtcCap) * 100;
-                // lásd fenti JAVÍTÁS: a két változás-% mezőt explicit véges-ellenőrzés
-                // mögé tesszük, mielőtt egyáltalán megjelenítenénk.
-                const altCapChangePctOverflow = altCapChangePctRaw !== null && !Number.isFinite(altCapChangePctRaw);
-                const btcCapChangePctOverflow = !Number.isFinite(btcCapChangePctRaw);
-
-                let trendLabel, trendColor;
-                if (deltaPP > 1) {
-                    trendLabel = 'Bitcoin-szezon — a BTC-dominancia erősödik, ez arra utal, hogy a tőke az altcoinokból a Bitcoin felé rotálhat.';
-                    trendColor = 'text-amber-400';
-                } else if (deltaPP < -1) {
-                    trendLabel = 'Altcoin-szezon — a BTC-dominancia csökken, ez arra utal, hogy a tőke a Bitcoinból az altcoinok felé rotálhat.';
-                    trendColor = 'text-neon-purple';
-                } else {
-                    trendLabel = 'Oldalazó dominancia — a ±1 százalékpontos küszöbön belül, nincs egyértelmű tőke-rotáció.';
-                    trendColor = 'text-neon-cyan';
-                }
-
-                trendHtml = `
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Korábbi BTC-dominancia:</span><span class="text-white">${fmtPct(prevDominance)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Dominancia-elmozdulás:</span><span class="font-bold ${deltaPP > 0 ? 'text-amber-400' : (deltaPP < 0 ? 'text-neon-purple' : 'text-white')}">${deltaPP >= 0 ? '+' : ''}${fmtPct(deltaPP)} pont</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">BTC kapitalizáció változása:</span><span class="text-white">${btcCapChangePctOverflow ? EXTREME_RATIO_NA : `${btcCapChangePctRaw >= 0 ? '+' : ''}${fmtChangePct(btcCapChangePctRaw)}`}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Altcoin kapitalizáció változása:</span><span class="text-white">${altCapChangePctRaw === null ? 'N/A (korábban 0 volt az altcoin-kapitalizáció)' : (altCapChangePctOverflow ? EXTREME_RATIO_NA : `${altCapChangePctRaw >= 0 ? '+' : ''}${fmtChangePct(altCapChangePctRaw)}`)}</span></div>
-                    <div class="mt-2 p-2 rounded-lg bg-dark-850 border border-dark-750 text-[11px] font-semibold ${trendColor}">${trendLabel}</div>
-                `;
-            }
-
-            out.innerHTML = `
-                <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">BTC piaci dominancia:</span><span class="font-extrabold text-amber-400 text-sm">${fmtPct(dominance)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Altcoin piaci részesedés:</span><span class="font-extrabold text-neon-purple text-sm">${fmtPct(altShare)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">BTC piaci kapitalizáció:</span><span class="text-white">${fmtUsd(btcCap)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Altcoin piaci kapitalizáció (összesen):</span><span class="text-white">${fmtUsd(altMarketCap)}</span></div>
-                    ${trendHtml}
-                </div>
-            `;
-        }
-
         // ================= PDT (PATTERN DAY TRADER) SZABÁLY KALKULÁTOR =================
         // FINRA Rule 4210 — KÉT feltétel, MINDKETTŐNEK teljesülnie kell:
         //   1) SZÁM:  dayTrades >= 4 (az utolsó 5 kereskedési napban)
@@ -47446,14 +46419,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             trend_down:        { label: 'Csökkenő trend', note: 'tartós esés — a trend szerinti döntés a short vagy a kimaradás volt.' },
             choppy:            { label: 'Oldalazó piac', note: 'nincs tartós irány — a kitörés-követő belépők gyakran visszafordultak.' },
             volatile_reversal: { label: 'Fordulatos nap', note: 'az erős trend a nap közepén megfordult — a stop-loss és a nyereségvédelem itt különösen számított.' },
-            news_shock:        { label: 'Hírsokk', note: 'hirtelen, nagy ugrás — ezt előre nem lehetett tudni, stop-loss nélkül különösen kockázatos.' },
-            // A kézzel kurált "történelmi" alakzatok (lásd REPLAY_HISTORICAL_SEGMENTS
-            // lejjebb) is ide kerülnek, hogy a nap végi értékelés ugyanúgy egy olvasható
-            // címkét és magyarázó szöveget kapjon, ne a nyers segment-id-t.
-            crash_2020:        { label: '2020-as villámzuhanás (illusztratív)', note: 'nyugodt emelkedés után hirtelen, pánikszerű zuhanás — a korai stop-loss itt mentette meg a tőkét.' },
-            bull_top_2021:     { label: '2021-es eufórikus csúcs (illusztratív)', note: 'parabolikus emelkedés, majd éles fordulat — a nyereség idő előtti realizálása itt védett a visszaadástól.' },
-            bear_market_2022:  { label: '2022-es elhúzódó medvepiac (illusztratív)', note: 'hosszan tartó lemorzsolódás rövid visszapattanásokkal — a türelem és a short-oldal itt számított.' },
-            v_recovery_2023:   { label: '2023-as V-alakú visszapattanás (illusztratív)', note: 'éles esés után gyors, megszakítás nélküli felpattanás — a korai pánik-zárás itt volt a leggyakoribb hiba.' }
+            news_shock:        { label: 'Hírsokk', note: 'hirtelen, nagy ugrás — ezt előre nem lehetett tudni, stop-loss nélkül különösen kockázatos.' }
         };
 
         function getReplayReasons() { return DRILL_REASONS.filter(r => r.id !== 'nosetup'); }
@@ -47662,98 +46628,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { id: 'volatile_reversal', label: 'Fordulatos nap',     icon: 'fa-rotate',             note: 'Erős trend, majd megfordulás' },
             { id: 'news_shock',        label: 'Hírsokk',            icon: 'fa-bolt',               note: 'Váratlan, hirtelen nagy elmozdulás' },
         ];
-
-        // ================= KÉZZEL KURÁLT "TÖRTÉNELMI" SZEGMENSEK =================
-        // A sandbox nem ér el élő piaci-adat API-kat, így valódi, letöltött
-        // történelmi OHLC-sorozatot nem tudunk beépíteni. Ehelyett néhány
-        // jól ismert, KÉZZEL megtervezett árfolyam-ALAKZATOT (fázisokra
-        // bontott irány+volatilitás-sorozatot) kínálunk, amik egy-egy híres
-        // piaci esemény JELLEGZETES LEFUTÁSÁT idézik — nem az adott nap
-        // tényleges, pontos árait. Ezt a felületen is egyértelműen jelezzük
-        // ("illusztratív, nem valódi historikus adat"), hogy ne keltsen
-        // félrevezető benyomást a felhasználóban a tanulási célú szimuláció
-        // mellett. Minden fázis: { len: hány gyertya, drift: %/gyertya
-        // átlagos irány, vol: %-os volatilitás } — ugyanazt a
-        // replayRandNormal() zaj-generátort használja, mint a procedurális
-        // piactípusok, csak a fázisok KÉZZEL megtervezett sorrendje adja a
-        // jellegzetes makró-alakzatot.
-        const REPLAY_HISTORICAL_SEGMENTS = [
-            {
-                id: 'crash_2020', label: '2020-as villámzuhanás', icon: 'fa-triangle-exclamation',
-                note: 'Nyugodt emelkedés, majd hirtelen, pánikszerű ~35%-os zuhanás és volatilis fenék-keresés.',
-                phases: [
-                    { len: 0.30, drift: 0.12, vol: 0.4 },
-                    { len: 0.12, drift: -3.2, vol: 2.2 },
-                    { len: 0.33, drift: -0.15, vol: 1.6 },
-                    { len: 0.25, drift: 0.35, vol: 1.1 }
-                ]
-            },
-            {
-                id: 'bull_top_2021', label: '2021-es eufórikus csúcs', icon: 'fa-rocket',
-                note: 'Gyorsuló, parabolikus emelkedés ("melt-up"), majd éles, gyors fordulat lefelé.',
-                phases: [
-                    { len: 0.35, drift: 0.45, vol: 0.6 },
-                    { len: 0.25, drift: 0.9, vol: 0.9 },
-                    { len: 0.15, drift: 0.2, vol: 1.3 },
-                    { len: 0.25, drift: -0.9, vol: 1.4 }
-                ]
-            },
-            {
-                id: 'bear_market_2022', label: '2022-es elhúzódó medvepiac', icon: 'fa-arrow-trend-down',
-                note: 'Hosszan tartó, lépcsőzetes lemorzsolódás, időnkénti rövid "halott macska" visszapattanásokkal.',
-                phases: [
-                    { len: 0.22, drift: -0.5, vol: 0.9 },
-                    { len: 0.12, drift: 0.55, vol: 0.8 },
-                    { len: 0.22, drift: -0.55, vol: 1.0 },
-                    { len: 0.12, drift: 0.5, vol: 0.8 },
-                    { len: 0.32, drift: -0.35, vol: 0.85 }
-                ]
-            },
-            {
-                id: 'v_recovery_2023', label: '2023-as V-alakú visszapattanás', icon: 'fa-check-double',
-                note: 'Éles esés, majd gyors, szinte megszakítás nélküli V-alakú visszaemelkedés az eredeti szintig és tovább.',
-                phases: [
-                    { len: 0.25, drift: -0.8, vol: 1.3 },
-                    { len: 0.10, drift: 0, vol: 0.9 },
-                    { len: 0.40, drift: 0.75, vol: 0.9 },
-                    { len: 0.25, drift: 0.25, vol: 0.6 }
-                ]
-            }
-        ];
-        let replaySelectedHistorical = null; // null = procedurális piactípus, különben egy REPLAY_HISTORICAL_SEGMENTS.id
-
-        function generateHistoricalReplayCandles(segment, n, volMultiplier) {
-            volMultiplier = volMultiplier || 1;
-            const basePrice = 100;
-            let price = basePrice;
-            const candles = [];
-            // A fázisok arányait (len, összegük 1.0) a kért teljes gyertyaszámra
-            // vetítjük le, kerekítési maradékot az utolsó fázishoz adva, hogy a
-            // végösszeg pontosan n legyen.
-            let assigned = 0;
-            const phaseLens = segment.phases.map((p, i) => {
-                if (i === segment.phases.length - 1) return n - assigned;
-                const l = Math.max(1, Math.round(p.len * n));
-                assigned += l;
-                return l;
-            });
-            segment.phases.forEach((phase, pIdx) => {
-                const len = phaseLens[pIdx];
-                const vol = phase.vol * volMultiplier;
-                for (let i = 0; i < len; i++) {
-                    const changePct = phase.drift + replayRandNormal() * vol;
-                    const open = price;
-                    let close = open * (1 + changePct / 100);
-                    if (close <= 1) close = 1;
-                    const wick = Math.abs(replayRandNormal()) * vol * 0.5;
-                    const high = Math.max(open, close) * (1 + wick / 100);
-                    const low = Math.min(open, close) * (1 - wick / 100);
-                    candles.push({ o: +open.toFixed(2), h: +high.toFixed(2), l: +Math.max(low, 0.5).toFixed(2), c: +close.toFixed(2) });
-                    price = close;
-                }
-            });
-            return candles;
-        }
 
         let replaySelectedMarket = 'random';
         const DAILY_QUOTES = ["A kereskedés 20% stratégia, 80% pszichológia.","A legjobb belépési pont az, amit előre megterveztél.","Egy vesztes pozíció nem gyengeség — a ragaszkodás hozzá az.","A stop-loss nem cost, hanem biztosítás.","A piac nem jutalmaz sokat, aki sokat kereskedik.","Türelem: várj a magas valószínűségű setupokra.","Nem a nyerési arány számít, hanem a hozam/kockázat aránya."];
@@ -48180,11 +47054,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             // --- Kereskedési Terv betartása: hány vesztes nap lépte túl a saját
             // napi veszteség-limitet? Ehhez egy becsült számlaegyenleg kell (a
-            // Pozícióméret Kalkulátorban megadott érték), mert a Napló csak $
-            // összeget rögzít, a Terv pedig %-ban van megadva. ---
+            // Napi/Heti/Havi Veszteséglimit eszközben megadott érték), mert a
+            // Napló csak $ összeget rögzít, a Terv pedig %-ban van megadva. ---
             let planBreachDays = null;
             if (tradingPlan && tradingPlan.maxDailyLoss) {
-                const balanceInput = document.getElementById('ps-balance');
+                const balanceInput = document.getElementById('dl-balance');
                 const balance = balanceInput && Number(balanceInput.value) > 0 ? Number(balanceInput.value) : null;
                 if (balance) {
                     const lossDaysThisWeek = recentJournalEntries.filter(e => Number(e.pnl) < 0);
@@ -50046,12 +48920,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { term: 'Equity-görbe (Egyenleg-görbe)', cat: 'kockázat', def: 'A számlaegyenleg időbeli alakulásának grafikus ábrázolása — egyenletesen emelkedő görbe egészséges, stratégiát jelez, míg a nagy kilengések magas kockázatot jeleznek.' },
             { term: 'Portfolio Heat', cat: 'kockázat', def: 'Az ÖSSZES jelenleg nyitott pozíció együttes kockázata, ha mindegyik egyszerre érné el a stop-lossát — nem csak az egyes trade-ek kockázatát egyenként, hanem az összesített, egyidejű képet mutatja.' },
             { term: 'Korreláció', cat: 'kockázat', def: 'Két eszköz árfolyam-mozgásának együttmozgási mértéke, -1 és +1 között. Erősen korrelált eszközök (pl. BTC és ETH) egyidejű, egyirányú pozíciója valójában NEM diverzifikáció, hanem koncentrált kockázat.' },
-            { term: 'Mass Index', cat: 'technikai', def: 'Donald Dorsey indikátora, amely a napi legmagasabb és legalacsonyabb ár közti tartomány SZÉLESEDÉSÉT méri, nem az árfolyam irányát. Ha az érték egy küszöb fölé emelkedik, majd visszaesik alá ("reversal bulge"), az potenciális trendfordulatot jelezhet — de az irányról önmagában nem nyilatkozik, ezért más eszközzel kell kiegészíteni.' },
-            { term: 'Relative Vigor Index (RVI)', cat: 'technikai', def: 'Momentum-indikátor, amely azt méri, milyen erősen zár az árfolyam a nyitóárhoz képest a napi tartományon belül, simított formában — a Stochastichoz hasonló ötlet, csak a nyitó-záró különbséget nézi a magas-alacsony tartomány helyett. A hozzá tartozó jelvonal keresztezése a MACD jelvonalához hasonló be-/kilépési jelzést adhat.' },
-            { term: 'Volatility Ratio Indikátor', cat: 'technikai', def: 'Egyszerű mutató, amely az aktuális periódus tartományát egy korábbi, referencia-tartományhoz viszonyítja arányként — 1 fölötti érték magasabb, 1 alatti pedig alacsonyabb aktuális volatilitást jelez a referenciához képest. Nyersebb és közvetlenebbül értelmezhető, mint az ATR, cserébe kevésbé simított.' },
-            { term: 'Trend Exhaustion Index', cat: 'technikai', def: 'Egyszerű mutató, amely a trend időtartamát és sebességét kombinálja, jelezve, mikor "fáradhat ki" statisztikailag egy mozgás — egy szokatlanul hosszú, gyors trend nagyobb eséllyel közelít a végéhez. Kiegészítő eszköz, önmagában nem garantálja a fordulatot, más jelekkel együtt érdemes használni.' },
-            { term: 'Denomination Effect (Címlethatás)', cat: 'pszichológia', def: 'Kognitív torzítás: hajlamosak vagyunk könnyebben elkölteni/kockáztatni apró címletű pénzt (vagy %-ban kifejezett tételt), mint ugyanazt az összeget egy nagy, nyers (pl. dollár) összegként látva. Kereskedésben ezért tűnhet könnyebbnek egy %-os kockázat, mint a mögötte álló nyers dollárösszeg — hasznos mindkét formában megnézni a tételt kockázatvállalás előtt.' },
-            { term: 'Path Dependency (Útfüggőség)', cat: 'kockázat', def: 'Jelenség, amikor a végeredmény nem csak a nyerő/vesztő trade-ek arányától, hanem a SORRENDJÜKTŐL is függ, ha a tétméret dinamikusan alkalmazkodik a tőkéhez (pl. Kelly-alapú méretezésnél) — ugyanazok a trade-ek más sorrendben eltérő végeredményt adhatnak. Ez az oka annak, hogy a Monte Carlo szimuláció sok, véletlen sorrendű újrajátszást futtat egyetlen tényleges múltbeli sorrend helyett.' },
         ];
 
         let glossarySelectedCat = '';
@@ -52048,16 +50916,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-[10px] font-bold text-slate-500 uppercase mb-2">Piactípus célzása</div>
                     <div class="flex flex-wrap justify-center gap-1.5 mb-4">
                         ${REPLAY_MARKET_TYPES.map(m => `
-                            <button onclick="replaySelectedMarket='${m.id}'; replaySelectedHistorical=null; renderReplayIntro();" title="${m.note}" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${m.id === replaySelectedMarket && !replaySelectedHistorical ? 'bg-neon-purple/15 border-neon-purple/40 text-neon-purple' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">
+                            <button onclick="replaySelectedMarket='${m.id}'; renderReplayIntro();" title="${m.note}" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${m.id === replaySelectedMarket ? 'bg-neon-purple/15 border-neon-purple/40 text-neon-purple' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">
                                 <i class="fa-solid ${m.icon} mr-1"></i>${m.label}
-                            </button>
-                        `).join('')}
-                    </div>
-                    <div class="text-[10px] font-bold text-slate-500 uppercase mb-2">Vagy: híres piaci alakzatok (illusztratív, nem valódi historikus adat)</div>
-                    <div class="flex flex-wrap justify-center gap-1.5 mb-4">
-                        ${REPLAY_HISTORICAL_SEGMENTS.map(seg => `
-                            <button onclick="replaySelectedHistorical='${seg.id}'; renderReplayIntro();" title="${seg.note}" class="px-3 py-1.5 rounded-xl text-[11px] font-bold border transition ${seg.id === replaySelectedHistorical ? 'bg-amber-500/15 border-amber-500/40 text-amber-400' : 'bg-dark-850/60 border-dark-750 text-slate-400 hover:border-dark-600'}">
-                                <i class="fa-solid ${seg.icon} mr-1"></i>${seg.label}
                             </button>
                         `).join('')}
                     </div>
@@ -52187,19 +51047,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function startReplaySession(difficultyKey, marketOverride) {
             const diff = REPLAY_DIFFICULTIES[difficultyKey] || REPLAY_DIFFICULTIES.medium;
             let type, candles;
-            if (replaySelectedHistorical) {
-                const segment = REPLAY_HISTORICAL_SEGMENTS.find(s => s.id === replaySelectedHistorical);
-                if (segment) {
-                    type = segment.id;
-                    candles = generateHistoricalReplayCandles(segment, diff.sessionLength, diff.volMultiplier);
-                }
-            }
-            if (!candles) {
-                const chosenMarket = marketOverride || replaySelectedMarket;
-                const gen = generateReplayCandles(diff.sessionLength, diff.volMultiplier, chosenMarket === 'random' ? null : chosenMarket);
-                type = gen.type;
-                candles = gen.candles;
-            }
+            const chosenMarket = marketOverride || replaySelectedMarket;
+            const gen = generateReplayCandles(diff.sessionLength, diff.volMultiplier, chosenMarket === 'random' ? null : chosenMarket);
+            type = gen.type;
+            candles = gen.candles;
             replaySession = {
                 type,
                 difficulty: difficultyKey || 'medium',
@@ -53623,87 +52474,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const inactiveClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
             document.getElementById('leaderboard-tab-global').className = tab === 'global' ? activeClass : inactiveClass;
             document.getElementById('leaderboard-tab-friends').className = tab === 'friends' ? activeClass : inactiveClass;
-            document.getElementById('leaderboard-tab-league').className = tab === 'league' ? activeClass : inactiveClass;
             document.getElementById('leaderboard-global-panel').classList.toggle('hidden', tab !== 'global');
             document.getElementById('leaderboard-friends-panel').classList.toggle('hidden', tab !== 'friends');
-            document.getElementById('leaderboard-league-panel').classList.toggle('hidden', tab !== 'league');
             if (tab === 'friends') renderFriendsList();
-            if (tab === 'league') renderLeague();
-        }
-
-        // ================= SZEZONÁLIS LIGA (heti/havi XP-verseny) =================
-        // A 016_seasonal_leaderboard.sql migráció get_seasonal_leaderboard RPC-jét
-        // hívja — ez az IDŐSZAKON BELÜL szerzett XP-t rangsorolja (nem az összes
-        // idők XP-jét), ezért minden új hét/hónap elején mindenki egyenlő eséllyel
-        // indul, függetlenül attól, mióta aktív a fiókja. Vendég módban / ha a
-        // migráció még nem fut le, ugyanaz az őszinte demo-fallback minta, mint a
-        // globális ranglistánál.
-        let leagueSeasonPeriod = 'weekly';
-        function setLeagueSeasonPeriod(period) {
-            leagueSeasonPeriod = period;
-            const activeClass = 'flex-1 py-1 rounded-lg text-[10.5px] font-bold bg-dark-800 text-neon-cyan transition';
-            const inactiveClass = 'flex-1 py-1 rounded-lg text-[10.5px] font-bold text-slate-400 hover:text-white transition';
-            document.getElementById('league-period-weekly').className = period === 'weekly' ? activeClass : inactiveClass;
-            document.getElementById('league-period-monthly').className = period === 'monthly' ? activeClass : inactiveClass;
-            renderLeague();
-        }
-        async function renderLeague() {
-            const el = document.getElementById('league-list');
-            const endsNoteEl = document.getElementById('league-period-ends-note');
-            if (!el) return;
-            const medals = ['🥇', '🥈', '🥉'];
-            setLeagueSeasonPeriod._rendered = true;
-
-            if (isLoggedInRealUser()) {
-                try {
-                    const { data, error } = await sb.rpc('get_seasonal_leaderboard', { p_period_type: leagueSeasonPeriod, p_limit: 50 });
-                    if (!error && Array.isArray(data)) {
-                        const rows = data.map(r => ({ name: r.display_name || 'Trader', xp: r.period_xp || 0, isMe: r.user_id === currentUser.id }))
-                            .sort((a, b) => b.xp - a.xp);
-                        el.innerHTML = rows.length ? rows.map((r, i) => {
-                            const rank = i + 1;
-                            const medal = medals[i] || (rank + '.');
-                            return `
-                            <div class="flex items-center justify-between px-2.5 py-2 rounded-lg ${r.isMe ? 'bg-neon-cyan/10 border border-neon-cyan/40' : 'hover:bg-dark-850/50'} transition">
-                                <div class="flex items-center gap-2.5 min-w-0">
-                                    <span class="w-6 text-center text-xs font-bold ${rank <= 3 ? '' : 'text-slate-500'} shrink-0">${medal}</span>
-                                    <span class="text-xs font-bold ${r.isMe ? 'text-neon-cyan' : 'text-slate-200'} truncate">${escapeHtml(r.name)}${r.isMe ? ' (Te)' : ''}</span>
-                                </div>
-                                <span class="text-xs font-mono font-bold text-amber-400 shrink-0">+${r.xp.toLocaleString('hu-HU')} XP</span>
-                            </div>`;
-                        }).join('') : `<div class="text-center text-slate-600 text-xs py-4">Még senki nem szerzett XP-t ebben az időszakban.</div>`;
-                        if (endsNoteEl && data[0] && data[0].period_ends_at) {
-                            const endsDate = new Date(data[0].period_ends_at);
-                            endsNoteEl.textContent = `Az időszak vége: ${endsDate.toLocaleDateString('hu-HU')}`;
-                        } else if (endsNoteEl) {
-                            endsNoteEl.textContent = '';
-                        }
-                        document.getElementById('league-demo-note').classList.add('hidden');
-                        return;
-                    }
-                } catch (e) { /* csendes fallback a demo-mezőnyre */ }
-            }
-
-            // Fallback: demo mezőny (vendég user, vagy a backend-migráció még nem fut le)
-            const peers = getOrCreateLeaderboardPeers();
-            const myName = (typeof currentUser !== 'undefined' && currentUser && currentUser.name) ? currentUser.name : 'Vendég';
-            const rows = [...peers, { name: myName, xp: Math.round(academyXP * 0.15), isMe: true }]
-                .map(p => ({ ...p, xp: Math.round((p.xp || 0) * 0.12) }))
-                .sort((a, b) => b.xp - a.xp);
-            el.innerHTML = rows.map((r, i) => {
-                const rank = i + 1;
-                const medal = medals[i] || (rank + '.');
-                return `
-                <div class="flex items-center justify-between px-2.5 py-2 rounded-lg ${r.isMe ? 'bg-neon-cyan/10 border border-neon-cyan/40' : 'hover:bg-dark-850/50'} transition">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                        <span class="w-6 text-center text-xs font-bold ${rank <= 3 ? '' : 'text-slate-500'} shrink-0">${medal}</span>
-                        <span class="text-xs font-bold ${r.isMe ? 'text-neon-cyan' : 'text-slate-200'} truncate">${escapeHtml(r.name)}${r.isMe ? ' (Te)' : ''}</span>
-                    </div>
-                    <span class="text-xs font-mono font-bold text-amber-400 shrink-0">+${r.xp.toLocaleString('hu-HU')} XP</span>
-                </div>`;
-            }).join('');
-            if (endsNoteEl) endsNoteEl.textContent = '';
-            document.getElementById('league-demo-note').classList.remove('hidden');
         }
 
         function getFriends() {
@@ -54152,13 +52925,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const huBtn = document.getElementById('lang-btn-hu');
             const enBtn = document.getElementById('lang-btn-en');
-            const roBtn = document.getElementById('lang-btn-ro');
-            if (huBtn && enBtn && roBtn) {
+            if (huBtn && enBtn) {
                 const activeClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
                 const inactiveClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
                 huBtn.className = currentLang === 'hu' ? activeClass : inactiveClass;
                 enBtn.className = currentLang === 'en' ? activeClass : inactiveClass;
-                roBtn.className = currentLang === 'ro' ? activeClass : inactiveClass;
             }
         }
 
@@ -54963,8 +53734,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!todayEntry || typeof todayEntry.pnl !== 'number') { el.classList.add('hidden'); return; }
             // A napi veszteség-limit %-ban van megadva, a Napló $ összegben rögzíti a napot —
             // mivel nincs egységesen tárolt számlaegyenleg, csak a VESZTESÉG TÉNYÉT és a
-            // Pozícióméret Kalkulátorban megadott egyenleget tudjuk becsléshez használni.
-            const balanceInput = document.getElementById('ps-balance');
+            // Napi/Heti/Havi Veszteséglimit eszközben megadott egyenleget tudjuk becsléshez használni.
+            const balanceInput = document.getElementById('dl-balance');
             const balance = balanceInput && Number(balanceInput.value) > 0 ? Number(balanceInput.value) : null;
             el.classList.remove('hidden');
             if (todayEntry.pnl >= 0) {
@@ -55378,7 +54149,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
-            504: { tool: 'btcdom-modal', cta: 'Számold ki élesben a BTC piaci dominanciát, és nézd meg, merre rotálhat a tőke a Bitcoin és az altcoinok között' },
             209: { tool: 'execlatency-modal', cta: 'Számold ki élesben, mennyi slippage-költség különbség adódhat egy lassabb és egy gyorsabb végrehajtási latencia között' },
             41: { tool: 'sessions-modal', cta: 'Nézd meg élesben a Piaci Szekciók Óráját, és lásd, mikor zárnak/nyitnak a fő szekciók a pre-market/after-hours idősávhoz képest' },
             488: { tool: 'fibonacci', cta: 'Húzz egy Fibonacci-t a charton, és gyakorold a rajzeszköz pontos használatát' },
@@ -55460,9 +54230,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             177: { tool: 'recovery-modal', cta: 'Számold ki élesben a veszteség utáni szükséges hozamot' },
             198: { tool: 'emergencyfund-modal', cta: 'Számold ki élesben, mennyi vésztartalékod van meg, és mennyi különíthető el belőle kereskedési tőkeként' },
             249: { tool: 'emergencyfund-modal', cta: 'Nézd meg élesben a saját adataiddal, mennyi a cél-vésztartalékod, és mennyi marad fölötte kereskedési tőkének' },
-            101: { tool: 'rr-modal', cta: 'Számold ki élesben a kockázat/hozam arányt' },
+            101: { tool: 'trade-risk-live', cta: 'Számold ki élesben a kockázat/hozam arányt' },
             324: { tool: 'backtest-modal', cta: 'Futtasd le élesben a backtestet' },
-            207: { tool: 'poscalc-modal', cta: 'Számold ki élesben a pozícióméretet a stop alapján' },
+            207: { tool: 'trade-risk-live', cta: 'Számold ki élesben a pozícióméretet a stop alapján' },
             277: { tool: 'expectancy-modal', cta: 'Számold ki élesben a rendszer várható értékét (expectancy)' },
             380: { tool: 'betasize-modal', cta: 'Számold ki élesben a béta-alapú pozícióméretezést' },
             96: { tool: 'liquidation-modal', cta: 'Számold ki élesben a likvidációs árat' },
@@ -55562,8 +54332,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             527: { tool: 'iv-modal', cta: 'Számold ki élesben az implikált volatilitást' },
             518: { tool: 'dca-modal', cta: 'Szimuláld élesben a DCA stratégiát' },
             542: { tool: 'pairs-modal', cta: 'Elemezd élesben a párkereskedési lehetőséget' },
-            17: { tool: 'poscalc-modal', cta: 'Számold ki élesben a megfelelő tételméretet' },
-            19: { tool: 'rr-modal', cta: 'Vizualizáld élesben a Risk/Reward arányodat' },
+            17: { tool: 'trade-risk-live', cta: 'Számold ki élesben a megfelelő tételméretet' },
+            19: { tool: 'trade-risk-live', cta: 'Vizualizáld élesben a Risk/Reward arányodat' },
             117: { tool: 'confluence-modal', cta: 'Futtasd le élesben a Confluence szkennert' },
             119: { tool: 'timeexit-modal', cta: 'Számold ki élesben az Idő-alapú Kilépés Kalkulátort — mutatja, időben vagy-e, vagy a setup már lemaradt az elvárt progressziótól' },
             365: { tool: 'feeimpact-modal', cta: 'Számold ki élesben a kereskedési díjak hatását' },
@@ -55604,7 +54374,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             444: { tool: 'omega-modal', cta: 'Hasonlítsd össze élesben a két stratégia Omega Ratióját' },
             428: { tool: 'sortino-modal', cta: 'Számold ki élesben a MAR-alapú Sortino Rátát' },
             280: { tool: 'sortino-modal', cta: 'Hasonlítsd össze élesben a két stratégia Sortino Rátáját' },
-            235: { tool: 'poscalc-modal', cta: 'Számold ki élesben a teljes kockázatkezelési lépéssort' },
+            235: { tool: 'trade-risk-live', cta: 'Számold ki élesben a teljes kockázatkezelési lépéssort' },
             80: { tool: 'divergence-modal', cta: 'Ellenőrizd élesben a rejtett divergenciát' },
             516: { tool: 'atr-modal', cta: 'Számold ki élesben az ATR-alapú pozícióméretet' },
             279: { tool: 'vwma-modal', cta: 'Számold ki élesben a Volume-Weighted Moving Averaget' },
@@ -55621,7 +54391,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             44: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Bull/Bear Flag célárát' },
             59: { tool: 'measuredmove-modal', cta: 'Számold ki élesben az Ék alakzat célárát' },
             74: { tool: 'measuredmove-modal', cta: 'Számold ki élesben a Háromszög alakzat célárát' },
-            526: { tool: 'option-strategy-modal', optionStrategy: 'covered_call', cta: 'Rajzold fel élesben a Fedezett Call (Covered Call) kifizetési görbéjét' },
             107: { tool: 'rejectionwick-modal', cta: 'Elemezd élesben az elutasító kanócot' },
             534: { tool: 'liquidation-modal', cta: 'Számold ki élesben a likvidációs árat' },
             2: { tool: 'liquidation-modal', cta: 'Számold ki élesben a likvidációs árat' },
@@ -55713,7 +54482,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             213: { tool: 'backtest-modal', cta: 'Futtasd le élesben a Kerekszám-Közelség Elemzőt a Backtesterben, és nézd meg, torzítja-e a win rate-et' },
             230: { tool: 'recovery-modal', cta: 'Számold ki élesben, mekkora hozam kell egy üldözött veszteség behozásához' },
             251: { tool: 'dailylimit-modal', cta: 'Állítsd be élesben a napi veszteséglimitedet, és nézd meg, mennyivel korlátozta volna egy rossz napod kárát' },
-            320: { tool: 'poscalc-modal', cta: 'Számold ki élesben a pozícióméretedet, mint a saját kockázatkezelési terved első gyakorlati lépését' },
+            320: { tool: 'trade-risk-live', cta: 'Számold ki élesben a pozícióméretedet, mint a saját kockázatkezelési terved első gyakorlati lépését' },
             342: { tool: 'corrmatrix-modal', cta: 'Számold ki élesben a Korrelációs Mátrixot, és nézd meg, mely eszközök mozognak valóban együtt' },
             503: { tool: 'newscal-modal', cta: 'Nézd meg élesben a Gazdasági Hírnaptárat, és azonosítsd a Fed-döntés / NFP / CPI magas hatású eseményeit' },
             506: { tool: 'voltarget-modal', cta: 'Teszteld élesben a Volatilitás-Célzásos Pozícióméretezést egy kriptó eszköz adatain' },
@@ -55734,7 +54503,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             188: { tool: 'scaling-modal', cta: 'Tervezd meg élesben a lépcsőzetes pozícióépítést, és nézd meg, hogyan alakul az összesített stop-szint' },
             97: { tool: 'preflight-modal', cta: 'Töltsd ki élesben a Belépés Előtti Ellenőrzőlistát — ez a kereskedési terved napi, használható verziója' },
             16: { tool: 'rmultiple-modal', cta: 'Rögzítsd élesben a trade-jeidet, és számold ki a napló alapján az R-multiple statisztikáidat' },
-            18: { tool: 'rr-modal', cta: 'Vizualizáld élesben a Risk/Reward arányodat a stop-loss és take-profit szintjeid alapján' },
+            18: { tool: 'trade-risk-live', cta: 'Vizualizáld élesben a Risk/Reward arányodat a stop-loss és take-profit szintjeid alapján' },
             40: { tool: 'liquiditysize-modal', cta: 'Számold ki élesben az ADV-alapú, likviditáshoz igazított pozícióméretedet' },
             148: { tool: 'preflight-modal', cta: 'Töltsd ki élesben a Belépés Előtti Ellenőrzőlistát a pre-market rutinod részeként' },
             297: { tool: 'dailylimit-modal', cta: 'Állítsd be élesben a napi veszteséglimitedet — a saját automatikus kill switch-edet' },
@@ -55748,8 +54517,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             285: { tool: 'corrshift-modal', cta: 'Futtasd le élesben a Korrelációs Rezsim-Váltás Monitort, hogy számokban lásd, mennyit változott a korreláció az idő során' },
             396: { tool: 'corrshift-modal', cta: 'Számold ki élesben a gördülő korrelációt, és nézd meg, hol lépte át a küszöböt — ez a "minden korrelál egyhez" jelenség számszerűsítve' },
             416: { tool: 'corrshift-modal', cta: 'Próbáld ki élesben Bence esetét: futtasd a Korrelációs Rezsim-Váltás Monitort egy korábban alacsony korrelációjú, majd stressz idején összeszorult eszközpáron' },
-            476: { tool: 'downdev-modal', cta: 'Számold ki élesben a downside deviationt, és vesd össze a teljes szórással' },
-            482: { tool: 'downdev-modal', cta: 'Próbáld ki élesben Levente két stratégiáját: azonos teljes szórás, mennyire eltérő downside deviation?' },
             159: { tool: 'spreadbet-modal', cta: 'Számold ki élesben a Spread Betting P&L Kalkulátorral, mennyit "eszik meg" a spread a bruttó mozgásból — ugyanaz a kockázat, mint bármilyen más tőkeáttételes terméknél' },
             118: { tool: 'linreg-modal', cta: 'Számold ki élesben a Lineáris Regressziós Csatornát, és nézd meg, a trend lejtéséhez (momentumhoz) képest túlvett/túladott tartományban van-e éppen az ár' },
         };
@@ -55768,10 +54535,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // Az önálló Pozícióméret- és Risk/Reward Kalkulátor modal
+            // (poscalc-modal, rr-modal) eltávolítása után ez a lecke-CTA
+            // helyette a kereskedési jegyen ÉLŐ, a tényleges SL/TP árból és
+            // egyenlegből számoló verzióhoz irányít — megnyitja a jegyet, és
+            // bekapcsolja a TP/SL mezőket, hogy a felhasználó rögtön lássa az
+            // élő kalkulátort és RR-arányt.
+            if (mapping.tool === 'trade-risk-live') {
+                closeAcademy();
+                switchMobileTab('trade');
+                if (typeof openOrderSheetMobile === 'function') openOrderSheetMobile();
+                setTimeout(() => {
+                    const toggle = document.getElementById('toggle-tpsl');
+                    if (toggle && !toggle.checked) { toggle.checked = true; toggleTPSLInputs(); }
+                }, 50);
+                showNotification('Most próbáld ki élesben a kereskedési jegyen, a Stop Loss / Take Profit mezőknél!');
+                return;
+            }
+
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'btcdom-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'demarker-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'poscalc-modal', 'rr-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'option-strategy-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'downdev-modal', 'settlement-modal', 'execlatency-modal', 'linreg-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'demarker-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'settlement-modal', 'execlatency-modal', 'linreg-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
@@ -55785,10 +54570,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (mapping.backtestStrategy) {
                     const sel = document.getElementById('backtest-strategy');
                     if (sel) { sel.value = mapping.backtestStrategy; renderBacktestStrategyInputs(); }
-                }
-                if (mapping.optionStrategy) {
-                    const osSel = document.getElementById('os-strategy-type');
-                    if (osSel && typeof renderOptionStrategyInputs === 'function') { osSel.value = mapping.optionStrategy; renderOptionStrategyInputs(); }
                 }
                 showNotification('Most próbáld ki élesben, amit az imént tanultál!');
                 return;
