@@ -25907,7 +25907,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             updateOrderCalculations();
             closeToolModal('poscalc-modal');
             showNotification('Pozícióméret és SL/TP alkalmazva a kereskedési panelen!');
-            addSystemLog(`Eszközök: pozícióméret-kalkulátor eredménye alkalmazva ($${amount}, SL ${slPct}%).`);
+            // JAVÍTÁS (mezőnkénti DOM-fuzzer sweep, kis-magnitúdójú extrém
+            // értékekkel): a "ps-sl" mezőnek nincs alsó korlátja, és a
+            // calcPositionSize csak a slPct > 0 feltételt ellenőrzi — egy
+            // rendkívül kicsi (pl. 0.0000001%), de érvényes stop-loss távolság
+            // esetén a slPct közvetlen sablonsztring-interpolációja a natív JS
+            // Number→String konverzió miatt nyers tudományos jelölésre váltott
+            // volna a naplóbejegyzésben ("SL 1e-7%" helyett "SL 0.0000001%").
+            const slPctSafe = zeroSafeRound(slPct, 6).toLocaleString('en-US', { maximumFractionDigits: 6 });
+            addSystemLog(`Eszközök: pozícióméret-kalkulátor eredménye alkalmazva ($${amount}, SL ${slPctSafe}%).`);
         }
 
         // --- Risk/Reward Kalkulátor ---
@@ -41705,6 +41713,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            // JAVÍTÁS (mezőnkénti DOM-fuzzer sweep, kis-magnitúdójú extrém
+            // értékekkel): a makerRatioRaw mező (0-100 közé validált, de
+            // tizedesjegyekre nem korlátozott) közvetlen sablonsztring-
+            // interpolációja a verdictText-ben — a natív JS Number→String
+            // konverzió 1e-6 alatti abszolútértékű számokra (pl. a felhasználó
+            // 0.0000001-et ad meg maker arányként) nyers tudományos jelölésre
+            // vált ("1e-7%" helyett "0.0000001%"). A zeroSafeRound+toLocaleString
+            // páros (ugyanaz a konvenció, mint a fmtBps-nél lejjebb) soha nem
+            // vált tudományos jelölésre.
+            const fmtMakerRatio = (v) => zeroSafeRound(v, 6).toLocaleString('en-US', { maximumFractionDigits: 6 });
             // JAVÍTÁS (audit — két-mezős kombinált extrém-érték sweep, ugyanaz a
             // hibaosztály, mint a korábban javított kalkulátoroknál): a fenti
             // "every(Number.isFinite)" ellenőrzés a blendedRatePct/takerFeePct
@@ -41738,7 +41756,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdictText = `✅ A vegyes díjad összességében NEGATÍV — a jelenlegi mix nettó visszatérítést (rebate-et), nem költséget jelent.`;
             } else if (savingsVsAllTaker > 1e-9) {
                 verdictColor = 'text-neon-green';
-                verdictText = `✅ A ${makerRatioRaw}%-os maker arányod már most ${fmtMoney(savingsVsAllTaker)}-t spórol a 100% taker (csak market megbízás) esethez képest.`;
+                verdictText = `✅ A ${fmtMakerRatio(makerRatioRaw)}%-os maker arányod már most ${fmtMoney(savingsVsAllTaker)}-t spórol a 100% taker (csak market megbízás) esethez képest.`;
             } else if (savingsVsAllTaker < -1e-9) {
                 verdictColor = 'text-neon-red';
                 verdictText = `⚠️ A jelenlegi mix ${fmtMoney(Math.abs(savingsVsAllTaker))}-tal TÖBBET visz el, mint a 100% taker eset — ez a megadott díjak mellett (maker díj > taker díj) fordulhat elő.`;
