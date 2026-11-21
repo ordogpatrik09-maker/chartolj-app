@@ -20652,23 +20652,34 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const result = runPairsTradingBacktest(pairsSampleData.pricesA, pairsSampleData.pricesB, lookback, entryZ, exitZ, startEquity);
+
+            // JAVÍTÁS: szélsőséges, de véges kezdő tőke (pl. "1e308") mellett a
+            // kamatos equity-görbe túlcsordulhat Infinity/NaN-re, és MÉG véges
+            // marad esetén is a natív .toFixed() >=1e21 nagyságrendnél nyers
+            // tudományos jelölésre vált — isFinite-védelem + .toLocaleString()-re
+            // váltás, konzisztensen a korábban javított kalkulátorokkal.
+            if (![result.totalReturnPct, result.finalEquity, result.winRatePct, result.maxDrawdownPct].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott kezdő tőke túl szélsőséges — a backtest-szimuláció túlcsordul. Adj meg reálisabb nagyságrendű kezdő tőkét!</div>`;
+                return;
+            }
+
             const isPositive = result.totalReturnPct > 0;
 
             out.innerHTML = `
                 <canvas id="pairs-sparkline" width="320" height="70" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
                 <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Teljes hozam (${result.tradeCount} trade)</div>
-                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toFixed(2)}%</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toFixed(2)}</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Találati arány:</span>
-                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toFixed(1)}%</span>
+                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Max. visszaesés (drawdown):</span>
-                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toFixed(2)}%</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-slate-400">${result.tradeCount === 0
@@ -25857,15 +25868,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
             const capped = posSize > bal;
             const finalSize = Math.min(posSize, bal);
+            // JAVÍTÁS: tpPctRaw/riskAmount/finalSize egyenként véges, de >=1e21
+            // nagyságrendű érték esetén a natív .toFixed() nyers tudományos
+            // jelölésre ("1e+21") vált — ugyanaz a hibaosztály, mint a korábban
+            // javított CCI/P/E/Elder Ray stb. kalkulátoroknál. .toLocaleString()-re
+            // váltva mindenhol, konzisztensen.
             const tpPct = rr > 0 ? +tpPctRaw.toFixed(2) : 0;
             const highRisk = riskPct > 5;
 
             out.innerHTML = `
                 ${highRisk ? `<div class="text-[11px] text-neon-red font-bold mb-3 p-2.5 rounded-lg bg-neon-red/10 border border-neon-red/30">⚠️ ${riskPct}% kockázat trade-enként rendkívül magas — a legtöbb tapasztalt kereskedő 1-2% alatt marad.</div>` : ''}
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Kockáztatott összeg:</span><span class="font-bold text-white">$${riskAmount.toFixed(2)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Javasolt pozícióméret:</span><span class="font-bold text-amber-400">$${finalSize.toFixed(2)}</span></div>
-                    ${tpPct > 0 ? `<div class="flex justify-between"><span class="text-slate-400">Javasolt TP (${rr}:1 R:R):</span><span class="font-bold text-neon-green">+${tpPct}%</span></div>` : ''}
+                    <div class="flex justify-between"><span class="text-slate-400">Kockáztatott összeg:</span><span class="font-bold text-white">$${riskAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Javasolt pozícióméret:</span><span class="font-bold text-amber-400">$${finalSize.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
+                    ${tpPct > 0 ? `<div class="flex justify-between"><span class="text-slate-400">Javasolt TP (${rr}:1 R:R):</span><span class="font-bold text-neon-green">+${tpPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>` : ''}
                 </div>
                 ${capped ? `<div class="text-[11px] text-neon-red mt-3">A számított méret meghaladja az egyenleget — a javaslat az egyenlegedre van korlátozva.</div>` : `
                     <button onclick="applyPositionSizeToTrading(${finalSize.toFixed(2)}, ${slPct}, ${tpPct})" class="w-full mt-3 py-2 rounded-xl text-xs font-extrabold uppercase bg-dark-800 border border-neon-cyan/40 text-neon-cyan hover:bg-dark-750 transition">
@@ -26565,10 +26581,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = '✅ Kivételesen magas érték — ilyen szint ritka és hosszú távon gyakran nehezen fenntartható, érdemes ellenőrizni az adatok/időszak reprezentativitását.';
             }
 
+            // JAVÍTÁS: excessReturn/sharpe egyenként véges, de >=1e21 nagyságrendű
+            // érték esetén a natív .toFixed() nyers tudományos jelölésre vált —
+            // .toLocaleString()-re váltva, konzisztensen a korábban javított
+            // kalkulátorokkal.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Többlethozam (hozam - kockázatmentes):</span><span class="${excessReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${excessReturn >= 0 ? '+' : ''}${excessReturn.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Sharpe-ráta:</span><span class="font-extrabold ${colorClass} text-sm">${sharpe.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Többlethozam (hozam - kockázatmentes):</span><span class="${excessReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${excessReturn >= 0 ? '+' : ''}${excessReturn.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Sharpe-ráta:</span><span class="font-extrabold ${colorClass} text-sm">${sharpe.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -26791,7 +26811,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 out.innerHTML = `
                     <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                         <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">Évesített hozam − kockázatmentes ráta:</span><span class="text-white">${excessReturn.toFixed(2)}%</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Évesített hozam − kockázatmentes ráta:</span><span class="text-white">${excessReturn.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
                         <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ulcer Index:</span><span class="text-white">0.00</span></div>
                     </div>
                     <p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A sorozat soha nem volt a futó csúcs alatt (monoton növekvő) — az Ulcer Index 0, így a Martin Ratio nem fejezhető ki véges számmal (végtelenhez tart).</p>
@@ -26823,10 +26843,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-neon-red">-${maxDrawdownPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Évesített hozam − kockázatmentes ráta:</span><span class="text-white">${excessReturn.toFixed(2)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Ulcer Index:</span><span class="text-white">${ulcerIndex.toFixed(2)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Martin Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${martinRatio.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-neon-red">-${maxDrawdownPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Évesített hozam − kockázatmentes ráta:</span><span class="text-white">${excessReturn.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Ulcer Index:</span><span class="text-white">${ulcerIndex.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Martin Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${martinRatio.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -26872,25 +26892,30 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges jelenlegi ár mellett a
+            // VWAP, a jelenlegi ár és/vagy az eltérés%-a a kezelhető, de
+            // >=1e21 nagyságrendbe eshet, ahol a natív .toFixed() nyers
+            // tudományos jelölésre vált — .toLocaleString()-re váltva,
+            // konzisztensen a korábban javított kalkulátorokkal.
             let colorClass, verdict;
             if (Math.abs(deviationPct) < 0.3) {
                 colorClass = 'text-neon-cyan';
                 verdict = 'A jelenlegi ár közel van a VWAP-hoz — nincs jelentős eltérés a napi "fair value" referenciától.';
             } else if (deviationPct >= 0.3) {
                 colorClass = 'text-neon-green';
-                verdict = `Az ár ${deviationPct.toFixed(2)}%-kal a VWAP FELETT van — a nap átlagához képest "drágán" vásárolnak jelenleg. Trendkövetők erősítésnek, mean-reversion kereskedők esetleg túlvettnek tekinthetik.`;
+                verdict = `Az ár ${deviationPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%-kal a VWAP FELETT van — a nap átlagához képest "drágán" vásárolnak jelenleg. Trendkövetők erősítésnek, mean-reversion kereskedők esetleg túlvettnek tekinthetik.`;
             } else {
                 colorClass = 'text-neon-red';
-                verdict = `Az ár ${Math.abs(deviationPct).toFixed(2)}%-kal a VWAP ALATT van — a nap átlagához képest "olcsón" adnak-vesznek jelenleg. Trendkövetők gyengeségnek, mean-reversion kereskedők esetleg túladottnak tekinthetik.`;
+                verdict = `Az ár ${Math.abs(deviationPct).toLocaleString('en-US', { maximumFractionDigits: 2 })}%-kal a VWAP ALATT van — a nap átlagához képest "olcsón" adnak-vesznek jelenleg. Trendkövetők gyengeségnek, mean-reversion kereskedők esetleg túladottnak tekinthetik.`;
             }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Gyertyák száma:</span><span class="text-white">${bars.length}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Összes volumen:</span><span class="text-white">${totalVolume.toLocaleString('en-US')}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">VWAP:</span><span class="font-extrabold text-neon-cyan text-sm">${vwap.toFixed(4)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Jelenlegi ár:</span><span class="text-white">${currentPrice.toFixed(4)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Eltérés a VWAP-tól:</span><span class="${colorClass} font-bold">${deviationPct >= 0 ? '+' : ''}${deviationPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">VWAP:</span><span class="font-extrabold text-neon-cyan text-sm">${vwap.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Jelenlegi ár:</span><span class="text-white">${currentPrice.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eltérés a VWAP-tól:</span><span class="${colorClass} font-bold">${deviationPct >= 0 ? '+' : ''}${deviationPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -26946,7 +26971,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // köztes összegek (Σár×volumen, Σvolumen, a szórás négyzetösszege)
             // túlcsordulhatnak Infinity-re, vagy az AVWAP maga NaN-re — ugyanaz
             // a hibaosztály, mint a korábban javított kalkulátoroknál.
-            if (![avwap, stdDev, upper1, lower1, upper2, lower2, deviationPct, totalVolume].every(Number.isFinite)) {
+            if (![avwap, stdDev, upper1, lower1, upper2, lower2, deviationPct, totalVolume, currentPrice].every(Number.isFinite)) {
                 out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott árak és/vagy volumenek túl szélsőségesek — az Anchored VWAP számítása túlcsordul. Adj meg reálisabb nagyságrendű értékeket!</div>`;
                 return;
             }
@@ -26969,16 +26994,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = `Az ár az ±1 szórás sávon BELÜL van — közel az anchor pont óta kialakult "fair value"-hoz.`;
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges jelenlegi ár mellett a
+            // sávok/eltérés% >=1e21 nagyságrendbe eshetnek, ahol a natív
+            // .toFixed() nyers tudományos jelölésre vált — .toLocaleString()-re
+            // váltva, konzisztensen a korábban javított kalkulátorokkal.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Anchor pozíciótól számolt gyertyák:</span><span class="text-white">${bars.length} / ${allBars.length}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Összes volumen (anchor óta):</span><span class="text-white">${totalVolume.toLocaleString('en-US')}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Anchored VWAP:</span><span class="font-extrabold text-neon-purple text-sm">${avwap.toFixed(4)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Volumen-súlyozott szórás:</span><span class="text-white">${stdDev.toFixed(4)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">+2σ / +1σ sáv:</span><span class="text-neon-green">${upper2.toFixed(4)} / ${upper1.toFixed(4)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">−1σ / −2σ sáv:</span><span class="text-neon-red">${lower1.toFixed(4)} / ${lower2.toFixed(4)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelenlegi ár:</span><span class="text-white">${currentPrice.toFixed(4)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Eltérés az AVWAP-tól:</span><span class="${colorClass} font-bold">${deviationPct >= 0 ? '+' : ''}${deviationPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Anchored VWAP:</span><span class="font-extrabold text-neon-purple text-sm">${avwap.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Volumen-súlyozott szórás:</span><span class="text-white">${stdDev.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">+2σ / +1σ sáv:</span><span class="text-neon-green">${upper2.toLocaleString('en-US', { maximumFractionDigits: 4 })} / ${upper1.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">−1σ / −2σ sáv:</span><span class="text-neon-red">${lower1.toLocaleString('en-US', { maximumFractionDigits: 4 })} / ${lower2.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jelenlegi ár:</span><span class="text-white">${currentPrice.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eltérés az AVWAP-tól:</span><span class="${colorClass} font-bold">${deviationPct >= 0 ? '+' : ''}${deviationPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -27207,7 +27236,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott hozamok túl szélsőségesek — a Treynor Ratio számítása túlcsordul. Adj meg reálisabb nagyságrendű (pl. %-os) hozamértékeket!</div>`;
                     return;
                 }
-                treynorHtml = `<div class="flex justify-between"><span class="text-slate-400">Treynor Ratio:</span><span class="font-extrabold text-sm ${treynor >= 0 ? 'text-neon-green' : 'text-neon-red'}">${treynor.toFixed(3)}</span></div>`;
+                treynorHtml = `<div class="flex justify-between"><span class="text-slate-400">Treynor Ratio:</span><span class="font-extrabold text-sm ${treynor >= 0 ? 'text-neon-green' : 'text-neon-red'}">${treynor.toLocaleString('en-US', { maximumFractionDigits: 3 })}</span></div>`;
             }
 
             const expectedReturn = riskFree + beta * (meanMarket - riskFree);
@@ -27229,17 +27258,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ? '✅ Pozitív Jensen\'s Alpha: a vállalt piaci kockázathoz (Béta) képest a CAPM-modell elvárásánál JOBB volt a tényleges hozam.'
                 : '🚨 Negatív Jensen\'s Alpha: a vállalt piaci kockázathoz (Béta) képest a CAPM-modell elvárásánál ROSSZABB volt a tényleges hozam.';
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges kockázatmentes ráta
+            // mellett a Treynor/CAPM elvárt hozam/Jensen's Alpha >=1e21
+            // nagyságrendbe eshet, ahol a natív .toFixed() nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva, konzisztensen a
+            // korábban javított kalkulátorokkal.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Eszköz átlaghozam:</span><span class="text-white">${meanAsset.toFixed(3)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Piac átlaghozam:</span><span class="text-white">${meanMarket.toFixed(3)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Béta:</span><span class="font-extrabold text-neon-cyan text-sm">${beta.toFixed(3)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eszköz átlaghozam:</span><span class="text-white">${meanAsset.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Piac átlaghozam:</span><span class="text-white">${meanMarket.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Béta:</span><span class="font-extrabold text-neon-cyan text-sm">${beta.toLocaleString('en-US', { maximumFractionDigits: 3 })}</span></div>
                     ${treynorHtml}
-                    <div class="flex justify-between"><span class="text-slate-400">CAPM elvárt hozam:</span><span class="text-white">${expectedReturn.toFixed(3)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jensen's Alpha:</span><span class="font-extrabold ${alphaColorClass} text-sm">${jensensAlpha >= 0 ? '+' : ''}${jensensAlpha.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">CAPM elvárt hozam:</span><span class="text-white">${expectedReturn.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Jensen's Alpha:</span><span class="font-extrabold ${alphaColorClass} text-sm">${jensensAlpha >= 0 ? '+' : ''}${jensensAlpha.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span></div>
                 </div>
-                <p class="text-[10px] text-slate-400 mt-2">A Béta ${beta.toFixed(2)} azt jelenti, hogy az eszköz ${betaDesc}.</p>
+                <p class="text-[10px] text-slate-400 mt-2">A Béta ${beta.toLocaleString('en-US', { maximumFractionDigits: 2 })} azt jelenti, hogy az eszköz ${betaDesc}.</p>
                 <p class="text-[10px] font-semibold mt-1 ${alphaColorClass}">${alphaVerdict}</p>
             `;
         }
@@ -27484,14 +27518,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // ±0-t, a ternary mindig +0-t ad vissza) kerüljük ezt el — a valódi,
             // 0,001%-nál nagyobb magnitúdójú negatív értékek előjelét/
             // kerekítését ez NEM érinti.
+            // JAVÍTÁS: a "v" maga egyenként véges lehet (pl. ~-3e+306), de a
+            // kerekítési lépés (`v * 1000`) ÖNMAGA túlcsordulhat -Infinity/
+            // Infinity-re, mielőtt a `rounded === 0` ellenőrzés futna — ekkor a
+            // `.toFixed(3)` natív Infinity→"Infinity"/"−Infinity" string
+            // konverziója szivárogna ki (NEM a korábban javított "-0.000"
+            // hibaosztály). Ha a kerekítés túlcsordul, az EREDETI (nem
+            // kerekített) `v`-t formázzuk `.toLocaleString()`-tel, ami nagy, de
+            // véges számoknál sosem vált nyers tudományos jelölésre/Infinity-re.
             const fmtPct3 = (v) => {
                 const rounded = Math.round(v * 1000) / 1000;
-                return (rounded === 0 ? 0 : rounded).toFixed(3);
+                const safe = Number.isFinite(rounded) ? (rounded === 0 ? 0 : rounded) : v;
+                return safe.toLocaleString('en-US', { maximumFractionDigits: 3 });
             };
             const fmtPct3Signed = (v) => {
                 const rounded = Math.round(v * 1000) / 1000;
-                const safe = rounded === 0 ? 0 : rounded;
-                return `${safe >= 0 ? '+' : ''}${safe.toFixed(3)}`;
+                const safe = Number.isFinite(rounded) ? (rounded === 0 ? 0 : rounded) : v;
+                return `${safe >= 0 ? '+' : ''}${safe.toLocaleString('en-US', { maximumFractionDigits: 3 })}`;
             };
             // JAVÍTÁS: a "Kockázatkerülési együttható (A)" mezőt korábban
             // nyers `${A}` interpolációval jelenítettük meg — egy nagyon
@@ -27561,22 +27604,38 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function _renderDownsideStatsBlock(label, stats, accentClass) {
-            const ratioText = stats.downsideRatio === null ? 'n/a (szórás = 0)' : `${stats.downsideRatio.toFixed(1)}%`;
             // JAVÍTÁS: nagyon kis, nullára kerekedő negatív átlaghozamnál (pl.
             // -0.000015%) a .toFixed(3) a "-0.000" string-et adná vissza —
             // explicit -0 → +0 normalizálással kerüljük el ezt (ugyanaz a
             // mintázat, mint a fmtPct3Signed()-ben a Bizonyossági Egyenérték
             // Kalkulátorban, lásd 33eafa2). A szórás/downside deviation
             // mezők négyzetgyökből jönnek, sosem negatívak, nem érintettek.
-            const meanRounded = Math.round(stats.mean * 1000) / 1000;
-            const meanSafe = meanRounded === 0 ? 0 : meanRounded;
+            // JAVÍTÁS 2: szélsőséges, de egyenként véges bemenetnél maguk a
+            // kerekítési lépések (`stats.mean * 1000` stb.) ÖNMAGUK
+            // túlcsordulhatnak -Infinity/Infinity-re (a bemeneti érték
+            // nagyságrendileg a double-tartomány felső határa közelében van) —
+            // ekkor a `.toFixed()` natív Infinity→"Infinity" string konverziója
+            // szivárogna ki, ugyanaz a hibaosztály, mint a korábban javított
+            // Bizonyossági Egyenérték Kalkulátorban. Minden mezőnél: ha a
+            // kerekítés túlcsordul, az EREDETI (nem kerekített) értéket
+            // formázzuk `.toLocaleString()`-tel, ami nagy, de véges számoknál
+            // sosem vált nyers tudományos jelölésre/Infinity-re.
+            const safeRound = (v, decimals) => {
+                const scale = Math.pow(10, decimals);
+                const rounded = Math.round(v * scale) / scale;
+                return Number.isFinite(rounded) ? (rounded === 0 ? 0 : rounded) : v;
+            };
+            const fmt3 = (v) => safeRound(v, 3).toLocaleString('en-US', { maximumFractionDigits: 3 });
+            const fmt1 = (v) => safeRound(v, 1).toLocaleString('en-US', { maximumFractionDigits: 1 });
+            const meanSafe = safeRound(stats.mean, 3);
+            const ratioText = stats.downsideRatio === null ? 'n/a (szórás = 0)' : `${fmt1(stats.downsideRatio)}%`;
             return `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-[11px]">
                     <div class="text-[10px] font-extrabold uppercase ${accentClass} mb-1">${label}</div>
                     <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${stats.n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Átlagos hozam:</span><span class="${meanSafe >= 0 ? 'text-neon-green' : 'text-neon-red'}">${meanSafe >= 0 ? '+' : ''}${meanSafe.toFixed(3)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Teljes szórás:</span><span class="text-white">${stats.stdDev.toFixed(3)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Downside deviation:</span><span class="font-extrabold ${accentClass}">${stats.downsideDeviation.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos hozam:</span><span class="${meanSafe >= 0 ? 'text-neon-green' : 'text-neon-red'}">${meanSafe >= 0 ? '+' : ''}${meanSafe.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes szórás:</span><span class="text-white">${fmt3(stats.stdDev)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Downside deviation:</span><span class="font-extrabold ${accentClass}">${fmt3(stats.downsideDeviation)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">MAR alatti időszakok:</span><span class="text-white">${stats.downsidePeriods} / ${stats.n}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Downside arány:</span><span class="font-extrabold ${accentClass}">${ratioText}</span></div>
                 </div>
@@ -30882,27 +30941,37 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // "1e-10") bemenet a JS alapértelmezett szám→string konverziója
             // miatt nyers tudományos jelölést adott.
             const maxLossPctFmt = maxLossPct.toLocaleString('en-US', { maximumFractionDigits: 6 });
+            // JAVÍTÁS: a "riskPct"/"tradesToMaxLoss"/"singleBigBillCount"/
+            // "totalBillCount" egyenként véges, de >=1e21 nagyságrendű érték
+            // esetén a natív .toFixed()/nyers sablonsztring-interpoláció (ami
+            // a JS alapértelmezett szám→string konverzióját használja) nyers
+            // tudományos jelölésre vált — .toLocaleString()-re váltva
+            // mindenhol, konzisztensen a korábban javított kalkulátorokkal.
+            const riskPctFmt = riskPct.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            const tradesToMaxLossFmt = tradesToMaxLoss.toLocaleString('en-US');
+            const singleBigBillCountFmt = singleBigBillCount.toLocaleString('en-US');
+            const totalBillCountFmt = totalBillCount.toLocaleString('en-US');
 
             let colorClass, verdict;
             if (riskPct > 5) {
                 colorClass = 'text-neon-red';
-                verdict = `🚨 A kockázat a tőke ${riskPct.toFixed(2)}%-a — ez %-ban kifejezve is magasnak számít, függetlenül attól, hogy dollárban "soknak" vagy "kevésnek" érződik. Csupán ${tradesToMaxLoss} egymást követő, teljes veszteségű trade elérné a megadott ${maxLossPctFmt}%-os elviselhető határt.`;
+                verdict = `🚨 A kockázat a tőke ${riskPctFmt}%-a — ez %-ban kifejezve is magasnak számít, függetlenül attól, hogy dollárban "soknak" vagy "kevésnek" érződik. Csupán ${tradesToMaxLossFmt} egymást követő, teljes veszteségű trade elérné a megadott ${maxLossPctFmt}%-os elviselhető határt.`;
             } else if (tradesToMaxLoss <= 5) {
                 colorClass = 'text-amber-400';
-                verdict = `⚠️ Bár a kockázat csak a tőke ${riskPct.toFixed(2)}%-a, mindössze ${tradesToMaxLoss} egymást követő, teljes veszteségű trade elérné a megadott ${maxLossPctFmt}%-os elviselhető határt — ez az a szám, amire a %-os keretezés önmagában nem figyelmeztet.`;
+                verdict = `⚠️ Bár a kockázat csak a tőke ${riskPctFmt}%-a, mindössze ${tradesToMaxLossFmt} egymást követő, teljes veszteségű trade elérné a megadott ${maxLossPctFmt}%-os elviselhető határt — ez az a szám, amire a %-os keretezés önmagában nem figyelmeztet.`;
             } else {
                 colorClass = 'text-neon-green';
-                verdict = `✅ A kockázat a tőke ${riskPct.toFixed(2)}%-a, és ${tradesToMaxLoss} egymást követő, teljes veszteségű trade kellene a megadott ${maxLossPctFmt}%-os elviselhető határ eléréséhez — mindkét keretezés mérsékelt kockázatot mutat.`;
+                verdict = `✅ A kockázat a tőke ${riskPctFmt}%-a, és ${tradesToMaxLossFmt} egymást követő, teljes veszteségű trade kellene a megadott ${maxLossPctFmt}%-os elviselhető határ eléréséhez — mindkét keretezés mérsékelt kockázatot mutat.`;
             }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Kockázat $-ban:</span><span class="text-white">$${risk.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázat a tőke %-ában:</span><span class="font-extrabold text-amber-400 text-sm">${riskPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">"Kis címletek" keretezés (bontás):</span><span class="text-white text-right ml-2">${breakdownStr}${leftoverCents > 0 ? ` + ${leftoverCents}¢` : ''}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Összesen ennyi bankjegy:</span><span class="text-white">${totalBillCount} db</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">"Nagy címlet" keretezés:</span><span class="text-white">${singleBigBillCount}×$100${singleBigBillCount > 1 ? ' (felfelé kerekítve)' : ''}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Vesztes trade-ek a ${maxLossPctFmt}%-os határig:</span><span class="font-extrabold ${colorClass} text-sm">${tradesToMaxLoss} db</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázat a tőke %-ában:</span><span class="font-extrabold text-amber-400 text-sm">${riskPctFmt}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">"Kis címletek" keretezés (bontás):</span><span class="text-white text-right ml-2">${breakdownStr}${leftoverCents > 0 ? ` + ${leftoverCents}¢` : ''}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Összesen ennyi bankjegy:</span><span class="text-white">${totalBillCountFmt} db</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">"Nagy címlet" keretezés:</span><span class="text-white">${singleBigBillCountFmt}×$100${singleBigBillCount > 1 ? ' (felfelé kerekítve)' : ''}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Vesztes trade-ek a ${maxLossPctFmt}%-os határig:</span><span class="font-extrabold ${colorClass} text-sm">${tradesToMaxLossFmt} db</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -31274,31 +31343,36 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 posColor = 'text-neon-red';
             } else {
                 const posPct = channelWidth === 0 ? 50 : ((lastClose - lowerAtLast) / channelWidth) * 100;
-                posLabel = `Az ár a csatornán belül van, a sáv ${posPct.toFixed(1)}%-ánál (0% = alsó sáv, 100% = felső sáv)`;
+                posLabel = `Az ár a csatornán belül van, a sáv ${posPct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%-ánál (0% = alsó sáv, 100% = felső sáv)`;
                 posColor = 'text-slate-300';
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges "k" szórás-szorzó mellett
+            // a sávok/lejtés %-ban kifejezve >=1e21 nagyságrendbe eshetnek, ahol
+            // a natív .toFixed() nyers tudományos jelölésre vált —
+            // .toLocaleString()-re váltva, konzisztensen a korábban javított
+            // kalkulátorokkal.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Felső sáv (jelenlegi bár):</span>
-                        <span class="font-extrabold text-neon-green text-sm">${upperAtLast.toFixed(2)}</span>
+                        <span class="font-extrabold text-neon-green text-sm">${upperAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Regressziós érték (középvonal):</span>
-                        <span class="font-extrabold text-white text-sm">${regAtLast.toFixed(2)}</span>
+                        <span class="font-extrabold text-white text-sm">${regAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Alsó sáv (jelenlegi bár):</span>
-                        <span class="font-extrabold text-neon-red text-sm">${lowerAtLast.toFixed(2)}</span>
+                        <span class="font-extrabold text-neon-red text-sm">${lowerAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Lejtés (bárankénti ármozgás):</span>
-                        <span class="font-extrabold ${trendColor} text-sm">${slope >= 0 ? '+' : ''}${slope.toFixed(4)} (${slopePctPerBar >= 0 ? '+' : ''}${slopePctPerBar.toFixed(3)}%/bár)</span>
+                        <span class="font-extrabold ${trendColor} text-sm">${slope >= 0 ? '+' : ''}${slope.toLocaleString('en-US', { maximumFractionDigits: 4 })} (${slopePctPerBar >= 0 ? '+' : ''}${slopePctPerBar.toLocaleString('en-US', { maximumFractionDigits: 3 })}%/bár)</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">R² (illeszkedés jósága):</span>
-                        <span class="font-extrabold text-white text-sm">${r2.toFixed(4)}</span>
+                        <span class="font-extrabold text-white text-sm">${r2.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3 mb-3">
@@ -32412,7 +32486,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const sensRowsHtml = rows.map(row => {
                 const rrPct = rPct + row.delta;
                 const label = row.delta === 0 ? `${rrPct.toFixed(2)}% (jelenlegi)` : `${rrPct.toFixed(2)}% (${row.delta > 0 ? '+' : ''}${row.delta}pp)`;
-                const valueHtml = row.valid ? row.fv.toFixed(0) : 'n/a (nem konvergál)';
+                const valueHtml = row.valid ? row.fv.toLocaleString('en-US', { maximumFractionDigits: 0 }) : 'n/a (nem konvergál)';
                 return `<div class="flex items-center justify-between font-mono text-[11px] ${row.delta === 0 ? 'border-y border-dark-750 py-1 my-0.5' : ''}">
                     <span class="text-slate-400">r = ${label}</span>
                     <span class="${row.delta === 0 ? 'text-white font-bold' : 'text-slate-300'}">${valueHtml}</span>
@@ -32425,11 +32499,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ? 'A modell szerint a jelenlegi árfolyam FELÜLÁRAZOTT a feltételezett fundamentumokhoz képest.'
                     : 'A modell szerint a jelenlegi árfolyam közel van a becsült fair value-hoz.');
 
+            // JAVÍTÁS: a "price"/"fairValue" egyenként véges, de >=1e21
+            // nagyságrendű érték esetén a natív .toFixed() nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva, konzisztensen a
+            // korábban javított kalkulátorokkal.
             out.innerHTML = `
                 <div class="glass-card rounded-xl border ${diffPct >= 0 ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Fair Value (Gordon-modell)</div>
-                    <div class="text-xl font-extrabold ${diffPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-mono">${fairValue.toFixed(0)}</div>
-                    <div class="text-[10px] text-slate-500 font-mono mt-0.5">Jelenlegi árfolyam: ${price.toFixed(0)} · Eltérés: ${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%</div>
+                    <div class="text-xl font-extrabold ${diffPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-mono">${fairValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                    <div class="text-[10px] text-slate-500 font-mono mt-0.5">Jelenlegi árfolyam: ${price.toLocaleString('en-US', { maximumFractionDigits: 0 })} · Eltérés: ${diffPct >= 0 ? '+' : ''}${diffPct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%</div>
                 </div>
                 ${narrowGapWarn}
                 <div class="glass-card rounded-xl p-3 mb-3">
@@ -32491,7 +32569,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const sharesBoughtBack = buyback / priceAfterSplit;
 
             if (sharesBoughtBack >= sharesAfterSplit) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott buyback összeg (${buyback.toFixed(0)}) túl nagy — ennyi pénzért a split utáni részvényállomány egészét vagy többet visszavásárolna a vállalat, ami nem lehetséges! Csökkentsd a buyback összeget.</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott buyback összeg (${buyback.toLocaleString('en-US', { maximumFractionDigits: 0 })}) túl nagy — ennyi pénzért a split utáni részvényállomány egészét vagy többet visszavásárolna a vállalat, ami nem lehetséges! Csökkentsd a buyback összeget.</div>`;
                 return;
             }
 
@@ -32535,7 +32613,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (Math.abs(ratio - 1) > 1e-9) {
                 splitNote = ratio > 1
                     ? `<div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-amber-400 leading-relaxed">📈 Forward split ("${ratioFmt}-az-1-hez"): a részvényszám ${ratioFmt}×-ára nő, az árfolyam a ${ratioFmt}×-ad részére esik — a market cap változatlan marad.</div></div>`
-                    : `<div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-amber-400 leading-relaxed">📉 Reverse split ("1-az-${(1/ratio).toFixed(2)}-hez"): a részvényszám a ${(1/ratio).toFixed(2)}×-ad részére csökken, az árfolyam ${(1/ratio).toFixed(2)}×-ára nő — a market cap változatlan marad.</div></div>`;
+                    : `<div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-amber-400 leading-relaxed">📉 Reverse split ("1-az-${(1/ratio).toLocaleString('en-US', { maximumFractionDigits: 2 })}-hez"): a részvényszám a ${(1/ratio).toLocaleString('en-US', { maximumFractionDigits: 2 })}×-ad részére csökken, az árfolyam ${(1/ratio).toLocaleString('en-US', { maximumFractionDigits: 2 })}×-ára nő — a market cap változatlan marad.</div></div>`;
             }
 
             // JAVÍTÁS: a `.toFixed(0)` metódus a JS specifikáció szerint
@@ -32557,9 +32635,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             let buybackWarn = '';
             if (buybackYieldPct > 10) {
-                buybackWarn = `<div class="glass-card rounded-xl border border-neon-red/30 bg-neon-red/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-neon-red leading-relaxed">⚠️ A ${buybackYieldPct.toFixed(1)}%-os buyback hozam rendkívül magas — vizsgáld meg, a vállalat miért fordít ekkora tőkét visszavásárlásra beruházás/K+F helyett.</div></div>`;
+                buybackWarn = `<div class="glass-card rounded-xl border border-neon-red/30 bg-neon-red/[0.05] p-3 mb-3"><div class="text-[11px] font-semibold text-neon-red leading-relaxed">⚠️ A ${buybackYieldPct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%-os buyback hozam rendkívül magas — vizsgáld meg, a vállalat miért fordít ekkora tőkét visszavásárlásra beruházás/K+F helyett.</div></div>`;
             }
 
+            // JAVÍTÁS: price0/priceAfterSplit/sharesBoughtBack/eps*Safe/
+            // epsGrowthFromBuybackPct/buybackYieldPct egyenként véges, de
+            // >=1e21 nagyságrendű érték esetén a natív .toFixed() nyers
+            // tudományos jelölésre vált — .toLocaleString()-re váltva
+            // mindenhol, konzisztensen a korábban javított kalkulátorokkal.
             out.innerHTML = `
                 ${splitNote}
                 ${buybackWarn}
@@ -32567,29 +32650,29 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Split előtt</div>
                     <div class="flex items-center justify-between font-mono text-[11px]">
                         <span class="text-slate-400">Árfolyam / Részvényszám</span>
-                        <span class="text-white font-bold">${price0.toFixed(2)} / ${fmtLarge(shares0)} db</span>
+                        <span class="text-white font-bold">${price0.toLocaleString('en-US', { maximumFractionDigits: 2 })} / ${fmtLarge(shares0)} db</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-[11px]">
                         <span class="text-slate-400">Market cap / EPS</span>
-                        <span class="text-white font-bold">${fmtLarge(marketCap0)} / ${eps0Safe.toFixed(4)}</span>
+                        <span class="text-white font-bold">${fmtLarge(marketCap0)} / ${eps0Safe.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3">
                     <div class="text-[10px] font-bold text-amber-400 uppercase mb-1">Split után</div>
                     <div class="flex items-center justify-between font-mono text-[11px]">
                         <span class="text-slate-400">Árfolyam / Részvényszám</span>
-                        <span class="text-white font-bold">${priceAfterSplit.toFixed(2)} / ${fmtLarge(sharesAfterSplit)} db</span>
+                        <span class="text-white font-bold">${priceAfterSplit.toLocaleString('en-US', { maximumFractionDigits: 2 })} / ${fmtLarge(sharesAfterSplit)} db</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-[11px]">
                         <span class="text-slate-400">Market cap / EPS</span>
-                        <span class="text-white font-bold">${fmtLarge(marketCapAfterSplit)} / ${epsAfterSplitSafe.toFixed(4)}</span>
+                        <span class="text-white font-bold">${fmtLarge(marketCapAfterSplit)} / ${epsAfterSplitSafe.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3">
                     <div class="text-[10px] font-bold text-emerald-400 uppercase mb-1">Buyback után (split utáni áron)</div>
                     <div class="flex items-center justify-between font-mono text-[11px]">
                         <span class="text-slate-400">Visszavásárolt részvények</span>
-                        <span class="text-white font-bold">${sharesBoughtBack.toFixed(0)} db</span>
+                        <span class="text-white font-bold">${sharesBoughtBack.toLocaleString('en-US', { maximumFractionDigits: 0 })} db</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-[11px]">
                         <span class="text-slate-400">Új részvényszám / Market cap</span>
@@ -32597,15 +32680,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                     <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5">
                         <span class="text-slate-400">Új EPS</span>
-                        <span class="text-emerald-400 font-bold">${epsAfterBuybackSafe.toFixed(4)}</span>
+                        <span class="text-emerald-400 font-bold">${epsAfterBuybackSafe.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-[11px]">
                         <span class="text-slate-400">EPS változás a buyback miatt</span>
-                        <span class="${epsGrowthFromBuybackPct === null ? 'text-slate-400' : (epsGrowthFromBuybackPct >= 0 ? 'text-neon-green' : 'text-neon-red')} font-bold">${epsGrowthFromBuybackPct === null ? 'N/A (EPS split után 0)' : (epsGrowthFromBuybackPct >= 0 ? '+' : '') + epsGrowthFromBuybackPct.toFixed(2) + '%'}</span>
+                        <span class="${epsGrowthFromBuybackPct === null ? 'text-slate-400' : (epsGrowthFromBuybackPct >= 0 ? 'text-neon-green' : 'text-neon-red')} font-bold">${epsGrowthFromBuybackPct === null ? 'N/A (EPS split után 0)' : (epsGrowthFromBuybackPct >= 0 ? '+' : '') + epsGrowthFromBuybackPct.toLocaleString('en-US', { maximumFractionDigits: 2 }) + '%'}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-[11px]">
                         <span class="text-slate-400">Buyback hozam (buyback / market cap)</span>
-                        <span class="text-white font-bold">${buybackYieldPct.toFixed(2)}%</span>
+                        <span class="text-white font-bold">${buybackYieldPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3">
@@ -36785,7 +36868,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Rés mérete:</span><span class="text-white">${gapAbs.toLocaleString(undefined, { maximumFractionDigits: 4 })} (${gapATR.toFixed(2)}× ATR)</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Rés mérete:</span><span class="text-white">${gapAbs.toLocaleString(undefined, { maximumFractionDigits: 4 })} (${gapATR.toLocaleString('en-US', { maximumFractionDigits: 2 })}× ATR)</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Irány:</span><span class="text-white">${dirLabel}</span></div>
                 </div>
                 <p class="text-xs font-bold ${info.color} mb-1">${info.name}</p>
@@ -38251,7 +38334,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
                 html += `<div class="glass-card rounded-xl p-3 mb-3">`;
                 html += `<p class="text-[10px] font-bold text-sky-400 mb-1">2. hullám elemzés</p>`;
-                html += row('Visszahúzódás az 1. hullámból', retrace2 !== null ? retrace2.toFixed(1) + '%' : '—', rule1Bad ? 'text-neon-red' : ((retrace2 !== null && retrace2 >= 38.2 && retrace2 <= 78.6) ? 'text-neon-green' : 'text-amber-400'));
+                html += row('Visszahúzódás az 1. hullámból', retrace2 !== null ? retrace2.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%' : '—', rule1Bad ? 'text-neon-red' : ((retrace2 !== null && retrace2 >= 38.2 && retrace2 <= 78.6) ? 'text-neon-green' : 'text-amber-400'));
                 html += `</div>`;
 
                 const mults3 = [1.0, 1.618, 2.618, 4.236];
@@ -38284,7 +38367,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 html += `<div class="glass-card rounded-xl p-3 mb-3">`;
                 html += `<p class="text-[10px] font-bold text-sky-400 mb-1">3. hullám elemzés</p>`;
                 html += row('3. hullám hossza', fmt(len3));
-                html += row('Arány az 1. hullámhoz', Number.isFinite(ratio3to1) ? '×' + ratio3to1.toFixed(2) : '—');
+                html += row('Arány az 1. hullámhoz', Number.isFinite(ratio3to1) ? '×' + ratio3to1.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—');
                 html += `</div>`;
 
                 const fracs4 = [0.236, 0.382, 0.5];
@@ -38316,7 +38399,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
                 html += `<div class="glass-card rounded-xl p-3 mb-3">`;
                 html += `<p class="text-[10px] font-bold text-sky-400 mb-1">4. hullám elemzés</p>`;
-                html += row('Visszahúzódás a 3. hullámból', retrace4 !== null ? retrace4.toFixed(1) + '%' : '—', overlapBad ? 'text-neon-red' : 'text-white');
+                html += row('Visszahúzódás a 3. hullámból', retrace4 !== null ? retrace4.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%' : '—', overlapBad ? 'text-neon-red' : 'text-white');
                 html += row('Átfedés az 1. hullámmal?', overlapBad ? 'IGEN — szabálysértés' : 'Nincs átfedés', overlapBad ? 'text-neon-red' : 'text-neon-green');
                 html += `</div>`;
 
@@ -39890,10 +39973,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = '✅ Alacsony csőd-valószínűség (<1%) — a tétméret ésszerű arányban van a tőkéhez és a nyerési esélyhez képest.';
             }
 
+            // JAVÍTÁS: betSizePctOfCapital/units egyenként véges, de >=1e21
+            // nagyságrendű érték esetén a natív .toFixed() nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Tétméret / tőke:</span><span class="text-white">${betSizePctOfCapital.toFixed(2)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">"Egységnyi" tétek száma a tőkében:</span><span class="text-white">${units.toFixed(1)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Tétméret / tőke:</span><span class="text-white">${betSizePctOfCapital.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">"Egységnyi" tétek száma a tőkében:</span><span class="text-white">${units.toLocaleString('en-US', { maximumFractionDigits: 1 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ruin Probability (csőd-valószínűség):</span><span class="font-extrabold ${colorClass} text-sm">${(ruinProbability * 100).toPrecision(3)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
@@ -40485,14 +40571,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Jelenlegi halving-korszak:</span><span class="text-white">#${epoch}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Jelenlegi halving-korszak:</span><span class="text-white">#${epoch.toLocaleString('en-US')}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Jelenlegi blokk-jutalom:</span><span class="text-white">${fmtBTC(currentRewardBTC)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Jutalom a következő halving után:</span><span class="text-white">${fmtBTC(nextRewardBTC)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó halving blokkja:</span><span class="text-white">${fmtInt(lastHalvingBlock)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Következő halving blokkja:</span><span class="text-white">${fmtInt(nextHalvingBlock)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Blokkok a legutóbbi halving óta:</span><span class="text-white">${fmtInt(blocksSinceLastHalving)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Blokkok a következő halvingig:</span><span class="text-white">${fmtInt(blocksUntilNextHalving)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ciklus-fázis:</span><span class="font-extrabold ${colorClass} text-sm">${cyclePhasePct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ciklus-fázis:</span><span class="font-extrabold ${colorClass} text-sm">${cyclePhasePct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Becsült idő a halvingig:</span><span class="text-white">${fmtInt(estimatedDaysToHalving)} nap</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Becsült halving-dátum:</span><span class="text-white">${fmtDate(estimatedHalvingDate)}</span></div>
                 </div>
@@ -40831,7 +40917,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const expDiffPct = pvExpS !== 0 ? ((pvExpL - pvExpS) / pvExpS) * 100 : 0;
             const reversalOccurs = hypDiffPct > 0.01;
 
-            const fmtUSD = (n) => '$' + n.toFixed(2);
+            // JAVÍTÁS: a natív .toFixed() >=1e21 nagyságrendnél nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva mindenhol ebben a
+            // kimenetben.
+            const fmtUSD = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
             const annualPct = rAnnual * 100;
             const annualDisplay = Number.isFinite(annualPct)
                 ? (annualPct > 1e7 ? '>10 000 000%' : annualPct.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%')
@@ -40854,9 +40943,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs mb-3">
-                    <div class="flex justify-between"><span class="text-slate-400">Arány (A2 / A1):</span><span class="text-white">${ratio.toFixed(4)}×</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Implikált napi ráta (exponenciális):</span><span class="text-white">${(rDaily * 100).toFixed(4)}%/nap</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Implikált hiperbolikus k:</span><span class="text-white">${(k * 100).toFixed(4)}%/nap</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Arány (A2 / A1):</span><span class="text-white">${ratio.toLocaleString('en-US', { maximumFractionDigits: 4 })}×</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Implikált napi ráta (exponenciális):</span><span class="text-white">${(rDaily * 100).toLocaleString('en-US', { maximumFractionDigits: 4 })}%/nap</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Implikált hiperbolikus k:</span><span class="text-white">${(k * 100).toLocaleString('en-US', { maximumFractionDigits: 4 })}%/nap</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Évesített türelmetlenségi ráta:</span><span class="font-extrabold ${verdictColor} text-sm">${annualDisplay}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mb-3 ${verdictColor}">${verdict}</p>
@@ -40868,13 +40957,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Exponenciális modell</div>
                             <div class="text-[10px] text-slate-300">PV(kicsi): ${fmtUSD(pvExpS)}</div>
                             <div class="text-[10px] text-slate-300">PV(nagy): ${fmtUSD(pvExpL)}</div>
-                            <div class="text-[9px] font-bold text-neon-cyan mt-1">${Math.abs(expDiffPct) < 0.01 ? 'Nincs fordulás' : (expDiffPct > 0 ? '+' + expDiffPct.toFixed(3) + '%' : expDiffPct.toFixed(3) + '%')} (időben konzisztens)</div>
+                            <div class="text-[9px] font-bold text-neon-cyan mt-1">${Math.abs(expDiffPct) < 0.01 ? 'Nincs fordulás' : (expDiffPct > 0 ? '+' + expDiffPct.toLocaleString('en-US', { maximumFractionDigits: 3 }) + '%' : expDiffPct.toLocaleString('en-US', { maximumFractionDigits: 3 }) + '%')} (időben konzisztens)</div>
                         </div>
                         <div class="rounded-lg ${reversalOccurs ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-dark-900/60 border border-dark-750'} p-2 text-center">
                             <div class="text-[9px] text-slate-400 uppercase font-bold mb-1">Hiperbolikus modell</div>
                             <div class="text-[10px] text-slate-300">PV(kicsi): ${fmtUSD(pvHypS)}</div>
                             <div class="text-[10px] text-slate-300">PV(nagy): ${fmtUSD(pvHypL)}</div>
-                            <div class="text-[9px] font-bold ${reversalOccurs ? 'text-neon-red' : 'text-neon-cyan'} mt-1">${reversalOccurs ? '+' + hypDiffPct.toFixed(3) + '% — FORDULÁS!' : 'Nincs fordulás'}</div>
+                            <div class="text-[9px] font-bold ${reversalOccurs ? 'text-neon-red' : 'text-neon-cyan'} mt-1">${reversalOccurs ? '+' + hypDiffPct.toLocaleString('en-US', { maximumFractionDigits: 3 }) + '% — FORDULÁS!' : 'Nincs fordulás'}</div>
                         </div>
                     </div>
                     <p class="text-[10px] ${reversalOccurs ? 'text-neon-red' : 'text-slate-400'} leading-relaxed">${reversalOccurs
@@ -40973,21 +41062,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // megtakarítás, miközben a megjelenített összeg maga 0). Az
             // előjelet a KEREKÍTETT (megjelenítendő) magnitúdó alapján
             // döntjük el: ha az 0, nincs "-" előtag.
+            // JAVÍTÁS: a natív .toFixed() >=1e21 nagyságrendnél nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva (ugyanazt a
+            // "decimals" tizedesjegy-számot megtartva).
             const fmtUSD = (n) => {
                 const abs = Math.abs(n);
                 const decimals = abs < 0.01 ? 6 : (abs < 1 ? 4 : 2);
-                const absStr = abs.toFixed(decimals);
-                const sign = (n < 0 && parseFloat(absStr) !== 0) ? '-' : '';
+                const absStr = abs.toLocaleString('en-US', { maximumFractionDigits: decimals });
+                const sign = (n < 0 && parseFloat(abs.toFixed(decimals)) !== 0) ? '-' : '';
                 return `${sign}$${absStr}`;
             };
 
             // JAVÍTÁS: ugyanez a negatív-nulla hiba a savingsPct%-nál is
             // jelentkezhet (a fenti lebegőpontos maradék %-os formában is
             // tetszőlegesen kicsi lehet) — a sima `savingsPct.toFixed(1)`
-            // "-0.0%"-t adott volna "0.0%" helyett.
+            // "-0.0%"-t adott volna "0.0%" helyett. JAVÍTÁS 2: a kerekítési
+            // lépés (`n * 10`) önmaga is túlcsordulhat egy egyenként véges, de
+            // rendkívül nagy "n" mellett — ekkor az eredeti (nem kerekített)
+            // "n"-t formázzuk `.toLocaleString()`-tel.
             const fmtPct1 = (n) => {
                 const rounded = Math.round(n * 10) / 10;
-                return (rounded === 0 ? 0 : rounded).toFixed(1);
+                const safe = Number.isFinite(rounded) ? (rounded === 0 ? 0 : rounded) : n;
+                return safe.toLocaleString('en-US', { maximumFractionDigits: 1 });
             };
 
             let verdictColor, verdict;
@@ -41007,7 +41103,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">L1 díj / tranzakció:</span><span class="text-white">${fmtUSD(l1Fee)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">L2 díj / tranzakció (végrehajtás + adatközlés):</span><span class="text-white">${fmtUSD(l2Fee)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Megtakarítás / tranzakció:</span><span class="font-extrabold ${savingsPerTx > 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtUSD(savingsPerTx)} (${fmtPct1(savingsPct)}%)</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Bridge-megtérülési pont:</span><span class="text-white">${breakevenTxs !== null ? breakevenTxs + ' tranzakció után' : 'soha (L2 nem olcsóbb)'}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Bridge-megtérülési pont:</span><span class="text-white">${breakevenTxs !== null ? breakevenTxs.toLocaleString('en-US') + ' tranzakció után' : 'soha (L2 nem olcsóbb)'}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Nettó megtakarítás ${numTx} tranzakción:</span><span class="font-extrabold ${totalSavingsN >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtUSD(totalSavingsN)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${verdictColor}">${verdict}</p>
@@ -41138,10 +41234,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const curBarSafe = zeroSafeRound(curBar, 6);
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs mb-3">
-                    <div class="flex justify-between"><span class="text-slate-400">Lejtés (ár/bar):</span><span class="text-white">${slope >= 0 ? '+' : ''}${slope.toFixed(5)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Illeszkedés (R²):</span><span class="text-white">${r2.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Lejtés (ár/bar):</span><span class="text-white">${slope >= 0 ? '+' : ''}${slope.toLocaleString('en-US', { maximumFractionDigits: 5 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Illeszkedés (R²):</span><span class="text-white">${r2.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Projektált vonal-ár @ bar ${curBarSafe.toLocaleString('en-US', { maximumFractionDigits: 6 })}:</span><span class="text-white">${projectedPrice.toLocaleString(undefined, { maximumFractionDigits: 6 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Eltérés a vonaltól:</span><span class="font-extrabold ${deviation >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${deviation >= 0 ? '+' : ''}${deviation.toLocaleString(undefined, { maximumFractionDigits: 6 })} (${deviationPct >= 0 ? '+' : ''}${deviationPct.toFixed(3)}%)</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Eltérés a vonaltól:</span><span class="font-extrabold ${deviation >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${deviation >= 0 ? '+' : ''}${deviation.toLocaleString(undefined, { maximumFractionDigits: 6 })} (${deviationPct >= 0 ? '+' : ''}${deviationPct.toLocaleString('en-US', { maximumFractionDigits: 3 })}%)</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Vonal szerepe:</span><span class="text-white">${roleLabel}</span></div>
                 </div>
                 <div class="glass-card rounded-xl p-3 mb-3">
@@ -41309,7 +41405,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             } else {
                 classLabel = 'STABIL KAPCSOLAT';
                 classColor = 'text-neon-green';
-                classNote = `A legnagyobb egylépéses korreláció-változás is csak ${maxJump.delta.toFixed(2)} volt, a küszöb (${threshold.toFixed(2)}) alatt — ebben a mintában a két eszköz kapcsolata a vizsgált ablakméret mellett nem mutat hirtelen törést.`;
+                classNote = `A legnagyobb egylépéses korreláció-változás is csak ${maxJump.delta.toFixed(2)} volt, a küszöb (${threshold.toLocaleString('en-US', { maximumFractionDigits: 2 })}) alatt — ebben a mintában a két eszköz kapcsolata a vizsgált ablakméret mellett nem mutat hirtelen törést.`;
             }
 
             let rowsHtml = '';
@@ -41905,6 +42001,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const winratePctFmt = winratePctSafe.toLocaleString('en-US', { maximumFractionDigits: 6 });
             const daysFmt = days.toLocaleString('en-US', { maximumFractionDigits: 6 });
             const tradesPerDayFmt = tradesPerDay.toLocaleString('en-US', { maximumFractionDigits: 6 });
+            // JAVÍTÁS: estimatedDays/estimatedTrades/bufferDays egyenként
+            // véges (isFinite-tel már ellenőrzött) lehetnek, de >=1e21
+            // nagyságrendnél a nyers `${...}` sablon-interpoláció (a JS
+            // alapértelmezett szám→string konverziója) nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva.
+            const estimatedDaysFmt = Number.isFinite(estimatedDays) ? estimatedDays.toLocaleString('en-US') : '—';
+            const estimatedTradesFmt = Number.isFinite(estimatedTrades) ? estimatedTrades.toLocaleString('en-US') : '—';
+            const bufferDaysFmt = Number.isFinite(bufferDays) ? bufferDays.toLocaleString('en-US') : '∞';
 
             let riskColor, riskVerdict;
             if (!Number.isFinite(maxConsecLossesDaily)) {
@@ -41935,10 +42039,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 targetVerdict = `⚠️ A megadott kockázat/trade (${riskPctFmt}%) ehhez a profit célhoz (${targetPctFmt}%) túl kicsi — a becsült trade-szám/időtartam túlcsordul, pontosan nem jeleníthető meg. Adj meg reálisabb (nagyobb) kockázat/trade %-ot a becsléshez.`;
             } else if (estimatedDays > days) {
                 targetColor = 'text-amber-400';
-                targetVerdict = `⚠️ A becsült idő (~${estimatedDays} nap, ${estimatedTrades} trade, napi ${tradesPerDayFmt} trade mellett) TÖBB, mint a kihívás időkorlátja (${daysFmt} nap). Vagy nő kell a napi trade-szám/kockázat (a limitek tiszteletben tartásával), vagy ezzel az edge-vel nem reális a cél ennyi idő alatt.`;
+                targetVerdict = `⚠️ A becsült idő (~${estimatedDaysFmt} nap, ${estimatedTradesFmt} trade, napi ${tradesPerDayFmt} trade mellett) TÖBB, mint a kihívás időkorlátja (${daysFmt} nap). Vagy nő kell a napi trade-szám/kockázat (a limitek tiszteletben tartásával), vagy ezzel az edge-vel nem reális a cél ennyi idő alatt.`;
             } else {
                 targetColor = 'text-neon-green';
-                targetVerdict = `✅ A becsült ~${estimatedDays} nap (${estimatedTrades} trade, napi ${tradesPerDayFmt} trade mellett) belefér a ${daysFmt} napos időkorlátba, ~${bufferDays} nap biztonsági pufferrel.`;
+                targetVerdict = `✅ A becsült ~${estimatedDaysFmt} nap (${estimatedTradesFmt} trade, napi ${tradesPerDayFmt} trade mellett) belefér a ${daysFmt} napos időkorlátba, ~${bufferDaysFmt} nap biztonsági pufferrel.`;
             }
 
             out.innerHTML = `
@@ -41951,8 +42055,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Max. egymást követő vesztes (teljes DD-ig):</span><span class="font-extrabold ${riskColor}">${maxConsecLossesTotalDisplay}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Stratégia expectancy:</span><span class="font-extrabold ${expectancyR > 0 ? 'text-neon-green' : 'text-neon-red'}">${expectancyR >= 0 ? '+' : ''}${expectancyR.toFixed(3)}R / trade</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Cél R-multiple-ben:</span><span class="text-white">${targetInRDisplay}R</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Becsült trade-szám a célig:</span><span class="text-white">${isFinite(estimatedTrades) ? estimatedTrades : '—'}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Becsült napok száma a célig:</span><span class="text-white">${isFinite(estimatedDays) ? estimatedDays : '—'}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Becsült trade-szám a célig:</span><span class="text-white">${estimatedTradesFmt}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Becsült napok száma a célig:</span><span class="text-white">${estimatedDaysFmt}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${riskColor}">${riskVerdict}</p>
                 <p class="text-[10px] font-semibold mt-2 ${targetColor}">${targetVerdict}</p>
@@ -42282,16 +42386,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a natív .toFixed() >=1e21 nagyságrendnél nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva.
             out.innerHTML = `
                 <div class="glass-card rounded-xl border ${mart.ruined ? 'border-neon-red/30 bg-neon-red/[0.05]' : (mart.finalCapital >= startCapital ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]')} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-dice text-neon-red"></i> Martingale végeredmény</div>
-                    <div class="text-lg font-extrabold ${mart.ruined ? 'text-neon-red' : (mart.finalCapital >= startCapital ? 'text-neon-green' : 'text-amber-400')}">$${mart.finalCapital.toFixed(2)} ${mart.ruined ? '— CSŐD' : ''}</div>
-                    <div class="text-[10px] text-slate-500 mt-1">Legnagyobb elért tét: $${mart.maxBet.toFixed(2)}</div>
+                    <div class="text-lg font-extrabold ${mart.ruined ? 'text-neon-red' : (mart.finalCapital >= startCapital ? 'text-neon-green' : 'text-amber-400')}">$${mart.finalCapital.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${mart.ruined ? '— CSŐD' : ''}</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Legnagyobb elért tét: $${mart.maxBet.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <div class="glass-card rounded-xl border ${anti.ruined ? 'border-neon-red/30 bg-neon-red/[0.05]' : (anti.finalCapital >= startCapital ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]')} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-arrow-trend-up text-neon-green"></i> Anti-Martingale végeredmény</div>
-                    <div class="text-lg font-extrabold ${anti.ruined ? 'text-neon-red' : (anti.finalCapital >= startCapital ? 'text-neon-green' : 'text-amber-400')}">$${anti.finalCapital.toFixed(2)} ${anti.ruined ? '— CSŐD' : ''}</div>
-                    <div class="text-[10px] text-slate-500 mt-1">Legnagyobb elért tét: $${anti.maxBet.toFixed(2)}</div>
+                    <div class="text-lg font-extrabold ${anti.ruined ? 'text-neon-red' : (anti.finalCapital >= startCapital ? 'text-neon-green' : 'text-amber-400')}">$${anti.finalCapital.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${anti.ruined ? '— CSŐD' : ''}</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Legnagyobb elért tét: $${anti.maxBet.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <p class="text-[10px] font-semibold ${mart.ruined ? 'text-neon-red' : 'text-slate-400'}">${mart.ruined
                     ? 'A Martingale a vesztes sorozat alatt exponenciálisan növelte a tétet, és elfogyott a tőke — ez pontosan a stratégia alapvető, elkerülhetetlen kockázata egy elég hosszú vesztes sorozatnál.'
@@ -42337,17 +42443,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a natív .toFixed() >=1e21 nagyságrendnél nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva.
             const row = (label, val, colorClass) => `
                 <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
                     <span class="text-slate-400">${label}:</span>
-                    <span class="font-extrabold ${colorClass} text-sm">${val.toFixed(2)}</span>
+                    <span class="font-extrabold ${colorClass} text-sm">${val.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                 </div>
             `;
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Fő pivot pont (P)</div>
-                    <div class="text-xl font-extrabold text-amber-400">${P.toFixed(2)}</div>
+                    <div class="text-xl font-extrabold text-amber-400">${P.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3">
                     ${row('Ellenállás 3 (R3)', R3, 'text-neon-red')}
@@ -42396,10 +42504,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a natív .toFixed() >=1e21 nagyságrendnél nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva.
             const row = (label, val, colorClass) => `
                 <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
                     <span class="text-slate-400">${label}:</span>
-                    <span class="font-extrabold ${colorClass} text-sm">${val.toFixed(2)}</span>
+                    <span class="font-extrabold ${colorClass} text-sm">${val.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                 </div>
             `;
 
@@ -42412,7 +42522,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Záróár (C)</div>
-                    <div class="text-xl font-extrabold text-amber-400">${CSafe.toFixed(2)}</div>
+                    <div class="text-xl font-extrabold text-amber-400">${CSafe.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3">
                     ${row('Ellenállás 4 (R4) — kitörési szint', R4, 'text-neon-red')}
@@ -42805,21 +42915,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // "1e-10") bemenet a JS alapértelmezett szám→string konverziója
             // miatt nyers tudományos jelölést adott.
             const maxPctFmt = maxPct.toLocaleString('en-US', { maximumFractionDigits: 6 });
+            // JAVÍTÁS: a plannedPctOfAdv egyenként véges, de >=1e21 nagyságrendű
+            // érték esetén a natív .toFixed() nyers tudományos jelölésre vált —
+            // .toLocaleString()-re váltva, konzisztensen a korábban javított
+            // kalkulátorokkal.
+            const plannedPctFmt = plannedPctOfAdv.toLocaleString('en-US', { maximumFractionDigits: 3 });
 
             let verdictHtml;
             if (planned === 0) {
                 verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-slate-400">Adj meg egy tervezett pozícióméretet az összehasonlításhoz.</p>`;
             } else if (isWithinLimit) {
-                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A tervezett pozíció BELÜL van az ajánlott likviditási korláton (a napi volumen ${plannedPctOfAdv.toFixed(3)}%-a) — a saját megbízásod valószínűleg nem mozgatja jelentősen az árat.</p>`;
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A tervezett pozíció BELÜL van az ajánlott likviditási korláton (a napi volumen ${plannedPctFmt}%-a) — a saját megbízásod valószínűleg nem mozgatja jelentősen az árat.</p>`;
             } else {
-                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-red">🚨 A tervezett pozíció TÚLLÉPI az ajánlott likviditási korlátot ${fmt(excessAmount)} egységgel (a napi volumen ${plannedPctOfAdv.toFixed(3)}%-a, a megengedett ${maxPctFmt}% helyett) — fontold meg a lépcsőzetes belépést/kiszállást, vagy csökkentsd a pozícióméretet.</p>`;
+                verdictHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-red">🚨 A tervezett pozíció TÚLLÉPI az ajánlott likviditási korlátot ${fmt(excessAmount)} egységgel (a napi volumen ${plannedPctFmt}%-a, a megengedett ${maxPctFmt}% helyett) — fontold meg a lépcsőzetes belépést/kiszállást, vagy csökkentsd a pozícióméretet.</p>`;
             }
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Max. ajánlott pozícióméret:</span><span class="font-extrabold text-neon-cyan text-sm">${fmt(maxRecommended)} egység</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Tervezett pozícióméret:</span><span class="text-white">${fmt(planned)} egység</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Tervezett pozíció / ADV:</span><span class="${isWithinLimit ? 'text-neon-green' : 'text-neon-red'} font-bold">${plannedPctOfAdv.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Tervezett pozíció / ADV:</span><span class="${isWithinLimit ? 'text-neon-green' : 'text-neon-red'} font-bold">${plannedPctFmt}%</span></div>
                 </div>
                 ${verdictHtml}
             `;
@@ -43607,20 +43722,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <div class="text-sm font-extrabold text-white">${fmt(roundTripFee)}</div>
                     </div>
                     <div class="rounded-xl bg-neon-red/5 border border-neon-red/30 p-3">
-                        <div class="text-[10px] text-neon-red uppercase font-bold mb-1">Összes díj (${trades} trade)</div>
+                        <div class="text-[10px] text-neon-red uppercase font-bold mb-1">Összes díj (${trades.toLocaleString('en-US')} trade)</div>
                         <div class="text-sm font-extrabold text-white">${fmt(totalFees)}</div>
                     </div>
                 </div>
                 <div class="flex items-center justify-between font-mono text-xs mb-1.5">
                     <span class="text-slate-400">Break-even árfolyammozgás (csak a díjakhoz):</span>
-                    <span class="font-extrabold text-amber-400">${breakEvenMovePct.toFixed(3)}%</span>
+                    <span class="font-extrabold text-amber-400">${breakEvenMovePct.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span>
                 </div>
                 <div class="flex items-center justify-between font-mono text-xs mb-3">
                     <span class="text-slate-400">Összes díj a pozícióméret %-ában:</span>
-                    <span class="font-bold text-white">${feeAsPctOfPosition.toFixed(2)}%</span>
+                    <span class="font-bold text-white">${feeAsPctOfPosition.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                 </div>
                 <div class="text-center py-2 rounded-xl bg-amber-400/10 border border-amber-400/30">
-                    <span class="text-xs text-amber-300 font-bold">⚠️ Minden egyes trade-nek legalább ${breakEvenMovePct.toFixed(3)}%-ot kell mozdulnia a kedvező irányba, csak hogy a díjak nullára jöjjenek ki</span>
+                    <span class="text-xs text-amber-300 font-bold">⚠️ Minden egyes trade-nek legalább ${breakEvenMovePct.toLocaleString('en-US', { maximumFractionDigits: 3 })}%-ot kell mozdulnia a kedvező irányba, csak hogy a díjak nullára jöjjenek ki</span>
                 </div>
             `;
         }
@@ -43891,11 +44006,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <div class="flex items-center justify-between font-mono text-xs mb-1.5">
                     <span class="text-slate-400">Görgetési hozam (1 ciklus, a névérték %-ában):</span>
-                    <span class="font-bold ${rollYieldPct < 0 ? 'text-neon-red' : 'text-neon-green'}">${rollYieldPct >= 0 ? '+' : ''}${rollYieldPct.toFixed(4)}%</span>
+                    <span class="font-bold ${rollYieldPct < 0 ? 'text-neon-red' : 'text-neon-green'}">${rollYieldPct >= 0 ? '+' : ''}${rollYieldPct.toLocaleString('en-US', { maximumFractionDigits: 4 })}%</span>
                 </div>
                 <div class="flex items-center justify-between font-mono text-xs mb-3">
                     <span class="text-slate-400">Évesített görgetési hozam (${daysFmt} naponkénti ciklussal):</span>
-                    <span class="font-bold ${annualizedRollYieldPctSafe < 0 ? 'text-neon-red' : 'text-neon-green'}">${annualizedRollYieldPctSafe >= 0 ? '+' : ''}${annualizedRollYieldPctSafe.toFixed(2)}%</span>
+                    <span class="font-bold ${annualizedRollYieldPctSafe < 0 ? 'text-neon-red' : 'text-neon-green'}">${annualizedRollYieldPctSafe >= 0 ? '+' : ''}${annualizedRollYieldPctSafe.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                 </div>
                 <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
                     <span class="text-[11px] text-slate-300 font-bold">${isCost
@@ -44101,7 +44216,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ${hasCurrentLevel ? `
                 <div class="flex items-center justify-between font-mono text-xs mb-1.5">
                     <span class="text-slate-400">${declinePct >= 0 ? 'Jelenlegi esés' : 'Jelenlegi emelkedés'} az előző záróhoz képest:</span>
-                    <span class="font-bold ${declinePct >= 7 ? 'text-neon-red' : 'text-neon-green'}">${Math.abs(declinePct).toFixed(2)}%</span>
+                    <span class="font-bold ${declinePct >= 7 ? 'text-neon-red' : 'text-neon-green'}">${Math.abs(declinePct).toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                 </div>
                 <div class="text-center py-2 rounded-xl ${haltIsActive ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-dark-850/60 border border-dark-750'}">
                     <span class="text-[11px] ${haltIsActive ? 'text-neon-red' : 'text-slate-300'} font-bold">${haltText}</span>
@@ -44901,7 +45016,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="rounded-xl bg-amber-400/5 border border-amber-400/30 p-3 mb-3">
                     <div class="text-[10px] text-amber-400 uppercase font-bold mb-1">${confidencePct}%-os VaR (${daysFmt} nap)</div>
                     <div class="text-xl font-extrabold text-white">${fmt(varAmount)}</div>
-                    <div class="text-[9.5px] text-slate-500 mt-0.5">A portfólió ${varPct.toFixed(2)}%-a</div>
+                    <div class="text-[9.5px] text-slate-500 mt-0.5">A portfólió ${varPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%-a</div>
                 </div>
                 <div class="text-center py-2.5 rounded-xl bg-dark-850/60 border border-dark-750 mb-3">
                     <span class="text-[11px] text-slate-300 leading-relaxed">"Normál piaci körülmények között, ${confidencePct}% eséllyel NEM veszítesz ${fmt(varAmount)}-nál többet ${daysFmt} nap alatt."</span>
@@ -44909,12 +45024,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="rounded-xl bg-neon-red/5 border border-neon-red/30 p-3 mb-3">
                     <div class="text-[10px] text-neon-red uppercase font-bold mb-1">CVaR / Expected Shortfall (ha átlépjük a VaR-t)</div>
                     <div class="text-xl font-extrabold text-white">${fmt(esAmount)}</div>
-                    <div class="text-[9.5px] text-slate-500 mt-0.5">A portfólió ${esPct.toFixed(2)}%-a — a ROSSZABB ${exceedPct}%-nyi eset ÁTLAGOS veszteségmértéke</div>
+                    <div class="text-[9.5px] text-slate-500 mt-0.5">A portfólió ${esPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%-a — a ROSSZABB ${exceedPct}%-nyi eset ÁTLAGOS veszteségmértéke</div>
                 </div>
                 <div class="rounded-xl bg-neon-purple/5 border border-neon-purple/30 p-3 mb-3">
                     <div class="text-[10px] text-neon-purple uppercase font-bold mb-1">LVaR — Likviditással Korrigált VaR</div>
                     <div class="text-xl font-extrabold text-white">${fmt(lvarAmount)}</div>
-                    <div class="text-[9.5px] text-slate-500 mt-0.5">A portfólió ${lvarPct.toFixed(2)}%-a — VaR + ${fmt(liquidityCostAmount)} likviditási (bid-ask spread) költség</div>
+                    <div class="text-[9.5px] text-slate-500 mt-0.5">A portfólió ${lvarPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%-a — VaR + ${fmt(liquidityCostAmount)} likviditási (bid-ask spread) költség</div>
                 </div>
                 <div class="text-center py-2 rounded-xl bg-neon-red/10 border border-neon-red/30">
                     <span class="text-[10.5px] text-neon-red font-bold">⚠️ A VaR csak egy küszöb — a CVaR azt mutatja, MENNYIVEL rosszabb a helyzet, ha a küszöböt mégis átlépjük, az LVaR pedig azt, hogy a pozíció TÉNYLEGES zárása a piaci ármozgáson felül is jár egy likviditási költséggel. Mindhárom más szempontot mutat meg — teljes képhez együtt érdemes nézni őket.</span>
@@ -45159,23 +45274,27 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdictColor = 'neon-cyan';
             }
 
+            // JAVÍTÁS: szélsőséges, de egyenként véges évesítési faktor mellett a
+            // Math.sqrt(annFactor)-ral skálázott mezők >=1e21 nagyságrendbe
+            // eshetnek, ahol a natív .toFixed() nyers tudományos jelölésre vált —
+            // .toLocaleString()-re váltva mindenhol.
             out.innerHTML = `
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div class="rounded-xl bg-neon-blue/5 border border-neon-blue/30 p-3">
                         <div class="text-[10px] text-neon-blue uppercase font-bold mb-1">ATR (${period} periódus)</div>
-                        <div class="text-lg font-extrabold text-white font-mono">${lastAtr.toFixed(4)}</div>
-                        <div class="text-[9.5px] text-slate-500 mt-0.5">${atrPctOfPrice.toFixed(3)}% az árból, Wilder-simítással</div>
+                        <div class="text-lg font-extrabold text-white font-mono">${lastAtr.toLocaleString('en-US', { maximumFractionDigits: 4 })}</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">${atrPctOfPrice.toLocaleString('en-US', { maximumFractionDigits: 3 })}% az árból, Wilder-simítással</div>
                     </div>
                     <div class="rounded-xl bg-amber-400/5 border border-amber-400/30 p-3">
                         <div class="text-[10px] text-amber-400 uppercase font-bold mb-1">Historical Volatility (évesített)</div>
-                        <div class="text-lg font-extrabold text-white font-mono">${hvAnnualPct.toFixed(2)}%</div>
+                        <div class="text-lg font-extrabold text-white font-mono">${hvAnnualPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</div>
                         <div class="text-[9.5px] text-slate-500 mt-0.5">${n} log-hozamból, ${annFactor.toLocaleString('en-US', { maximumFractionDigits: 6 })} nap/év évesítve</div>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-xs mb-3">
-                    <div class="flex justify-between"><span class="text-slate-400">ATR naiv évesített megfelelője:</span><span class="font-bold text-white">${atrNaiveAnnualPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Napi log-hozam szórás:</span><span class="text-slate-300">${(dailyStdev * 100).toFixed(3)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Utolsó záróár:</span><span class="text-slate-300">${lastClose.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">ATR naiv évesített megfelelője:</span><span class="font-bold text-white">${atrNaiveAnnualPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Napi log-hozam szórás:</span><span class="text-slate-300">${(dailyStdev * 100).toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Utolsó záróár:</span><span class="text-slate-300">${lastClose.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <div class="text-center py-2 rounded-xl bg-${verdictColor}/10 border border-${verdictColor}/30 mb-2">
                     <span class="text-[10.5px] text-${verdictColor} font-bold">${verdict}</span>
@@ -45708,34 +45827,36 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a natív .toFixed() >=1e21 nagyságrendnél nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva mindenhol.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2.5">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Stop távolság (ATR × szorzó):</span>
-                        <span class="font-extrabold text-white text-sm">$${stopDistance.toFixed(2)} (${stopDistancePct.toFixed(2)}%)</span>
+                        <span class="font-extrabold text-white text-sm">$${stopDistance.toLocaleString('en-US', { maximumFractionDigits: 2 })} (${stopDistancePct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%)</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Kockáztatott összeg:</span>
-                        <span class="font-extrabold text-amber-400 text-sm">$${riskAmount.toFixed(2)}</span>
+                        <span class="font-extrabold text-amber-400 text-sm">$${riskAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Max. pozícióméret (egység):</span>
-                        <span class="font-extrabold text-neon-cyan text-sm">${units.toFixed(4)}</span>
+                        <span class="font-extrabold text-neon-cyan text-sm">${units.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Pozíció értéke:</span>
-                        <span class="font-extrabold text-white text-sm">$${positionValue.toFixed(2)}</span>
+                        <span class="font-extrabold text-white text-sm">$${positionValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Long stop ár:</span>
-                        <span class="font-extrabold text-neon-red text-sm">$${longStopPrice.toFixed(2)}</span>
+                        <span class="font-extrabold text-neon-red text-sm">$${longStopPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Short stop ár:</span>
-                        <span class="font-extrabold text-neon-red text-sm">$${shortStopPrice.toFixed(2)}</span>
+                        <span class="font-extrabold text-neon-red text-sm">$${shortStopPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                 </div>
-                <p class="text-[10px] font-semibold mt-2 text-neon-cyan">A pozícióméret úgy van kiszámolva, hogy a stop beütése pontosan a megadott kockázati összeget ($${riskAmount.toFixed(2)}) veszítse el — ha az ATR (volatilitás) nő, a stop táguljon, de a pozícióméret arányosan csökkenjen, így a kockáztatott $ összeg állandó marad.</p>
+                <p class="text-[10px] font-semibold mt-2 text-neon-cyan">A pozícióméret úgy van kiszámolva, hogy a stop beütése pontosan a megadott kockázati összeget ($${riskAmount.toLocaleString('en-US', { maximumFractionDigits: 2 })}) veszítse el — ha az ATR (volatilitás) nő, a stop táguljon, de a pozícióméret arányosan csökkenjen, így a kockáztatott $ összeg állandó marad.</p>
             `;
         }
 
@@ -46305,8 +46426,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mb-2">
                         <div class="h-full ${seqUsedOfLimitPct >= 100 ? 'bg-neon-red' : seqUsedOfLimitPct >= 70 ? 'bg-amber-400' : 'bg-neon-green'}" style="width:${Math.min(100, Math.max(2, seqUsedOfLimitPct))}%"></div>
                     </div>
-                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Felhasznált / Napi limit:</span><span class="text-white">${usedTodayPct.toFixed(2)}% / ${dailyLimitPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Maradék mai keret:</span><span class="font-bold ${seqColor}">${seqRemainingPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Felhasznált / Napi limit:</span><span class="text-white">${usedTodayPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}% / ${dailyLimitPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Maradék mai keret:</span><span class="font-bold ${seqColor}">${seqRemainingPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
                 </div>
 
                 <div class="glass-card rounded-xl p-3 mb-3">
@@ -46318,9 +46439,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mb-2">
                         <div class="h-full ${effectivePct >= 10 ? 'bg-neon-red' : effectivePct >= 5 ? 'bg-amber-400' : 'bg-neon-green'}" style="width:${Math.min(100, Math.max(2, effectivePct * 5))}%"></div>
                     </div>
-                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Naiv összeg (ρ=1, "mind egyszerre talál"):</span><span class="text-slate-200">${naivePct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Korrigált effektív kockázat:</span><span class="font-bold ${simColor}">${effectivePct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Diverzifikációs előny:</span><span class="text-neon-green">${diversificationBenefitPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Naiv összeg (ρ=1, "mind egyszerre talál"):</span><span class="text-slate-200">${naivePct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Korrigált effektív kockázat:</span><span class="font-bold ${simColor}">${effectivePct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                    <div class="flex justify-between font-mono text-[11px]"><span class="text-slate-400">Diverzifikációs előny:</span><span class="text-neon-green">${diversificationBenefitPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
                     ${clampNote}
                 </div>
 
@@ -46508,13 +46629,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let verdict, verdictColor;
             if (severityLabel === 'Kritikus összeomlás' || collateralPct <= 0) {
                 verdictColor = 'text-neon-red';
-                verdict = `💀 KRITIKUS: a stablecoin ára ${absDev.toFixed(2)}%-kal tért el a pegtől, és/vagy nincs bejelentett fedezet — ez a TerraUSD (UST) 2022-es összeomlásához hasonló mintázat. Egy ilyen forgatókönyvben a teljes kitettség elvesztésére kell készülni, nem csak egy részleges korrekcióra.`;
+                verdict = `💀 KRITIKUS: a stablecoin ára ${absDev.toLocaleString('en-US', { maximumFractionDigits: 2 })}%-kal tért el a pegtől, és/vagy nincs bejelentett fedezet — ez a TerraUSD (UST) 2022-es összeomlásához hasonló mintázat. Egy ilyen forgatókönyvben a teljes kitettség elvesztésére kell készülni, nem csak egy részleges korrekcióra.`;
             } else if (collateralPct <= 100) {
                 verdictColor = 'text-neon-red';
                 verdict = `🚨 FIGYELEM: a fedezeti arány (${collateralPct.toLocaleString('en-US', { maximumFractionDigits: 6 })}%) NEM éri el a 100%-ot — már most sincs elég fedezet minden kibocsátott egységre, tehát egy tömeges kivonás esetén a hiány azonnal nyilvánvalóvá válna (0 nap puffer a bejelentett adatok szerint).`;
             } else if (runwayDays !== Infinity && runwayDays < 7) {
                 verdictColor = 'text-amber-400';
-                verdict = `⚠️ A megadott ${outflowPct.toLocaleString('en-US', { maximumFractionDigits: 6 })}%-os napi kiáramlási ráta mellett a túlfedezeti puffer (${bufferPct.toFixed(1)}%) kevesebb mint egy hét (${runwayDays.toFixed(1)} nap) alatt kimerülne, ha ez a sebesség folytatódna — ez egy "bank run"-szerű forgatókönyv korai szakaszára hasonlíthat.`;
+                verdict = `⚠️ A megadott ${outflowPct.toLocaleString('en-US', { maximumFractionDigits: 6 })}%-os napi kiáramlási ráta mellett a túlfedezeti puffer (${bufferPct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%) kevesebb mint egy hét (${runwayDays.toLocaleString('en-US', { maximumFractionDigits: 1 })} nap) alatt kimerülne, ha ez a sebesség folytatódna — ez egy "bank run"-szerű forgatókönyv korai szakaszára hasonlíthat.`;
             } else if (tailRiskExposure > holding * 0.1) {
                 verdictColor = 'text-amber-400';
                 verdict = `⚠️ A fedezetlen, kockázat-súlyozott kitettséged (${tailRiskExposure < 0 ? '-' : ''}$${Math.abs(tailRiskExposure).toLocaleString('en-US', { maximumFractionDigits: 2 })}) jelentős a pozíció méretéhez képest — a fedezet típusa és aránya miatt egy komolyabb de-peg esetén ez az összeg reális veszélyben lenne.`;
@@ -46524,20 +46645,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
-            const runwayDisplay = runwayDays === Infinity ? '∞ (nincs megadott kiáramlás)' : (runwayDays === 0 ? 'Már hiányban (0 nap)' : `${runwayDays.toFixed(1)} nap`);
+            const runwayDisplay = runwayDays === Infinity ? '∞ (nincs megadott kiáramlás)' : (runwayDays === 0 ? 'Már hiányban (0 nap)' : `${runwayDays.toLocaleString('en-US', { maximumFractionDigits: 1 })} nap`);
             const runwayColor = runwayDays === 0 ? 'text-neon-red' : (runwayDays === Infinity ? 'text-neon-green' : (runwayDays < 7 ? 'text-amber-400' : 'text-neon-green'));
 
             out.innerHTML = `
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
                         <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Peg-eltérés</div>
-                        <div class="text-sm font-extrabold ${severityColor}">${pegDeviationPct >= 0 ? '+' : ''}${pegDeviationPct.toFixed(3)}%</div>
+                        <div class="text-sm font-extrabold ${severityColor}">${pegDeviationPct >= 0 ? '+' : ''}${pegDeviationPct.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</div>
                         <div class="text-[9.5px] text-slate-500 mt-0.5">${severityEmoji} ${severityLabel}</div>
                     </div>
                     <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3">
                         <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Azonnali veszteség eladásnál</div>
                         <div class="text-sm font-extrabold ${immediateLoss > 0 ? 'text-neon-red' : (immediateLoss < 0 ? 'text-neon-green' : 'text-slate-400')}">${fmtMoney(immediateLoss)}</div>
-                        <div class="text-[9.5px] text-slate-500 mt-0.5">ár: $${price.toFixed(4)} (cél: $1.00)</div>
+                        <div class="text-[9.5px] text-slate-500 mt-0.5">ár: $${price.toLocaleString('en-US', { maximumFractionDigits: 4 })} (cél: $1.00)</div>
                     </div>
                 </div>
                 <div class="space-y-1.5 mb-3">
@@ -46642,17 +46763,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // normalizálással (a `=== 0` JS-ben nem különbözteti meg a ±0-t)
             // kerüljük ezt el; a valódi, 0,01-nél nagyobb magnitúdójú negatív
             // értékek előjelét/kerekítését ez NEM érinti.
+            // JAVÍTÁS (audit — rounding-overflow): a `Math.round(v * 100) / 100`
+            // kerekítési lépés önmagában is túlcsordulhat Infinity-re egy
+            // nagy, de egyenként véges `v` esetén (pl. v≈1e307 → v*100
+            // túllépi a double tartományát) — ugyanaz a hibaosztály, mint a
+            // Certainty Equivalent / L2 Fee Savings kalkulátoroknál javítva.
+            // A `.toFixed()` ezután szó szerint "Infinity"/"-Infinity"
+            // SZÖVEGET adott vissza. Ha a kerekített érték nem véges, az
+            // EREDETI (nem kerekített) `v`-t formázzuk `.toLocaleString()`-
+            // gel — ami sosem vált tudományos jelölésre.
             const fmtNum = (v) => {
                 const rounded = Math.round(v * 100) / 100;
-                const safe = rounded === 0 ? 0 : rounded;
-                return `${safe >= 0 ? '+' : ''}${safe.toFixed(2)}`;
+                const safe = Number.isFinite(rounded) ? (rounded === 0 ? 0 : rounded) : v;
+                return `${safe >= 0 ? '+' : ''}${safe.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
             };
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Historikus adatpontok:</span><span class="text-white">${n}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Historikus átlag:</span><span class="text-white">${fmtNum(mean)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Historikus szórás:</span><span class="text-white">${std.toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Historikus szórás:</span><span class="text-white">${std.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Mai nettó áramlás:</span><span class="text-white font-bold">${fmtNum(today)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Z-score:</span><span class="font-extrabold ${verdictClass} text-sm">${fmtNum(z)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kumulatív nettó áramlás (teljes periódus):</span><span class="${cumulative >= 0 ? 'text-neon-red' : 'text-neon-green'} font-bold">${fmtNum(cumulative)}</span></div>
@@ -46738,8 +46868,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Short Interest (% Float):</span><span class="font-bold ${levelColor(siLvl)}">${siPctFloat.toFixed(1)}% (${LEVEL_LABELS[siLvl]})</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Days to Cover:</span><span class="font-bold ${levelColor(dtcLvl)}">${daysToCover.toFixed(1)} nap (${LEVEL_LABELS[dtcLvl]})</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Short Interest (% Float):</span><span class="font-bold ${levelColor(siLvl)}">${siPctFloat.toLocaleString('en-US', { maximumFractionDigits: 1 })}% (${LEVEL_LABELS[siLvl]})</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Days to Cover:</span><span class="font-bold ${levelColor(dtcLvl)}">${daysToCover.toLocaleString('en-US', { maximumFractionDigits: 1 })} nap (${LEVEL_LABELS[dtcLvl]})</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Összesített squeeze-kockázat:</span><span class="font-extrabold ${overallColor} text-sm">${LEVEL_LABELS[overallLvl]}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${overallColor}">${VERDICTS[overallLvl]}</p>
@@ -46875,8 +47005,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">Vizsgált csoport átlaga (n=${n1}):</span><span class="text-white">${m1Safe >= 0 ? '+' : ''}${m1Safe.toFixed(2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Kontroll-csoport átlaga (n=${n2}):</span><span class="text-white">${m2Safe >= 0 ? '+' : ''}${m2Safe.toFixed(2)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Átlagok különbsége:</span><span class="${diffSafe >= 0 ? 'text-neon-green' : 'text-neon-red'}">${diffSafe >= 0 ? '+' : ''}${diffSafe.toFixed(2)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">t-statisztika:</span><span class="font-extrabold ${colorClass} text-sm">${isFinite(tStat) ? tStat.toFixed(2) : (tStat > 0 ? '+∞' : '-∞')}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Szabadságfok (df, informatív):</span><span class="text-slate-300">${isFinite(df) ? df.toFixed(1) : '—'}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">t-statisztika:</span><span class="font-extrabold ${colorClass} text-sm">${isFinite(tStat) ? tStat.toLocaleString('en-US', { maximumFractionDigits: 2 }) : (tStat > 0 ? '+∞' : '-∞')}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Szabadságfok (df, informatív):</span><span class="text-slate-300">${isFinite(df) ? df.toLocaleString('en-US', { maximumFractionDigits: 1 }) : '—'}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
                 ${sampleWarning}
@@ -46942,7 +47072,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Napi profit-cél:</span><span class="text-white">$${goalAmount.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Mai eddigi eredmény:</span><span class="${todayPnlSafe >= 0 ? 'text-neon-green' : 'text-neon-red'}">${todayPnlSafe >= 0 ? '+' : ''}$${todayPnlSafe.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Cél teljesítve:</span><span class="font-bold ${progressPct >= 100 ? 'text-neon-green' : 'text-slate-200'} text-sm">${Math.max(0, progressPct).toFixed(0)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Cél teljesítve:</span><span class="font-bold ${progressPct >= 100 ? 'text-neon-green' : 'text-slate-200'} text-sm">${Math.max(0, progressPct).toLocaleString('en-US', { maximumFractionDigits: 0 })}%</span></div>
                     <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden mt-1">
                         <div class="h-full ${barColor} transition-all" style="width:${Math.min(100, Math.max(2, progressPct))}%"></div>
                     </div>
