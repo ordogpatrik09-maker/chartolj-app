@@ -2988,6 +2988,13 @@
                                 <div class="text-[10px] text-slate-400">Fedezetlen call/put aszimmetrikus kockázata + margin-becslés</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('coveredcall-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-green/10 text-neon-green border border-neon-green/30 flex items-center justify-center text-sm"><i class="fa-solid fa-shield-halved"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Fedezett Call (Covered Call) Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Break-even, max nyereség/veszteség, statikus és évesített hozam</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('pairs-modal'); if(!pairsSampleData) generatePairsSampleData();" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-code-compare"></i></span>
                             <div>
@@ -8514,6 +8521,66 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="nakedoption-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">A margin-igény az egyszerűsített Reg T / FINRA Rule 4210 "20%-os szabály" (CBOE strategy-based margin, részvény/szűk-bázisú index-opció) alapján becsült érték — a VALÓS bróker-marginkövetelmény ettől eltérhet, és sosem helyettesíti a bróker saját, élesben számolt margin-figyelését. A szcenárió-táblázat a lejáratkori, idő-érték nélküli belső értékkel számol (nincs benne implikált volatilitás vagy lejárat előtti árváltozás hatása).</p>
+        </div>
+    </div>
+
+    <!-- ================= FEDEZETT CALL (COVERED CALL) KALKULÁTOR =================
+         A fenti két opciós kalkulátor a VEVŐI (optionpayoff-modal), illetve a
+         FEDEZETLEN ELADÓI (nakedoption-modal) oldalt mutatja — ez a harmadik,
+         jól ismert "jövedelem-generáló" stratégiát számolja: a FEDEZETT
+         (covered) call-kiírást. Itt a kiíró MÁR BIRTOKOLJA az alapul szolgáló
+         részvényt, és elad rá egy call opciót — a kockázata emiatt NEM
+         aszimmetrikus/korlátlan, mint a fedezetlen call-nál, hanem pontosan
+         megegyezik a sima részvénytartás lefelé-kockázatával, csökkentve a
+         kapott prémiummal.
+         Formulák (oktatási egyszerűsítés, 1 kontraktus = 100 db részvény,
+         tranzakciós díj és adó nélkül, lejáratig tartott pozícióval):
+           Break-even ár      = részvényár − prémium
+           Max. nyereség/db   = (kötési ár − részvényár) + prémium   [ha lehívják]
+           Max. veszteség/db  = részvényár − prémium                 [ár → 0-ig]
+           Lefelé védelem (%) = prémium / részvényár × 100
+           Statikus hozam (%) = prémium / részvényár × 100           [ha NEM hívják le]
+           Lehívási hozam (%) = (prémium + max(0, kötési ár − részvényár)) / részvényár × 100
+           Évesített hozam    = a fenti hozam × (365 / lejáratig hátralévő nap)
+         A részvényár és a lejáratig hátralévő napok mindkét %-os formula
+         (statikus/lehívási hozam, évesítés) nevezője — ezért mindkettőnél
+         explicit, nullánál nagyobb bemenetet követelünk (a korábbi
+         DOM-fuzzer-sweepekben talált nulla-osztó és Infinity/NaN-szivárgás
+         hibaosztály elkerülése érdekében), és minden kiszámolt értéket
+         Number.isFinite()-tel ellenőrzünk megjelenítés előtt. A formázás
+         .toLocaleString()-et használ (nem .toFixed()/.toPrecision()-t), mert
+         az utóbbi kettő extrém nagyságrendű (de egyedi mezőként véges)
+         bemeneteknél nyers tudományos jelölésre vált át — ugyanaz a
+         hibaosztály, amit a korábbi auditok (pl. Ruin Probability, TSI) már
+         több kalkulátorban megtaláltak és javítottak. -->
+    <div id="coveredcall-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-neon-green"></i> Fedezett Call (Covered Call) Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('coveredcall-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">MÁR BIRTOKOLT részvényre írsz ki (eladsz) egy call opciót — nézd meg a break-even árat, a max. nyereséget/veszteséget, és mennyi extra (statikus, illetve évesített) hozamot ad a kapott prémium.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="cc-stockprice">Részvény beszerzési/jelenlegi ára ($/db)</label>
+            <input type="number" inputmode="decimal" id="cc-stockprice" value="100" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400" for="cc-strike">Kiírt call kötési ára (Strike, $)</label>
+            <input type="number" inputmode="decimal" id="cc-strike" value="110" step="1" min="0.01" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400" for="cc-premium">Kapott prémium ($/részvény)</label>
+            <input type="number" inputmode="decimal" id="cc-premium" value="3" step="0.1" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <label class="text-[11px] font-semibold text-slate-400" for="cc-days">Lejáratig hátralévő napok (évesítéshez)</label>
+            <input type="number" inputmode="decimal" id="cc-days" value="30" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-green/50">
+
+            <button onclick="calcCoveredCall()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-green text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="coveredcall-result" role="status" aria-live="polite" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Oktatási egyszerűsítés: 1 kontraktus = 100 db részvény, tranzakciós díj és adó nélkül, lejáratig tartott pozícióval (nincs benne a lejárat előtti idő-érték vagy implikált volatilitás hatása). A "max. veszteség" azt az elméleti esetet mutatja, ha a részvény ára nullára esne — ez pontosan a sima részvénytartás lefelé-kockázata, a kapott prémiummal csökkentve. Ha a kötési ár a jelenlegi ár ALATT van (ITM), a lehívási hozam akár a statikusnál is alacsonyabb (vagy negatív) lehet, mert ekkor lemondasz a már meglévő árfolyam-nyereség egy részéről.</p>
         </div>
     </div>
 
@@ -14491,6 +14558,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Meztelen Opció Kockázat Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Fedezetlen call/put aszimmetrikus kockázata + margin-becslés</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('coveredcall-modal')" data-tool-title="fedezett call (covered call) kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-shield-halved"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Fedezett Call (Covered Call) Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Break-even, max nyereség/veszteség, statikus és évesített hozam</div>
                         </div>
                     </button>
                     <button onclick="closeMobileToolsModal(); openToolModal('realizedvol-modal')" data-tool-title="realized vs implied vol kalkulátor" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
@@ -42675,6 +42749,118 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= FEDEZETT CALL (COVERED CALL) KALKULÁTOR =================
+        function calcCoveredCall() {
+            const stockEl = document.getElementById('cc-stockprice');
+            const strikeEl = document.getElementById('cc-strike');
+            const premiumEl = document.getElementById('cc-premium');
+            const daysEl = document.getElementById('cc-days');
+            const resultEl = document.getElementById('coveredcall-result');
+            if (!stockEl || !strikeEl || !premiumEl || !daysEl || !resultEl) return;
+
+            const stockPrice = parseFloat(stockEl.value);
+            const strike = parseFloat(strikeEl.value);
+            const premium = parseFloat(premiumEl.value);
+            const days = parseFloat(daysEl.value);
+
+            // A részvényár a statikus/lehívási hozam %-os formuláinak nevezője,
+            // a lejáratig hátralévő napok száma pedig az évesítésnél nevező —
+            // mindkettőnél explicit, nullánál nagyobb bemenetet követelünk (a
+            // korábbi DOM-fuzzer-sweepekben talált nulla-osztó és
+            // Infinity/NaN-szivárgás hibaosztály elkerülése érdekében).
+            if (!Number.isFinite(stockPrice) || stockPrice <= 0 || !Number.isFinite(strike) || strike <= 0 || !Number.isFinite(premium) || premium < 0 || !Number.isFinite(days) || days <= 0) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb részvényárat, egy nullánál nagyobb kötési árat, egy nemnegatív prémiumot, és legalább 1 napot a lejáratig!</div>`;
+                return;
+            }
+
+            const SHARES_PER_CONTRACT = 100;
+
+            const breakEven = stockPrice - premium;
+            const maxProfitPerShare = (strike - stockPrice) + premium;
+            const maxLossPerShare = stockPrice - premium;
+            const downsideProtectionPct = (premium / stockPrice) * 100;
+            const staticReturnPct = (premium / stockPrice) * 100;
+            const ifCalledReturnPct = ((premium + Math.max(0, strike - stockPrice)) / stockPrice) * 100;
+            const annualizedStaticPct = staticReturnPct * (365 / days);
+            const annualizedIfCalledPct = ifCalledReturnPct * (365 / days);
+
+            // JAVÍTÁS (audit, lásd a modal feletti komment): extrém, de EGYENKÉNT
+            // véges bemeneteknél (pl. nagyon kis részvényár) a hányados-alapú
+            // %-ok elméletileg túlcsordulhatnak — explicit véges-ellenőrzés a
+            // megjelenítés előtt, ugyanazt a mintát követve, mint a fájl többi
+            // kalkulátora (pl. calcNakedOption).
+            const finiteCheck = [breakEven, maxProfitPerShare, maxLossPerShare, downsideProtectionPct, staticReturnPct, ifCalledReturnPct, annualizedStaticPct, annualizedIfCalledPct];
+            if (!finiteCheck.every(Number.isFinite)) {
+                resultEl.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott értékekkel a számítás túlcsordul — adj meg visszafogottabb, reálisabb értékeket!</div>`;
+                return;
+            }
+
+            // .toLocaleString()-et használunk .toFixed()/.toPrecision() helyett —
+            // az utóbbi kettő extrém nagyságrendű (de egyedi mezőként véges)
+            // bemeneteknél nyers tudományos jelölésre vált át (lásd a modal
+            // feletti kommentet, illetve a korábbi Ruin Probability/TSI
+            // auditokat ugyanerre a hibaosztályra).
+            const fmtUsd = (n) => (n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            const fmtPct = (n, digits = 2) => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: digits }) + '%';
+
+            const moneyness = strike > stockPrice ? 'OTM' : strike < stockPrice ? 'ITM' : 'ATM';
+            // A "max. veszteség" mezőben megjelenített érték (-maxLossPerShare)
+            // a szokásos esetben negatív (valódi veszteség, ha a premium <
+            // részvényár), de a prémium > részvényár szélsőséges (bár
+            // matematikailag érvényes) esetben pozitív is lehet — ekkor nincs
+            // valódi veszteségkockázat még akkor sem, ha az ár nullára esik.
+            // A doboz színe/felirata ezért a TÉNYLEGES előjelhez igazodik,
+            // ugyanúgy, mint a "max. nyereség" doboznál.
+            const maxLossDisplay = -maxLossPerShare * SHARES_PER_CONTRACT;
+
+            resultEl.innerHTML = `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="rounded-xl ${maxProfitPerShare >= 0 ? 'bg-neon-green/5 border border-neon-green/30' : 'bg-neon-red/5 border border-neon-red/30'} p-3">
+                        <div class="text-[10px] ${maxProfitPerShare >= 0 ? 'text-neon-green' : 'text-neon-red'} uppercase font-bold mb-1">Max. nyereség / kontraktus</div>
+                        <div class="text-sm font-extrabold text-white">${maxProfitPerShare >= 0 ? '+' : ''}${fmtUsd(maxProfitPerShare * SHARES_PER_CONTRACT)}</div>
+                    </div>
+                    <div class="rounded-xl ${maxLossDisplay < 0 ? 'bg-neon-red/5 border border-neon-red/30' : 'bg-neon-green/5 border border-neon-green/30'} p-3">
+                        <div class="text-[10px] ${maxLossDisplay < 0 ? 'text-neon-red' : 'text-neon-green'} uppercase font-bold mb-1">Max. veszteség / kontraktus*</div>
+                        <div class="text-sm font-extrabold text-white">${maxLossDisplay >= 0 ? '+' : ''}${fmtUsd(maxLossDisplay)}</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-2">
+                    <span class="text-slate-400">Break-even árfolyam:</span>
+                    <span class="font-bold text-amber-400">${fmtUsd(breakEven)}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-2">
+                    <span class="text-slate-400">Lefelé védelem:</span>
+                    <span class="font-bold text-white">${fmtPct(downsideProtectionPct)}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-2">
+                    <span class="text-slate-400">Statikus hozam (ha NEM hívják le):</span>
+                    <span class="font-bold text-neon-green">+${fmtPct(staticReturnPct)}</span>
+                </div>
+                <div class="flex items-center justify-between font-mono text-xs mb-3">
+                    <span class="text-slate-400">Lehívási hozam (ha lehívják):</span>
+                    <span class="font-bold ${ifCalledReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${ifCalledReturnPct >= 0 ? '+' : ''}${fmtPct(ifCalledReturnPct)}</span>
+                </div>
+                <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3 mb-3">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mb-2">Évesített hozam (365 nap alapján)</div>
+                    <div class="flex items-center justify-between font-mono text-[11px] mb-1">
+                        <span class="text-slate-400">Statikus:</span>
+                        <span class="font-bold text-white">${annualizedStaticPct >= 0 ? '+' : ''}${fmtPct(annualizedStaticPct, 1)}</span>
+                    </div>
+                    <div class="flex items-center justify-between font-mono text-[11px]">
+                        <span class="text-slate-400">Lehívási:</span>
+                        <span class="font-bold text-white">${annualizedIfCalledPct >= 0 ? '+' : ''}${fmtPct(annualizedIfCalledPct, 1)}</span>
+                    </div>
+                </div>
+                <div class="text-center py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <span class="text-xs text-slate-300 font-bold">${moneyness === 'ITM'
+                        ? `⚠️ A kötési ár a jelenlegi ár ALATT van (ITM) — nagy eséllyel lehívják, és ekkor lemondasz a már meglévő árfolyam-nyereség egy részéről`
+                        : moneyness === 'ATM'
+                            ? `➖ A kötési ár pontosan a jelenlegi árfolyamon van (ATM) — kb. 50% eséllyel hívják le lejáratkor`
+                            : `✅ A kötési ár a jelenlegi ár FELETT van (OTM) — ha nem hívják le, a teljes prémium marad, ha lehívják, a kötési árig tartó árfolyam-nyereség is a tiéd`}</span>
+                </div>
+            `;
+        }
+
         // ================= KERESKEDÉSI DÍJ HATÁS KALKULÁTOR (OKTATÁSI) =================
         function calcFeeImpact() {
             const positionEl = document.getElementById('fee-position');
@@ -54349,6 +54535,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             69: { tool: 'heat-modal', cta: 'Számold ki élesben a Portfolio Heat mutatót' },
             523: { tool: 'optionpayoff-modal', cta: 'Rajzold fel élesben az opciós kifizetési diagramot' },
             524: { tool: 'nakedoption-modal', cta: 'Számold ki élesben egy fedezetlen opció aszimmetrikus kockázatát és margin-igényét' },
+            526: { tool: 'coveredcall-modal', cta: 'Számold ki élesben egy fedezett call break-even árát és statikus/évesített hozamát' },
             527: { tool: 'iv-modal', cta: 'Számold ki élesben az implikált volatilitást' },
             518: { tool: 'dca-modal', cta: 'Szimuláld élesben a DCA stratégiát' },
             542: { tool: 'pairs-modal', cta: 'Elemezd élesben a párkereskedési lehetőséget' },
@@ -54576,7 +54763,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'demarker-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'settlement-modal', 'execlatency-modal', 'linreg-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'demarker-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'coveredcall-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'settlement-modal', 'execlatency-modal', 'linreg-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
