@@ -19833,6 +19833,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
 
             const result = runCustomStrategyBacktest(candleData, { entryType, entryParams, exitType, exitParams }, startEquity);
+
+            // JAVÍTÁS (audit, lásd a pairs-modal/backtest-modal korábbi
+            // javításait ugyanerre a hibaosztályra): a startEquity validáció
+            // csak a véges/pozitív voltát ellenőrzi, egy szélsőséges, de
+            // EGYÉNKÉNT véges bemenet (pl. startEquity = "1e21") mellett a
+            // kamatos equity-görbe eredménye is véges maradhat, miközben a
+            // natív .toFixed() >=1e21 nagyságrendnél nyers tudományos
+            // jelölésre vált — explicit véges-ellenőrzés + .toLocaleString()
+            // a megjelenítés előtt.
+            if (![result.totalReturnPct, result.finalEquity, result.winRatePct, result.maxDrawdownPct, result.buyHoldReturnPct].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott kezdő tőke túl szélsőséges — a backtest-szimuláció túlcsordul. Adj meg reálisabb nagyságrendű kezdő tőkét!</div>`;
+                return;
+            }
+
             const beatBuyHold = result.totalReturnPct > result.buyHoldReturnPct;
             const isPositive = result.totalReturnPct > 0;
 
@@ -19840,21 +19854,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <canvas id="sb-sparkline" width="320" height="70" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
                 <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Teljes hozam (${result.tradeCount} trade)</div>
-                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toFixed(2)}%</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toFixed(2)}</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Találati arány:</span>
-                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toFixed(1)}%</span>
+                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Max. visszaesés (drawdown):</span>
-                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toFixed(2)}%</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Buy & Hold hozam (összehasonlításként):</span>
-                        <span class="font-extrabold text-slate-300 text-sm">${result.buyHoldReturnPct >= 0 ? '+' : ''}${result.buyHoldReturnPct.toFixed(2)}%</span>
+                        <span class="font-extrabold text-slate-300 text-sm">${result.buyHoldReturnPct >= 0 ? '+' : ''}${result.buyHoldReturnPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${beatBuyHold ? 'text-neon-green' : 'text-amber-400'}">${result.tradeCount === 0
@@ -20363,6 +20377,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 result = runEMACrossoverBacktest(candleData, fastPeriod, slowPeriod, startEquity);
             }
 
+            // JAVÍTÁS (audit, lásd a pairs-modal korábbi javítását ugyanerre a
+            // hibaosztályra): a startEquity validáció csak a véges/pozitív
+            // voltát ellenőrzi, egy szélsőséges, de EGYÉNKÉNT véges bemenet
+            // (pl. startEquity = "1e21") mellett a kamatos equity-görbe
+            // eredménye is véges maradhat, miközben a natív .toFixed()
+            // >=1e21 nagyságrendnél nyers tudományos jelölésre vált —
+            // explicit véges-ellenőrzés + .toLocaleString() a megjelenítés
+            // előtt.
+            if (![result.totalReturnPct, result.finalEquity, result.winRatePct, result.maxDrawdownPct, result.buyHoldReturnPct].every(Number.isFinite)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott kezdő tőke túl szélsőséges — a backtest-szimuláció túlcsordul. Adj meg reálisabb nagyságrendű kezdő tőkét!</div>`;
+                return;
+            }
+
             const beatBuyHold = result.totalReturnPct > result.buyHoldReturnPct;
             const isPositive = result.totalReturnPct > 0;
 
@@ -20370,21 +20397,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <canvas id="backtest-sparkline" width="320" height="70" class="w-full mb-3 rounded-lg bg-dark-900/60"></canvas>
                 <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Teljes hozam (${result.tradeCount} trade)</div>
-                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toFixed(2)}%</div>
-                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toFixed(2)}</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${result.totalReturnPct >= 0 ? '+' : ''}${result.totalReturnPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Végső tőke: $${result.finalEquity.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Találati arány:</span>
-                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toFixed(1)}%</span>
+                        <span class="font-extrabold text-white text-sm">${result.winRatePct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Max. visszaesés (drawdown):</span>
-                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toFixed(2)}%</span>
+                        <span class="font-extrabold text-amber-400 text-sm">${result.maxDrawdownPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Buy & Hold hozam (összehasonlításként):</span>
-                        <span class="font-extrabold text-slate-300 text-sm">${result.buyHoldReturnPct >= 0 ? '+' : ''}${result.buyHoldReturnPct.toFixed(2)}%</span>
+                        <span class="font-extrabold text-slate-300 text-sm">${result.buyHoldReturnPct >= 0 ? '+' : ''}${result.buyHoldReturnPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${beatBuyHold ? 'text-neon-green' : 'text-amber-400'}">${result.tradeCount === 0
