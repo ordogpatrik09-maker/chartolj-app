@@ -29672,10 +29672,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a `.toFixed(n)` a JS specifikáció szerint ~1e21-es
+            // vagy nagyobb abszolútértéknél MAGA IS nyers tudományos
+            // jelölésre vált (pl. `(1.618e21).toFixed(2) === "1.618e+21"`),
+            // miközben a szint önmagában még átmegy a fenti
+            // `Number.isFinite()` ellenőrzésen (pl. A=1e21, B=-1e21 esetén a
+            // 261.8%-os szint pont ebbe a tartományba esik). `.toLocaleString()`-re
+            // váltva, ami nem rendelkezik ezzel a felső korláttal — ugyanaz a
+            // hibaosztály, mint a CCI/Ruin Probability kalkulátorok korábbi javításánál.
+            const fmtLevel = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
             const rows = levels.map(l => `
                 <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
                     <span class="text-slate-400">${(l.ratio * 100).toFixed(1)}%:</span>
-                    <span class="font-extrabold ${isUptrend ? 'text-neon-green' : 'text-neon-red'} text-sm">${l.level.toFixed(2)}</span>
+                    <span class="font-extrabold ${isUptrend ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtLevel(l.level)}</span>
                 </div>
             `).join('');
 
