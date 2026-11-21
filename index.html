@@ -32692,8 +32692,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const length = Math.min(dsm.length, dsam.length);
             const tsiSeries = [];
             let tsiOverflowed = false;
+            let zeroDenomSkipped = 0;
             for (let i = 0; i < length; i++) {
-                if (dsam[i] === 0) continue;
+                if (dsam[i] === 0) { zeroDenomSkipped++; continue; }
                 const val = 100 * dsm[i] / dsam[i];
                 // JAVÍTÁS: ugyanaz a hibaosztály, mint a TRIX/KST kalkulátoroknál —
                 // szélsőséges, de egyenként véges záróárak esetén a kétszeres
@@ -32705,8 +32706,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 tsiSeries.push(val);
             }
 
+            // JAVÍTÁS: teljesen lapos (konstans) záróár-sorozatnál minden
+            // momentum nulla, így a DSAM-osztó is mindig nulla — ez korábban
+            // félrevezető "adj meg több adatot" hibaüzenetet adott, miközben
+            // a valós ok a nulla árváltozás (0/0, nem meghatározott), nem az
+            // adatpontok száma (ami megfelelő is lehet).
             if (tsiSeries.length === 0) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${tsiOverflowed ? 'A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a TSI Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!' : 'Nem sikerült kiszámolni a TSI-t — adj meg több adatot!'}</div>`;
+                const msg = tsiOverflowed
+                    ? 'A megadott záróárak szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — a TSI Infinity/NaN eredményt adna. Adj meg reálisabb nagyságrendű árakat!'
+                    : (zeroDenomSkipped > 0
+                        ? 'A megadott záróár-sorozat teljesen lapos (nincs árváltozás) — a TSI nevezője (az abszolút momentum simítása) nulla, így a mutató nem értelmezhető ebben a szakaszban. Adj meg egy valós árváltozást is tartalmazó sorozatot!'
+                        : 'Nem sikerült kiszámolni a TSI-t — adj meg több adatot!');
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">${msg}</div>`;
                 return;
             }
 
@@ -39084,11 +39095,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // JAVÍTÁS: betSizePctOfCapital/units egyenként véges, de >=1e21
             // nagyságrendű érték esetén a natív .toFixed() nyers tudományos
             // jelölésre vált — .toLocaleString()-re váltva.
+            // JAVÍTÁS: a ruinProbability*100 extrém kicsi (de egyenként véges
+            // nyerési esély/tőke/tétméret bemenet-kombinációnál pl. 1e-118%
+            // nagyságrendű) értéknél a natív .toPrecision(3) nyers tudományos
+            // jelölésre vált (JS-specifikáció: a kitevő < -6 esetén) — ez alatt
+            // egy kerek "< 0,0001%" küszöb-megjelenítésre váltunk.
+            const ruinPct = ruinProbability * 100;
+            const ruinPctDisplay = (ruinPct > 0 && ruinPct < 0.0001)
+                ? '&lt; 0,0001'
+                : ruinPct.toPrecision(3);
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Tétméret / tőke:</span><span class="text-white">${betSizePctOfCapital.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">"Egységnyi" tétek száma a tőkében:</span><span class="text-white">${units.toLocaleString('en-US', { maximumFractionDigits: 1 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ruin Probability (csőd-valószínűség):</span><span class="font-extrabold ${colorClass} text-sm">${(ruinProbability * 100).toPrecision(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Ruin Probability (csőd-valószínűség):</span><span class="font-extrabold ${colorClass} text-sm">${ruinPctDisplay}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
