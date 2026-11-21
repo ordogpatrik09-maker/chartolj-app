@@ -97,11 +97,23 @@ check('academy_modules_count', () => {
 // rendelkező fő fogalomnak van — ez tartalmi hiányosság volt, nem
 // duplikátum-tisztítás, ezért a várt szám szándékosan 94-ről 95-re NŐTT
 // (ez sem regresszió).
+// JAVÍTÁS (2026-11-21): auditáltam a LESSONS_DATA-t olyan leckékre,
+// amelyek egy önálló, néven nevezett fogalmat tanítanak ÉS saját
+// kalkulátorral is rendelkeznek (a btcdom-mintához hasonlóan), de a
+// Szószedetben nem szerepelnek — 6 ilyen leckét találtam (338: Mass
+// Index, 353: Denomination Effect, 371: Relative Vigor Index (RVI),
+// 392: Path Dependency, 495: Volatility Ratio Indikátor, 498: Trend
+// Exhaustion Index). Ez is tartalmi hiányosság, nem duplikátum, ezért a
+// várt szám szándékosan 95-ről 101-re NŐTT (nem regresszió). Megjegyzés:
+// a 204 DIRECT_MODAL_TOOLS calculator túlnyomó többsége (pl. CCI, MFI,
+// Williams %R, Vortex, Aroon) szándékosan NEM kapott egyedi
+// szószedet-tételt — a Szószedet a leckék által néven tanított
+// fogalmakat fedi le, nem minden kalkulátort egy-egy tételként.
 check('glossary_terms_count', () => {
     const src = extractBalanced(html, 'const GLOSSARY_TERMS = ', '[', ']');
     const data = new Function('return ' + src)();
     if (!Array.isArray(data)) throw new Error('GLOSSARY_TERMS nem tömb');
-    if (data.length !== 95) throw new Error(`Várt 95 szószedet-tétel, kapott ${data.length}`);
+    if (data.length !== 101) throw new Error(`Várt 101 szószedet-tétel, kapott ${data.length}`);
     const terms = data.map(t => t.term.toLowerCase().replace(/\([^)]*\)/g, '').replace(/[^a-z0-9áéíóöőúüű]+/g, ''));
     const dupes = terms.filter((t, i) => terms.indexOf(t) !== i);
     if (dupes.length > 0) throw new Error(`Duplikált szószedet-tétel(ek): ${[...new Set(dupes)].join(', ')}`);
