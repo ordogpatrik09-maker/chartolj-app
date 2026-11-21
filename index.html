@@ -25773,7 +25773,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const medianPct = (median - 1) * 100;
             const p10Pct = (p10 - 1) * 100;
             const p90Pct = (p90 - 1) * 100;
-            const fmtPct = (n) => (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
+            // JAVÍTÁS: a medianPct/p10Pct/p90Pct a `results.some(r => !Number.isFinite(...))`
+            // véges-ellenőrzésen átmegy (EGYÉNKÉNT véges marad minden szimulált út
+            // végeredménye), de reális, a validáción átmenő paraméter-kombináció (pl.
+            // találati arány 50%, R/R 4, kockázat/trade 50%, 2000 trade) mellett a
+            // kamatos tőkegörbe több száz nagyságrendnyi, de MÉG véges (<1.8e308)
+            // értéket ér el — ezen a natív `.toFixed(1)` MAGA IS nyers tudományos
+            // jelölésre vált (~1e21 fölött), pl. "+3.4e+176%" jelent meg formázott szám
+            // helyett. Ugyanaz a hibaosztály és javítási minta, mint a Calmar/Sterling
+            // Ratio CAGR-jénél: `.toFixed()` → `.toLocaleString()`.
+            const fmtPct = (n) => (n >= 0 ? '+' : '') + n.toLocaleString('en-US', { maximumFractionDigits: 1 }) + '%';
 
             let verdictColor, verdictText;
             if (ruinPct >= 20) {
