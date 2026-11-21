@@ -42807,7 +42807,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const maxLossPerShare = stockPrice - premium;
             const downsideProtectionPct = (premium / stockPrice) * 100;
             const staticReturnPct = (premium / stockPrice) * 100;
-            const ifCalledReturnPct = ((premium + Math.max(0, strike - stockPrice)) / stockPrice) * 100;
+            // JAVÍTÁS (audit): korábban itt Math.max(0, strike - stockPrice)
+            // szerepelt, ami ITM kötési árnál (strike < stockPrice) NULLÁRA
+            // vágta a negatív (strike - stockPrice) tagot — így a "lehívási
+            // hozam" ITM esetben ugyanazt (a statikus hozamot) mutatta, mint
+            // amikor nem hívják le, pontosan ELLENTÉTBEN a modal alatti saját
+            // figyelmeztető szöveggel ("ITM esetben a lehívási hozam akár a
+            // statikusnál is alacsonyabb (vagy negatív) lehet"). A valós
+            // lehívási hozam = (kötési ár - részvényár + prémium) / részvényár
+            // — ami pontosan a már kiszámolt maxProfitPerShare/stockPrice —,
+            // ITM esetben a (strike - stockPrice) negatív taggal együtt,
+            // levonás nélküli torzítás nélkül.
+            const ifCalledReturnPct = (maxProfitPerShare / stockPrice) * 100;
             const annualizedStaticPct = staticReturnPct * (365 / days);
             const annualizedIfCalledPct = ifCalledReturnPct * (365 / days);
 
