@@ -26960,11 +26960,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (drawdownPct > maxDrawdownPct) maxDrawdownPct = drawdownPct;
             }
 
+            // JAVÍTÁS: a `.toFixed(n)` a JS specifikáció szerint ~1e21-es vagy
+            // nagyobb abszolútértéknél MAGA IS nyers tudományos jelölésre vált
+            // (pl. `(1.1e82).toFixed(2) === "1.1e+82"`), miközben a fenti
+            // `Number.isFinite(cagr)` ellenőrzés ezt nem kapja el (a cagr
+            // önmagában véges, csak a toFixed-nek van ez a felső korlátja) —
+            // egy extrém, de szintaktikailag érvényes évesítési szorzó
+            // (pl. "5000") mellett a CAGR/Calmar Ratio elérheti ezt a
+            // nagyságrendet. `.toLocaleString()`-re váltva, ugyanaz a
+            // fix-minta, mint a Fibonacci Extension/Backtester/Leverage Sweep
+            // kalkulátorok korábbi, azonos hibaosztályú javításainál.
+            const fmtCalmar = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
             if (maxDrawdownPct === 0) {
                 out.innerHTML = `
                     <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                         <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${fmtCalmar(cagr * 100)}%</span></div>
                         <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-white">0.00%</span></div>
                     </div>
                     <p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A sorozatban nem volt visszaesés (minden érték egyenlő vagy magasabb volt az előzőnél) — a Calmar Ratio nevezője 0, így nem fejezhető ki véges számmal.</p>
@@ -26992,10 +27004,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Teljes hozam:</span><span class="text-white">${((totalReturnMultiple - 1) * 100).toFixed(2)}%</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes hozam:</span><span class="text-white">${fmtCalmar((totalReturnMultiple - 1) * 100)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${fmtCalmar(cagr * 100)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Maximum Drawdown:</span><span class="text-neon-red">-${maxDrawdownPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Calmar Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${calmar.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Calmar Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${fmtCalmar(calmar)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -27038,6 +27050,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS: a `.toFixed(n)` a JS specifikáció szerint ~1e21-es vagy
+            // nagyobb abszolútértéknél MAGA IS nyers tudományos jelölésre vált,
+            // miközben a fenti `Number.isFinite(cagr)` ellenőrzés ezt nem kapja
+            // el (ld. Calmar Ratio kalkulátor ugyanerre a hibaosztályra —
+            // egy extrém, de szintaktikailag érvényes évesítési szorzó mellett
+            // a CAGR/Sterling Ratio elérheti ezt a nagyságrendet).
+            // `.toLocaleString()`-re váltva, ugyanaz a fix-minta.
+            const fmtSterling = (v) => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
             // Önálló visszaesés-episódok azonosítása: egy új all-time
             // csúcs lezárja az addigi episódot (ha volt), és új episód
             // kezdődik.
@@ -27059,7 +27080,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (episodes.length === 0) {
                 out.innerHTML = `
                     <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                        <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${fmtSterling(cagr * 100)}%</span></div>
                         <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Visszaesés-episódok száma:</span><span class="text-white">0</span></div>
                     </div>
                     <p class="text-[10px] font-semibold mt-2 text-neon-green">✅ A sorozatban nem volt visszaesés-episód (minden érték egyenlő vagy magasabb volt az előzőnél) — a Sterling Ratio nevezője ebben az esetben csak a 10%-os korrekciós tag.</p>
@@ -27091,10 +27112,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${(cagr * 100).toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">CAGR (évesített hozam):</span><span class="${cagr >= 0 ? 'text-neon-green' : 'text-neon-red'}">${(cagr * 100) >= 0 ? '+' : ''}${fmtSterling(cagr * 100)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Talált visszaesés-episódok:</span><span class="text-white">${episodes.length}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Figyelembe vett legnagyobb ${usedN} átlaga:</span><span class="text-neon-red">-${avgTopDrawdownPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Sterling Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${sterling.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Sterling Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${fmtSterling(sterling)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -28979,11 +29000,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const lowSafe = zeroSafeRound(low, 6);
             const priceSafe = zeroSafeRound(price, 6);
 
+            // JAVÍTÁS: a `.toFixed(1)` ~1e21-es vagy nagyobb abszolútértékű, de
+            // egyénként véges `pct`-nél (extrém high/low/price mellett) MAGA IS
+            // nyers tudományos jelölésre vált, miközben a fenti
+            // `Number.isFinite(pct)` ellenőrzés ezt nem kapja el — ugyanaz a
+            // hibaosztály, mint a modal többi mezőjénél (lásd a lejjebb már
+            // `.toLocaleString()`-re váltott equilibrium/p25/p75/high/low
+            // sorokat), itt viszont még megmaradt a `.toFixed()`.
+            const pctSafe = pct.toLocaleString(undefined, { maximumFractionDigits: 1 });
+
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-neon-purple/30 bg-neon-purple/[0.05] p-3 mb-3 text-center">
                     <div class="text-[10px] text-slate-400 mb-1">Zóna</div>
                     <div class="text-base font-extrabold ${zoneColor}">${zoneLabel}</div>
-                    <div class="text-[11px] font-mono text-slate-300 mt-1">${pct.toFixed(1)}% a range-ben</div>
+                    <div class="text-[11px] font-mono text-slate-300 mt-1">${pctSafe}% a range-ben</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Range Magas / Alacsony:</span><span class="text-white">${high.toLocaleString(undefined, { maximumFractionDigits: 6 })} / ${lowSafe.toLocaleString(undefined, { maximumFractionDigits: 6 })}</span></div>
@@ -39568,14 +39598,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // calcVolatilityBasedSizing), plusz egy végső véges-ellenőrzés
             // biztonsági hálóként lejjebb, ugyanúgy mint a hasonló, korábban
             // javított kalkulátoroknál.
+            // JAVÍTÁS: a trades mezőnek (akárcsak korábban a notional-nek) nem
+            // volt felső korlátja — egy extrém, de szintaktikailag érvényes
+            // trade-szám (pl. "1e21") mellett a `trades` változó egyénként
+            // véges marad (Math.round(1e21) === 1e21), a `totalGSLCost`/
+            // `totalExpectedSlippage` is véges (fmtMoney/.toLocaleString() jól
+            // kezeli), DE a lenti üzenetekbe nyers `${trades}` template-
+            // interpolációval kerül be — ez pedig a JS Number.toString()
+            // viselkedése miatt >=1e21-nél MAGA IS nyers tudományos jelölésre
+            // vált ("1e+21 trade" a "Teljes GSL költség (...)" sorban),
+            // ugyanaz a hibaosztály, mint a Leverage Sweep/Fibonacci Extension
+            // korábbi javításainál. A notional-lel konzisztens, reális felső
+            // korlát (max 10 millió trade egy vizsgált időszakon) + a kijelzett
+            // `trades` érték `.toLocaleString()`-ezése is biztonsági hálóként.
             if (!Number.isFinite(notional) || notional <= 0 || notional > 1e12 ||
                 isNaN(feePct) || feePct < 0 || feePct > 100 ||
-                !Number.isFinite(tradesRaw) || tradesRaw < 1 ||
+                !Number.isFinite(tradesRaw) || tradesRaw < 1 || tradesRaw > 1e7 ||
                 isNaN(probPct) || probPct < 0 || probPct > 100 ||
                 isNaN(slipPct) || slipPct < 0 || slipPct > 100) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, 1 billiónál kisebb, véges névleges értéket, legalább 1 trade-et, és 0-100 közötti felár / esély / csúszás %-okat!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg egy nullánál nagyobb, 1 billiónál kisebb, véges névleges értéket, 1 és 10 millió közötti trade-számot, és 0-100 közötti felár / esély / csúszás %-okat!</div>`;
                 return;
             }
+            const tradesFmt = trades.toLocaleString('en-US');
 
             // JAVÍTÁS (literális "-0" bemenet audit): a "-0" bemenet a JS
             // negatív nullaként parseol — ez a fenti `< 0` validációkon átmegy
@@ -39627,8 +39671,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">GSL díj / trade:</span><span class="text-white">${fmtMoney(costPerTradeGSL)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Várható csúszási veszteség / trade (sima stoppal):</span><span class="text-white">${fmtMoney(expectedSlippagePerTrade)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Nettó EV / trade (megtakarítás − díj):</span><span class="font-bold ${netPerTrade >= 0 ? 'text-neon-green' : 'text-neon-red'}">${netPerTrade >= 0 ? '+' : ''}${fmtMoney(netPerTrade)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Teljes GSL költség (${trades} trade):</span><span class="text-white">${fmtMoney(totalGSLCost)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Teljes várható csúszási veszteség (${trades} trade):</span><span class="text-white">${fmtMoney(totalExpectedSlippage)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Teljes GSL költség (${tradesFmt} trade):</span><span class="text-white">${fmtMoney(totalGSLCost)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Teljes várható csúszási veszteség (${tradesFmt} trade):</span><span class="text-white">${fmtMoney(totalExpectedSlippage)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Nettó eredmény összesen:</span><span class="font-extrabold ${colorClass} text-sm">${netTotal >= 0 ? '+' : ''}${fmtMoney(netTotal)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Megtérüléshez szükséges min. gap-esély:</span><span class="text-white">${fmtPctBE(breakEvenProbPct)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Megtérüléshez szükséges min. átlag-csúszás:</span><span class="text-white">${fmtPctBE(breakEvenSlipPct)}</span></div>
