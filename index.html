@@ -20075,10 +20075,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             </div>
                             <button onclick="deleteSbSavedStrategy('${s.id}')" class="text-slate-600 hover:text-neon-red transition shrink-0" aria-label="Stratégia törlése"><i class="fa-solid fa-trash text-[10px]"></i></button>
                         </div>
+                        <!-- JAVÍTÁS (lásd a runStrategyBuilderBacktest() fenti, 68b5ca9
+                             commitben bevezetett .toLocaleString()-fixét ugyanerre a
+                             hibaosztályra): a totalReturnPct SKÁLA-FÜGGETLEN egy sima
+                             összetett-hozam futásnál, de sok trade egymásra épülő
+                             kamatos hatása (pl. szűk EMA-periódusoknál sok belépés egy
+                             hosszú idősoron) véges, de >=1e21 nagyságrendű hozamot is
+                             adhat — ilyenkor a natív .toFixed() nyers tudományos
+                             jelölésre vált. A fő eredmény-nézet ezt már .toLocaleString()-
+                             re váltva kezeli, de ez a MENTETT lista egy MÁSIK, külön
+                             renderelési útvonal, amit az eredeti javítás nem érintett —
+                             ugyanazt a toLocaleString() mintát alkalmazva itt is. -->
                         <div class="flex items-center gap-3 mt-1.5 font-mono text-[10px]">
-                            <span class="${isPositive ? 'text-neon-green' : 'text-neon-red'} font-bold">${s.totalReturnPct >= 0 ? '+' : ''}${s.totalReturnPct.toFixed(2)}%</span>
-                            <span class="text-slate-500">DD: <span class="text-amber-400">${s.maxDrawdownPct.toFixed(1)}%</span></span>
-                            <span class="text-slate-500">Win: ${s.winRatePct.toFixed(0)}%</span>
+                            <span class="${isPositive ? 'text-neon-green' : 'text-neon-red'} font-bold">${s.totalReturnPct >= 0 ? '+' : ''}${s.totalReturnPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span>
+                            <span class="text-slate-500">DD: <span class="text-amber-400">${s.maxDrawdownPct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%</span></span>
+                            <span class="text-slate-500">Win: ${s.winRatePct.toLocaleString('en-US', { maximumFractionDigits: 0 })}%</span>
                             <button onclick="loadSbSavedStrategyIntoForm('${s.id}')" class="ml-auto text-neon-cyan hover:underline">Betöltés</button>
                         </div>
                     </div>
