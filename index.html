@@ -17218,6 +17218,9 @@ Mean-reversion,2.5</textarea>
         <div class="p-3 border-t border-dark-750/60 shrink-0">
             <div class="flex items-center gap-2">
                 <input type="text" id="ai-chat-input" placeholder="Kérdezz a kereskedésről..." aria-label="Kérdés a kereskedésről" onkeydown="if(event.key==='Enter')sendAiChatMessage()" class="flex-grow bg-dark-850 border border-dark-750 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                <button id="ai-chat-mic-btn" onclick="toggleVoiceInput()" class="hidden w-9 h-9 rounded-xl border border-dark-750 text-slate-400 flex items-center justify-center shrink-0 hover:text-neon-cyan hover:border-neon-cyan/40 transition" aria-label="Hangos kérdés indítása">
+                    <i class="fa-solid fa-microphone text-xs"></i>
+                </button>
                 <button onclick="sendAiChatMessage()" class="w-9 h-9 rounded-xl bg-neon-cyan text-dark-950 flex items-center justify-center shrink-0 hover:brightness-110 transition" aria-label="Üzenet küldése">
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
@@ -47846,6 +47849,62 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         if (ttsSupported && typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
             window.speechSynthesis.onvoiceschanged = () => { ttsVoicesCache = window.speechSynthesis.getVoices(); };
         }
+
+        // =================================================================
+        // Ingyenes hangos bemenet (STT) — böngésző saját SpeechRecognition
+        // API-ja az AI-coach chathez. Nincs szerveroldali hívás, nincs
+        // extra költség; nem minden böngésző támogatja (pl. Firefox-on
+        // jellemzően hiányzik), ezért a mikrofon-gomb csak akkor jelenik
+        // meg, ha a funkció ténylegesen elérhető.
+        // =================================================================
+        const SpeechRecognitionCtor = (typeof window !== 'undefined') ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+        const sttSupported = !!SpeechRecognitionCtor;
+        let sttRecognizer = null;
+        let sttListening = false;
+
+        function initVoiceInputUI() {
+            const btn = document.getElementById('ai-chat-mic-btn');
+            if (!btn) return;
+            if (sttSupported) btn.classList.remove('hidden');
+        }
+
+        function toggleVoiceInput() {
+            if (!sttSupported) return;
+            const btn = document.getElementById('ai-chat-mic-btn');
+            const input = document.getElementById('ai-chat-input');
+
+            if (sttListening) {
+                if (sttRecognizer) sttRecognizer.stop();
+                return;
+            }
+
+            try {
+                sttRecognizer = new SpeechRecognitionCtor();
+                sttRecognizer.lang = 'hu-HU';
+                sttRecognizer.interimResults = false;
+                sttRecognizer.maxAlternatives = 1;
+
+                sttRecognizer.onstart = () => {
+                    sttListening = true;
+                    if (btn) { btn.classList.add('text-red-400', 'border-red-400/50'); btn.innerHTML = '<i class="fa-solid fa-microphone-lines animate-pulse text-xs"></i>'; btn.setAttribute('aria-label', 'Hangfelvétel leállítása'); }
+                };
+                sttRecognizer.onresult = (ev) => {
+                    const transcript = ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : '';
+                    if (transcript && input) input.value = transcript;
+                };
+                sttRecognizer.onerror = () => { /* csendben kilépünk — pl. mikrofon-engedély megtagadva */ };
+                sttRecognizer.onend = () => {
+                    sttListening = false;
+                    if (btn) { btn.classList.remove('text-red-400', 'border-red-400/50'); btn.innerHTML = '<i class="fa-solid fa-microphone text-xs"></i>'; btn.setAttribute('aria-label', 'Hangos kérdés indítása'); }
+                };
+
+                sttRecognizer.start();
+            } catch (e) {
+                sttListening = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initVoiceInputUI);
 
         // A szerver válasza is megbízhatatlan külső adat: mezőnként ellenőrizzük (kliens-oldali második védvonal).
         function sanitizeCoach(obj) {
