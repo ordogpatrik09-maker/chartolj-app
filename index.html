@@ -38747,6 +38747,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — nyers tudományos jelölés szivárgás): a currentAvg/
+            // referenceAvg/volatilityRatio itt NEM önnormalizáló arányok (ellentétben
+            // pl. a Mass Index/RVI kalkulátor dupla-EMA arányaival, ahol számláló és
+            // nevező ugyanabból a sorozatból származik) — a currentPeriod/referencePeriod
+            // ablakok egymástól FÜGGETLEN, szabadszöveges Magas/Alacsony gyertyaadatokból
+            // jönnek, HTML min/max korlát nélkül. Egyenként véges, de szélsőséges
+            // nagyságrendű (pl. Magas=1e25) bemenetnél a currentAvg/referenceAvg
+            // (és az arányuk) átlépheti az 1e21-es küszöböt, ahol a natív .toFixed()
+            // nyers tudományos jelölésre vált (pl. "1e+25" egy tartomány-érték helyén)
+            // — ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            // .toLocaleString('en-US', { maximumFractionDigits: N })-re cserélve, ami
+            // "decimal" stílusban SOHA nem vált tudományos jelölésre.
             let colorClass, verdict;
             if (volatilityRatio >= 2) {
                 colorClass = 'text-neon-red';
@@ -38762,11 +38774,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = '✅ Alacsony Volatility Ratio — az aktuális mozgás szűkebb tartományban zajlik, mint a referencia-időszak, ami gyakran egy kitörés előtti összehúzódásra (konszolidáció) utalhat.';
             }
 
+            // JAVÍTÁS (audit — vízszintes túlcsordulás): a fenti nyers tudományos
+            // jelölés javítása után a currentAvg/referenceAvg/volatilityRatio
+            // szélsőséges bemenetnél 20+ jegyű, ezres-tagolt számmá válhat (pl.
+            // "10,000,221,222,095,030,000,000,000,000,000,000,000"), ami a sima
+            // "flex justify-between" sorban kilóg a glass-card jobb széle mögé —
+            // ugyanaz a hibaosztály, mint a 7c0d6bd commit óta a `min-w-0 text-right`
+            // + `overflow-wrap:anywhere` + `flex-wrap gap-x-2 gap-y-1` mintával
+            // javított kalkulátoroknál. Ez a modal eddig kimaradt abból a sweep-ből.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Aktuális átlagos tartomány:</span><span class="text-white">${currentAvg.toFixed(4)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Referencia átlagos tartomány:</span><span class="text-white">${referenceAvg.toFixed(4)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Volatility Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${volatilityRatio.toFixed(2)}</span></div>
+                    <div class="flex flex-wrap justify-between gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Aktuális átlagos tartomány:</span><span class="text-white min-w-0 text-right" style="overflow-wrap:anywhere;">${currentAvg.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex flex-wrap justify-between gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Referencia átlagos tartomány:</span><span class="text-white min-w-0 text-right" style="overflow-wrap:anywhere;">${referenceAvg.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex flex-wrap justify-between border-t border-dark-750 pt-2 gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Volatility Ratio:</span><span class="font-extrabold ${colorClass} text-sm min-w-0 text-right" style="overflow-wrap:anywhere;">${volatilityRatio.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -38838,6 +38858,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
+            // JAVÍTÁS (audit — nyers tudományos jelölés szivárgás): a fenti
+            // Infinity/NaN-ellenőrzés NEM fogja ki azt az esetet, amikor a
+            // trend-kezdő záróár egy rendkívül KICSI, de pozitív, véges szám
+            // (pl. "0.0000000000000000001"), a trend-záró ár pedig nagyságrendekkel
+            // nagyobb — ilyenkor a totalPctChange/avgSpeedPct/tei EGYENKÉNT VÉGES
+            // marad (Number.isFinite() igaz rá), de elérheti/átlépheti az 1e21-es
+            // küszöböt, ahol a natív .toFixed() nyers tudományos jelölésre vált
+            // (pl. "1e+21" egy %/gyertya érték helyén) — ugyanaz a hibaosztály, mint
+            // a Volatility Ratio és a korábban javított kalkulátoroknál.
+            // .toLocaleString('en-US', { maximumFractionDigits: N })-re cserélve,
+            // ami "decimal" stílusban SOHA nem vált tudományos jelölésre.
             let colorClass, verdict;
             if (tei >= 20) {
                 colorClass = 'text-neon-red';
@@ -38850,12 +38881,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = '✅ Alacsony Trend Exhaustion Index — friss vagy lassú trend, statisztikailag kevésbé valószínű a közeli kifáradás.';
             }
 
+            // JAVÍTÁS (audit — vízszintes túlcsordulás): ugyanaz a hibaosztály,
+            // mint a Volatility Ratio kalkulátornál feljebb — a nyers tudományos
+            // jelölés javítása után az avgSpeedPct/tei szélsőséges bemenetnél
+            // 20+ jegyű számmá válhat, ami kilógna a sima "flex justify-between"
+            // sorból. A `min-w-0 text-right` + `overflow-wrap:anywhere` +
+            // `flex-wrap gap-x-2 gap-y-1` mintával az egész eredmény-blokk
+            // konzisztensen védett (a rövid sorok megjelenése változatlan marad).
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Trend iránya:</span><span class="${direction > 0 ? 'text-neon-green' : 'text-neon-red'}">${direction > 0 ? 'Emelkedő' : 'Csökkenő'}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Trend hossza (gyertyák száma):</span><span class="text-white">${length}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Átlagos sebesség (%/gyertya):</span><span class="text-white">${avgSpeedPct >= 0 ? '+' : ''}${avgSpeedPct.toFixed(3)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Trend Exhaustion Index:</span><span class="font-extrabold ${colorClass} text-sm">${tei.toFixed(2)}</span></div>
+                    <div class="flex flex-wrap justify-between gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Trend iránya:</span><span class="${direction > 0 ? 'text-neon-green' : 'text-neon-red'} min-w-0 text-right" style="overflow-wrap:anywhere;">${direction > 0 ? 'Emelkedő' : 'Csökkenő'}</span></div>
+                    <div class="flex flex-wrap justify-between gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Trend hossza (gyertyák száma):</span><span class="text-white min-w-0 text-right" style="overflow-wrap:anywhere;">${length}</span></div>
+                    <div class="flex flex-wrap justify-between gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Átlagos sebesség (%/gyertya):</span><span class="text-white min-w-0 text-right" style="overflow-wrap:anywhere;">${avgSpeedPct >= 0 ? '+' : ''}${avgSpeedPct.toLocaleString('en-US', { maximumFractionDigits: 3 })}%</span></div>
+                    <div class="flex flex-wrap justify-between border-t border-dark-750 pt-2 gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Trend Exhaustion Index:</span><span class="font-extrabold ${colorClass} text-sm min-w-0 text-right" style="overflow-wrap:anywhere;">${tei.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
