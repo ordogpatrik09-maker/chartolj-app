@@ -44830,9 +44830,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     const reason = f.byRange && f.byVolume ? 'Tartomány + Volumen' : (f.byRange ? 'Tartomány' : 'Volumen');
                     rows += `
                         <div class="border-t border-dark-750 pt-2 mt-2 first:border-t-0 first:pt-0 first:mt-0">
-                            <div class="flex justify-between"><span class="text-slate-300 font-bold">#${f.idx + 1}. gyertya</span><span class="text-neon-red font-bold">${reason}</span></div>
-                            <div class="flex justify-between"><span class="text-slate-400">Tartomány-arány:</span><span class="text-white">${fmtRatio(f.rangeRatio)}</span></div>
-                            <div class="flex justify-between"><span class="text-slate-400">Volumen-arány:</span><span class="text-white">${fmtRatio(f.volRatio)}</span></div>
+                            <div class="flex flex-wrap justify-between gap-x-2 gap-y-1"><span class="text-slate-300 font-bold min-w-0">#${f.idx + 1}. gyertya</span><span class="text-neon-red font-bold min-w-0 text-right" style="overflow-wrap:anywhere;">${reason}</span></div>
+                            <div class="flex flex-wrap justify-between gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Tartomány-arány:</span><span class="text-white min-w-0 text-right" style="overflow-wrap:anywhere;">${fmtRatio(f.rangeRatio)}</span></div>
+                            <div class="flex flex-wrap justify-between gap-x-2 gap-y-1"><span class="text-slate-400 min-w-0">Volumen-arány:</span><span class="text-white min-w-0 text-right" style="overflow-wrap:anywhere;">${fmtRatio(f.volRatio)}</span></div>
                         </div>
                     `;
                 });
@@ -44844,7 +44844,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="rounded-xl bg-amber-400/5 border border-amber-400/30 p-3 mb-3 text-center">
                     <div class="text-[10px] text-amber-400 uppercase font-bold mb-1">Hír-gyanús gyertyák</div>
                     <div class="text-lg font-extrabold text-white font-mono">${flagged.length} / ${analyzedCount}</div>
-                    <div class="text-[9.5px] text-slate-500 mt-0.5">${lookback}-periódusú gördülő átlaghoz, ${rangeMult.toLocaleString('en-US', { maximumFractionDigits: 2 })}× tartomány- és ${volMult.toLocaleString('en-US', { maximumFractionDigits: 2 })}× volumen-küszöbhöz képest</div>
+                    <div class="text-[9.5px] text-slate-500 mt-0.5" style="overflow-wrap:anywhere;">${lookback}-periódusú gördülő átlaghoz, ${rangeMult.toLocaleString('en-US', { maximumFractionDigits: 2 })}× tartomány- és ${volMult.toLocaleString('en-US', { maximumFractionDigits: 2 })}× volumen-küszöbhöz képest</div>
                 </div>
                 ${bodyHtml}
                 <p class="text-[9px] text-slate-500 mt-3 leading-relaxed">Ez egy UTÓLAGOS, statisztikai heurisztika — a "gyanús" jelölés azt jelzi, hogy a gyertya tartománya és/vagy volumene szokatlanul nagy volt a MEGELŐZŐ ${lookback} gyertya átlagához képest, nem azt, hogy valós hír okozta. Nem előrejelző eszköz: a jövőbeli gyertyákra nem alkalmazható kereskedés közben, csak visszatekintve, a kereskedési napló objektív kiegészítéséhez.</p>
