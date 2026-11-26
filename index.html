@@ -1444,92 +1444,55 @@
         .pnl-updated { animation: pnlPulse 0.4s ease; }
 
         /* ================= AI AVATAR (felolvasás közbeni vizuális kísérő) =================
-           Egy saját, stilizált neon-drótváz "AI fej" — tisztán CSS-sel rajzolva,
-           semmilyen külső kép/aszt nem használ. Csak akkor jelenik meg, amikor
-           TÉNYLEGESEN folyik egy felolvasás (bármelyik forrásból: lecke-kártya,
-           Hangos tanulás automata lánc, vagy AI-coach üzenet) — máskor rejtve. */
+           Egy saját, stilizált neon-drótváz "hologram-ember mellkép" — tisztán
+           inline SVG-vel rajzolva, semmilyen külső kép/asset-fájlt nem használ
+           (a felhasználó egy hologram-drótváz stílusú referenciaképet küldött
+           ihletnek; ez egy ÖNÁLLÓ, saját rajzolású alak ugyanabban a vizuális
+           stílusban, nem egy konkrét kép másolata). Csak akkor jelenik meg,
+           amikor TÉNYLEGESEN folyik egy felolvasás (lecke-kártya, Hangos
+           tanulás automata lánc, vagy AI-coach üzenet) — máskor rejtve. */
         #ai-avatar-widget {
             position: fixed;
             left: 50%;
-            bottom: 92px;
-            transform: translateX(-50%) scale(0.85);
+            bottom: 86px;
+            transform: translateX(-50%) translateY(10px) scale(0.92);
             z-index: 95;
-            width: 72px;
-            height: 72px;
+            width: 118px;
+            height: 160px;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.25s ease, transform 0.25s ease;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
         #ai-avatar-widget.speaking {
             opacity: 1;
-            transform: translateX(-50%) scale(1);
+            transform: translateX(-50%) translateY(0) scale(1);
         }
-        .ai-avatar-glow {
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(34,211,238,0.35) 0%, rgba(34,211,238,0) 70%);
-            animation: aiAvatarGlowPulse 1.6s ease-in-out infinite;
+        #ai-avatar-widget svg { width: 100%; height: 100%; overflow: visible; }
+        .ai-avatar-glow-bg {
+            animation: aiAvatarGlowPulse 1.8s ease-in-out infinite;
+            transform-origin: center;
         }
-        @keyframes aiAvatarGlowPulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
-        .ai-avatar-head {
-            position: absolute;
-            inset: 8px;
-            border-radius: 50%;
-            border: 1.5px solid rgba(34,211,238,0.85);
-            background: radial-gradient(circle at 35% 30%, rgba(34,211,238,0.18), rgba(8,15,20,0.9) 70%);
-            box-shadow: 0 0 14px rgba(34,211,238,0.55), inset 0 0 10px rgba(34,211,238,0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .ai-avatar-head::before {
-            content: '';
-            position: absolute;
-            inset: 4px;
-            border-radius: 50%;
-            background-image:
-                linear-gradient(rgba(34,211,238,0.25) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(34,211,238,0.25) 1px, transparent 1px);
-            background-size: 7px 7px;
-            -webkit-mask-image: radial-gradient(circle, #000 60%, transparent 100%);
-            mask-image: radial-gradient(circle, #000 60%, transparent 100%);
-            opacity: 0.6;
-        }
-        .ai-avatar-eyes { display: flex; gap: 10px; margin-bottom: 10px; z-index: 1; }
-        .ai-avatar-eyes span {
-            width: 5px; height: 5px; border-radius: 50%;
-            background: #67e8f9;
-            box-shadow: 0 0 6px #22d3ee;
-            animation: aiAvatarBlink 3.2s ease-in-out infinite;
+        @keyframes aiAvatarGlowPulse { 0%,100% { opacity: 0.45; } 50% { opacity: 0.9; } }
+        .ai-avatar-blink {
+            animation: aiAvatarBlink 3.4s ease-in-out infinite;
+            transform-box: fill-box;
+            transform-origin: center;
         }
         @keyframes aiAvatarBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.15); } }
         .ai-avatar-mouth {
-            position: absolute;
-            bottom: 18px;
-            display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            height: 10px;
-            z-index: 1;
+            transform-box: fill-box;
+            transform-origin: center;
         }
-        .ai-avatar-mouth span {
-            width: 3px;
-            border-radius: 2px;
-            background: #22d3ee;
-            box-shadow: 0 0 5px #22d3ee;
-            height: 3px;
-            transition: height 0.12s ease;
+        #ai-avatar-widget.speaking .ai-avatar-mouth {
+            animation: aiAvatarTalk 0.5s ease-in-out infinite;
         }
-        #ai-avatar-widget.speaking .ai-avatar-mouth span {
-            animation: aiAvatarTalk 0.9s ease-in-out infinite;
+        @keyframes aiAvatarTalk { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1.9); } }
+        .ai-avatar-hair-spark {
+            animation: aiAvatarSpark 2.4s ease-in-out infinite;
         }
-        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(1) { animation-delay: 0s; }
-        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(2) { animation-delay: 0.15s; }
-        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(3) { animation-delay: 0.3s; }
-        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(4) { animation-delay: 0.15s; }
-        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(5) { animation-delay: 0s; }
-        @keyframes aiAvatarTalk { 0%, 100% { height: 3px; } 50% { height: 10px; } }
+        .ai-avatar-hair-spark:nth-child(2n) { animation-delay: 0.4s; }
+        .ai-avatar-hair-spark:nth-child(3n) { animation-delay: 0.8s; }
+        @keyframes aiAvatarSpark { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 </style>
 </head>
 <body class="antialiased">
@@ -17274,16 +17237,68 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
-    <!-- AI avatar — tisztán CSS-sel rajzolt, stilizált neon-drótváz "fej", ami
-         csak felolvasás közben jelenik meg (lásd aiAvatarSetSpeaking()). Nem
-         akadályozza a kattintásokat (pointer-events: none), nincs alatta
-         semmilyen külső képfájl. -->
+    <!-- AI avatar — tisztán SAJÁT, inline SVG-vel rajzolt, stilizált neon
+         hologram-drótváz "mellkép" (fej+váll), ugyanabban a vizuális
+         stílusban, mint a referenciaként kapott kép, de NEM annak másolata —
+         saját sziluett, saját vonalvezetés. Csak felolvasás közben jelenik
+         meg (lásd aiAvatarSetSpeaking()). Nem akadályozza a kattintásokat
+         (pointer-events: none), nincs alatta semmilyen külső képfájl. -->
     <div id="ai-avatar-widget" aria-hidden="true">
-        <div class="ai-avatar-glow"></div>
-        <div class="ai-avatar-head">
-            <div class="ai-avatar-eyes"><span></span><span></span></div>
-            <div class="ai-avatar-mouth"><span></span><span></span><span></span><span></span><span></span></div>
-        </div>
+        <svg viewBox="0 0 160 220" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="aiAvatarGlowGrad" cx="50%" cy="48%" r="55%">
+                    <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.45"/>
+                    <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+                </radialGradient>
+                <pattern id="aiAvatarMesh" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">
+                    <path d="M0 9L9 0" stroke="#22d3ee" stroke-width="0.4" opacity="0.45"/>
+                    <path d="M-1 1L1 -1" stroke="#22d3ee" stroke-width="0.4" opacity="0.45"/>
+                    <path d="M8 10L10 8" stroke="#22d3ee" stroke-width="0.4" opacity="0.45"/>
+                    <circle cx="0" cy="0" r="0.7" fill="#67e8f9"/>
+                    <circle cx="9" cy="9" r="0.7" fill="#67e8f9"/>
+                </pattern>
+                <clipPath id="aiAvatarBustClip">
+                    <path d="M80,30 C104,30 122,52 122,78 C122,102 108,118 92,124 L68,124 C52,118 38,102 38,78 C38,52 56,30 80,30 Z"/>
+                    <path d="M68,122 L68,146 L34,162 L22,220 L138,220 L126,162 L92,146 L92,122 Z"/>
+                </clipPath>
+            </defs>
+
+            <ellipse class="ai-avatar-glow-bg" cx="80" cy="95" rx="62" ry="75" fill="url(#aiAvatarGlowGrad)"/>
+
+            <!-- Kócos, "szikrázó" hologram-haj — rövid, csipkézett vonalak a fej teteje fölött -->
+            <g stroke="#67e8f9" stroke-width="1" stroke-linecap="round">
+                <line class="ai-avatar-hair-spark" x1="44" y1="40" x2="38" y2="14"/>
+                <line class="ai-avatar-hair-spark" x1="50" y1="33" x2="58" y2="6"/>
+                <line class="ai-avatar-hair-spark" x1="58" y1="31" x2="52" y2="10"/>
+                <line class="ai-avatar-hair-spark" x1="64" y1="30" x2="70" y2="4"/>
+                <line class="ai-avatar-hair-spark" x1="72" y1="30" x2="66" y2="12"/>
+                <line class="ai-avatar-hair-spark" x1="80" y1="29" x2="86" y2="2"/>
+                <line class="ai-avatar-hair-spark" x1="88" y1="30" x2="94" y2="14"/>
+                <line class="ai-avatar-hair-spark" x1="96" y1="31" x2="90" y2="10"/>
+                <line class="ai-avatar-hair-spark" x1="104" y1="33" x2="112" y2="8"/>
+                <line class="ai-avatar-hair-spark" x1="112" y1="36" x2="120" y2="16"/>
+                <line class="ai-avatar-hair-spark" x1="118" y1="42" x2="128" y2="22"/>
+            </g>
+
+            <!-- Fej + váll sziluett, drótváz-mesh textúrával kitöltve -->
+            <g clip-path="url(#aiAvatarBustClip)">
+                <rect x="0" y="0" width="160" height="220" fill="url(#aiAvatarMesh)"/>
+            </g>
+            <path d="M80,30 C104,30 122,52 122,78 C122,102 108,118 92,124 L68,124 C52,118 38,102 38,78 C38,52 56,30 80,30 Z" fill="none" stroke="#22d3ee" stroke-width="1.3" opacity="0.9"/>
+            <path d="M68,122 L68,146 L34,162 L22,220 L138,220 L126,162 L92,146 L92,122 Z" fill="none" stroke="#22d3ee" stroke-width="1.3" opacity="0.9"/>
+
+            <!-- Fülek -->
+            <circle cx="36" cy="84" r="5.5" fill="none" stroke="#22d3ee" stroke-width="1"/>
+            <circle cx="124" cy="84" r="5.5" fill="none" stroke="#22d3ee" stroke-width="1"/>
+
+            <!-- Arcvonások -->
+            <line x1="58" y1="66" x2="72" y2="63" stroke="#67e8f9" stroke-width="1.1" stroke-linecap="round"/>
+            <line x1="88" y1="63" x2="102" y2="66" stroke="#67e8f9" stroke-width="1.1" stroke-linecap="round"/>
+            <ellipse class="ai-avatar-blink" cx="65" cy="76" rx="4" ry="3" fill="#67e8f9"/>
+            <ellipse class="ai-avatar-blink" cx="95" cy="76" rx="4" ry="3" fill="#67e8f9"/>
+            <path d="M80,79 L77,97 L83,99" fill="none" stroke="#67e8f9" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+            <ellipse class="ai-avatar-mouth" cx="80" cy="109" rx="12" ry="3" fill="#22d3ee"/>
+        </svg>
     </div>
 
     <button id="ai-chat-launcher" onclick="toggleAiChat()" class="fixed bottom-5 left-5 z-[90] w-14 h-14 rounded-2xl bg-dark-900 border border-neon-cyan/40 flex items-center justify-center text-neon-cyan shadow-2xl hover:border-neon-cyan/70 transition group" aria-label="AI Chat megnyitása">
