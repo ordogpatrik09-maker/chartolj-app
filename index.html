@@ -16125,6 +16125,19 @@ Mean-reversion,2.5</textarea>
                     <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
                 </span>
             </button>
+            <!-- "Mi újság?" (changelog) belépési pont — minden felhasználónak
+                 látszik, nem admin-specifikus. A pöttyöt a checkUnseenChangelog()
+                 kapcsolja be/ki a CHANGELOG_LATEST_VERSION és a localStorage-ban
+                 (chartolj_seen_changelog_version — tisztán kényelmi, nem fiók/
+                 progressz-adat, ugyanúgy, mint pl. a napi emlékeztető-kapcsoló)
+                 tárolt, utoljára látott verzió összevetésével. -->
+            <button id="profile-changelog-btn" onclick="openChangelogModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-cyan/40 transition">
+                <span class="text-xs font-bold text-white relative">
+                    <i class="fa-solid fa-sparkles text-neon-cyan mr-2"></i>Mi újság?
+                    <span id="profile-changelog-dot" class="hidden absolute -top-1 -right-2.5 w-1.5 h-1.5 rounded-full bg-neon-cyan"></span>
+                </span>
+                <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+            </button>
             <!-- Admin panel belépési pont: KIZÁRÓLAG akkor jelenik meg, ha a
                  bejelentkezett felhasználó email-címe szerepel az
                  ADMIN_EMAIL_ALLOWLIST tömbben (lásd isAdminUser()) — lásd
@@ -16161,7 +16174,6 @@ Mean-reversion,2.5</textarea>
                 <div class="text-xs font-bold text-slate-300 mb-2" data-i18n="profile_language"><i class="fa-solid fa-globe mr-2 text-slate-500"></i>Nyelv</div>
                 <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750">
                     <button id="lang-btn-hu" onclick="setLanguage('hu')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Magyar</button>
-                    <button id="lang-btn-en" onclick="setLanguage('en')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">English</button>
                 </div>
             </div>
             <div class="glass-card rounded-xl p-3">
@@ -16410,8 +16422,11 @@ Mean-reversion,2.5</textarea>
             <i class="fa-solid fa-ranking-star text-sm"></i>
             <span class="text-[9px] font-semibold" data-i18n="nav_progress">Fejlődés</span>
         </button>
-        <button id="navbtn-profile" onclick="switchMobileTab('profile')" class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-slate-500 transition">
-            <i class="fa-solid fa-user text-sm"></i>
+        <button id="navbtn-profile" onclick="switchMobileTab('profile')" class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-slate-500 transition relative">
+            <span class="relative inline-block">
+                <i class="fa-solid fa-user text-sm"></i>
+                <span id="navbtn-profile-changelog-dot" class="hidden absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-neon-cyan ring-2 ring-dark-950"></span>
+            </span>
             <span class="text-[9px] font-semibold" data-i18n="nav_profile">Profil</span>
         </button>
     </nav>
@@ -17027,6 +17042,29 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
+    <!-- ================= "MI ÚJSÁG?" (CHANGELOG) =================
+         Tisztán kliensoldali, statikus CHANGELOG tömbből épül fel (lásd
+         lejjebb a JS kódban) — nincs hozzá RPC/tábla, mert a
+         tartalma nem felhasználói adat, hanem az app saját verziótörténete.
+         A "még nem látott" pöttyöt a checkUnseenChangelog() kapcsolja, a
+         localStorage 'chartolj_seen_changelog_version' kulcs alapján — ez
+         tisztán kényelmi, UI-állapot (melyik verziót látta már valaki),
+         NEM fiók/progressz-adat, ezért nem ütközik a T()/nyelv-választásnál
+         dokumentált, szándékosan szigorúbb szabállyal. -->
+    <div id="changelog-modal" class="hidden fixed inset-0 z-[97] flex items-center justify-center bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] max-h-[85%] flex flex-col p-4">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sparkles text-neon-cyan"></i> Mi újság?
+                </h3>
+                <button onclick="closeChangelogModal()" class="text-slate-400 hover:text-white transition" aria-label="Bezárás">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="changelog-content" class="flex-grow overflow-y-auto space-y-3 pr-1"></div>
+        </div>
+    </div>
+
     <!-- ================= TÖBB-ESZKÖZÖS PORTFÓLIÓ ÁTTEKINTÉS (ÚJ FUNKCIÓ) =================
          Tisztán MEGJELENÍTŐ funkció: a MÁR MEGLÉVŐ, élő `positions` tömbből
          él, eszközönkénti bontásban (összesített kitettség, darabszám,
@@ -17425,35 +17463,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 greeting_day_guest: 'Jó napot!', greeting_day_user: 'Jó napot, {name}!',
                 greeting_evening_guest: 'Jó estét!', greeting_evening_user: 'Jó estét, {name}!'
             },
-            en: {
-                nav_home: 'Home', nav_trade: 'Trade', nav_academy: 'Academy',
-                nav_progress: 'Progress', nav_profile: 'Profile',
-                home_greeting_guest: 'Welcome!', home_greeting_user: 'Welcome, {name}!',
-                home_subtitle: 'Ready for your next practice?',
-                home_progress_label: 'Your progress', home_lessons_suffix: 'lessons',
-                home_quick_actions: 'Quick practice', home_action_trade: 'Demo trade',
-                home_action_academy: 'Learn', home_action_progress: 'Progress',
-                home_market_overview: 'Watchlist', home_market_simulated: '(simulated data)',
-                home_market_demo_label: 'DEMO data',
-                progress_title: 'Your progress', progress_xp: 'XP', progress_coins: 'Coins',
-                progress_lessons: 'Lessons completed', progress_ranks: 'Ranks claimed',
-                progress_ranks_missions: 'Ranks, Quests & Themes', progress_badges: 'Badges',
-                profile_title: 'Profile', profile_guest: 'Guest', profile_no_account: 'Not signed in',
-                profile_login: 'Sign in', profile_login_register: 'Sign in / Register',
-                profile_logout: 'Sign out', profile_premium: 'Chartolj Premium',
-                profile_diagnostics: 'Advanced / Diagnostics', profile_premium_active: 'Premium active',
-                profile_free_plan: 'Free plan', profile_language: 'Language',
-                premium_badge: 'PREMIUM', free_badge: 'FREE',
-                academy_tab_lessons: 'Lessons', academy_tab_gallery: 'Chart Patterns',
-                academy_tab_whatif: 'What If...', academy_tab_drill: 'Chart Drill',
-                academy_tab_replay: 'Replay Simulator', academy_tab_mistakes: 'Mistake Bank',
-                academy_tab_ai_analyzer: 'AI Chart Analyzer', academy_tab_hungarian: 'Hungarian Market',
-                academy_new_badge: 'New',
-                greeting_night_guest: 'Good night!', greeting_night_user: 'Good night, {name}!',
-                greeting_morning_guest: 'Good morning!', greeting_morning_user: 'Good morning, {name}!',
-                greeting_day_guest: 'Good afternoon!', greeting_day_user: 'Good afternoon, {name}!',
-                greeting_evening_guest: 'Good evening!', greeting_evening_user: 'Good evening, {name}!'
-            },
+            // JAVÍTÁS (audit, 2026-11-26): az 'en' nyelvi blokk törölve. Az UI
+            // feliratok le voltak fordítva angolra, DE a tényleges tananyag
+            // (mind az 552 LESSONS_DATA lecke + a GLOSSARY_TERMS szószedet)
+            // kizárólag magyarul létezik — nincs `lang` mező egyiken sem. Ez azt
+            // jelentette, hogy angolra váltva a navigáció angol volt, de a
+            // leckék/kvízek/szószedet magyarul maradtak: félrevezető a
+            // felhasználónak, és problémás lenne egy angol nyelvű Play Store
+            // store-listázásnál is. Amíg a tananyag ténylegesen nincs
+            // lefordítva, nem tartjuk meg a félkész opciót — ha a tananyag
+            // fordítása elkészül, ez a blokk (és a lang-btn-en gomb) egyben
+            // visszaállítható.
         };
 
         // IDEIGLENESEN nem olvasunk/írunk localStorage-ba a nyelvi beállításhoz
@@ -25173,6 +25193,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // gombbal AZONOS útvonalat hívhatja.
         const _escClosableOtherModals = {
             'admin-panel-modal': () => closeAdminPanel(),
+            'changelog-modal': () => closeChangelogModal(),
             'onboarding-tour-overlay': () => endOnboardingTour(),
             'badges-modal': () => closeBadgesPanel(),
             'trade-journal-modal': () => closeTradeJournalDashboard(),
@@ -52831,6 +52852,94 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // vezérli — a tényleges jogosultság-kényszerítés a
         // get_admin_app_stats() szerveroldali SECURITY DEFINER RPC-ben
         // történik (lásd supabase/migrations/018_admin_stats.sql), ami
+        // ================= "MI ÚJSÁG?" (CHANGELOG) =================
+        // Cél: a felhasználó látja, mi változott az appban anélkül, hogy
+        // utána kéne járnia — eddig ilyen út NEM létezett, pedig az app
+        // folyamatosan, aktívan bővül. Szándékosan EGYSZERŰ, statikus
+        // tömb (nem DB-tábla/RPC): az app verziótörténete nem felhasználói
+        // adat, nem kell szinkronizálni eszközök közt, és így admin sem
+        // kell a karbantartásához — egy új bejegyzés = egy új tömb-elem a
+        // kódban, ugyanabban a commit-ban, ami magát a funkciót hozza.
+        // Legújabb elől (a [0]. index a CHANGELOG_LATEST_VERSION alapja).
+        const CHANGELOG = [
+            {
+                version: '2026.11.26',
+                title: 'Feature-bloat takarítás + "Mi újság?"',
+                items: [
+                    'Eltávolítva 5 elavult/redundáns kalkulátor (Pozícióméret, Risk/Reward, Downside Deviation, Opciós Stratégia-vizualizáló, Bitcoin Dominancia) — a Pozícióméret és RR funkciója mostantól élőben, a kereskedési jegyen érhető el.',
+                    'Egyszerűsített ranglista: a Globális és a Barátok lista maradt, a külön "Liga" fül megszűnt.',
+                    'Megszűnt a félkész angol nyelvi opció — amíg a tananyag ténylegesen nincs lefordítva, nem tartjuk meg a félrevezető, csak-UI angolt.',
+                    'Ez a "Mi újság?" panel — mostantól itt látod majd, mi változott, amikor visszatérsz.'
+                ]
+            },
+            {
+                version: '2026.11.20',
+                title: 'Admin panel + Napi/Heti/Havi Veszteséglimit',
+                items: [
+                    'Admin panel: összesített, anonim app-statisztika és felhasználó-keresés (kizárólag a fejlesztő saját fiókjának, szerveroldalon is kikényszerítve).',
+                    'Háromszintű vészleállító: napi, heti és havi veszteséglimit a demó-kereskedésben — ha elérted, az app szünetet javasol.',
+                    'Felhasználói tölcsér (funnel) nézet az Admin panelben: hol esnek ki a felhasználók az onboardingtól az első demó kereskedésig.'
+                ]
+            },
+            {
+                version: '2026.11.07',
+                title: 'PWA: telepíthető app-élmény',
+                items: [
+                    'Az app mostantól telepíthető a telefon kezdőképernyőjére (ikon, saját splash screen, offline-tűrő indítás).',
+                    'Valódi push-értesítések a napi gyakorlás-emlékeztetőhöz, nem csak app-on-belüli jelzés.',
+                    'Gyors app-parancsikonok (hosszú nyomás a kezdőképernyő-ikonon) egyenesen a Kereskedés fülre.'
+                ]
+            }
+        ];
+        const CHANGELOG_LATEST_VERSION = CHANGELOG[0].version;
+
+        function renderChangelogContent() {
+            const el = document.getElementById('changelog-content');
+            if (!el) return;
+            el.innerHTML = CHANGELOG.map((entry, i) => `
+                <div class="${i === 0 ? 'bg-neon-cyan/[0.05] border border-neon-cyan/20' : 'bg-dark-850/40 border border-dark-750'} rounded-xl p-3">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-xs font-bold text-white">${escapeHtml(entry.title)}</span>
+                        <span class="text-[9.5px] font-mono text-slate-500 shrink-0 ml-2">${escapeHtml(entry.version)}</span>
+                    </div>
+                    <ul class="space-y-1">
+                        ${entry.items.map(item => `<li class="text-[11px] text-slate-400 leading-relaxed flex gap-1.5"><span class="text-neon-cyan shrink-0">•</span><span>${escapeHtml(item)}</span></li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+        }
+
+        function openChangelogModal() {
+            renderChangelogContent();
+            document.getElementById('changelog-modal').classList.remove('hidden');
+            markChangelogSeen();
+        }
+        function closeChangelogModal() {
+            document.getElementById('changelog-modal').classList.add('hidden');
+        }
+
+        // Tisztán kényelmi UI-állapot (melyik verziót látta már a felhasználó
+        // EZEN a böngészőn/eszközön) — nem fiók- vagy progressz-adat, ezért
+        // localStorage-ba írása konzisztens a már meglévő, hasonló
+        // kivételekkel (pl. chartolj_daily_reminder, chartolj_watchlist).
+        function markChangelogSeen() {
+            try { localStorage.setItem('chartolj_seen_changelog_version', CHANGELOG_LATEST_VERSION); } catch (e) { /* localStorage nem elérhető — a pötty egyszerűen a következő látogatásig is megmarad, nem súlyos */ }
+            const dot1 = document.getElementById('profile-changelog-dot');
+            const dot2 = document.getElementById('navbtn-profile-changelog-dot');
+            if (dot1) dot1.classList.add('hidden');
+            if (dot2) dot2.classList.add('hidden');
+        }
+
+        function checkUnseenChangelog() {
+            let seen = null;
+            try { seen = localStorage.getItem('chartolj_seen_changelog_version'); } catch (e) { /* ha nem elérhető, inkább mutassuk a pöttyöt, mint hogy elrejtsünk valódi újdonságot */ }
+            const isUnseen = seen !== CHANGELOG_LATEST_VERSION;
+            const dot1 = document.getElementById('profile-changelog-dot');
+            const dot2 = document.getElementById('navbtn-profile-changelog-dot');
+            if (dot1) dot1.classList.toggle('hidden', !isUnseen);
+            if (dot2) dot2.classList.toggle('hidden', !isUnseen);
+        }
+
         // SAJÁT, egymástól FÜGGETLENÜL karbantartott admin-email listával
         // dolgozik. Admin-hozzáférés módosításakor MINDKETTŐT frissíteni
         // kell. Kisbetűsre normalizálva hasonlítunk össze.
@@ -52943,6 +53052,53 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 row('Heti aktív felhasználó (WAU)', (stats.wau ?? 0).toLocaleString('hu-HU'), 'fa-bolt', 'text-neon-green'),
             ].join('') + renderAdminFunnelSection(stats) +
             (stats.generated_at ? `<div class="text-center text-[9.5px] text-slate-600 pt-1">Frissítve: ${new Date(stats.generated_at).toLocaleString('hu-HU')}</div>` : '');
+
+            // Hibanapló (lásd supabase/migrations/020_app_error_log.sql) — KÜLÖN
+            // RPC-hívás, mert önálló tábla/jogosultsági kör, de ugyanabban a
+            // panelben jelenítjük meg, mint a többi admin-statisztikát. Ha ez
+            // elbukik, az nem teszi haszontalanná a fenti statisztikát, ezért
+            // saját, el nem akadó try/catch-ben fut.
+            try {
+                const { data: errLog, error: errLogErr } = await sb.rpc('admin_get_error_log', { p_limit: 20 });
+                out.innerHTML += renderAdminErrorLogSection(errLogErr ? null : errLog, errLogErr ? errLogErr.message : null);
+            } catch (e) {
+                out.innerHTML += renderAdminErrorLogSection(null, (e && e.message) ? e.message : 'A hibanapló-lekérés nem sikerült.');
+            }
+        }
+
+        // A production hibanapló megjelenítése — occurrence_count szerint
+        // csökkenő sorrendben jönnek az RPC-ből, így a leggyakoribb/
+        // legfrissebb hiba van felül. Az üres/hiba eset is kezelve van,
+        // hogy a sandbox-ban (ahol a Supabase sosem érhető el) ne törjön
+        // semmit, csak egy magyarázó szöveget mutasson.
+        function renderAdminErrorLogSection(errors, errorMsg) {
+            if (errorMsg) {
+                return `
+                    <div class="glass-card rounded-lg p-2.5 mt-1">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fa-solid fa-bug mr-1"></i>Production hibanapló</div>
+                        <div class="text-[10px] text-slate-600">Nem sikerült betölteni: ${escapeHtml(errorMsg)}</div>
+                    </div>`;
+            }
+            if (!Array.isArray(errors) || errors.length === 0) {
+                return `
+                    <div class="glass-card rounded-lg p-2.5 mt-1">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fa-solid fa-bug mr-1"></i>Production hibanapló</div>
+                        <div class="text-[10px] text-slate-600">Nincs naplózott kliensoldali hiba.</div>
+                    </div>`;
+            }
+            const rows = errors.map(e => `
+                <div class="py-1.5 border-b border-dark-800 last:border-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10.5px] text-amber-300 font-mono truncate" title="${escapeHtml(e.message)}">${escapeHtml(e.message)}</span>
+                        <span class="text-[10px] font-mono font-bold text-white shrink-0">×${e.occurrence_count}</span>
+                    </div>
+                    <div class="text-[9.5px] text-slate-600 mt-0.5">${escapeHtml(e.page || '')} · ${e.affected_user_count} felhasználó · utoljára: ${new Date(e.last_seen_at).toLocaleString('hu-HU')}</div>
+                </div>`).join('');
+            return `
+                <div class="glass-card rounded-lg p-2.5 mt-1">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fa-solid fa-bug mr-1"></i>Production hibanapló (legutóbbi ${errors.length})</div>
+                    ${rows}
+                </div>`;
         }
 
         // A termék-tölcsér (hány EGYEDI felhasználó érte el az egyes
@@ -53539,14 +53695,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const deleteAccountBtn = document.getElementById('profile-delete-account-btn');
             if (deleteAccountBtn) deleteAccountBtn.classList.toggle('hidden', !currentUser || currentUser.guest);
 
+            // Csak a magyar nyelvi gomb maradt (lásd a TRANSLATIONS fenti
+            // megjegyzését) — egyetlen opció esetén nincs mit aktív/inaktív
+            // állapot közt váltani, a gomb mindig az alap (aktív) stílust kapja.
             const huBtn = document.getElementById('lang-btn-hu');
-            const enBtn = document.getElementById('lang-btn-en');
-            if (huBtn && enBtn) {
-                const activeClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
-                const inactiveClass = 'flex-1 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition';
-                huBtn.className = currentLang === 'hu' ? activeClass : inactiveClass;
-                enBtn.className = currentLang === 'en' ? activeClass : inactiveClass;
-            }
+            if (huBtn) huBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-dark-800 text-white transition';
         }
 
         // ================= VALÓDI RENDSZERÁLLAPOT-DIAGNOSZTIKA =================
@@ -57091,6 +57244,58 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             console.error('Supabase kliens inicializálási hiba:', e.message);
         }
 
+        // ================= PRODUCTION HIBANAPLÓ (kliensoldali JS-hiba jelentés) =================
+        // CÉL: eddig egyetlen módon sem szerzett tudomást a fejlesztő arról, ha
+        // egy éles felhasználónál JS-hiba dobódott — csak akkor, ha panaszkodott.
+        // Lásd supabase/migrations/020_app_error_log.sql a szerveroldali RPC-hez
+        // és a deduplikáció/jogosultság indoklásához.
+        //
+        // KÖLTSÉG/ZAJ-VÉDELEM A KLIENS OLDALON (a szerveroldali védelem mellett,
+        // lásd a migrációt): (1) session-enkénti kemény felső korlát — ha ez
+        // átlépi, néma csendben leáll, nem küld többet; (2) in-memory dedup
+        // (azonos üzenet+fájl+sor kombináció csak EGYSZER jelentve munkamenetenként)
+        // — egy végtelen ciklusban dobódó hiba nem tud több tucat RPC-hívást
+        // generálni; (3) csak VALÓDI JS-hibát jelent (ErrorEvent, window.onerror),
+        // NEM az erőforrás-betöltési hibákat (kép/script 404 stb.), amik a
+        // sandbox hálózat-tiltása miatt amúgy is állandóan dobódnának és
+        // teljesen elárasztanák a naplót hasznos jel nélkül.
+        const MAX_CLIENT_ERROR_REPORTS_PER_SESSION = 20;
+        let clientErrorReportCount = 0;
+        const _reportedClientErrorKeys = new Set();
+        function reportClientError(message, stack, source, lineno, colno) {
+            try {
+                if (!message) return;
+                if (clientErrorReportCount >= MAX_CLIENT_ERROR_REPORTS_PER_SESSION) return;
+                const key = `${message}|${source || ''}|${lineno || ''}|${colno || ''}`;
+                if (_reportedClientErrorKeys.has(key)) return;
+                _reportedClientErrorKeys.add(key);
+                clientErrorReportCount++;
+                if (typeof sb === 'undefined' || !sb || typeof sb.rpc !== 'function') return;
+                const page = (typeof location !== 'undefined' && location.pathname) ? location.pathname + (location.search || '') : null;
+                const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : null;
+                sb.rpc('report_client_error', {
+                    p_message: String(message),
+                    p_stack: stack ? String(stack) : (source ? `${source}:${lineno || '?'}:${colno || '?'}` : null),
+                    p_page: page,
+                    p_user_agent: ua
+                }).catch(() => { /* a hibajelentés hibáját szándékosan nem jelentjük tovább (nincs rekurzió) */ });
+            } catch (e) { /* a hibanapló SOHA nem dobhat tovább hibát — lenyeljük */ }
+        }
+        window.addEventListener('error', (event) => {
+            // Csak a VALÓDI script-hibákat jelentjük (van .message), az
+            // erőforrás-betöltési hibákat (pl. <img>/<script> 404, ami ezen az
+            // eseményen keresztül ugyanúgy "error" típusú, de nincs .message
+            // mezője) szándékosan NEM — azok jellemzően hálózati/CDN zajt
+            // jelentenének, nem a mi kódunkban lévő hibát.
+            if (!event || typeof event.message !== 'string') return;
+            reportClientError(event.message, event.error && event.error.stack, event.filename, event.lineno, event.colno);
+        });
+        window.addEventListener('unhandledrejection', (event) => {
+            const reason = event && event.reason;
+            const message = reason && reason.message ? reason.message : (typeof reason === 'string' ? reason : 'Unhandled promise rejection (nincs üzenet)');
+            reportClientError(message, reason && reason.stack, null, null, null);
+        });
+
         let currentUser = null; // { id, name, email, guest: bool }
 
         function openAuthModal() {
@@ -58508,6 +58713,7 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             document.addEventListener('DOMContentLoaded', updateLeverageDisplay);
             document.addEventListener('DOMContentLoaded', setupMobileScrollHints);
             document.addEventListener('DOMContentLoaded', handlePwaShortcut);
+            document.addEventListener('DOMContentLoaded', checkUnseenChangelog);
         } else {
             initAuthFlow();
             applyTranslations();
@@ -58515,6 +58721,7 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             updateLeverageDisplay();
             setupMobileScrollHints();
             handlePwaShortcut();
+            checkUnseenChangelog();
         }
 
         // ÚJ FUNKCIÓ: PWA app-parancsikonok (hosszú nyomás a telefon

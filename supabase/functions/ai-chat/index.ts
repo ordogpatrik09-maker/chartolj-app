@@ -32,6 +32,25 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
 const FREE_DAILY_CHAT_LIMIT = 15;
+// JAVÍTÁS (self-audit, 2026-11-26): a prémium felhasználóknak EDDIG
+// GYAKORLATILAG NEM VOLT NAPI LIMITJE — az `if (!isPremium)` ág teljesen
+// kihagyta a limit-ellenőrzést prémiumnál. Ez nem egy tudatos "korlátlan
+// AI prémiumban" üzleti döntés dokumentált volt-e valahol, csak annyi,
+// hogy a limit-logika egyszerűen nem vonatkozott rájuk — egy kompromittált
+// vagy megosztott prémium fiók, illetve egy kliensoldali hibás
+// retry-ciklus így elvileg KORLÁTOZATLAN Anthropic API-költséget tudna
+// generálni. Ez a limit bőkezű (napi 300 üzenet messze több, mint amit
+// egy valós felhasználó ténylegesen elküldene), de véges — ez a cél:
+// nem a prémium élményt szűkíteni, hanem egy felső korlátot adni a
+// költség-kitettségnek.
+const PREMIUM_DAILY_CHAT_LIMIT = 300;
+// Rövid "burst" védelem: egy kliensoldali hibás ciklus (pl. egy gomb
+// véletlen, gyors, ismételt lenyomása vagy egy promise-láncolási hiba)
+// másodpercek alatt is sok hívást tudna generálni, amit a NAPI limit
+// önmagában nem akadályozna meg időben. Ez a legfeljebb ennyi hívás az
+// elmúlt 1 percben szabály mindkét (prémium és ingyenes) körre vonatkozik.
+const BURST_WINDOW_SECONDS = 60;
+const BURST_MAX_CALLS = 8;
 const MODEL = 'claude-sonnet-4-6';
 
 const CORS_HEADERS = {
@@ -253,7 +272,35 @@ Deno.serve(async (req: Request) => {
         const notExpired = !sub?.expires_at || new Date(sub.expires_at).getTime() > Date.now();
         const isPremium = !!(sub && (sub.subscription_status === 'active' || sub.subscription_status === 'grace_period') && notExpired);
 
-        if (!isPremium) {
+        // Burst-ellenőrzés — MINDKÉT körre vonatkozik (prémium és ingyenes is),
+        // lásd a BURST_MAX_CALLS fenti megjegyzését. Ez megelőzi a napi
+        // limit ellenőrzését, hogy egy gyors, hibás ciklus ne tudjon a napi
+        // keret kimerítése ELŐTT (ami lassabban, de ugyanúgy védene) rövid
+        // idő alatt sok API-hívást kiváltani.
+        {
+            const burstSince = new Date(Date.now() - BURST_WINDOW_SECONDS * 1000);
+            const { count: burstCount, error: burstErr } = await adminClient
+                .from('ai_chat_usage')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .gte('created_at', burstSince.toISOString());
+            if (burstErr) {
+                console.error('ai_chat_usage burst-számlálási hiba:', burstErr.message);
+                return json({ error: 'A használati limit ellenőrzése sikertelen. Próbáld újra.' }, 500);
+            }
+            if ((burstCount || 0) >= BURST_MAX_CALLS) {
+                return json({
+                    error: 'Túl sok üzenet érkezett rövid idő alatt. Várj egy percet, és próbáld újra.',
+                    limitReached: true,
+                }, 429);
+            }
+        }
+
+        // Napi limit — a prémium-körnek IS van felső korlátja (lásd a
+        // PREMIUM_DAILY_CHAT_LIMIT fenti megjegyzését), csak jóval
+        // bőkezűbb, mint az ingyenesnek.
+        {
+            const dailyLimit = isPremium ? PREMIUM_DAILY_CHAT_LIMIT : FREE_DAILY_CHAT_LIMIT;
             const since = new Date();
             since.setHours(0, 0, 0, 0);
             const { count, error: countErr } = await adminClient
@@ -265,9 +312,11 @@ Deno.serve(async (req: Request) => {
                 console.error('ai_chat_usage count hiba:', countErr.message);
                 return json({ error: 'A használati limit ellenőrzése sikertelen. Próbáld újra.' }, 500);
             }
-            if ((count || 0) >= FREE_DAILY_CHAT_LIMIT) {
+            if ((count || 0) >= dailyLimit) {
                 return json({
-                    error: `Elérted a napi ${FREE_DAILY_CHAT_LIMIT} ingyenes AI-üzenet limitet. Prémiummal korlátlan az AI Coach.`,
+                    error: isPremium
+                        ? `Elérted a napi ${dailyLimit} AI-üzenet biztonsági felső korlátot. Holnap újra elérhető.`
+                        : `Elérted a napi ${dailyLimit} ingyenes AI-üzenet limitet. Prémiummal magasabb a napi keret.`,
                     limitReached: true,
                 }, 429);
             }

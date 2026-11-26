@@ -1,0 +1,53 @@
+name: Verify index.html
+
+# Védőháló minden main-re érkező push/PR ellen — mivel ebbe a repóba
+# több, egymástól független folyamat is commitol, semmi nem garantálta
+# eddig automatikusan, hogy egy törött commit ne kerüljön fel a main-re.
+# Ez a workflow NEM helyettesíti a teljes manuális pipeline-t (Playwright
+# funkcionális tesztek, cold-load sweep) — azokhoz böngésző kellene, amit
+# itt szándékosan nem telepítünk, hogy gyors és ingyenes maradjon minden
+# futás. Amit viszont megad: szintaxis-ellenőrzés és a full_regression.js
+# 8 strukturális/tartalmi ellenőrzése, néhány másodperc alatt, npm install
+# nélkül (a full_regression.js kizárólag Node beépített modulokat használ).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check (inline <script> blocks)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('index.html', 'utf8');
+            const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+            if (scripts.length === 0) { console.error('Nem található <script> blokk — valami nagyon rossz.'); process.exit(1); }
+            let failed = false;
+            scripts.forEach((s, i) => {
+              try { new Function(s); }
+              catch (e) { console.error('SZINTAXIS HIBA a(z) ' + i + '. script blokkban: ' + e.message); failed = true; }
+            });
+            if (failed) process.exit(1);
+            console.log('Szintaxis OK (' + scripts.length + ' script blokk).');
+          "
+
+      - name: Structural regression checks
+        run: node full_regression.js
+
+      - name: Fail the build on any regression check failure
+        if: failure()
+        run: |
+          echo "::error::A full_regression.js vagy a szintaxis-ellenőrzés hibát jelzett. Ez NEM helyettesíti a teljes Playwright-pipeline-t — csak az alap strukturális épséget garantálja."
