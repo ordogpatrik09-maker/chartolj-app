@@ -26738,12 +26738,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // javított eset. A painSum (abszolútértékek összege) sosem
                 // negatív, nem érintett.
                 const netSumSafe = zeroSafeRound(netSum, 2);
+                // JAVÍTÁS (modal_numeric_safety_sweep.js): rendkívül nagy
+                // nagyságrendű (de egyedileg véges, Number.isFinite() által
+                // átengedett), >= ~1e21 abszolútértékű nettó összhozam/
+                // "fájdalom" esetén a natív .toFixed(2) MAGA vált nyers
+                // tudományos jelölésre (pl. "1.72e+21"), mivel a specifikáció
+                // szerint a toFixed() csak 1e21 alatti abszolútértékekre
+                // garantált fix-jelöléses — ugyanaz a hibaosztály, mint a
+                // korábban javított 20+1 kalkulátornál (lásd cf32031 commit),
+                // csak itt a kiváltó ok nem egy köztes/bemenet-echo érték,
+                // hanem maga a végeredmény nagyságrendje. A .toLocaleString()
+                // "decimal" stílusban SOHA nem vált tudományos jelölésre.
                 bodyHtml = `
                     <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                         <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
                         <div class="flex justify-between"><span class="text-slate-400">Nyereséges / veszteséges időszakok:</span><span class="text-white">${winCount} / ${lossCount}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">Nettó összhozam / "Fájdalom":</span><span class="text-white">${netSumSafe.toFixed(2)}% / ${painSum.toFixed(2)}%</span></div>
-                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Gain-to-Pain Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${gpr.toFixed(2)}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Nettó összhozam / "Fájdalom":</span><span class="text-white">${netSumSafe.toLocaleString('en-US', { maximumFractionDigits: 2 })}% / ${painSum.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</span></div>
+                        <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Gain-to-Pain Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${gpr.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span></div>
                     </div>
                 `;
                 verdictHtml = `<p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>`;
