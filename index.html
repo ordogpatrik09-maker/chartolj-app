@@ -1442,6 +1442,94 @@
         .pnl-negative { color: var(--red); }
         @keyframes pnlPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
         .pnl-updated { animation: pnlPulse 0.4s ease; }
+
+        /* ================= AI AVATAR (felolvasás közbeni vizuális kísérő) =================
+           Egy saját, stilizált neon-drótváz "AI fej" — tisztán CSS-sel rajzolva,
+           semmilyen külső kép/aszt nem használ. Csak akkor jelenik meg, amikor
+           TÉNYLEGESEN folyik egy felolvasás (bármelyik forrásból: lecke-kártya,
+           Hangos tanulás automata lánc, vagy AI-coach üzenet) — máskor rejtve. */
+        #ai-avatar-widget {
+            position: fixed;
+            left: 50%;
+            bottom: 92px;
+            transform: translateX(-50%) scale(0.85);
+            z-index: 95;
+            width: 72px;
+            height: 72px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        #ai-avatar-widget.speaking {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+        .ai-avatar-glow {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(34,211,238,0.35) 0%, rgba(34,211,238,0) 70%);
+            animation: aiAvatarGlowPulse 1.6s ease-in-out infinite;
+        }
+        @keyframes aiAvatarGlowPulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+        .ai-avatar-head {
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(34,211,238,0.85);
+            background: radial-gradient(circle at 35% 30%, rgba(34,211,238,0.18), rgba(8,15,20,0.9) 70%);
+            box-shadow: 0 0 14px rgba(34,211,238,0.55), inset 0 0 10px rgba(34,211,238,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ai-avatar-head::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            background-image:
+                linear-gradient(rgba(34,211,238,0.25) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34,211,238,0.25) 1px, transparent 1px);
+            background-size: 7px 7px;
+            -webkit-mask-image: radial-gradient(circle, #000 60%, transparent 100%);
+            mask-image: radial-gradient(circle, #000 60%, transparent 100%);
+            opacity: 0.6;
+        }
+        .ai-avatar-eyes { display: flex; gap: 10px; margin-bottom: 10px; z-index: 1; }
+        .ai-avatar-eyes span {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: #67e8f9;
+            box-shadow: 0 0 6px #22d3ee;
+            animation: aiAvatarBlink 3.2s ease-in-out infinite;
+        }
+        @keyframes aiAvatarBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.15); } }
+        .ai-avatar-mouth {
+            position: absolute;
+            bottom: 18px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 10px;
+            z-index: 1;
+        }
+        .ai-avatar-mouth span {
+            width: 3px;
+            border-radius: 2px;
+            background: #22d3ee;
+            box-shadow: 0 0 5px #22d3ee;
+            height: 3px;
+            transition: height 0.12s ease;
+        }
+        #ai-avatar-widget.speaking .ai-avatar-mouth span {
+            animation: aiAvatarTalk 0.9s ease-in-out infinite;
+        }
+        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(1) { animation-delay: 0s; }
+        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(2) { animation-delay: 0.15s; }
+        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(3) { animation-delay: 0.3s; }
+        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(4) { animation-delay: 0.15s; }
+        #ai-avatar-widget.speaking .ai-avatar-mouth span:nth-child(5) { animation-delay: 0s; }
+        @keyframes aiAvatarTalk { 0%, 100% { height: 3px; } 50% { height: 10px; } }
 </style>
 </head>
 <body class="antialiased">
@@ -17183,6 +17271,18 @@ Mean-reversion,2.5</textarea>
             <p class="text-[10px] text-slate-400 mb-3 shrink-0">Visszamenőleg lejátssza a lezárt pozícióidat egy MÁSIK pozícióméret-szorzóval — így láthatod, mekkora különbséget jelentett volna, ha nagyobb vagy kisebb tételekkel kereskedtél volna ugyanazokon a trade-eken.</p>
             <div id="whatif-multiplier-buttons" class="grid grid-cols-5 gap-1.5 mb-3 shrink-0"></div>
             <div id="whatif-result" role="status" aria-live="polite" class="flex-grow overflow-y-auto font-mono text-xs space-y-2 pr-1"></div>
+        </div>
+    </div>
+
+    <!-- AI avatar — tisztán CSS-sel rajzolt, stilizált neon-drótváz "fej", ami
+         csak felolvasás közben jelenik meg (lásd aiAvatarSetSpeaking()). Nem
+         akadályozza a kattintásokat (pointer-events: none), nincs alatta
+         semmilyen külső képfájl. -->
+    <div id="ai-avatar-widget" aria-hidden="true">
+        <div class="ai-avatar-glow"></div>
+        <div class="ai-avatar-head">
+            <div class="ai-avatar-eyes"><span></span><span></span></div>
+            <div class="ai-avatar-mouth"><span></span><span></span><span></span><span></span><span></span></div>
         </div>
     </div>
 
@@ -47819,6 +47919,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 btn.innerHTML = speaking ? '<i class="fa-solid fa-stop"></i>' : '<i class="fa-solid fa-volume-high"></i>';
                 btn.setAttribute('aria-label', speaking ? 'Felolvasás leállítása' : 'Felolvasás indítása');
             });
+            aiAvatarSetSpeaking(speaking);
+        }
+
+        // Az AI-avatar csak akkor "beszél", ha VAN aktív felolvasás — mivel a
+        // ttsSpeak() minden induláskor előbb a RÉGI kulcsot állítja false-ra,
+        // majd az ÚJAT true-ra (ugyanabban a szinkron hívásban), a végállapot
+        // mindig helyesen tükrözi, fut-e éppen bármilyen felolvasás.
+        function aiAvatarSetSpeaking(speaking) {
+            const el = document.getElementById('ai-avatar-widget');
+            if (!el) return;
+            if (speaking) { el.classList.add('speaking'); }
+            else { el.classList.remove('speaking'); }
         }
 
         // Alacsony szintű felolvasás-indító — MINDIG elindítja (nem toggle),
@@ -47853,8 +47965,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // hogy ne induljon újra váratlanul a háttérben.
         function toggleSpeak(key, rawHtmlOrText) {
             if (!ttsSupported) return;
-            const wasSpeaking = (ttsCurrentKey === key) && window.speechSynthesis.speaking;
-            if (wasSpeaking) {
+            // SZÁNDÉKOSAN a saját, magunk kezelt ttsCurrentKey állapotra
+            // támaszkodunk a böngésző window.speechSynthesis.speaking flag-je
+            // HELYETT — az utóbbi egyes böngészőkön/eszközökön megbízhatatlanul,
+            // késve vált igazra (vagy sosem), ami miatt egy második kattintás
+            // tévesen újraindította volna a felolvasást leállítás helyett.
+            if (ttsCurrentKey === key) {
                 window.speechSynthesis.cancel();
                 ttsUpdateButtonIcon(key, false);
                 ttsCurrentKey = null;
