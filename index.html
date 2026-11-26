@@ -47784,6 +47784,69 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
+        // =================================================================
+        // Ingyenes felolvasás (TTS) — a böngésző saját speechSynthesis API-ja.
+        // Nincs szerveroldali hívás, nincs extra költség; ha a böngésző nem
+        // támogatja, a hívó oldal egyszerűen nem jelenít meg felolvasás-gombot.
+        // =================================================================
+        const ttsSupported = (typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined');
+        let ttsCurrentKey = null;
+        let ttsVoicesCache = null;
+
+        function ttsPickHungarianVoice() {
+            if (!ttsSupported) return null;
+            try {
+                const voices = ttsVoicesCache || window.speechSynthesis.getVoices();
+                if (!voices || voices.length === 0) return null;
+                ttsVoicesCache = voices;
+                return voices.find(v => /^hu/i.test(v.lang)) || null;
+            } catch (e) { return null; }
+        }
+
+        // HTML-ből sima, felolvasható szöveg (tag-ek eltávolítva, entitások feloldva).
+        function ttsStripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = String(html == null ? '' : html);
+            return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function ttsUpdateButtonIcon(key, speaking) {
+            document.querySelectorAll('[data-tts-key="' + CSS.escape(key) + '"]').forEach(btn => {
+                btn.innerHTML = speaking ? '<i class="fa-solid fa-stop"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+                btn.setAttribute('aria-label', speaking ? 'Felolvasás leállítása' : 'Felolvasás indítása');
+            });
+        }
+
+        // key: egyedi azonosító (pl. "lesson-3-card-0", "coach-msg-5") — ez dönti el,
+        // melyik gomb(ok) ikonját kell játék/stop állapotra váltani, és hogy egy
+        // újbóli kattintás ugyanarra a szövegre leállítást jelent-e.
+        function toggleSpeak(key, rawHtmlOrText) {
+            if (!ttsSupported) return;
+            const wasSpeaking = (ttsCurrentKey === key) && window.speechSynthesis.speaking;
+            window.speechSynthesis.cancel();
+            if (ttsCurrentKey) ttsUpdateButtonIcon(ttsCurrentKey, false);
+            if (wasSpeaking) { ttsCurrentKey = null; return; }
+
+            const text = ttsStripHtml(rawHtmlOrText);
+            if (!text) return;
+
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'hu-HU';
+            const voice = ttsPickHungarianVoice();
+            if (voice) utter.voice = voice;
+            utter.rate = 1.0;
+            utter.onend = () => { if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); } };
+            utter.onerror = () => { if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); } };
+
+            ttsCurrentKey = key;
+            ttsUpdateButtonIcon(key, true);
+            window.speechSynthesis.speak(utter);
+        }
+
+        if (ttsSupported && typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
+            window.speechSynthesis.onvoiceschanged = () => { ttsVoicesCache = window.speechSynthesis.getVoices(); };
+        }
+
         // A szerver válasza is megbízhatatlan külső adat: mezőnként ellenőrizzük (kliens-oldali második védvonal).
         function sanitizeCoach(obj) {
             if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
@@ -54821,7 +54884,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div class="h-full bg-${accent} transition-all" style="width:${(academyCardIdx + 1) / l.cards.length * 100}%"></div>
                         </div>
                         <div class="glass-card rounded-2xl p-6 border border-dark-750 min-h-[220px]">
-                            <h3 class="text-base font-bold text-white mb-3">${card.t}</h3>
+                            <div class="flex items-center justify-between mb-3 gap-2">
+                                <h3 class="text-base font-bold text-white">${card.t}</h3>
+                                ${ttsSupported ? `<button type="button" data-tts-key="lesson-${academyLessonIdx}-card-${academyCardIdx}" onclick="event.stopPropagation(); toggleSpeak('lesson-${academyLessonIdx}-card-${academyCardIdx}', ${escapeHtml(JSON.stringify((card.t ? card.t + '. ' : '') + card.b))})" class="shrink-0 w-8 h-8 rounded-lg border border-dark-700 text-slate-400 hover:text-neon-cyan hover:border-neon-cyan/40 transition flex items-center justify-center" aria-label="Felolvasás indítása"><i class="fa-solid fa-volume-high"></i></button>` : ''}
+                            </div>
                             <div class="text-sm text-slate-300 leading-relaxed academy-card-body" role="button" tabindex="0" aria-label="Következő kártya" onclick="academyNextCard()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();academyNextCard();}" style="cursor:pointer"><div class="flex gap-1.5 mb-3 flex-wrap">${ACADEMY_MODULES[l.m] ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-'+ACADEMY_MODULES[l.m].accent+'/15 border border-'+ACADEMY_MODULES[l.m].accent+'/30 text-'+ACADEMY_MODULES[l.m].accent+'"><i class="fa-solid '+ACADEMY_MODULES[l.m].i+' mr-1"></i>'+ACADEMY_MODULES[l.m].n+'</span>' : ''}</div>${card.b}<div class="text-[10px] text-slate-600 text-right mt-2 select-none">Koppints a következőhöz →</div></div>
                         </div>
                         <div class="academy-nav-row flex items-center justify-between mt-6">
@@ -57000,12 +57066,19 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
                 return;
             }
 
-            el.innerHTML = aiChatHistory.map(m => {
+            el.innerHTML = aiChatHistory.map((m, i) => {
                 const isUser = m.role === 'user';
+                const ttsKey = 'coach-msg-' + i;
+                const ttsBtn = (!isUser && ttsSupported)
+                    ? `<button type="button" data-tts-key="${ttsKey}" onclick="toggleSpeak('${ttsKey}', ${escapeHtml(JSON.stringify(m.content))})" class="mt-1 text-[10px] text-slate-500 hover:text-neon-cyan transition flex items-center gap-1" aria-label="Felolvasás indítása"><i class="fa-solid fa-volume-high"></i> Felolvasás</button>`
+                    : '';
                 return `
                     <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
-                        <div class="max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${isUser ? 'bg-neon-cyan text-dark-950 font-medium' : 'bg-dark-850 border border-dark-750 text-slate-200'}">
-                            ${escapeHtml(m.content).replace(/\n/g, '<br>')}
+                        <div class="max-w-[85%] flex flex-col ${isUser ? 'items-end' : 'items-start'}">
+                            <div class="px-3 py-2 rounded-2xl text-xs leading-relaxed ${isUser ? 'bg-neon-cyan text-dark-950 font-medium' : 'bg-dark-850 border border-dark-750 text-slate-200'}">
+                                ${escapeHtml(m.content).replace(/\n/g, '<br>')}
+                            </div>
+                            ${ttsBtn}
                         </div>
                     </div>
                 `;
