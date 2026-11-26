@@ -49449,6 +49449,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // anélkül, hogy a felhasználó egyáltalán látta volna a kérdést.
             if (mode !== 'replay') clearInterval(replayAutoPlayInterval);
             if (mode !== 'drill') clearInterval(drillTimerInterval);
+            // JAVÍTÁS: ugyanaz a hibaosztály, mint a fenti Drill/Replay
+            // időzítőknél — ha a felhasználó Akadémián BELÜL vált másik fülre
+            // (pl. Szószedet, Drill) egy aktív "Hangos tanulás" automata
+            // felolvasás/lapozás KÖZBEN, a lánc eddig NEM állt le, mert
+            // sem ez a függvény, sem az openAcademyLesson() nem hívta az
+            // academyStopAutoplayIfRunning()-ot — a felolvasás a háttérben
+            // tovább futott, és a végén az automata lapozás a (már nem is
+            // látható) lecke-kártyák között folytatódott volna.
+            if (mode !== 'lessons') academyStopAutoplayIfRunning();
 
             if (mode === 'gallery') renderChartStrategiesList();
             if (mode === 'whatif') renderWhatIfList();
@@ -52775,6 +52784,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // részletesebb indoklást ugyanerről az elvről.
                 clearInterval(drillTimerInterval);
                 clearInterval(replayAutoPlayInterval);
+                // JAVÍTÁS: ugyanide tartozik a "Hangos tanulás" automata
+                // felolvasás/lapozás is (lásd a setAcademyMode()-beli, illetve az
+                // openAcademyLesson()-beli azonos javítást) — eddig erről a fülről
+                // (pl. Home/Trade/Progress/Profil) elnavigálva a felolvasás és az
+                // automata lapozási lánc némán tovább futott a háttérben, miközben
+                // a felhasználó már egy teljesen más képernyőt nézett.
+                academyStopAutoplayIfRunning();
             }
 
             ['home', 'trade', 'academy', 'progress', 'profile'].forEach(t => {
@@ -55023,6 +55039,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function openAcademyLesson(idx) {
+            // JAVÍTÁS: ha a "Hangos tanulás" automata felolvasás/lapozás fut egy
+            // MÁSIK leckén (pl. a felhasználó a lecke-listából — desktopon a
+            // viewer melletti, mobilon a "Vissza"-n túl is elérhető — egy új
+            // leckére kattint, miközben az előző lecke még felolvasás alatt
+            // van), az academyStopAutoplayIfRunning() hívása NÉLKÜL az academyLessonIdx
+            // és academyCardIdx lentebbi felülírása azt eredményezné, hogy az
+            // még lejátszás alatt álló felolvasás onend-je az academySpeakCurrentCardChain()
+            // automata láncát az ÚJ leckén folytatná tovább (academyAutoplayTTS
+            // értéke itt korábban nem állt vissza false-ra) — a felhasználó
+            // akarata ellenére, váratlanul felolvasva/tovalapozva az új leckét.
+            academyStopAutoplayIfRunning();
             const _av2 = document.getElementById("academy-viewer"); if (_av2) _av2.scrollTop = 0;
             const lesson = LESSONS_DATA[idx];
             if (isLessonLocked(lesson)) {
