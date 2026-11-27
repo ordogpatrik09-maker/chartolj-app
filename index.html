@@ -1542,6 +1542,29 @@
            wildersmooth, pathdep, histvolatr, hma, trailingstop, vp,
            klinger, volumedelta) eredmény-sorain alkalmazva. */
         .num-wrap-safe { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
+        /* STRUKTURÁLIS KIEGÉSZÍTÉS (320px keskeny-viewport sweep): a fenti
+           ".num-wrap-safe" osztályt eddig mindig KÉZZEL, egyenként kellett
+           ráragasztani az adott kalkulátor érintett eredmény-span-jaira,
+           minden körben csak azokra, amiket épp az adott sweep (420px)
+           szélességnél talált meg. Egy újabb, 320px-es (pl. iPhone SE)
+           viewporton futtatott overflow-sweep kör 39 TOVÁBBI eszköz-modalt
+           talált (sortino, vwap, avwap, omega, gaintopain, certeq, betasize,
+           volscale, donchian, donchianwidth, stb.) — ugyanaz a hibaosztály
+           (szélsőséges, de véges nagyságrendű bemenetnél a formázott szám
+           kilóg a "Címke: Érték" eredmény-sorból), csak keskenyebb
+           viewporton jelentkezik. Ahelyett, hogy ismét egyenként kellene
+           több tucat <span>-re felvenni az osztályt (és a jövőben minden
+           ÚJ kalkulátornál megint csak akkor derülne ki, ha valaki pont
+           320px-en futtatja a sweepet), ez a szabály STRUKTURÁLISAN,
+           minden jelenlegi ÉS jövőbeli "-result" végű id-jű konténeren
+           belüli ".flex.justify-between" eredmény-sor utolsó (érték-)
+           span-jára ráteszi ugyanazt a 3 tulajdonságot. Rövid, normál
+           eredményeknél (a túlnyomó többség) vizuálisan semmit nem
+           változtat — csak akkor lép életbe, ha a tartalom amúgy nem férne
+           ki. A kézzel felvett ".num-wrap-safe" osztály a korábbi
+           kalkulátorokon marad (redundáns, de ártalmatlan duplikáció). */
+        [id$="-result"] .flex.justify-between > span:last-child,
+        [id$="-result"] .text-xl.font-extrabold { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
 </style>
 </head>
 <body class="antialiased">
@@ -11461,7 +11484,7 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
 90.32
 90.61</textarea>
 
-            <div class="grid grid-cols-3 gap-2 mb-4">
+            <div class="grid grid-cols-2 gap-2 mb-2">
                 <div>
                     <label class="text-[11px] font-semibold text-slate-400" for="mtfrsi-period">RSI periódus</label>
                     <input type="number" inputmode="decimal" id="mtfrsi-period" value="14" step="1" min="2" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
@@ -11470,12 +11493,21 @@ Arany: -0.5,1.0,-0.9,0.4,-1.2,0.8,-0.3,1.3,-1.9,-2.3,-1.6,-2.8,-2.0,-2.6,-1.3,-3
                     <label class="text-[11px] font-semibold text-slate-400" for="mtfrsi-aggregation">Aggregáció (N)</label>
                     <input type="number" inputmode="decimal" id="mtfrsi-aggregation" value="4" step="1" min="2" max="20" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-sky-400/50">
                 </div>
-                <div>
-                    <label class="text-[11px] font-semibold text-slate-400">OS / OB küszöb</label>
-                    <div class="flex gap-1 mt-1">
-                        <input type="number" inputmode="decimal" id="mtfrsi-oversold" value="30" step="1" min="1" max="99" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50" aria-label="Túladott (oversold) küszöb">
-                        <input type="number" inputmode="decimal" id="mtfrsi-overbought" value="70" step="1" min="1" max="99" class="w-1/2 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50" aria-label="Túlvett (overbought) küszöb">
-                    </div>
+            </div>
+            <div class="mb-4">
+                <!-- JAVÍTÁS (320px keskeny-viewport overflow-sweep): korábban ez a
+                     két mező egy grid-cols-3 rács harmadik, szintén 1/3-os
+                     oszlopába volt beágyazva (col-span-3-at igényelt volna, de az
+                     a statikus Tailwind-buildben nincs lefordítva — lásd
+                     build-tools/README.md), ami 320px-es viewporton (pl. iPhone
+                     SE) túl keskennyé tette mindkét number input mezőt a saját
+                     léptető (spinner) UI-jukhoz képest. Önálló, teljes szélességű
+                     blokként a két mező fejenként kb. a modal-szélesség felét
+                     kapja — bőven elég hely. -->
+                <label class="text-[11px] font-semibold text-slate-400">OS / OB küszöb</label>
+                <div class="flex gap-1 mt-1">
+                    <input type="number" inputmode="decimal" id="mtfrsi-oversold" value="30" step="1" min="1" max="99" class="w-1/2 min-w-0 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50" aria-label="Túladott (oversold) küszöb">
+                    <input type="number" inputmode="decimal" id="mtfrsi-overbought" value="70" step="1" min="1" max="99" class="w-1/2 min-w-0 bg-dark-850 border border-dark-750 rounded-xl px-2 py-2 font-mono text-[11px] text-white focus:outline-none focus:border-sky-400/50" aria-label="Túlvett (overbought) küszöb">
                 </div>
             </div>
 
