@@ -27,7 +27,7 @@
 //   törli a régi verziójú cache-eket, hogy ne halmozódjon a tárhely.
 // =====================================================================
 
-const CACHE_NAME = 'chartolj-shell-v1';
+const CACHE_NAME = 'chartolj-shell-v2';
 const SHELL_ASSETS = [
     './',
     './index.html',
@@ -35,6 +35,7 @@ const SHELL_ASSETS = [
     './icon-192.png',
     './icon-512.png',
     './icon-maskable-512.png',
+    './assets/tutor-head.jpg',
 ];
 
 self.addEventListener('install', (event) => {

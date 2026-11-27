@@ -48999,6 +48999,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             ['📈', 'Chart Alakzatok', 'alakzat minta fej váll háromszög galéria', AC('gallery')], ['📅', 'Makronaptár', 'makro naptár fed ekb kamat esemény infláció', AC('calendar')],
             ['🏳️', 'Magyar Piac', 'magyar piac bux otp mol', AC('hungarian')],
             ['🎯', 'Szintfelmérő', 'szintfelmérő teszt honnan kezdjek', `switchMobileTab('academy'); setTimeout(startPlacementTest, 60)`],
+            ['🗓️', 'Heti terved', 'heti terv tanulási terv ütemterv', `switchMobileTab('academy'); setTimeout(openWeeklyPlan, 60)`],
+            ['🎯', 'Tanulási cél', 'cél határidő célkitűzés', `switchMobileTab('academy'); setTimeout(openLearningGoal, 60)`],
+            ['🃏', 'Szókártyák', 'szókártya flashcard szószedet ismétlés fogalom', `switchMobileTab('academy'); setTimeout(startFlashcards, 60)`],
             ['📝', 'Modulvizsga', 'vizsga modul oklevél kitüntetés', `switchMobileTab('academy'); setTimeout(function(){ startModuleExam(academyModule); }, 60)`],
             ['🤖', 'AI Coach chat', 'ai chat coach kérdés tanár', `toggleAiChat()`],
             ['💱', 'Kereskedési panel', 'kereskedés vétel eladás long short pozíció nyitás megbízás', TR('openOrderSheetMobile()')],
@@ -56714,7 +56717,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function tutorAskBoxHtml() {
             const qa = tutorQA && tutorQA.key === tutorCardKey() ? tutorQA : null;
             return `<div class="mt-5 rounded-xl border border-dark-750 bg-dark-900/70 p-3" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">
-                <div class="text-[11px] font-bold text-slate-300 mb-2"><i class="fa-solid fa-comments text-neon-cyan mr-1.5"></i>Kérdezz a tanártól erről a kártyáról</div>
+                <div class="flex items-center justify-between gap-2 mb-2"><div class="text-[11px] font-bold text-slate-300"><i class="fa-solid fa-comments text-neon-cyan mr-1.5"></i>Kérdezz a tanártól erről a kártyáról</div>
+                    <button type="button" onclick="tutorAsk('Magyarázd el ezt nagyon egyszerűen, mintha 10 éves lennék, egy hétköznapi példával.')" class="shrink-0 px-2 py-1 rounded-md border border-amber-400/40 text-amber-300 text-[10px] font-bold">🧒 Egyszerűbben</button></div>
+                ${(ttsSupported && sttSupported) ? `<label class="flex items-center gap-2 text-[10.5px] text-slate-400 mb-2 cursor-pointer"><input type="checkbox" ${academyConversational ? 'checked' : ''} onchange="toggleConversationalMode()" class="accent-cyan-400"> 💬 Beszélgetős mód: Hangos tanulás közben minden kártya után megkérdezem, van-e kérdésed</label>` : ''}
                 <div class="flex gap-2">
                     <input id="tutor-ask-input" type="text" maxlength="300" placeholder="Pl. mi a különbség a stop és a limit között?" aria-label="Kérdés a tanárnak" onkeydown="if(event.key==='Enter'){event.preventDefault();tutorAsk();}" class="flex-1 min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
                     ${sttSupported ? `<button type="button" onclick="tutorAskByVoice()" class="w-9 rounded-lg border border-dark-750 text-slate-300 hover:text-neon-cyan" aria-label="Kérdés hangosan"><i class="fa-solid fa-microphone text-xs"></i></button>` : ''}
@@ -56729,7 +56734,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             el.classList.remove('hidden');
             el.innerHTML = tutorAnswerInner(tutorQA);
         }
-        async function tutorAsk(textOverride) {
+        async function tutorAsk(textOverride, onSpokenEnd) {
             const inp = document.getElementById('tutor-ask-input');
             const q = String(textOverride || (inp && inp.value) || '').trim().slice(0, 300);
             if (!q || academyLessonIdx === null || academyStage !== 'cards') return;
@@ -56738,7 +56743,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const key = tutorCardKey();
             tutorQA = { key, q, a: '', loading: true };
             tutorRefreshAnswer();
-            if (ttsSupported) ttsStopAll();
+            if (ttsSupported && !onSpokenEnd) ttsStopAll();
             const cardText = ttsStripHtml((card.t ? card.t + '. ' : '') + card.b).slice(0, 1500);
             const prompt = 'Egy magyar nyelvű kereskedés-oktató app türelmes tanára vagy. A tanuló a(z) „' + l.t + '” leckében ezt a kártyát olvassa:\n«' + cardText + '»\n\nA kérdése: ' + q +
                 '\n\nVálaszolj magyarul, röviden (legfeljebb 5 mondat), a kártya tartalmára építve, egy egyszerű példával, ha segít. Ne adj konkrét befektetési tanácsot.';
@@ -56749,7 +56754,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!tutorQA || tutorQA.key !== key) return; // közben lapozott
             tutorQA = { key, q, a: String(reply).slice(0, 3000), loading: false };
             tutorRefreshAnswer();
-            if (ttsSupported) ttsSpeak('tutor-answer-' + key, tutorQA.a, null);
+            if (ttsSupported) ttsSpeak('tutor-answer-' + key, tutorQA.a, onSpokenEnd || null);
+            else if (onSpokenEnd) onSpokenEnd();
         }
         function tutorAskByVoice() {
             if (!sttSupported) return;
@@ -56866,6 +56872,135 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             });
         }
 
+        // ================= TANULÁSI CÉL (határidővel) =================
+        function getLearningGoal() { try { const g = JSON.parse(localStorage.getItem('chartolj_goal') || 'null'); return g && ACADEMY_MODULES[g.mi] && /^\d{4}-\d{2}-\d{2}$/.test(g.date) ? g : null; } catch (e) { return null; } }
+        function learningGoalStats(g) {
+            const idx = LESSONS_DATA.reduce((a, l, i) => { if (l.m === g.mi && !isLessonLocked(l)) a.push(i); return a; }, []);
+            const left = idx.filter(i => !academyCompleted.has(i)).length;
+            const days = Math.max(1, daysBetweenKeys(todayKey(), g.date) + 1);
+            return { total: idx.length, left, days, perDay: Math.ceil(left / days), overdue: daysBetweenKeys(todayKey(), g.date) < 0 };
+        }
+        function learningGoalLine() {
+            const g = getLearningGoal(); if (!g) return '';
+            const st = learningGoalStats(g);
+            if (!st.left) return 'Cél teljesítve ✓';
+            return st.overdue ? 'Cél lejárt — állíts újat' : `Cél: ${st.perDay} lecke/nap`;
+        }
+        function openLearningGoal() {
+            const g = getLearningGoal();
+            const def = new Date(Date.now() + 30 * 86400000); const defKey = def.getFullYear() + '-' + String(def.getMonth() + 1).padStart(2, '0') + '-' + String(def.getDate()).padStart(2, '0');
+            const st = g ? learningGoalStats(g) : null;
+            document.getElementById('mini-quiz-title').textContent = '🎯 Tanulási cél';
+            document.getElementById('mini-quiz-body').innerHTML = `
+                ${st ? `<div class="rounded-xl bg-dark-900 border border-dark-750 p-3 mb-3 text-[12px] text-slate-300"><strong class="text-white">${escapeHtml(ACADEMY_MODULES[g.mi].n)}</strong> — ${g.date.replace(/-/g, '. ')}.<br>${st.left ? `Még <strong class="text-neon-cyan">${st.left}</strong> lecke, ${st.days} nap → <strong class="text-amber-300">${st.perDay} lecke/nap</strong>` : '<span class="text-neon-green font-bold">Teljesítve! 🎉</span>'}</div>` : ''}
+                <label class="block text-[11px] text-slate-400 mb-1" for="goal-module">Melyik modult akarod befejezni?</label>
+                <select id="goal-module" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-xs text-white mb-3">${ACADEMY_MODULES.map((m, i) => `<option value="${i}" ${(g ? g.mi : academyModule) === i ? 'selected' : ''}>${escapeHtml(m.n)}</option>`).join('')}</select>
+                <label class="block text-[11px] text-slate-400 mb-1" for="goal-date">Határidő</label>
+                <input id="goal-date" type="date" min="${todayKey()}" value="${g ? g.date : defKey}" class="w-full bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-xs text-white mb-4">
+                <div class="flex gap-2">${g ? `<button type="button" onclick="try{localStorage.removeItem('chartolj_goal')}catch(e){}; miniQuizClose(); renderAcademyLessonList(); showNotification('Cél törölve.')" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-dark-750 text-slate-300">Törlés</button>` : ''}
+                <button type="button" onclick="saveLearningGoal()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Mentés</button></div>`;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+        }
+        function saveLearningGoal() {
+            const mi = parseInt(document.getElementById('goal-module').value, 10), date = document.getElementById('goal-date').value;
+            if (!ACADEMY_MODULES[mi] || !/^\d{4}-\d{2}-\d{2}$/.test(date) || daysBetweenKeys(todayKey(), date) < 0) { showNotification('Adj meg egy mai vagy későbbi dátumot.'); return; }
+            try { localStorage.setItem('chartolj_goal', JSON.stringify({ mi, date })); } catch (e) {}
+            miniQuizClose(); renderAcademyLessonList();
+            const st = learningGoalStats({ mi, date });
+            showNotification(`🎯 Cél mentve: napi ${st.perDay} lecke.`);
+        }
+
+        // ================= SZEMÉLYRE SZABOTT HETI TERV =================
+        // A szintfelmérő, a hibabank (modulonként), a befejezettség és a cél
+        // alapján 7 napra bontott terv. Csak javaslat — semmit nem módosít.
+        function buildWeeklyPlan() {
+            const mods = ACADEMY_MODULES.map((m, mi) => {
+                const idx = LESSONS_DATA.reduce((a, l, i) => { if (l.m === mi && !isLessonLocked(l)) a.push(i); return a; }, []);
+                const left = idx.filter(i => !academyCompleted.has(i));
+                let mistakes = 0; academyMistakes.forEach(k => { const li = parseInt(String(k).split(':')[0], 10); if (LESSONS_DATA[li] && LESSONS_DATA[li].m === mi) mistakes++; });
+                return { mi, left, mistakes, total: idx.length };
+            });
+            let placement = null; try { placement = JSON.parse(localStorage.getItem('chartolj_placement') || 'null'); } catch (e) {}
+            const goal = getLearningGoal();
+            const score = m => (goal && goal.mi === m.mi ? 1000 : 0) + (placement && placement.rec === m.mi ? 200 : 0) + m.mistakes * 10 + (m.left.length && m.left.length < m.total ? 50 : 0) - m.mi;
+            const queue = mods.filter(m => m.left.length).sort((a, b) => score(b) - score(a));
+            const perDay = goal ? Math.max(1, Math.min(3, learningGoalStats(goal).perDay)) : 1;
+            const due = getDueMistakeKeys().length;
+            const names = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat', 'Vasárnap'];
+            const start = new Date(); const days = [];
+            const lessonsPool = []; queue.forEach(m => m.left.forEach(i => lessonsPool.push(i)));
+            let p = 0;
+            for (let d = 0; d < 7; d++) {
+                const dt = new Date(start.getTime() + d * 86400000);
+                const items = [];
+                for (let k = 0; k < perDay && p < lessonsPool.length; k++, p++) items.push('📖 ' + LESSONS_DATA[lessonsPool[p]].t);
+                if (d === 0 && due) items.push(`🔄 ${due} esedékes ismétlés`);
+                else if (d % 2 === 1) items.push('⚡ 1 Chart Drill kör');
+                if (d % 3 === 2) items.push('🃏 10 szókártya');
+                if (d === 5) items.push('🏆 Heti kihívás a Replay-ben');
+                days.push({ label: d === 0 ? 'Ma' : names[(dt.getDay() + 6) % 7], items });
+            }
+            const focus = queue[0] ? ACADEMY_MODULES[queue[0].mi].n : null;
+            return { days, focus, why: goal ? 'a célod' : (placement ? 'a szintfelmérőd' : (queue[0] && queue[0].mistakes ? 'a hibáid' : 'a haladásod')) };
+        }
+        function openWeeklyPlan() {
+            const plan = buildWeeklyPlan();
+            document.getElementById('mini-quiz-title').textContent = '🗓️ A heti terved';
+            document.getElementById('mini-quiz-body').innerHTML = `
+                <p class="text-[11px] text-slate-400 mb-3">${plan.focus ? `Fókusz: <strong class="text-white">${escapeHtml(plan.focus)}</strong> (${plan.why} alapján).` : 'Minden lecke kész — a terv ismétlésre és gyakorlásra épül.'}</p>
+                <div class="space-y-2 mb-4">${plan.days.map(d => `<div class="rounded-xl bg-dark-900 border border-dark-750 p-2.5"><div class="text-[11px] font-extrabold ${d.label === 'Ma' ? 'text-amber-300' : 'text-slate-300'} mb-1">${d.label}</div>${d.items.length ? d.items.map(t => `<div class="text-[11.5px] text-slate-300 truncate">${escapeHtml(t)}</div>`).join('') : '<div class="text-[11px] text-slate-500">Pihenőnap 🙂</div>'}</div>`).join('')}</div>
+                <button type="button" onclick="miniQuizClose(); startDailySession()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-amber-400 text-dark-950">Kezdjük a mai részt</button>`;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+        }
+
+        // ================= SZÓKÁRTYÁK (a Szószedetből, ismétlés-ütemezéssel) =================
+        // Leitner-dobozok: Tudtam -> következő doboz (1, 3, 7, 14, 30 nap); Nem
+        // tudtam -> vissza az elejére (holnap). Eszközönkénti tárolás.
+        const FLASH_INTERVALS = [1, 3, 7, 14, 30];
+        function flashState() { try { return JSON.parse(localStorage.getItem('chartolj_flash') || '{}') || {}; } catch (e) { return {}; } }
+        function flashDueCount() { const st = flashState(); const t = todayKey(); return Object.values(st).filter(x => x && x.due && x.due <= t).length; }
+        let flashSession = null;
+        function startFlashcards() {
+            const st = flashState(), t = todayKey();
+            const due = GLOSSARY_TERMS.filter(g => st[g.term] && st[g.term].due <= t);
+            const fresh = miniQuizShuffle(GLOSSARY_TERMS.filter(g => !st[g.term]));
+            const deck = due.concat(fresh).slice(0, 10);
+            if (!deck.length) { showNotification('Ma nincs esedékes szókártya — szép munka!'); return; }
+            flashSession = { deck, i: 0, flipped: false, known: 0 };
+            document.getElementById('mini-quiz-title').textContent = '🃏 Szókártyák';
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            renderFlashcard();
+        }
+        function renderFlashcard() {
+            const fs = flashSession, body = document.getElementById('mini-quiz-body'); if (!fs || !body) return;
+            if (fs.i >= fs.deck.length) {
+                body.innerHTML = `<div class="text-center py-4"><div class="text-3xl mb-2">🎉</div><p class="text-sm text-white font-bold mb-1">${fs.known} / ${fs.deck.length} tudtad</p><p class="text-[11px] text-slate-400 mb-4">A nem tudottak holnap újra jönnek.</p><button type="button" onclick="miniQuizClose(); renderAcademyLessonList()" class="px-6 py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Kész</button></div>`;
+                return;
+            }
+            const g = fs.deck[fs.i];
+            body.innerHTML = `<div class="text-[10px] font-mono text-slate-500 mb-2">${fs.i + 1} / ${fs.deck.length}</div>
+                <button type="button" onclick="flashFlip()" class="w-full min-h-[180px] rounded-2xl border border-neon-cyan/30 bg-dark-900 p-5 text-center flex flex-col items-center justify-center" aria-label="Kártya megfordítása">
+                    <div class="text-base font-extrabold text-white mb-2">${escapeHtml(g.term)}</div>
+                    ${fs.flipped ? `<div class="text-[12px] text-slate-300 leading-relaxed">${escapeHtml(g.def)}</div>` : '<div class="text-[11px] text-slate-500">Mit jelent? Gondold végig, majd koppints a fordításhoz.</div>'}
+                </button>
+                ${fs.flipped ? `<div class="flex gap-2 mt-3"><button type="button" onclick="flashAnswer(false)" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-neon-red/40 text-neon-red">Nem tudtam</button><button type="button" onclick="flashAnswer(true)" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-neon-green/90 text-dark-950">Tudtam</button></div>` : ''}
+                ${ttsSupported ? `<button type="button" onclick="toggleSpeak('flash-${fs.i}', ${escapeHtml(JSON.stringify(g.term + '. ' + (fs.flipped ? g.def : '')))})" class="mt-2 text-[11px] text-slate-400 hover:text-neon-cyan">🔊 Felolvasás</button>` : ''}`;
+        }
+        function flashFlip() { if (flashSession) { flashSession.flipped = !flashSession.flipped; renderFlashcard(); } }
+        function flashAnswer(known) {
+            const fs = flashSession; if (!fs) return;
+            const g = fs.deck[fs.i], st = flashState();
+            const prev = st[g.term] || { box: -1 };
+            const box = known ? Math.min(prev.box + 1, FLASH_INTERVALS.length - 1) : 0;
+            const d = new Date(Date.now() + (known ? FLASH_INTERVALS[box] : 1) * 86400000);
+            st[g.term] = { box, due: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') };
+            try { localStorage.setItem('chartolj_flash', JSON.stringify(st)); } catch (e) {}
+            if (known) fs.known++;
+            fs.i++; fs.flipped = false;
+            if (ttsSupported) ttsStopAll();
+            renderFlashcard();
+        }
+
         // ---------- Napi 5 perc ----------
         // 1 új lecke (a tanár felolvassa) + az esedékes ismétlések. A lecke
         // befejezésekor az összegzés tovább vezet az Ismétléshez.
@@ -56892,6 +57027,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="flex gap-3 mt-1.5 text-[10px]">
                     <button type="button" onclick="startPlacementTest()" class="text-neon-cyan hover:underline"><i class="fa-solid fa-gauge-high mr-1"></i>Szintfelmérő</button>
                     <button type="button" onclick="startModuleExam(academyModule)" class="text-neon-cyan hover:underline"><i class="fa-solid fa-file-pen mr-1"></i>Modulvizsga${getModuleExamBest(academyModule) ? ' (' + getModuleExamBest(academyModule) + '%)' : ''}</button>
+                </div>
+                <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[10px]">
+                    <button type="button" onclick="openWeeklyPlan()" class="text-neon-cyan hover:underline">🗓️ Heti terved</button>
+                    <button type="button" onclick="openLearningGoal()" class="text-neon-cyan hover:underline">🎯 ${learningGoalLine() || 'Tanulási cél'}</button>
+                    <button type="button" onclick="startFlashcards()" class="text-neon-cyan hover:underline">🃏 Szókártyák${flashDueCount() ? ' (' + flashDueCount() + ')' : ''}</button>
                 </div></div>`;
         }
         function startDailySession() {
@@ -57745,6 +57885,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const text = (card.t ? card.t + '. ' : '') + card.b;
             ttsSpeak(key, text, () => {
                 if (!academyAutoplayTTS || academyStage !== 'cards' || academyLessonIdx === null) return;
+                if (academyConversational && sttSupported) { academyConversationTurn(); return; }
+                academyChainAdvance();
+            });
+        }
+
+        // Lánc továbbléptetése a következő kártyára (vagy a végén megállás).
+        function academyChainAdvance() {
+                if (!academyAutoplayTTS || academyStage !== 'cards' || academyLessonIdx === null) return;
                 const ll = LESSONS_DATA[academyLessonIdx];
                 if (academyCardIdx < ll.cards.length - 1) {
                     academyCardIdx++;
@@ -57755,6 +57903,42 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     renderAcademyViewer();
                     if (typeof showNotification === 'function') showNotification('Hangos tanulás befejezve — koppints a Kvíz indításához.');
                 }
+        }
+
+        // ================= BESZÉLGETŐS LECKE =================
+        // Hangos tanulás közben minden kártya után a tanár megkérdezi, van-e
+        // kérdésed; ~6 mp-ig figyel. Kérdésre a kártyára szabott választ mondja
+        // el, utána megy tovább. "Tovább/nincs/mehet" vagy csend -> lapoz.
+        let academyConversational = (() => { try { return localStorage.getItem('chartolj_conv_mode') === '1'; } catch (e) { return false; } })();
+        function toggleConversationalMode() {
+            academyConversational = !academyConversational;
+            try { localStorage.setItem('chartolj_conv_mode', academyConversational ? '1' : '0'); } catch (e) {}
+            showNotification(academyConversational ? '💬 Beszélgetős mód be: minden kártya után megkérdezem, van-e kérdésed.' : 'Beszélgetős mód kikapcsolva.');
+            if (academyLessonIdx !== null && academyStage === 'cards') renderAcademyViewer();
+        }
+        function academyConversationTurn() {
+            const myKey = academyLessonIdx + ':' + academyCardIdx;
+            const still = () => academyAutoplayTTS && academyStage === 'cards' && (academyLessonIdx + ':' + academyCardIdx) === myKey;
+            ttsSpeak('conv-ask-' + myKey, 'Van kérdésed ehhez a részhez? Kérdezz bátran, vagy mondd: tovább.', () => {
+                if (!still()) return;
+                let done = false, rec = null;
+                const finish = (t) => {
+                    if (done) return; done = true;
+                    try { rec && rec.abort(); } catch (e) {}
+                    if (!still()) return;
+                    const norm = foldDiacritics(String(t || '').toLowerCase()).trim();
+                    if (!norm || /^(tovabb|nincs|nem|mehet|kovetkezo|semmi|nincsen)\b/.test(norm) || norm.split(/\s+/).length < 2) { academyChainAdvance(); return; }
+                    tutorAsk(t, () => { if (still()) academyChainAdvance(); });
+                };
+                try {
+                    rec = new SpeechRecognitionCtor();
+                    rec.lang = 'hu-HU'; rec.interimResults = false; rec.maxAlternatives = 1;
+                    rec.onresult = (ev) => finish(ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : '');
+                    rec.onerror = () => finish('');
+                    rec.onend = () => setTimeout(() => finish(''), 50);
+                    rec.start();
+                    setTimeout(() => finish(''), 6500);
+                } catch (e) { finish(''); }
             });
         }
 
