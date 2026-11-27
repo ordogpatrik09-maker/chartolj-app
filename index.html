@@ -1504,6 +1504,27 @@
                 font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8;
             }
             .m-group-head .m-group-chev { transition: transform 0.2s ease; font-size: 10px; }
+            /* Fejlődés: lapok (Áttekintés / Ranglista / Statisztika / Jutalmak) */
+            .m-tabbar {
+                position: sticky; top: 0; z-index: 5; display: flex; gap: 4px; padding: 4px;
+                border-radius: 12px; background: rgba(15,23,42,0.96); border: 1px solid rgba(51,65,85,0.6);
+                backdrop-filter: blur(8px);
+            }
+            .m-tabbar button {
+                flex: 1; padding: 8px 4px; border-radius: 9px; font-size: 11px; font-weight: 700; color: #94a3b8; white-space: nowrap;
+            }
+            .m-tabbar button[aria-selected="true"] { background: rgba(34,211,238,0.14); color: #67e8f9; }
+            /* Felső összegző: 4 kompakt csempe egy sorban + a verzió kis sorként */
+            #progress-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+            #progress-stat-grid > div { padding: 8px 2px; }
+            #progress-stat-grid > div > div:first-child { font-size: 15px; line-height: 1.2; }
+            #progress-stat-grid > div > div:last-child { font-size: 8.5px; line-height: 1.15; }
+            #progress-stat-grid > .col-span-2 { grid-column: 1 / -1; padding: 2px; background: transparent; border: none; box-shadow: none; display: flex; justify-content: center; gap: 6px; align-items: baseline; }
+            #progress-stat-grid > .col-span-2 > div:first-child { font-size: 10px; color: #64748b; }
+            #progress-stack:not(.pt-ov) > [data-mt="ov"],
+            #progress-stack:not(.pt-lb) > [data-mt="lb"],
+            #progress-stack:not(.pt-st) > [data-mt="st"],
+            #progress-stack:not(.pt-rw) > [data-mt="rw"] { display: none !important; }
             .m-group-head[aria-expanded="false"] .m-group-chev { transform: rotate(-90deg); }
             #profile-stack > [data-mg="tools"].glass-card,
             #profile-stack > [data-mg="other"].glass-card { padding-top: 10px; padding-bottom: 10px; }
@@ -16383,9 +16404,9 @@ Mean-reversion,2.5</textarea>
 
     <!-- ================= PROGRESS (Fejlődés) ================= -->
     <div id="progress-screen" class="hidden absolute inset-0 z-[80] bg-dark-950 flex flex-col overflow-y-auto pb-20">
-        <div class="p-4 space-y-4">
+        <div id="progress-stack" class="p-4 space-y-4 pt-ov">
             <h2 class="text-lg font-bold text-white" data-i18n="progress_title">Fejlődésed</h2><div class="text-xs text-slate-500 mt-0.5" id="progress-total-pct"></div>
-            <div class="grid grid-cols-2 gap-2">
+            <div id="progress-stat-grid" class="grid grid-cols-2 gap-2">
                 <div class="glass-card rounded-xl p-3 text-center">
                     <div id="progress-xp-value" class="text-xl font-extrabold text-neon-cyan">0</div>
                     <div class="text-[10px] text-slate-500 uppercase" data-i18n="progress_xp">XP</div>
@@ -16407,14 +16428,20 @@ Mean-reversion,2.5</textarea>
                 </div>
             </div>
 
+            <div class="m-only m-tabbar" role="tablist" aria-label="Fejlődés nézetek">
+                <button type="button" role="tab" data-ptab="ov" aria-selected="true" onclick="setProgressTab('ov')">Áttekintés</button>
+                <button type="button" role="tab" data-ptab="lb" aria-selected="false" onclick="setProgressTab('lb')">Ranglista</button>
+                <button type="button" role="tab" data-ptab="st" aria-selected="false" onclick="setProgressTab('st')">Statisztika</button>
+                <button type="button" role="tab" data-ptab="rw" aria-selected="false" onclick="setProgressTab('rw')">Jutalmak</button>
+            </div>
             <!-- Heti összefoglaló -->
-            <div class="glass-card rounded-xl p-4">
+            <div data-mt="ov" class="glass-card rounded-xl p-4">
                 <h3 class="text-xs font-bold text-slate-300 uppercase mb-2">Elmúlt 7 nap</h3>
                 <div id="progress-weekly-review"></div>
             </div>
 
             <!-- Napi kihívások & bejelentkezési sorozat -->
-            <div class="glass-card rounded-xl p-4">
+            <div data-mt="ov" class="glass-card rounded-xl p-4">
                 <div class="flex items-center justify-between mb-1">
                     <h3 class="text-xs font-bold text-slate-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-calendar-check text-neon-green"></i> Napi kihívások</h3>
                     <div class="flex items-center gap-1 text-[11px] font-extrabold text-amber-400"><i class="fa-solid fa-fire"></i><span id="daily-streak-num">1</span> napos sorozat</div>
@@ -16426,7 +16453,7 @@ Mean-reversion,2.5</textarea>
             </div>
 
             <!-- Ranglista -->
-            <div class="glass-card rounded-xl p-4">
+            <div data-mt="lb" class="glass-card rounded-xl p-4">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-xs font-bold text-slate-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-ranking-star text-amber-400"></i> Ranglista</h3>
                     <button onclick="inviteFriends()" class="text-[11px] font-bold text-neon-cyan hover:text-white transition"><i class="fa-solid fa-user-plus mr-1"></i>Meghívás</button>
@@ -16451,10 +16478,10 @@ Mean-reversion,2.5</textarea>
             </div>
 
             <!-- Chartolj Certifikáció — a rangok fölötti, záró szintmérő -->
-            <div id="certification-card" class="glass-card rounded-xl p-4"></div>
+            <div data-mt="rw" id="certification-card" class="glass-card rounded-xl p-4"></div>
 
             <!-- Lecke-haladás modulonként -->
-            <div class="glass-card rounded-xl p-4">
+            <div data-mt="st" class="glass-card rounded-xl p-4">
                 <div class="flex justify-end gap-3 mb-1"><button onclick="exportProgressData()" class="text-[11px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-download mr-1"></i>Exportálás</button><button onclick="shareProgress()" class="text-[11px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-share-nodes mr-1"></i>Megosztás</button></div>
                 <div id="progress-quick-stats" class="grid grid-cols-2 gap-2 mb-4"></div>
                 <h3 class="text-xs font-bold text-slate-300 uppercase mb-3">Haladás modulonként</h3>
@@ -16462,15 +16489,15 @@ Mean-reversion,2.5</textarea>
             </div>
 
             <!-- Skill-alapú fejlődés — "miben fejlődsz", nem csak "hány pontod van" -->
-            <div class="glass-card rounded-xl p-4">
+            <div data-mt="st" class="glass-card rounded-xl p-4">
                 <h3 class="text-xs font-bold text-slate-300 uppercase mb-3">A te trading-készségeid</h3>
                 <div id="progress-skills-list" class="space-y-3"></div>
                 <p id="progress-skills-empty" class="hidden text-[11px] text-slate-500 text-center py-2">Gyakorolj a Chart Drillben és a Replay Szimulátorban, hogy itt lásd a fejlődésed.</p>
             </div>
 
-            <div id="progress-recurring-mistakes"></div>
+            <div data-mt="ov" id="progress-recurring-mistakes"></div>
 
-            <div class="space-y-2">
+            <div data-mt="rw" class="space-y-2">
                 <button onclick="openRanksMissionsModal('ranks')" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-amber-400/40 transition">
                     <span class="text-xs font-bold text-white"><i class="fa-solid fa-ranking-star text-amber-400 mr-2"></i><span data-i18n="progress_ranks_missions">Rangok, Küldetések &amp; Témák</span></span>
                     <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
@@ -48879,6 +48906,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // Mobilos összecsukható csoportok (Profil, Fejlődés stb.) — csak osztályt
         // vált a konténeren; a tényleges rejtés a mobil @media CSS-ben van, így
         // PC-n nincs hatása.
+        // Fejlődés lapjai (mobil) — csak osztályt vált; a rejtés a mobil CSS-ben van.
+        function setProgressTab(t) {
+            const c = document.getElementById('progress-stack'); if (!c) return;
+            ['ov', 'lb', 'st', 'rw'].forEach(k => c.classList.toggle('pt-' + k, k === t));
+            c.querySelectorAll('[data-ptab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ptab === t)));
+            const sc = document.getElementById('progress-screen'); if (sc) sc.scrollTop = 0;
+        }
+
         function toggleMobileGroup(containerId, group) {
             const c = document.getElementById(containerId); if (!c) return;
             const closed = c.classList.toggle('mg-closed-' + group);
