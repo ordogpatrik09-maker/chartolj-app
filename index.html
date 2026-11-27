@@ -45465,9 +45465,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let reducedTradeCount = 0;
             const path = [capital];
             for (const outcome of outcomes) {
-                const bet = Math.min(reduced ? baseBet * reductionFraction : baseBet, capital);
-                if (bet <= 0) { ruined = true; path.push(capital); continue; }
-                if (reduced) reducedTradeCount++;
+                // JAVÍTÁS: a korábbi verzió "bet <= 0" esetén MINDIG csődöt
+                // (ruined = true) jelzett és `continue`-zal teljesen kihagyta
+                // a trade-et — de a tét két, egymástól független okból is
+                // lehet <= 0: (1) a tőke már ténylegesen elfogyott (valódi
+                // csőd), VAGY (2) a tétcsökkentés mértéke éppen 100% (a mező
+                // érvényes 1-100 tartományán belül), ami 0 tétméretet ad,
+                // miközben a tőke változatlanul egészséges. A (2) eset téves
+                // "— CSŐD" címkét és befagyott vesztes/nyertes-sorozat-
+                // számlálót okozott (a `continue` miatt a consecutiveWins
+                // sosem érte el a visszaállításhoz (M) szükséges szintet, így
+                // 100%-os csökkentésnél a szimuláció örökre "csökkentett"
+                // állapotban ragadt). Csak a TŐKE tényleges elfogyása
+                // (capital <= 0) jelent csődöt; a 0 tétméretű, de egyébként
+                // változatlan tőkéjű trade-eknél a nyertes/vesztes sorozat
+                // (és ezáltal a visszaállítási feltétel) továbbra is követi
+                // a megadott kimenet-sorozatot, csak a tőke nem változik.
+                if (ruined) { path.push(capital); continue; }
+                const rawBet = reduced ? baseBet * reductionFraction : baseBet;
+                const bet = Math.min(rawBet, capital);
+                if (reduced && bet > 0) reducedTradeCount++;
                 if (outcome === 'W') {
                     capital += bet;
                     consecutiveWins++;
