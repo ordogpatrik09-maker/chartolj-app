@@ -1519,6 +1519,40 @@
         .ai-avatar-hair-spark:nth-child(3n) { animation-delay: 0.8s; }
         @keyframes aiAvatarSpark { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
+        /* ================= BESZÉLŐ FEJ (csak PC, lg+) =================
+           A felhasználó saját hologram-fej képe egy külön panelen a lecke
+           mellett; a száját canvas-on, a felolvasott szöveg betűi/szavai
+           alapján mozgatjuk (lásd talkingHead* függvények). Mobilon ez a
+           panel nem jelenik meg — ott marad a kis SVG-avatar. PC-n viszont
+           a kis SVG-avatart elrejtjük, hogy ne legyen két "tanár" egyszerre. */
+        /* Méretek itt, nem Tailwind-osztályokkal: az app előre lefordított
+           Tailwind-készlete nem tartalmazza a w-60/xl:w-72/min-h-[..] osztályokat. */
+        #talking-head-panel { display: none; width: 250px; padding-bottom: 84px; }
+        @media (min-width: 1280px) { #talking-head-panel { width: 300px; } }
+        @media (min-width: 1700px) { #talking-head-panel { width: 360px; } }
+        #talking-head-caption { min-height: 64px; }
+        @media (min-width: 1024px) {
+            #ai-avatar-widget { display: none !important; }
+            #talking-head-panel.th-visible { display: flex; }
+        }
+        #talking-head-canvas { width: 100%; height: auto; display: block; aspect-ratio: 672 / 900; }
+        .th-frame {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
+            border: 1px solid rgba(34,211,238,0.25);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 28px rgba(34,211,238,0.10);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .th-frame.th-speaking {
+            border-color: rgba(34,211,238,0.6);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 36px rgba(34,211,238,0.35);
+        }
+        .th-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #475569; }
+        .th-live-dot.on { background: #22d3ee; box-shadow: 0 0 8px #22d3ee; animation: aiAvatarGlowPulse 1.2s ease-in-out infinite; }
+        #talking-head-caption .th-word-now { color: #67e8f9; font-weight: 700; }
+
         /* JAVÍTÁS (overflow_sweep.js — a modal_numeric_safety_sweep.js
            módszertanának kiegészítése egy, a textContent-regexen ALAPULÓ
            szivárgás-kereséstől eltérő hibaosztállyal): extrém, de egyedileg
@@ -17045,6 +17079,22 @@ Mean-reversion,2.5</textarea>
                     </div>
                 </div>
             </section>
+
+            <!-- Beszélő fej (csak PC / lg+, csak nyitott leckénél) — a felolvasott
+                 szöveggel szinkronban mozgó szájú tanár-fej. -->
+            <aside id="talking-head-panel" class="shrink-0 border-l border-dark-750/50 bg-dark-950/60 flex-col p-4 gap-3 overflow-y-auto" aria-label="Beszélő tanár">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">AI tanár</span>
+                    <span id="talking-head-status" class="flex items-center gap-1.5 text-[10px] text-slate-500"><span class="th-live-dot"></span><span id="talking-head-status-text">Csendben</span></span>
+                </div>
+                <div id="talking-head-frame" class="th-frame">
+                    <canvas id="talking-head-canvas" width="672" height="900" role="img" aria-label="A tanár feje, felolvasás közben mozgó szájjal"></canvas>
+                </div>
+                <div id="talking-head-caption" class="rounded-xl bg-dark-900 border border-dark-750 px-3 py-2 text-[11px] leading-relaxed text-slate-400" aria-live="off">Nyomd meg a <i class="fa-solid fa-headphones"></i> Hangos tanulás gombot, és felolvasom neked a leckét.</div>
+                <button type="button" id="talking-head-play-btn" onclick="academyToggleAutoplay()" class="w-full px-3 py-2 rounded-xl text-[11px] font-bold border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> <span>Lecke felolvasása</span>
+                </button>
+            </aside>
         </div>
 
         <!-- Chart Alakzat Galéria Body -->
@@ -48569,12 +48619,203 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const voice = ttsPickHungarianVoice();
             if (voice) utter.voice = voice;
             utter.rate = 1.0;
-            utter.onend = () => { if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); } if (onEndExtra) onEndExtra(); };
-            utter.onerror = () => { if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); } };
+            utter.onend = () => { talkingHeadDetach(utter); if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); } if (onEndExtra) onEndExtra(); };
+            utter.onerror = () => { talkingHeadDetach(utter); if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); } };
+            talkingHeadAttach(utter, text);
 
             ttsCurrentKey = key;
             ttsUpdateButtonIcon(key, true);
             window.speechSynthesis.speak(utter);
+        }
+
+        // =================================================================
+        // BESZÉLŐ FEJ — a felhasználó saját hologram-fej képe (assets/
+        // tutor-head.jpg), aminek az állkapcsát/száját canvas-on mozgatjuk a
+        // ténylegesen felolvasott szöveg alapján:
+        //  - a felolvasás "kurzorát" a böngésző onboundary (szó-határ)
+        //    eseményei szinkronizálják, ahol elérhetők; köztük (és ahol
+        //    nincsenek ilyen események) becsült beszédtempóval haladunk;
+        //  - minden betűhöz egy "szájforma" (nyitottság + kerekítés) tartozik:
+        //    a/á nagyon nyitott, o/ö/u/ü kerekített, m/b/p zárt, szóköz/
+        //    írásjel csukott — így a száj tényleg a kimondott szavakat követi.
+        //  - a száj nyitását úgy rajzoljuk, hogy az ajak-vonal ALATTI képrészt
+        //    oszloponként lefelé toljuk (középen legjobban, az arc széle felé
+        //    elhalványulva), a keletkező résbe pedig egy sötét szájüreget.
+        // Csak PC-n (lg+) látható panel; a képet csak akkor töltjük le, amikor
+        // a panel először megjelenik (mobilon soha).
+        // =================================================================
+        const TH_GEOM = { W: 672, H: 900, mouthY: 628, cx: 336, lipHalf: 76, jawHalf: 150, maxDrop: 30 };
+        const TH = {
+            img: null, loaded: false, ctx: null, utter: null, text: '', active: false,
+            anchorT: 0, anchorIdx: 0, cps: 15, lastBT: 0, lastBIdx: 0,
+            open: 0, round: 0, raf: 0, seenSpeaking: false, notSpeakingSince: 0,
+            captionWordStart: -2
+        };
+
+        function thViseme(ch) {
+            const c = (ch || ' ').toLowerCase();
+            if ('aá'.includes(c)) return [1.0, 0];
+            if ('oóöő'.includes(c)) return [0.72, 0.85];
+            if ('uúüű'.includes(c)) return [0.45, 1.0];
+            if ('eé'.includes(c)) return [0.62, 0];
+            if ('ií'.includes(c)) return [0.38, 0];
+            if ('mbp'.includes(c)) return [0, 0];
+            if ('fv'.includes(c)) return [0.12, 0];
+            if (/[\s]/.test(c)) return [0.06, 0];
+            if (/[.,!?;:—–\-…]/.test(c)) return [0, 0];
+            if (/[0-9]/.test(c)) return [0.5, 0.2];
+            return [0.24, 0];
+        }
+
+        function thEnsureLoaded() {
+            if (TH.img) return;
+            const canvas = document.getElementById('talking-head-canvas');
+            if (!canvas || !canvas.getContext) return;
+            TH.ctx = canvas.getContext('2d');
+            TH.img = new Image();
+            TH.img.onload = () => { TH.loaded = true; thDraw(); };
+            TH.img.onerror = () => {
+                const cap = document.getElementById('talking-head-caption');
+                if (cap) cap.textContent = 'A tanár képe nem töltődött be (hálózati hiba) — a felolvasás ettől még működik.';
+            };
+            TH.img.src = 'assets/tutor-head.jpg';
+        }
+
+        function thDraw() {
+            const ctx = TH.ctx, img = TH.img, g = TH_GEOM;
+            if (!ctx || !TH.loaded) return;
+            ctx.clearRect(0, 0, g.W, g.H);
+            ctx.drawImage(img, 0, 0, g.W, g.H);
+            const drop = g.maxDrop * TH.open;
+            if (drop < 0.4) return;
+            const lipHalf = g.lipHalf * (1 - 0.32 * TH.round);
+            const cy = g.mouthY + drop * 0.5, ry = Math.max(1, drop * 0.56);
+            // Szájüreg (sötét), finom cián ajak-kontúrral és halvány fogsorral.
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(g.cx, cy, lipHalf, ry, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#01040a';
+            ctx.fill();
+            ctx.clip();
+            if (TH.open > 0.45) {
+                ctx.fillStyle = 'rgba(165,243,252,0.22)';
+                ctx.fillRect(g.cx - lipHalf * 0.7, g.mouthY - 1, lipHalf * 1.4, Math.min(5, drop * 0.18));
+            }
+            ctx.restore();
+            ctx.beginPath();
+            ctx.ellipse(g.cx, cy, lipHalf, ry, 0, 0, Math.PI * 2);
+            ctx.lineWidth = 1.6;
+            ctx.strokeStyle = 'rgba(103,232,249,0.6)';
+            ctx.stroke();
+            // Állkapocs: az ajak-vonal alatti képrész oszloponként lefelé tolva.
+            const step = 3, hBelow = g.H - g.mouthY;
+            for (let x = g.cx - g.jawHalf; x < g.cx + g.jawHalf; x += step) {
+                const t = (x + step / 2 - g.cx) / g.jawHalf;
+                const d = drop * 0.5 * (1 + Math.cos(Math.PI * t));
+                if (d < 0.3) continue;
+                ctx.drawImage(img, x, g.mouthY, step, hBelow - d, x, g.mouthY + d, step, hBelow - d);
+            }
+        }
+
+        function thSetLive(on) {
+            const frame = document.getElementById('talking-head-frame');
+            const dot = document.querySelector('#talking-head-status .th-live-dot');
+            const txt = document.getElementById('talking-head-status-text');
+            if (frame) frame.classList.toggle('th-speaking', on);
+            if (dot) dot.classList.toggle('on', on);
+            if (txt) txt.textContent = on ? 'Beszél…' : 'Csendben';
+        }
+
+        function thUpdateCaption(i) {
+            const t = TH.text;
+            let s = i; while (s > 0 && !/\s/.test(t[s - 1])) s--;
+            if (s === TH.captionWordStart) return;
+            TH.captionWordStart = s;
+            let e = i; while (e < t.length && !/\s/.test(t[e])) e++;
+            const before = t.slice(0, s).split(/\s+/).filter(Boolean).slice(-6).join(' ');
+            const now = t.slice(s, e);
+            let rest = t.slice(e).split(/\s+/).filter(Boolean);
+            const after = rest.slice(0, 6).join(' ');
+            const cap = document.getElementById('talking-head-caption');
+            if (cap) cap.innerHTML = escapeHtml(before) + ' <span class="th-word-now">' + escapeHtml(now) + '</span> ' + escapeHtml(after) + (rest.length > 6 ? ' …' : '');
+        }
+
+        function thLoop(now) {
+            TH.raf = 0;
+            let tgtO = 0, tgtR = 0;
+            if (TH.active && TH.text) {
+                const synth = window.speechSynthesis;
+                const speaking = !!(synth && (synth.speaking || synth.pending));
+                if (speaking) { TH.seenSpeaking = true; TH.notSpeakingSince = 0; }
+                else if (TH.seenSpeaking) {
+                    if (!TH.notSpeakingSince) TH.notSpeakingSince = now;
+                    else if (now - TH.notSpeakingSince > 700) { talkingHeadStop(); }
+                }
+                const idxF = TH.anchorIdx + Math.max(0, now - TH.anchorT) / 1000 * TH.cps;
+                const i = Math.floor(idxF);
+                if (TH.active && i < TH.text.length) {
+                    const v = thViseme(TH.text[i]);
+                    const frac = idxF - i;
+                    tgtO = v[0] * (0.7 + 0.3 * Math.sin(frac * Math.PI));
+                    tgtR = v[1];
+                    thUpdateCaption(i);
+                } else if (TH.active && speaking) {
+                    // A becslés lefutott, de a hang még szól (lassabb hang) — beszéd-szerű mozgás.
+                    tgtO = 0.25 + 0.3 * Math.abs(Math.sin(now / 95));
+                } else if (TH.active && i > TH.text.length + TH.cps * 1.5) {
+                    talkingHeadStop();
+                }
+            }
+            TH.open += (tgtO - TH.open) * 0.45;
+            TH.round += (tgtR - TH.round) * 0.3;
+            if (TH.open < 0.004) TH.open = 0;
+            thDraw();
+            if (TH.active || TH.open > 0) TH.raf = requestAnimationFrame(thLoop);
+        }
+
+        function thKick() { if (!TH.raf) TH.raf = requestAnimationFrame(thLoop); }
+
+        function talkingHeadAttach(utter, text) {
+            TH.utter = utter; TH.text = text; TH.active = true;
+            TH.anchorT = performance.now(); TH.anchorIdx = 0;
+            TH.lastBT = 0; TH.lastBIdx = 0; TH.cps = 15 * (utter.rate || 1);
+            TH.seenSpeaking = false; TH.notSpeakingSince = 0; TH.captionWordStart = -2;
+            utter.onstart = () => { if (TH.utter !== utter) return; TH.anchorT = performance.now(); TH.anchorIdx = 0; };
+            utter.onboundary = (e) => {
+                if (TH.utter !== utter || (e.name && e.name !== 'word')) return;
+                const now = performance.now();
+                if (TH.lastBT && e.charIndex > TH.lastBIdx) {
+                    const inst = (e.charIndex - TH.lastBIdx) / ((now - TH.lastBT) / 1000);
+                    if (inst > 4 && inst < 40) TH.cps = TH.cps * 0.7 + inst * 0.3;
+                }
+                TH.lastBT = now; TH.lastBIdx = e.charIndex;
+                TH.anchorT = now; TH.anchorIdx = e.charIndex;
+            };
+            thSetLive(true);
+            thKick();
+        }
+
+        function talkingHeadDetach(utter) { if (TH.utter === utter) talkingHeadStop(); }
+
+        function talkingHeadStop() {
+            TH.active = false; TH.utter = null;
+            thSetLive(false);
+            thKick();
+        }
+
+        // Panel láthatósága: csak nyitott leckénél (a CSS amúgy is csak lg+
+        // méreten engedi megjelenni). Itt frissítjük a "Lecke felolvasása"
+        // gomb feliratát is az automata mód állapota szerint.
+        function talkingHeadSyncPanel() {
+            const panel = document.getElementById('talking-head-panel');
+            if (!panel) return;
+            const show = ttsSupported && academyLessonIdx !== null;
+            panel.classList.toggle('th-visible', show);
+            if (show && window.matchMedia && window.matchMedia('(min-width: 1024px)').matches) thEnsureLoaded();
+            const btn = document.getElementById('talking-head-play-btn');
+            if (btn) btn.innerHTML = academyAutoplayTTS
+                ? '<i class="fa-solid fa-stop"></i> <span>Felolvasás leállítása</span>'
+                : '<i class="fa-solid fa-play"></i> <span>Lecke felolvasása</span>';
         }
 
         // key: egyedi azonosító (pl. "lesson-3-card-0", "coach-msg-5") — ez dönti el,
@@ -48590,7 +48831,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // késve vált igazra (vagy sosem), ami miatt egy második kattintás
             // tévesen újraindította volna a felolvasást leállítás helyett.
             if (ttsCurrentKey === key) {
-                window.speechSynthesis.cancel();
+                window.speechSynthesis.cancel(); talkingHeadStop();
                 ttsUpdateButtonIcon(key, false);
                 ttsCurrentKey = null;
                 if (academyAutoplayTTS) { academyAutoplayTTS = false; if (typeof renderAcademyViewer === 'function' && academyStage === 'cards') renderAcademyViewer(); }
@@ -55709,6 +55950,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         function renderAcademyViewer() {
             const viewer = document.getElementById('academy-viewer');
+            talkingHeadSyncPanel();
             if (academyLessonIdx === null) return;
             const l = LESSONS_DATA[academyLessonIdx];
             const accent = academyAccentColor(l.c);
@@ -56300,7 +56542,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function academyStopAutoplayIfRunning() {
             if (!academyAutoplayTTS) return;
             academyAutoplayTTS = false;
-            if (ttsSupported) window.speechSynthesis.cancel();
+            if (ttsSupported) window.speechSynthesis.cancel(); talkingHeadStop();
             if (ttsCurrentKey) { ttsUpdateButtonIcon(ttsCurrentKey, false); ttsCurrentKey = null; }
         }
 
@@ -56338,7 +56580,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!ttsSupported) return;
             if (academyAutoplayTTS) {
                 academyAutoplayTTS = false;
-                window.speechSynthesis.cancel();
+                window.speechSynthesis.cancel(); talkingHeadStop();
                 if (ttsCurrentKey) { ttsUpdateButtonIcon(ttsCurrentKey, false); ttsCurrentKey = null; }
                 renderAcademyViewer();
                 return;
@@ -56571,6 +56813,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <p class="text-xs text-slate-600 mt-2"><span>${ACADEMY_MODULES.length}</span> modul, <span>${LESSONS_DATA.length}</span> lecke vár rád — a piacok nyelvétől a kockázatkezelésig.</p>
                 </div>
             `;
+            talkingHeadSyncPanel();
             renderAcademyLessonList();
         }
 
