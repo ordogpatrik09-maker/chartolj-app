@@ -926,11 +926,21 @@
                kezdeti (még semmi ki nem választva) állapotban nyugodtan
                sokkal többet kaphat a lista — a lenti üres-állapot
                placeholder nem veszít funkciót egy kisebb sávon sem. */
-            #academy-body-lessons > section:last-child,
+            /* last-of-type (nem last-child): a Leckék törzsében a lecke-nézet
+               után egy <aside> (PC-s beszélő-fej panel) áll, ami last-child
+               mellett csendben kiütötte volna ezt a szabályt. */
+            #academy-body-lessons > section:last-of-type,
             #academy-body-gallery > section:last-child,
             #academy-body-whatif > section:last-child {
                 flex-grow: 1;
                 min-height: 0;
+            }
+            /* Mobilon, amíg nincs kiválasztott lecke, az üres "Válassz egy
+               leckét" helykitöltő ne vegye el a képernyő felét: elrejtjük, és
+               a lecke-lista kapja a teljes magasságot. Lecke megnyitásakor a
+               nézet tartalmat kap, és a meglévő összecsukó logika érvényes. */
+            #academy-body-lessons > section:last-of-type:has(> #academy-viewer > [data-academy-empty]) {
+                display: none;
             }
             /* A "Leckék" fülnél NEM egyszerű 2-section lista: a tényleges
                DOM egy <aside id="academy-module-rail"> (modul-lista) +
@@ -1476,6 +1486,13 @@
            a kis SVG-avatart elrejtjük, hogy ne legyen két "tanár" egyszerre. */
         /* Méretek itt, nem Tailwind-osztályokkal: az app előre lefordított
            Tailwind-készlete nem tartalmazza a w-60/xl:w-72/min-h-[..] osztályokat. */
+        /* A mobilos "Modul váltása" / "Vissza a listához" sávok rejtése eddig csak
+           a mobil @media-blokkban volt, így PC-n formázatlan gombként a hasábok
+           tetején maradtak. PC-n a modul- és a lecke-lista mindig látszik, ott
+           nincs rájuk szükség. */
+        @media (min-width: 1024px) {
+            .academy-module-collapse-bar, .academy-list-collapse-bar { display: none !important; }
+        }
         #talking-head-panel { display: none; width: 250px; padding-bottom: 84px; }
         @media (min-width: 1280px) { #talking-head-panel { width: 300px; } }
         @media (min-width: 1700px) { #talking-head-panel { width: 360px; } }
@@ -17121,7 +17138,6 @@ Mean-reversion,2.5</textarea>
                     <p id="academy-module-subtitle" class="text-[10px] text-slate-400 mt-0.5"></p>
                 <div id="lesson-bm-filter" data-active="0" role="button" tabindex="0" aria-pressed="false" aria-label="Csak a könyvjelzőzött leckék szűrése" onclick="this.dataset.active=this.dataset.active==='1'?'0':'1';this.setAttribute('aria-pressed', this.dataset.active==='1');renderAcademyLessonList();" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" style="display:none" class="items-center gap-1 text-[10px] font-bold text-amber-400 cursor-pointer mt-1"><i class="fa-solid fa-bookmark mr-0.5" aria-hidden="true"></i><span id="lesson-bm-count">0</span> könyvjelző</div>
                 </div>
-                <div id="academy-daily-card" class="px-2 pt-2"></div>
                 <div id="academy-lesson-list" class="flex-grow overflow-y-auto p-2 space-y-1.5"></div>
             </section>
 
@@ -56690,7 +56706,6 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderAcademyLessonList() {
-            renderAcademyDailyCard();
             const searchTerm = document.getElementById('academy-search').value.trim().toLowerCase();
             const titleEl = document.getElementById('academy-module-title');
             const subtitleEl = document.getElementById('academy-module-subtitle');
@@ -56778,6 +56793,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 `;
             }).join('');
+            // Napi 5 perc kártya a GÖRGETHETŐ lista elején (mobilon a lista-panel
+            // magassága korlátozott — a lista fölé téve kiszorította a leckéket).
+            if (!searchTerm) listEl.insertAdjacentHTML('afterbegin', '<div id="academy-daily-card" class="mb-1.5"></div>');
+            renderAcademyDailyCard();
         }
 
         function updateAcademyProgress() {
