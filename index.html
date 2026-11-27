@@ -49014,6 +49014,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['🧑‍🏫', 'Mentor', 'mentor heti áttekintés tanács terv értékelés', `openMentor()`],
+            ['🏆', 'Havi bajnokság', 'bajnokság havi heti verseny ranglista liga', `openMonthlyLeague('monthly')`],
             ['📚', 'Stratégia-könyvtár', 'stratégia könyvtár ema rsi macd bollinger kitörés pullback orb', `openStrategyLibrary()`],
             ['🖼️', 'Avatár-keretek', 'avatár keret profilkép coin vásárlás bolt', `openAvatarFrames()`],
             ['📲', 'Telepítés iPhone-ra', 'telepítés iphone ipad ios kezdőképernyő app', `openIosInstallGuide()`],
@@ -57483,6 +57485,33 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="text-[9.5px] text-slate-500 mt-0.5">${ev.desc}</div></div>`;
         }
 
+        // ---------- Havi / heti bajnokság (meglévő get_seasonal_leaderboard RPC, 016) ----------
+        let leaguePeriod = 'monthly';
+        async function openMonthlyLeague(period) {
+            leaguePeriod = period || leaguePeriod;
+            miniQuiz = null; chartTask = null; microLesson = null;
+            document.getElementById('mini-quiz-title').textContent = '🏆 Bajnokság';
+            const body = document.getElementById('mini-quiz-body');
+            const tab = (k, l) => `<button type="button" onclick="openMonthlyLeague('${k}')" aria-pressed="${leaguePeriod === k}" class="flex-1 py-1.5 rounded-lg text-xs font-bold ${leaguePeriod === k ? 'bg-dark-800 text-neon-cyan' : 'text-slate-400'}">${l}</button>`;
+            const head = `<div class="flex gap-1 p-1 rounded-xl bg-dark-950 mb-3">${tab('monthly', 'Havi')}${tab('weekly', 'Heti')}</div>`;
+            body.innerHTML = head + '<div class="text-[11px] text-slate-500 py-6 text-center">Betöltés…</div>';
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            if (!isLoggedInRealUser()) { body.innerHTML = head + '<div class="text-[11.5px] text-slate-300 py-4 text-center">A bajnokságban bejelentkezett felhasználók versenyeznek az időszak alatt szerzett XP-vel. Jelentkezz be a részvételhez!</div>'; return; }
+            let rows = null, err = null;
+            try { const r = await sb.rpc('get_seasonal_leaderboard', { p_period_type: leaguePeriod, p_limit: 50 }); if (r.error) err = r.error.message; else rows = r.data || []; } catch (e) { err = e && e.message; }
+            if (document.getElementById('mini-quiz-modal').classList.contains('hidden')) return;
+            if (err || !Array.isArray(rows)) { body.innerHTML = head + `<div class="text-[11px] text-slate-500 py-4 text-center">A bajnokság most nem érhető el.</div>`; return; }
+            const myId = currentUser && currentUser.id;
+            const ends = rows[0] && rows[0].period_ends_at ? new Date(rows[0].period_ends_at) : null;
+            const myIdx = rows.findIndex(r => r.user_id === myId);
+            const medal = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span class="font-mono text-slate-500">${i + 1}.</span>`;
+            body.innerHTML = head + `<div class="flex justify-between text-[10.5px] text-slate-400 mb-2"><span>${leaguePeriod === 'monthly' ? 'Ebben a hónapban' : 'Ezen a héten'} szerzett XP</span>${ends ? `<span>Vége: ${(ends - Date.now()) >= 2 * 86400000 ? Math.floor((ends - Date.now()) / 86400000) + ' nap múlva' : fmtCountdown(ends - Date.now()) + ' múlva'}</span>` : ''}</div>
+                ${myIdx >= 0 ? `<div class="mb-2 p-2.5 rounded-xl bg-neon-cyan/10 border border-neon-cyan/30 text-xs text-white font-bold">A helyezésed: ${myIdx + 1}. · ${Number(rows[myIdx].period_xp) || 0} XP</div>` : `<div class="mb-2 text-[11px] text-slate-400">Szerezz XP-t ebben az időszakban, és felkerülsz a listára!</div>`}
+                <div class="space-y-1">${rows.length ? rows.slice(0, 50).map((r, i) => `<div class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg ${r.user_id === myId ? 'bg-neon-cyan/10' : 'bg-dark-850/50'}">
+                    <span class="w-6 text-center text-sm">${medal(i)}</span><span class="flex-1 min-w-0 truncate text-xs text-white">${escapeHtml(r.display_name || 'Trader')}</span><span class="text-xs font-mono font-bold text-amber-400">${Number(r.period_xp) || 0} XP</span></div>`).join('') : '<div class="text-[11px] text-slate-500 text-center py-4">Még senki nem szerzett XP-t ebben az időszakban — légy te az első!</div>'}</div>
+                <p class="text-[9.5px] text-slate-600 mt-3">Az időszak végén a lista nullázódik.</p>`;
+        }
+
         // ---------- Napi 5 perc ----------
         // 1 új lecke (a tanár felolvassa) + az esedékes ismétlések. A lecke
         // befejezésekor az összegzés tovább vezet az Ismétléshez.
@@ -57517,6 +57546,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <button type="button" onclick="startChartTasks()" class="text-neon-cyan hover:underline">📍 Grafikon-feladatok</button>
                     <button type="button" onclick="startMicroLesson()" class="text-neon-cyan hover:underline">🎙️ 1 perces összefoglaló</button>
                     <button type="button" onclick="openStrategyLibrary()" class="text-neon-cyan hover:underline">📚 Stratégiák</button>
+                    <button type="button" onclick="openMonthlyLeague('monthly')" class="text-neon-cyan hover:underline">🏆 Bajnokság</button>
+                    <button type="button" onclick="openMentor()" class="text-neon-cyan hover:underline">🧑‍🏫 Mentor</button>
                 </div>${seasonalLineHtml()}</div>`;
         }
         function startDailySession() {
@@ -60332,6 +60363,47 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!reply) reply = localTradeReview(h);
             box.innerHTML = escapeHtml(reply).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             if (btn) btn.disabled = false;
+        }
+
+        // ---------- Mentor mód: heti AI-beszélgetés a haladásodról ----------
+        // A mentor az eszközön elérhető tényekből (lezárt szimulált kötések,
+        // leckék, ismétlések, sorozat, tanulási cél) ad heti visszajelzést és
+        // 3 lépéses tervet; AI nélkül helyi, szabályalapú tartalékkal.
+        function mentorFacts() {
+            const w = typeof simWeeklyStats === 'function' ? simWeeklyStats(7) : null;
+            const due = typeof getDueMistakeKeys === 'function' ? getDueMistakeKeys().length : 0;
+            const goal = typeof learningGoalLine === 'function' ? learningGoalLine() : '';
+            return { w, due, goal, lessons: academyCompleted.size, total: LESSONS_DATA.length, streak: (streakState && streakState.count) || 0, xp: academyXP };
+        }
+        function localMentorAdvice(f) {
+            const out = [];
+            out.push(`📚 ${f.lessons} / ${f.total} lecke kész, ${f.streak} napos sorozat.`);
+            if (f.due) out.push(`🔄 ${f.due} esedékes ismétlésed van — ezzel kezdd, ez rögzíti a tudást.`);
+            if (f.w) {
+                out.push(`📊 Szimulátor (7 nap): ${f.w.n} kötés, találati arány ${Math.round(f.w.winRate)}%, nettó ${f.w.net >= 0 ? '+' : ''}$${f.w.net.toFixed(0)}.`);
+                if (f.w.avgLoss > f.w.avgWin && f.w.avgWin > 0) out.push('⚠️ Az átlagos veszteséged nagyobb az átlagos nyereségnél — szorosabb stop-loss vagy hosszabb nyerő tartás segíthet.');
+                if (f.w.n > 30) out.push('⏸️ Sok kötés egy hét alatt — kevesebb, de átgondoltabb belépés általában jobb.');
+            } else out.push('📈 Ezen a héten nem zártál szimulált kötést — próbálj ki egyet kockázati pajzzsal.');
+            out.push('🗓️ Terv: 1) ismétlések, 2) egy új lecke naponta, 3) 2–3 kötés a szimulátorban ellenőrzőlistával.');
+            if (f.goal) out.push('🎯 ' + f.goal);
+            return out.join('\n');
+        }
+        async function openMentor() {
+            miniQuiz = null; chartTask = null; microLesson = null;
+            document.getElementById('mini-quiz-title').textContent = '🧑‍🏫 Mentor — heti áttekintés';
+            const body = document.getElementById('mini-quiz-body');
+            body.innerHTML = '<div id="mentor-box" class="text-[12px] text-slate-200 leading-relaxed"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Átnézem a heted…</div>';
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            const f = mentorFacts();
+            const facts = `Leckék: ${f.lessons}/${f.total}, XP: ${f.xp}, sorozat: ${f.streak} nap, esedékes ismétlés: ${f.due}, cél: ${f.goal || 'nincs'}. ` +
+                (f.w ? `Szimulált kötések 7 nap: ${f.w.n} db, találati arány ${Math.round(f.w.winRate)}%, nettó ${f.w.net.toFixed(2)} USD, átl. nyerő ${f.w.avgWin.toFixed(2)}, átl. vesztes ${f.w.avgLoss.toFixed(2)}.` : 'Nem volt szimulált kötés a héten.');
+            let reply = null;
+            try { const r = await askAiOneShot('Barátságos kereskedés-oktató mentor vagy. Magyarul, tegezve, max. 6 rövid sorban: értékeld a tanuló hetét, emelj ki egy erősséget és egy fejlesztendő pontot, majd adj 3 lépéses tervet a következő hétre. Ne adj befektetési tanácsot.\n' + facts); reply = r && r.reply; } catch (e) {}
+            if (!reply) reply = localMentorAdvice(f);
+            const box = document.getElementById('mentor-box'); if (!box) return;
+            box.innerHTML = escapeHtml(reply).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            box.insertAdjacentHTML('afterend', `<div class="flex gap-2 mt-4">${ttsSupported ? `<button type="button" onclick="toggleSpeak('mentor', document.getElementById('mentor-box').innerText)" class="px-3 py-2 rounded-xl border border-dark-750 text-xs text-slate-300"><i class="fa-solid fa-volume-high mr-1"></i>Felolvasás</button>` : ''}
+                <button type="button" onclick="miniQuizClose(); openWeeklyPlan()" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">🗓️ Heti terv</button></div>`);
         }
 
         function renderHistory() {
