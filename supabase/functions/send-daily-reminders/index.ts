@@ -55,7 +55,7 @@ Deno.serve(async (_req: Request) => {
 
   const { data: users, error } = await supabaseAdmin
     .from('profiles')
-    .select('id')
+    .select('id, display_name, last_active_at')
     .eq('push_reminders_enabled', true)
     .lt('last_active_at', cutoff24h)
     .gt('last_active_at', cutoff30d);
@@ -64,10 +64,33 @@ Deno.serve(async (_req: Request) => {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 
-  const text = REMINDER_TEXTS[new Date().getDate() % REMINDER_TEXTS.length];
+  // OKOS (személyre szabott) szöveg: a progress tábla meglévő oszlopaiból
+  // (hibabank mérete, kész leckék száma) és az inaktivitás hosszából.
+  const ids = (users ?? []).map((u: any) => u.id);
+  const progressById = new Map<string, any>();
+  for (let i = 0; i < ids.length; i += 500) {
+    const { data: prog } = await supabaseAdmin
+      .from('progress')
+      .select('user_id, mobile_xp, mobile_done_lessons, mobile_mistake_bank')
+      .in('user_id', ids.slice(i, i + 500));
+    for (const p of prog ?? []) progressById.set(p.user_id, p);
+  }
+  const personalText = (u: any): string => {
+    const p = progressById.get(u.id);
+    const name = u.display_name ? String(u.display_name).split(' ')[0].slice(0, 20) : '';
+    const hi = name ? `${name}, ` : '';
+    const days = u.last_active_at ? Math.floor((Date.now() - new Date(u.last_active_at).getTime()) / 86400000) : 1;
+    const mistakes = Array.isArray(p?.mobile_mistake_bank) ? p.mobile_mistake_bank.length : 0;
+    const done = Array.isArray(p?.mobile_done_lessons) ? p.mobile_done_lessons.length : 0;
+    if (mistakes >= 3) return `${hi}${mistakes} kérdés vár ismétlésre — 3 perc, és rögzül a tudás. 🔄`;
+    if (days >= 7) return `${hi}rég láttunk! A Napi 5 perc segít újra belerázódni. ☀️`;
+    if (done > 0) return `${hi}már ${done} leckén túl vagy — ma jöhet a következő! 📈`;
+    return REMINDER_TEXTS[new Date().getDate() % REMINDER_TEXTS.length];
+  };
   let sentTo = 0;
 
   for (const u of users ?? []) {
+    const text = personalText(u);
     const { data: subs } = await supabaseAdmin
       .from('push_subscriptions')
       .select('id, endpoint, p256dh, auth_key')

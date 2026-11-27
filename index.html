@@ -1857,6 +1857,13 @@
                                 <div class="text-[10px] text-slate-400">Mennyit "ér" átlagosan egy trade-ed?</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openMultiTimeframe()" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-layer-group"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Idősík-áttekintő</div>
+                                <div class="text-[10px] text-slate-400">Trend és RSI 15p / 1ó / 4ó / 1 nap egyszerre</div>
+                            </div>
+                        </button>
                         <button onclick="closeToolsDropdown(); openToolModal('backtest-modal'); renderBacktestAssetLabel()" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
                             <span class="w-8 h-8 rounded-lg bg-neon-purple/10 text-neon-purple border border-neon-purple/30 flex items-center justify-center text-sm"><i class="fa-solid fa-flask"></i></span>
                             <div>
@@ -49014,6 +49021,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['📧', 'Heti e-mail összefoglaló', 'email e-mail heti összefoglaló levél feliratkozás', `openEmailDigest()`],
+            ['🧭', 'Idősík-áttekintő', 'idősík timeframe több trend rsi 4 óra napi', `switchMobileTab('trade'); setTimeout(openMultiTimeframe, 60)`],
             ['🧑‍🏫', 'Mentor', 'mentor heti áttekintés tanács terv értékelés', `openMentor()`],
             ['🏆', 'Havi bajnokság', 'bajnokság havi heti verseny ranglista liga', `openMonthlyLeague('monthly')`],
             ['📚', 'Stratégia-könyvtár', 'stratégia könyvtár ema rsi macd bollinger kitörés pullback orb', `openStrategyLibrary()`],
@@ -49100,6 +49109,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${act('tab-btn-weak-topics', '🎯', 'Gyengepontok', 'Hol hibázol a legtöbbet')}
                     ${act('tab-btn-historical-event', '🏛️', 'Történelmi esemény szimulátor', 'Kereskedd le a nagy piaci eseményeket')}
                     ${act('tab-btn-progress-export', '🖼️', 'Haladás exportálása képként', 'Megosztható összefoglaló')}
+                    <button type="button" class="tm-btn tm-wide" onclick="closeTradeMoreSheet(); openMultiTimeframe()"><span class="text-lg">🧭</span><span><span class="block">Idősík-áttekintő</span><span class="block text-[10.5px] font-normal text-slate-500">Trend és RSI 4 idősíkon egyszerre</span></span></button>
                     ${act('risk-shield-btn', '🛡️', 'Kockázati pajzs', riskShield.on ? `Bekapcsolva · ${riskShield.maxRisk}% / kötés, ${riskShield.maxDaily}% / nap` : 'Max. kockázat kötésenként és napi veszteséglimit')}</div>`;
         }
         function openTradeMoreSheet() { renderTradeMoreSheet(); const s = document.getElementById('trade-more-sheet'); if (s) { s.classList.remove('hidden'); const f = s.querySelector('button'); if (f) f.focus(); } }
@@ -55328,7 +55338,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         async function inviteFriends() {
             const code = await getInviteCode();
             const link = location.origin + location.pathname + '?invite=' + encodeURIComponent(code);
-            const txt = `Gyere, tanuljunk együtt kereskedni a Chartolj!-ban! Ezzel a linkkel automatikusan barátok leszünk: ${link} (meghívókód: ${code})`;
+            const txt = `Gyere, tanuljunk együtt kereskedni a Chartolj!-ban! Ezzel a linkkel automatikusan barátok leszünk, és mindketten 100 coint kapunk: ${link} (meghívókód: ${code})`;
             if (navigator.share) { navigator.share({ title: 'Chartolj! meghívó', text: txt }).catch(function(){}); }
             else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function(){ showNotification('Meghívó szöveg vágólapra másolva!'); }); }
             else { showNotification('Meghívókódod: ' + code); }
@@ -55364,9 +55374,37 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const row = Array.isArray(data) ? data[0] : data;
                 showNotification(`🤝 ${row && row.friend_name ? row.friend_name : 'A meghívód'} mostantól a barátod!`);
                 if (typeof renderFriendsList === 'function') renderFriendsList();
+                claimReferralReward(code);
             } catch (e) { showNotification('A meghívólinket nem sikerült beváltani — a kódot kézzel is megadhatod a Barátoknál.'); }
         }
         try { if (localStorage.getItem('chartolj_pending_invite')) inviteRedeemTimer = setInterval(tryRedeemPendingInvite, 4000); } catch (e) {}
+
+        // ---------- Ajánlói program (027 migráció) ----------
+        // A szerver nyilvántartja a jogosultságot; a coint a kliens írja
+        // jóvá a szokásos mentési úton. Migráció nélkül csendben kimarad.
+        function applyReferralCoins(n, msg) {
+            if (!(n > 0) || typeof userCoins === 'undefined') return;
+            userCoins += n;
+            if (typeof saveAcademyState === 'function') saveAcademyState();
+            if (typeof updateCoinDisplay === 'function') updateCoinDisplay();
+            setTimeout(() => showNotification(msg), 1500);
+        }
+        async function claimReferralReward(code) {
+            try {
+                const { data, error } = await sb.rpc('claim_referral', { p_code: String(code || '') });
+                if (!error && data && data.reward > 0) applyReferralCoins(data.reward, `🎁 Meghívással érkeztél: +${data.reward} coin! A meghívód is kap ugyanennyit.`);
+            } catch (e) {}
+        }
+        let inviterRewardsChecked = false;
+        async function checkInviterRewards() {
+            if (inviterRewardsChecked || typeof isLoggedInRealUser !== 'function' || !isLoggedInRealUser()) return;
+            inviterRewardsChecked = true;
+            try {
+                const { data, error } = await sb.rpc('claim_inviter_rewards');
+                if (!error && data && data.reward > 0) applyReferralCoins(data.reward, `🎁 ${data.new} barátod csatlakozott a meghívásodra: +${data.reward} coin!`);
+            } catch (e) {}
+        }
+        (function pollInviterRewards() { let n = 0; const t = setInterval(() => { n++; if (inviterRewardsChecked || n > 60) { clearInterval(t); return; } checkInviterRewards(); }, 5000); })();
 
         let leaderboardTab = 'global';
         function setLeaderboardTab(tab) {
@@ -55409,6 +55447,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     input.value = '';
                     renderFriendsList();
                     showNotification(`${row && row.friend_name ? row.friend_name : 'Barát'} hozzáadva — valódi, megosztott XP-verseny!`);
+                    claimReferralReward(value);
                     addSystemLog('Barát hozzáadva meghívókóddal: ' + value + '.');
                     return;
                 } catch (e) {
@@ -57510,6 +57549,49 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="space-y-1">${rows.length ? rows.slice(0, 50).map((r, i) => `<div class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg ${r.user_id === myId ? 'bg-neon-cyan/10' : 'bg-dark-850/50'}">
                     <span class="w-6 text-center text-sm">${medal(i)}</span><span class="flex-1 min-w-0 truncate text-xs text-white">${escapeHtml(r.display_name || 'Trader')}</span><span class="text-xs font-mono font-bold text-amber-400">${Number(r.period_xp) || 0} XP</span></div>`).join('') : '<div class="text-[11px] text-slate-500 text-center py-4">Még senki nem szerzett XP-t ebben az időszakban — légy te az első!</div>'}</div>
                 <p class="text-[9.5px] text-slate-600 mt-3">Az időszak végén a lista nullázódik.</p>`;
+        }
+
+        // ---------- Több idősík egyszerre (Idősík-áttekintő) ----------
+        // Élő adatnál (BTC/ETH, Binance) négy idősík gyertyáiból számol
+        // EMA20/EMA50 trendet és RSI-t; más eszközön csak az aktuális
+        // (szimulált/horgonyzott) idősíkot tudjuk értékelni — ezt jelezzük.
+        function mtfAnalyze(candles) {
+            const closes = candles.map(c => c.close).filter(Number.isFinite);
+            if (closes.length < 55) return null;
+            const e20 = calcEMASeries(closes, 20), e50 = calcEMASeries(closes, 50), rsi = calcRSISeries(closes, 14);
+            const last = closes.length - 1, p = closes[last], a = e20[last], b = e50[last], r = rsi[last];
+            const gap = (a - b) / b * 100;
+            const trend = Math.abs(gap) < 0.15 ? 'side' : (a > b && p > a ? 'up' : a < b && p < a ? 'down' : (a > b ? 'up-weak' : 'down-weak'));
+            return { trend, rsi: r, chg: (p - closes[Math.max(0, last - 20)]) / closes[Math.max(0, last - 20)] * 100 };
+        }
+        async function mtfFetch(bSym, interval) {
+            try { const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${bSym}&interval=${interval}&limit=120`); if (!res.ok) return null;
+                const raw = await res.json(); return Array.isArray(raw) ? raw.map(k => ({ close: parseFloat(k[4]) })) : null; } catch (e) { return null; }
+        }
+        async function openMultiTimeframe() {
+            miniQuiz = null; chartTask = null; microLesson = null;
+            const sym = currentAsset && currentAsset.symbol;
+            document.getElementById('mini-quiz-title').textContent = '🧭 Idősík-áttekintő — ' + (sym || '');
+            const body = document.getElementById('mini-quiz-body');
+            body.innerHTML = '<div class="text-[11px] text-slate-500 py-6 text-center"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Számolás…</div>';
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            const bSym = LIVE_DATA_SYMBOLS[sym];
+            const tfs = [['15m', '15 perc'], ['1h', '1 óra'], ['4h', '4 óra'], ['1d', '1 nap']];
+            let rows;
+            if (bSym) rows = await Promise.all(tfs.map(async ([iv, lab]) => { const c = await mtfFetch(bSym, iv); return [lab, c ? mtfAnalyze(c) : null]; }));
+            else rows = [[(typeof currentTF !== 'undefined' ? currentTF : 'aktuális') + ' (grafikon)', mtfAnalyze(candleData)]];
+            if (document.getElementById('mini-quiz-modal').classList.contains('hidden')) return;
+            const T_ = { up: ['▲ Emelkedő', 'text-neon-green'], 'up-weak': ['↗ Gyengülő emelkedő', 'text-emerald-300'], down: ['▼ Csökkenő', 'text-neon-red'], 'down-weak': ['↘ Gyengülő csökkenő', 'text-rose-300'], side: ['↔ Oldalazó', 'text-slate-300'] };
+            const ok = rows.filter(r => r[1]);
+            const ups = ok.filter(r => r[1].trend.startsWith('up')).length, downs = ok.filter(r => r[1].trend.startsWith('down')).length;
+            const verdict = !ok.length ? 'Most nem sikerült adatot betölteni.' : ok.length === 1 ? 'Egy idősík alapján: ' + T_[ok[0][1].trend][0].replace(/^\S+ /, '').toLowerCase() + ' trend. Több idősík összevetéséhez válts BTC/USDT-re vagy ETH/USDT-re.' : ups === ok.length ? 'Minden idősík egy irányba (fel) mutat — a trend összhangban van.' : downs === ok.length ? 'Minden idősík egy irányba (le) mutat — a trend összhangban van.' : 'Az idősíkok nem értenek egyet — ilyenkor óvatosabb méret vagy várakozás a tanult szabály.';
+            body.innerHTML = `<p class="text-[11px] text-slate-400 mb-3">Trend: EMA20 vs. EMA50 és az ár helyzete; RSI 14. A nagyobb idősík adja az irányt, a kisebb a belépés időzítését.</p>
+                <div class="space-y-1.5">${rows.map(([lab, a]) => `<div class="flex items-center gap-3 px-3 py-2 rounded-xl bg-dark-850/60 border border-dark-750 text-xs">
+                    <span class="w-24 shrink-0 font-bold text-white">${escapeHtml(lab)}</span>
+                    ${a ? `<span class="flex-1 font-bold ${T_[a.trend][1]}">${T_[a.trend][0]}</span><span class="font-mono ${a.rsi >= 70 ? 'text-amber-300' : a.rsi <= 30 ? 'text-sky-300' : 'text-slate-400'}">RSI ${a.rsi != null ? a.rsi.toFixed(0) : '–'}</span>` : '<span class="flex-1 text-slate-500">nincs adat</span>'}</div>`).join('')}</div>
+                <div class="mt-3 p-3 rounded-xl bg-neon-cyan/5 border border-neon-cyan/20 text-[11.5px] text-slate-200">${verdict}</div>
+                ${bSym ? '' : '<p class="text-[10px] text-slate-500 mt-2">Több idősíkos élő adat csak BTC/USDT és ETH/USDT esetén érhető el; itt a grafikon aktuális idősíkját értékeltük.</p>'}
+                <p class="text-[9.5px] text-slate-600 mt-2">Oktatási célra, nem befektetési tanács.</p>`;
         }
 
         // ---------- Napi 5 perc ----------
@@ -60403,7 +60485,27 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const box = document.getElementById('mentor-box'); if (!box) return;
             box.innerHTML = escapeHtml(reply).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             box.insertAdjacentHTML('afterend', `<div class="flex gap-2 mt-4">${ttsSupported ? `<button type="button" onclick="toggleSpeak('mentor', document.getElementById('mentor-box').innerText)" class="px-3 py-2 rounded-xl border border-dark-750 text-xs text-slate-300"><i class="fa-solid fa-volume-high mr-1"></i>Felolvasás</button>` : ''}
-                <button type="button" onclick="miniQuizClose(); openWeeklyPlan()" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">🗓️ Heti terv</button></div>`);
+                <button type="button" onclick="miniQuizClose(); openWeeklyPlan()" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">🗓️ Heti terv</button></div>
+                <button type="button" onclick="openEmailDigest()" class="mt-2 w-full py-2 rounded-xl text-[11px] font-bold border border-dark-750 text-slate-300">📧 Kérem ezt hetente e-mailben</button>`);
+        }
+
+        // ---------- Heti összefoglaló e-mail (opt-in, 028 migráció) ----------
+        async function openEmailDigest() {
+            miniQuiz = null; chartTask = null; microLesson = null;
+            document.getElementById('mini-quiz-title').textContent = '📧 Heti összefoglaló e-mailben';
+            const body = document.getElementById('mini-quiz-body');
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            if (!isLoggedInRealUser()) { body.innerHTML = '<p class="text-[11.5px] text-slate-300">Bejelentkezés után kérheted, hogy vasárnaponként e-mailben megkapd a heted összefoglalóját.</p>'; return; }
+            body.innerHTML = '<p class="text-[11px] text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Betöltés…</p>';
+            let on = null; try { const r = await sb.rpc('get_weekly_digest'); if (!r.error) on = !!r.data; } catch (e) {}
+            if (on === null) { body.innerHTML = '<p class="text-[11px] text-slate-500">Ez a beállítás most nem érhető el.</p>'; return; }
+            body.innerHTML = `<p class="text-[11.5px] text-slate-300 mb-3">Vasárnaponként egy rövid levél: heti XP, kész leckék, esedékes ismétlések és a szimulátoros kötéseid. Bármikor leiratkozhatsz (a levél alján is).</p>
+                <label class="flex items-center gap-2 text-xs font-bold text-white cursor-pointer"><input type="checkbox" id="digest-toggle" class="accent-cyan-400" ${on ? 'checked' : ''} onchange="setEmailDigest(this.checked)"> Kérem a heti összefoglalót</label>
+                <p class="text-[10px] text-slate-500 mt-2">A fiókod e-mail-címére érkezik.</p>`;
+        }
+        async function setEmailDigest(on) {
+            try { const r = await sb.rpc('set_weekly_digest', { p_enabled: !!on }); if (r.error) throw r.error; showNotification(on ? '📧 Feliratkoztál a heti összefoglalóra.' : 'Leiratkoztál a heti összefoglalóról.'); }
+            catch (e) { showNotification('Nem sikerült menteni — próbáld újra később.'); const t = document.getElementById('digest-toggle'); if (t) t.checked = !on; }
         }
 
         function renderHistory() {
