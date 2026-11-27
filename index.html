@@ -1468,57 +1468,6 @@
         @keyframes pnlPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
         .pnl-updated { animation: pnlPulse 0.4s ease; }
 
-        /* ================= AI AVATAR (felolvasás közbeni vizuális kísérő) =================
-           Egy saját, stilizált neon-drótváz "hologram-ember mellkép" — tisztán
-           inline SVG-vel rajzolva, semmilyen külső kép/asset-fájlt nem használ
-           (a felhasználó egy hologram-drótváz stílusú referenciaképet küldött
-           ihletnek; ez egy ÖNÁLLÓ, saját rajzolású alak ugyanabban a vizuális
-           stílusban, nem egy konkrét kép másolata). Csak akkor jelenik meg,
-           amikor TÉNYLEGESEN folyik egy felolvasás (lecke-kártya, Hangos
-           tanulás automata lánc, vagy AI-coach üzenet) — máskor rejtve. */
-        #ai-avatar-widget {
-            position: fixed;
-            left: 50%;
-            bottom: 86px;
-            transform: translateX(-50%) translateY(10px) scale(0.92);
-            z-index: 95;
-            width: 118px;
-            height: 160px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #ai-avatar-widget.speaking {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0) scale(1);
-        }
-        #ai-avatar-widget svg { width: 100%; height: 100%; overflow: visible; }
-        .ai-avatar-glow-bg {
-            animation: aiAvatarGlowPulse 1.8s ease-in-out infinite;
-            transform-origin: center;
-        }
-        @keyframes aiAvatarGlowPulse { 0%,100% { opacity: 0.45; } 50% { opacity: 0.9; } }
-        .ai-avatar-blink {
-            animation: aiAvatarBlink 3.4s ease-in-out infinite;
-            transform-box: fill-box;
-            transform-origin: center;
-        }
-        @keyframes aiAvatarBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.15); } }
-        .ai-avatar-mouth {
-            transform-box: fill-box;
-            transform-origin: center;
-        }
-        #ai-avatar-widget.speaking .ai-avatar-mouth {
-            animation: aiAvatarTalk 0.5s ease-in-out infinite;
-        }
-        @keyframes aiAvatarTalk { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1.9); } }
-        .ai-avatar-hair-spark {
-            animation: aiAvatarSpark 2.4s ease-in-out infinite;
-        }
-        .ai-avatar-hair-spark:nth-child(2n) { animation-delay: 0.4s; }
-        .ai-avatar-hair-spark:nth-child(3n) { animation-delay: 0.8s; }
-        @keyframes aiAvatarSpark { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-
         /* ================= BESZÉLŐ FEJ (csak PC, lg+) =================
            A felhasználó saját hologram-fej képe egy külön panelen a lecke
            mellett; a száját canvas-on, a felolvasott szöveg betűi/szavai
@@ -1532,7 +1481,6 @@
         @media (min-width: 1700px) { #talking-head-panel { width: 360px; } }
         #talking-head-caption { min-height: 64px; }
         @media (min-width: 1024px) {
-            #ai-avatar-widget { display: none !important; }
             #talking-head-panel.th-visible { display: flex; }
         }
         #talking-head-canvas { width: 100%; height: auto; display: block; aspect-ratio: 672 / 900; }
@@ -1550,8 +1498,30 @@
             box-shadow: 0 0 0 1px rgba(0,0,0,0.4), 0 0 36px rgba(34,211,238,0.35);
         }
         .th-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #475569; }
-        .th-live-dot.on { background: #22d3ee; box-shadow: 0 0 8px #22d3ee; animation: aiAvatarGlowPulse 1.2s ease-in-out infinite; }
+        .th-live-dot.on { background: #22d3ee; box-shadow: 0 0 8px #22d3ee; animation: thPulse 1.2s ease-in-out infinite; }
+        @keyframes thPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
         #talking-head-caption .th-word-now { color: #67e8f9; font-weight: 700; }
+
+        /* Lebegő beszélő fej — mobilon, illetve PC-n az Akadémián kívüli
+           felolvasásnál (pl. AI-coach). Koppintásra leállítja a felolvasást. */
+        #th-float {
+            position: fixed; right: 10px; top: 64px; z-index: 95;
+            width: 96px; border-radius: 14px; overflow: hidden; background: #000;
+            border: 1px solid rgba(34,211,238,0.55);
+            box-shadow: 0 0 30px rgba(34,211,238,0.35), 0 10px 30px rgba(0,0,0,0.6);
+            opacity: 0; pointer-events: none;
+            transform: translateY(-8px) scale(0.92);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        #th-float.th-float-on { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+        #th-float-canvas { width: 100%; height: auto; display: block; aspect-ratio: 672 / 900; }
+        #th-float .th-float-stop {
+            position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
+            background: rgba(2,6,23,0.75); color: #67e8f9; font-size: 10px; display: flex;
+            align-items: center; justify-content: center; border: 1px solid rgba(34,211,238,0.4);
+        }
+        @media (min-width: 1024px) { #th-float { width: 170px; top: auto; bottom: 96px; right: 24px; } }
+        .tts-rate-chip { min-width: 46px; }
 
         /* JAVÍTÁS (overflow_sweep.js — a modal_numeric_safety_sweep.js
            módszertanának kiegészítése egy, a textContent-regexen ALAPULÓ
@@ -17091,6 +17061,10 @@ Mean-reversion,2.5</textarea>
                     <canvas id="talking-head-canvas" width="672" height="900" role="img" aria-label="A tanár feje, felolvasás közben mozgó szájjal"></canvas>
                 </div>
                 <div id="talking-head-caption" class="rounded-xl bg-dark-900 border border-dark-750 px-3 py-2 text-[11px] leading-relaxed text-slate-400" aria-live="off">Nyomd meg a <i class="fa-solid fa-headphones"></i> Hangos tanulás gombot, és felolvasom neked a leckét.</div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="ttsCycleRate()" class="tts-rate-chip px-2 py-1.5 rounded-lg border border-dark-750 bg-dark-900 text-[11px] font-mono font-bold text-slate-300 hover:border-neon-cyan/40 transition" title="Felolvasási sebesség" aria-label="Felolvasási sebesség váltása"><span data-tts-rate-label>1×</span></button>
+                    <select id="talking-head-voice-select" onchange="ttsSetVoice(this.value)" aria-label="Felolvasó hang kiválasztása" class="flex-1 min-w-0 bg-dark-900 border border-dark-750 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 focus:outline-none focus:border-neon-cyan/50"><option value="">Automatikus (magyar)</option></select>
+                </div>
                 <button type="button" id="talking-head-play-btn" onclick="academyToggleAutoplay()" class="w-full px-3 py-2 rounded-xl text-[11px] font-bold border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-play"></i> <span>Lecke felolvasása</span>
                 </button>
@@ -17533,68 +17507,11 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
-    <!-- AI avatar — tisztán SAJÁT, inline SVG-vel rajzolt, stilizált neon
-         hologram-drótváz "mellkép" (fej+váll), ugyanabban a vizuális
-         stílusban, mint a referenciaként kapott kép, de NEM annak másolata —
-         saját sziluett, saját vonalvezetés. Csak felolvasás közben jelenik
-         meg (lásd aiAvatarSetSpeaking()). Nem akadályozza a kattintásokat
-         (pointer-events: none), nincs alatta semmilyen külső képfájl. -->
-    <div id="ai-avatar-widget" aria-hidden="true">
-        <svg viewBox="0 0 160 220" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <radialGradient id="aiAvatarGlowGrad" cx="50%" cy="48%" r="55%">
-                    <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.45"/>
-                    <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
-                </radialGradient>
-                <pattern id="aiAvatarMesh" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">
-                    <path d="M0 9L9 0" stroke="#22d3ee" stroke-width="0.4" opacity="0.45"/>
-                    <path d="M-1 1L1 -1" stroke="#22d3ee" stroke-width="0.4" opacity="0.45"/>
-                    <path d="M8 10L10 8" stroke="#22d3ee" stroke-width="0.4" opacity="0.45"/>
-                    <circle cx="0" cy="0" r="0.7" fill="#67e8f9"/>
-                    <circle cx="9" cy="9" r="0.7" fill="#67e8f9"/>
-                </pattern>
-                <clipPath id="aiAvatarBustClip">
-                    <path d="M80,30 C104,30 122,52 122,78 C122,102 108,118 92,124 L68,124 C52,118 38,102 38,78 C38,52 56,30 80,30 Z"/>
-                    <path d="M68,122 L68,146 L34,162 L22,220 L138,220 L126,162 L92,146 L92,122 Z"/>
-                </clipPath>
-            </defs>
-
-            <ellipse class="ai-avatar-glow-bg" cx="80" cy="95" rx="62" ry="75" fill="url(#aiAvatarGlowGrad)"/>
-
-            <!-- Kócos, "szikrázó" hologram-haj — rövid, csipkézett vonalak a fej teteje fölött -->
-            <g stroke="#67e8f9" stroke-width="1" stroke-linecap="round">
-                <line class="ai-avatar-hair-spark" x1="44" y1="40" x2="38" y2="14"/>
-                <line class="ai-avatar-hair-spark" x1="50" y1="33" x2="58" y2="6"/>
-                <line class="ai-avatar-hair-spark" x1="58" y1="31" x2="52" y2="10"/>
-                <line class="ai-avatar-hair-spark" x1="64" y1="30" x2="70" y2="4"/>
-                <line class="ai-avatar-hair-spark" x1="72" y1="30" x2="66" y2="12"/>
-                <line class="ai-avatar-hair-spark" x1="80" y1="29" x2="86" y2="2"/>
-                <line class="ai-avatar-hair-spark" x1="88" y1="30" x2="94" y2="14"/>
-                <line class="ai-avatar-hair-spark" x1="96" y1="31" x2="90" y2="10"/>
-                <line class="ai-avatar-hair-spark" x1="104" y1="33" x2="112" y2="8"/>
-                <line class="ai-avatar-hair-spark" x1="112" y1="36" x2="120" y2="16"/>
-                <line class="ai-avatar-hair-spark" x1="118" y1="42" x2="128" y2="22"/>
-            </g>
-
-            <!-- Fej + váll sziluett, drótváz-mesh textúrával kitöltve -->
-            <g clip-path="url(#aiAvatarBustClip)">
-                <rect x="0" y="0" width="160" height="220" fill="url(#aiAvatarMesh)"/>
-            </g>
-            <path d="M80,30 C104,30 122,52 122,78 C122,102 108,118 92,124 L68,124 C52,118 38,102 38,78 C38,52 56,30 80,30 Z" fill="none" stroke="#22d3ee" stroke-width="1.3" opacity="0.9"/>
-            <path d="M68,122 L68,146 L34,162 L22,220 L138,220 L126,162 L92,146 L92,122 Z" fill="none" stroke="#22d3ee" stroke-width="1.3" opacity="0.9"/>
-
-            <!-- Fülek -->
-            <circle cx="36" cy="84" r="5.5" fill="none" stroke="#22d3ee" stroke-width="1"/>
-            <circle cx="124" cy="84" r="5.5" fill="none" stroke="#22d3ee" stroke-width="1"/>
-
-            <!-- Arcvonások -->
-            <line x1="58" y1="66" x2="72" y2="63" stroke="#67e8f9" stroke-width="1.1" stroke-linecap="round"/>
-            <line x1="88" y1="63" x2="102" y2="66" stroke="#67e8f9" stroke-width="1.1" stroke-linecap="round"/>
-            <ellipse class="ai-avatar-blink" cx="65" cy="76" rx="4" ry="3" fill="#67e8f9"/>
-            <ellipse class="ai-avatar-blink" cx="95" cy="76" rx="4" ry="3" fill="#67e8f9"/>
-            <path d="M80,79 L77,97 L83,99" fill="none" stroke="#67e8f9" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
-            <ellipse class="ai-avatar-mouth" cx="80" cy="109" rx="12" ry="3" fill="#22d3ee"/>
-        </svg>
+    <!-- Lebegő beszélő fej (a felhasználó saját feje) — csak felolvasás közben,
+         mobilon és PC-n az Akadémia lecke-panelén kívül. Koppintás = leállítás. -->
+    <div id="th-float" role="button" tabindex="0" aria-label="Felolvasás leállítása" onclick="ttsStopAll()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ttsStopAll();}">
+        <canvas id="th-float-canvas" width="672" height="900" aria-hidden="true"></canvas>
+        <span class="th-float-stop" aria-hidden="true"><i class="fa-solid fa-stop"></i></span>
     </div>
 
     <button id="ai-chat-launcher" onclick="toggleAiChat()" class="fixed bottom-5 left-5 z-[90] w-14 h-14 rounded-2xl bg-dark-900 border border-neon-cyan/40 flex items-center justify-center text-neon-cyan shadow-2xl hover:border-neon-cyan/70 transition group" aria-label="AI Chat megnyitása">
@@ -48573,6 +48490,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const voices = ttsVoicesCache || window.speechSynthesis.getVoices();
                 if (!voices || voices.length === 0) return null;
                 ttsVoicesCache = voices;
+                if (ttsPrefs.voiceURI) {
+                    const chosen = voices.find(v => v.voiceURI === ttsPrefs.voiceURI);
+                    if (chosen) return chosen;
+                }
                 return voices.find(v => /^hu/i.test(v.lang)) || null;
             } catch (e) { return null; }
         }
@@ -48608,11 +48529,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // ttsSpeak() minden induláskor előbb a RÉGI kulcsot állítja false-ra,
         // majd az ÚJAT true-ra (ugyanabban a szinkron hívásban), a végállapot
         // mindig helyesen tükrözi, fut-e éppen bármilyen felolvasás.
-        function aiAvatarSetSpeaking(speaking) {
-            const el = document.getElementById('ai-avatar-widget');
-            if (!el) return;
-            if (speaking) { el.classList.add('speaking'); }
-            else { el.classList.remove('speaking'); }
+        // A korábbi kis SVG "emoji" avatar helyett (a felhasználó kérésére)
+        // mostantól mindenhol a saját fej beszél: a lebegő ablakot a
+        // thSetLive()/thSyncFloat() kezeli az utterance életciklusa alapján.
+        function aiAvatarSetSpeaking(speaking) { /* szándékosan üres — lásd thSyncFloat() */ }
+
+        // Minden felolvasás azonnali leállítása (lebegő fej koppintás, stb.).
+        function ttsStopAll() {
+            if (!ttsSupported) return;
+            window.speechSynthesis.cancel();
+            ttsCurrentUtter = null;
+            if (ttsCurrentKey) { ttsUpdateButtonIcon(ttsCurrentKey, false); ttsCurrentKey = null; }
+            if (academyAutoplayTTS) {
+                academyAutoplayTTS = false;
+                if (academyLessonIdx !== null && academyStage === 'cards') renderAcademyViewer();
+            }
+            talkingHeadStop();
         }
 
         // Alacsony szintű felolvasás-indító — MINDIG elindítja (nem toggle),
@@ -48631,7 +48563,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             utter.lang = 'hu-HU';
             const voice = ttsPickHungarianVoice();
             if (voice) utter.voice = voice;
-            utter.rate = 1.0;
+            utter.rate = ttsPrefs.rate;
             // Csak a MÉG AKTUÁLIS felolvasás vége számít: egy cancel()-lel
             // megszakított, "elárvult" utterance késői end/error eseménye (pl.
             // Safari a cancel után is "end"-et küld) ne nullázza az újabb
@@ -48673,12 +48605,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // Csak PC-n (lg+) látható panel; a képet csak akkor töltjük le, amikor
         // a panel először megjelenik (mobilon soha).
         // =================================================================
-        const TH_GEOM = { W: 672, H: 900, mouthY: 628, cx: 336, lipHalf: 76, jawHalf: 150, maxDrop: 30 };
+        const TH_GEOM = {
+            W: 672, H: 900, mouthY: 628, cx: 336, lipHalf: 76, jawHalf: 150, maxDrop: 30,
+            eyes: [[254, 443], [418, 443]], eyeHW: 48, eyeHH: 15, pivotY: 820
+        };
         const TH = {
-            img: null, loaded: false, ctx: null, utter: null, text: '', active: false,
+            img: null, loaded: false, targets: [], utter: null, text: '', active: false,
             anchorT: 0, anchorIdx: 0, cps: 15, lastBT: 0, lastBIdx: 0,
             open: 0, round: 0, raf: 0, seenSpeaking: false, notSpeakingSince: 0,
-            captionWordStart: -2
+            captionWordStart: -2, sway: 0, blinkStart: 0, nextBlinkAt: 0, dirty: true
         };
 
         function thViseme(ch) {
@@ -48696,13 +48631,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             return [0.24, 0];
         }
 
+        // Két rajzfelület: a PC-s lecke melletti panel, és a lebegő ablak
+        // (mobilon, illetve PC-n az Akadémián kívüli — pl. AI-coach — felolvasáskor).
         function thEnsureLoaded() {
+            if (!TH.targets.length) {
+                ['talking-head-canvas', 'th-float-canvas'].forEach(id => {
+                    const c = document.getElementById(id);
+                    if (c && c.getContext) TH.targets.push({ canvas: c, ctx: c.getContext('2d') });
+                });
+            }
             if (TH.img) return;
-            const canvas = document.getElementById('talking-head-canvas');
-            if (!canvas || !canvas.getContext) return;
-            TH.ctx = canvas.getContext('2d');
             TH.img = new Image();
-            TH.img.onload = () => { TH.loaded = true; thDraw(); };
+            TH.img.onload = () => { TH.loaded = true; TH.dirty = true; thKick(); };
             TH.img.onerror = () => {
                 const cap = document.getElementById('talking-head-caption');
                 if (cap) cap.textContent = 'A tanár képe nem töltődött be (hálózati hiba) — a felolvasás ettől még működik.';
@@ -48710,11 +48650,40 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             TH.img.src = 'assets/tutor-head.jpg';
         }
 
-        function thDraw() {
-            const ctx = TH.ctx, img = TH.img, g = TH_GEOM;
-            if (!ctx || !TH.loaded) return;
-            ctx.clearRect(0, 0, g.W, g.H);
+        function thTargetVisible(t) { return t.canvas.offsetParent !== null || getComputedStyle(t.canvas).position === 'fixed'; }
+
+        function thDrawOn(ctx, now) {
+            const img = TH.img, g = TH_GEOM;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, g.W, g.H);
+            // Enyhe fejmozgás beszéd közben (a nyak körül billen + kicsit bólint).
+            if (TH.sway > 0.001) {
+                const ang = Math.sin(now / 850) * 0.018 * TH.sway;
+                const dy = Math.sin(now / 520) * 4 * TH.sway;
+                ctx.translate(g.cx, g.pivotY + dy);
+                ctx.rotate(ang);
+                ctx.translate(-g.cx, -g.pivotY);
+            }
             ctx.drawImage(img, 0, 0, g.W, g.H);
+            // Pislogás: a szem kitöltése elsötétül, és egy csukott szemhéj-vonal jelenik meg.
+            const b = thBlinkAmount(now);
+            if (b > 0.02) {
+                g.eyes.forEach(([ex, ey]) => {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.ellipse(ex, ey, g.eyeHW, g.eyeHH, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(1,4,10,' + (0.92 * b).toFixed(3) + ')';
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(ex - g.eyeHW, ey);
+                    ctx.quadraticCurveTo(ex, ey + 7, ex + g.eyeHW, ey);
+                    ctx.lineWidth = 2.2;
+                    ctx.strokeStyle = 'rgba(103,232,249,' + (0.85 * b).toFixed(3) + ')';
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            }
             const drop = g.maxDrop * TH.open;
             if (drop < 0.4) return;
             const lipHalf = g.lipHalf * (1 - 0.32 * TH.round);
@@ -48746,6 +48715,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
         }
 
+        // Kompatibilitás: a korábbi kód/tesztek thDraw()-t hívnak.
+        function thDraw() {
+            if (!TH.loaded) return;
+            const now = performance.now();
+            TH.targets.forEach(t => { if (thTargetVisible(t)) thDrawOn(t.ctx, now); });
+        }
+
+        const TH_BLINK_MS = 170;
+        function thBlinkAmount(now) {
+            const t = now - TH.blinkStart;
+            return (t >= 0 && t < TH_BLINK_MS) ? Math.sin(Math.PI * t / TH_BLINK_MS) : 0;
+        }
+
         function thSetLive(on) {
             const frame = document.getElementById('talking-head-frame');
             const dot = document.querySelector('#talking-head-status .th-live-dot');
@@ -48753,6 +48735,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (frame) frame.classList.toggle('th-speaking', on);
             if (dot) dot.classList.toggle('on', on);
             if (txt) txt.textContent = on ? 'Beszél…' : 'Csendben';
+            thSyncFloat(on);
+        }
+
+        // Lebegő fej-ablak: akkor látszik, ha épp felolvasás folyik ÉS a PC-s
+        // lecke melletti panel nem látható (mobil, vagy PC-n Akadémián kívül).
+        function thSyncFloat(on) {
+            const fl = document.getElementById('th-float');
+            if (!fl) return;
+            const panel = document.getElementById('talking-head-panel');
+            const panelShown = !!(panel && panel.offsetParent !== null);
+            const show = on && !panelShown;
+            if (show) thEnsureLoaded();
+            fl.classList.toggle('th-float-on', show);
+            TH.dirty = true;
         }
 
         function thUpdateCaption(i) {
@@ -48798,8 +48794,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             TH.open += (tgtO - TH.open) * 0.45;
             TH.round += (tgtR - TH.round) * 0.3;
             if (TH.open < 0.004) TH.open = 0;
-            thDraw();
-            if (TH.active || TH.open > 0) TH.raf = requestAnimationFrame(thLoop);
+            TH.sway += ((TH.active ? 1 : 0) - TH.sway) * 0.05;
+            if (TH.sway < 0.002) TH.sway = 0;
+            // Pislogás 2,5–5,5 mp-enként (beszéd közben és csendben is).
+            if (!TH.nextBlinkAt) TH.nextBlinkAt = now + 1500;
+            if (now >= TH.nextBlinkAt) { TH.blinkStart = now; TH.nextBlinkAt = now + 2500 + Math.random() * 3000; }
+            const blinking = now - TH.blinkStart < TH_BLINK_MS;
+            const visible = TH.targets.some(thTargetVisible);
+            if (TH.loaded && visible && (TH.dirty || TH.active || TH.open > 0 || TH.sway > 0 || blinking || now - TH.blinkStart < TH_BLINK_MS + 40)) {
+                TH.targets.forEach(t => { if (thTargetVisible(t)) thDrawOn(t.ctx, now); });
+                TH.dirty = false;
+            }
+            // Fut, amíg valamelyik fej-felület látszik (pislogás miatt), vagy még mozog a száj.
+            if (visible || TH.active || TH.open > 0) TH.raf = requestAnimationFrame(thLoop);
         }
 
         function thKick() { if (!TH.raf) TH.raf = requestAnimationFrame(thLoop); }
@@ -48840,11 +48847,48 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!panel) return;
             const show = ttsSupported && academyLessonIdx !== null;
             panel.classList.toggle('th-visible', show);
-            if (show && window.matchMedia && window.matchMedia('(min-width: 1024px)').matches) thEnsureLoaded();
+            if (show && window.matchMedia && window.matchMedia('(min-width: 1024px)').matches) { thEnsureLoaded(); TH.dirty = true; thKick(); }
             const btn = document.getElementById('talking-head-play-btn');
             if (btn) btn.innerHTML = academyAutoplayTTS
                 ? '<i class="fa-solid fa-stop"></i> <span>Felolvasás leállítása</span>'
                 : '<i class="fa-solid fa-play"></i> <span>Lecke felolvasása</span>';
+            ttsRenderSettingsControls();
+            thSyncFloat(TH.active);
+        }
+
+        // ---------- Felolvasási beállítások: sebesség + hang ----------
+        // Eszközönkénti kényelmi beállítás (mint a napi emlékeztető vagy a
+        // figyelőlista) — localStorage-ban, nem fiókadat.
+        const TTS_RATES = [0.8, 1, 1.25, 1.5];
+        const ttsPrefs = (() => {
+            try {
+                const o = JSON.parse(localStorage.getItem('chartolj_tts_prefs') || '{}');
+                return { rate: TTS_RATES.includes(o.rate) ? o.rate : 1, voiceURI: typeof o.voiceURI === 'string' ? o.voiceURI : '' };
+            } catch (e) { return { rate: 1, voiceURI: '' }; }
+        })();
+        function ttsSavePrefs() { try { localStorage.setItem('chartolj_tts_prefs', JSON.stringify(ttsPrefs)); } catch (e) {} }
+
+        function ttsCycleRate() {
+            const i = TTS_RATES.indexOf(ttsPrefs.rate);
+            ttsPrefs.rate = TTS_RATES[(i + 1) % TTS_RATES.length];
+            ttsSavePrefs();
+            ttsRenderSettingsControls();
+        }
+        function ttsSetVoice(uri) { ttsPrefs.voiceURI = uri || ''; ttsSavePrefs(); }
+        function ttsRateLabel() { return String(ttsPrefs.rate).replace('.', ',') + '×'; }
+
+        function ttsRenderSettingsControls() {
+            document.querySelectorAll('[data-tts-rate-label]').forEach(el => { el.textContent = ttsRateLabel(); });
+            const sel = document.getElementById('talking-head-voice-select');
+            if (!sel || !ttsSupported) return;
+            let voices = [];
+            try { voices = window.speechSynthesis.getVoices() || []; } catch (e) {}
+            const hu = voices.filter(v => /^hu/i.test(v.lang));
+            const list = hu.length ? hu : voices;
+            const opts = ['<option value="">Automatikus (magyar)</option>'].concat(list.map(v =>
+                '<option value="' + escapeHtml(v.voiceURI) + '"' + (v.voiceURI === ttsPrefs.voiceURI ? ' selected' : '') + '>' + escapeHtml(v.name + (v.localService ? '' : ' (online)')) + '</option>'));
+            const html = opts.join('');
+            if (sel.innerHTML !== html) sel.innerHTML = html;
         }
 
         // key: egyedi azonosító (pl. "lesson-3-card-0", "coach-msg-5") — ez dönti el,
@@ -48870,7 +48914,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         if (ttsSupported && typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
-            window.speechSynthesis.onvoiceschanged = () => { ttsVoicesCache = window.speechSynthesis.getVoices(); };
+            window.speechSynthesis.onvoiceschanged = () => { ttsVoicesCache = window.speechSynthesis.getVoices(); ttsRenderSettingsControls(); };
         }
 
         // =================================================================
@@ -56000,9 +56044,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div class="h-full bg-${accent} transition-all" style="width:${(academyCardIdx + 1) / l.cards.length * 100}%"></div>
                         </div>
                         ${ttsSupported ? `
-                        <button type="button" onclick="event.stopPropagation(); academyToggleAutoplay()" class="w-full mb-3 px-3 py-2 rounded-xl text-[11px] font-bold border ${academyAutoplayTTS ? 'border-neon-cyan/50 text-neon-cyan bg-neon-cyan/10' : 'border-dark-750 text-slate-400 hover:border-dark-600'} transition flex items-center justify-center gap-2">
+                        <div class="flex items-stretch gap-2 mb-3">
+                        <button type="button" onclick="event.stopPropagation(); academyToggleAutoplay()" class="flex-1 px-3 py-2 rounded-xl text-[11px] font-bold border ${academyAutoplayTTS ? 'border-neon-cyan/50 text-neon-cyan bg-neon-cyan/10' : 'border-dark-750 text-slate-400 hover:border-dark-600'} transition flex items-center justify-center gap-2">
                             <i class="fa-solid ${academyAutoplayTTS ? 'fa-stop' : 'fa-headphones'}"></i> ${academyAutoplayTTS ? 'Hangos tanulás leállítása' : 'Hangos tanulás indítása (automata felolvasás)'}
-                        </button>` : ''}
+                        </button>
+                        <button type="button" onclick="event.stopPropagation(); ttsCycleRate()" class="tts-rate-chip px-2 rounded-xl border border-dark-750 text-[11px] font-mono font-bold text-slate-300 hover:border-neon-cyan/40 transition" title="Felolvasási sebesség (a következő felolvasástól érvényes)" aria-label="Felolvasási sebesség váltása"><span data-tts-rate-label>${ttsRateLabel()}</span></button>
+                        </div>` : ''}
                         <div class="glass-card rounded-2xl p-6 border border-dark-750 min-h-[220px]">
                             <div class="flex items-center justify-between mb-3 gap-2">
                                 <h3 class="text-base font-bold text-white">${card.t}</h3>
