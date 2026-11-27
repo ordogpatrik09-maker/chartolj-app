@@ -889,6 +889,13 @@
                 right: 20px !important;
                 bottom: calc(68px + env(safe-area-inset-bottom) + 136px) !important;
             }
+            /* Görgetés közben a lebegő AI-gomb félrecsúszik és átengedi a
+               koppintásokat (bármilyen fix helyen takart valamit); megálláskor
+               visszajön. A görgethető képernyők alján plusz hely, hogy az
+               utolsó elemek is a gomb fölé görgethetők legyenek. */
+            #ai-chat-launcher { transition: transform 0.22s ease, opacity 0.22s ease; }
+            #ai-chat-launcher.launcher-scroll-hide { transform: translateX(90px); opacity: 0; pointer-events: none; }
+            #home-screen, #progress-screen { padding-bottom: 200px !important; }
             #toast-container {
                 bottom: calc(68px + env(safe-area-inset-bottom) + 16px) !important;
             }
@@ -59651,6 +59658,21 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             const lower = text.toLowerCase();
             return TRADING_KEYWORDS.some(kw => lower.includes(kw));
         }
+
+        // Mobilon görgetés közben a lebegő AI-gomb elrejtése (lásd a CSS-t).
+        (function () {
+            let t = null;
+            const mq = window.matchMedia ? window.matchMedia('(max-width: 1023px)') : null;
+            document.addEventListener('scroll', () => {
+                if (!mq || !mq.matches) return;
+                const l = document.getElementById('ai-chat-launcher'); if (!l) return;
+                const panel = document.getElementById('ai-chat-panel');
+                if (panel && !panel.classList.contains('hidden')) return; // nyitott chatnél ne
+                l.classList.add('launcher-scroll-hide');
+                clearTimeout(t);
+                t = setTimeout(() => l.classList.remove('launcher-scroll-hide'), 1100);
+            }, { capture: true, passive: true });
+        })();
 
         function toggleAiChat() {
             aiChatOpen = !aiChatOpen;
