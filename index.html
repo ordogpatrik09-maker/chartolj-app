@@ -48072,7 +48072,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function findLessonIdxByTitle(regex, fallback) {
-            const i = LESSONS_DATA.findIndex(l => regex.test(String(l.t)));
+            const i = LESSONS_DATA.findIndex(l => regex.test(String(l._hu ? l._hu.t : l.t)));
             return i === -1 ? fallback : i;
         }
 
@@ -48921,6 +48921,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         let ttsCurrentUtter = null; // az épp aktív SpeechSynthesisUtterance (elárvult események szűrésére)
         let ttsVoicesCache = null;
 
+        function ttsPickEnglishVoice() {
+            if (!ttsSupported) return null;
+            try { const voices = ttsVoicesCache || window.speechSynthesis.getVoices(); return (voices || []).find(v => /^en-(US|GB)/i.test(v.lang)) || (voices || []).find(v => /^en/i.test(v.lang)) || null; } catch (e) { return null; }
+        }
         function ttsPickHungarianVoice() {
             if (!ttsSupported) return null;
             try {
@@ -49018,6 +49022,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['🌐', 'Leckék nyelve (English)', 'angol english nyelv language fordítás', `openLessonLanguage()`],
             ['🎥', 'Élő órák', 'élő óra youtube live adás webinár stream', `openLiveSessions()`],
             ['👨‍👩‍👧', 'Családi csomag', 'család családi prémium csomag kód tag', `openFamilyPlan()`],
             ['🏫', 'Osztály mód', 'osztály tanár iskola csoport szakkör riport diák b2b', `openClassMode()`],
@@ -49156,8 +49161,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!text) { ttsCurrentKey = null; return; }
 
             const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = 'hu-HU';
-            const voice = ttsPickHungarianVoice();
+            // Angol leckéknél (ha a szövegben nincs magyar ékezet) angol hang.
+            const isEn = typeof lessonLang !== 'undefined' && lessonLang === 'en' && text.length > 20 && !/[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]/.test(text);
+            utter.lang = isEn ? 'en-US' : 'hu-HU';
+            const voice = isEn ? ttsPickEnglishVoice() : ttsPickHungarianVoice();
             if (voice) utter.voice = voice;
             utter.rate = ttsPrefs.rate;
             // Csak a MÉG AKTUÁLIS felolvasás vége számít: egy cancel()-lel
@@ -51136,7 +51143,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         ];
 
         function getCurriculumLessonIdx(title) {
-            return LESSONS_DATA.findIndex(l => l.t === title);
+            return LESSONS_DATA.findIndex(l => (l._hu ? l._hu.t : l.t) === title);
         }
 
         function renderCurriculumPath() {
@@ -57470,7 +57477,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
         function strategyOpenLesson(id) {
             const st = STRATEGY_LIBRARY.find(x => x.id === id); if (!st) return;
-            const li = LESSONS_DATA.findIndex(l => l.t === st.lesson);
+            const li = LESSONS_DATA.findIndex(l => (l._hu ? l._hu.t : l.t) === st.lesson);
             if (li < 0) { showNotification('Ehhez a stratégiához nincs külön lecke.'); return; }
             miniQuizClose();
             if (isLessonLocked(LESSONS_DATA[li])) { openPremiumModal(LESSONS_DATA[li]); return; }
@@ -57600,6 +57607,53 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <p class="text-[9.5px] text-slate-600 mt-2">Oktatási célra, nem befektetési tanács.</p>`;
         }
 
+        // ---------- Angol leckék (szakaszos AI-fordítás, lessons-en/mN.js) ----------
+        // A fordított leckék a LESSONS_DATA objektumaiba kerülnek (a magyar
+        // eredeti l._hu-ban marad), így minden nézet változtatás nélkül angolul
+        // mutatja őket; a kvíz helyes válasza (a) és az indexek változatlanok.
+        // A felület magyar marad. Eszközönkénti beállítás.
+        const LESSONS_EN_FILES = { 6: 'lessons-en/m6.js' };
+        let lessonLang = (() => { try { return localStorage.getItem('chartolj_lesson_lang') === 'en' ? 'en' : 'hu'; } catch (e) { return 'hu'; } })();
+        let lessonsEnLoaded = null;
+        function loadLessonsEn() {
+            if (lessonsEnLoaded) return lessonsEnLoaded;
+            lessonsEnLoaded = Promise.all(Object.values(LESSONS_EN_FILES).map(src => new Promise(res => {
+                const sc = document.createElement('script'); sc.src = src; sc.onload = () => res(true); sc.onerror = () => res(false); document.head.appendChild(sc);
+            })));
+            return lessonsEnLoaded;
+        }
+        function applyLessonLang() {
+            const EN = window.LESSONS_EN || {};
+            Object.keys(EN).forEach(k => {
+                const l = LESSONS_DATA[k], en = EN[k]; if (!l || !en) return;
+                if (!l._hu) l._hu = { t: l.t, s: l.s, cards: l.cards, qs: l.qs };
+                if (lessonLang === 'en' && Array.isArray(en.cards) && Array.isArray(en.qs) && en.qs.length === l._hu.qs.length) {
+                    l.t = en.t; l.s = en.s; l.cards = en.cards;
+                    l.qs = l._hu.qs.map((q, qi) => Object.assign({}, q, { q: en.qs[qi].q, o: en.qs[qi].o.length === q.o.length ? en.qs[qi].o : q.o, e: en.qs[qi].e }));
+                } else { l.t = l._hu.t; l.s = l._hu.s; l.cards = l._hu.cards; l.qs = l._hu.qs; }
+            });
+        }
+        function lessonsEnCount() { return Object.keys(window.LESSONS_EN || {}).length; }
+        async function setLessonLang(lang) {
+            lessonLang = lang === 'en' ? 'en' : 'hu';
+            try { localStorage.setItem('chartolj_lesson_lang', lessonLang); } catch (e) {}
+            if (lessonLang === 'en') await loadLessonsEn();
+            applyLessonLang();
+            try { renderAcademyDailyCard(); renderAcademyLessonList(); } catch (e) {}
+            try { if (typeof academyLessonIdx === 'number' && academyLessonIdx !== null && document.getElementById('academy-viewer')) renderAcademyViewer(); } catch (e) {}
+        }
+        function openLessonLanguage() {
+            miniQuiz = null; chartTask = null; microLesson = null;
+            document.getElementById('mini-quiz-title').textContent = '🌐 Leckék nyelve';
+            const n = lessonsEnCount();
+            const mods = Object.keys(LESSONS_EN_FILES).map(m => ACADEMY_MODULES[m] ? ACADEMY_MODULES[m].n : m).join(', ');
+            const btn = (k, l) => `<button type="button" onclick="setLessonLang('${k}').then(openLessonLanguage)" aria-pressed="${lessonLang === k}" class="flex-1 py-2.5 rounded-xl text-xs font-bold border ${lessonLang === k ? 'border-neon-cyan text-neon-cyan bg-neon-cyan/10' : 'border-dark-750 text-slate-300'}">${l}</button>`;
+            document.getElementById('mini-quiz-body').innerHTML = `<div class="flex gap-2 mb-3">${btn('hu', '🇭🇺 Magyar')}${btn('en', '🇬🇧 English (béta)')}</div>
+                <p class="text-[11px] text-slate-400">Az angol fordítás szakaszosan készül. Jelenleg elérhető modul(ok): <b class="text-white">${escapeHtml(mods)}</b>${lessonLang === 'en' ? ` (${n} lecke)` : ''}. A többi lecke magyarul marad, a felület is magyar. Angol leckénél a felolvasás angol hangon szól.</p>`;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+        }
+        if (lessonLang === 'en') setTimeout(() => setLessonLang('en'), 0);
+
         // ---------- Napi 5 perc ----------
         // 1 új lecke (a tanár felolvassa) + az esedékes ismétlések. A lecke
         // befejezésekor az összegzés tovább vezet az Ismétléshez.
@@ -57637,6 +57691,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <button type="button" onclick="openMonthlyLeague('monthly')" class="text-neon-cyan hover:underline">🏆 Bajnokság</button>
                     <button type="button" onclick="openMentor()" class="text-neon-cyan hover:underline">🧑‍🏫 Mentor</button>
                     <button type="button" onclick="openClassMode()" class="text-neon-cyan hover:underline">🏫 Osztály</button>
+                    <button type="button" onclick="openLessonLanguage()" class="text-neon-cyan hover:underline">🌐 ${lessonLang === 'en' ? 'English' : 'Nyelv'}</button>
                 </div>${liveLineHtml()}${assignmentLineHtml()}${seasonalLineHtml()}</div>`;
         }
         function startDailySession() {
