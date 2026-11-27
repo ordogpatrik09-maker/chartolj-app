@@ -1696,34 +1696,37 @@
 
             <!-- Asset Selector Dropdown -->
             <div class="relative">
-                <!-- JAVÍTÁS: eredetileg natív <button> volt, de a belsejében lévő
-                     #data-source-badge egy ÖNÁLLÓ, saját billentyűzet-kezeléssel
-                     és event.stopPropagation()-nel rendelkező role="button"
-                     elem — egy natív <button>-nek viszont a HTML-specifikáció
-                     szerint nem lehet interaktív (fókuszálható) leszármazottja
-                     ("nested interactive controls"), ez képernyőolvasóknál és
-                     néhány böngészőnél megbízhatatlan fókusz-/aktiválási
-                     viselkedéshez vezethet. A projektben máshol (pl. az
-                     Akadémia lecke-lista sorai + a bennük lévő könyvjelző-
-                     gomb, lásd renderAcademyLessonList()) pontosan erre az
-                     esetre EZ a bevett, helyes minta: a külső "gomb" egy
-                     role="button" + tabindex="0" + onkeydown Enter/Space-
-                     kezelő div, nem natív <button>. Ez az elem volt az
-                     egyetlen kivétel ez alól — most ugyanarra a mintára
-                     igazítva. A kattintás-logika (addEventListener('click', ...))
-                     és a látható szöveges tartalomból (BTC/USDT, Bitcoin
-                     Perpetual) számított elérhető név változatlan marad. -->
-                <div id="asset-selector-btn" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-700/60 transition group cursor-pointer">
+                <!-- JAVÍTÁS (audit — nested-interactive, axe_main_shell_sweep.js):
+                     a korábbi "JAVÍTÁS" megjegyzés tévesen azt feltételezte, hogy a
+                     natív <button> → role="button" div átalakítás megoldja a
+                     beágyazott interaktív vezérlők problémáját. Ez NEM igaz: a
+                     HTML-specifikáció csak a natív <button> ELEMRE tiltja a
+                     fókuszálható leszármazottat, de az ARIA "nested interactive
+                     controls" hozzáférhetőségi szabály ugyanúgy vonatkozik egy
+                     role="button" div-re is — az axe-core "nested-interactive"
+                     (serious) szabálya ezt ki is mutatta mind itt, mind az
+                     Akadémia lecke-lista sorainál (lásd ott is javítva). A VALÓS
+                     javítás: a #data-source-badge-ot NEM önálló fókuszálható
+                     vezérlőként kezeljük többé (role/tabindex/onkeydown törölve,
+                     aria-hidden="true"), hanem a státuszát (dot.title szövege)
+                     egy rejtett aria-describedby-cél (#asset-data-source-desc)
+                     közvetíti a külső gomb leírásaként — képernyőolvasó-
+                     felhasználók így Tab nélkül, a fő gomb fókuszálásakor is
+                     megkapják ugyanazt az információt, egér/touch felhasználóknak
+                     pedig a kattintás (toast) és a natív title-tooltip is megmarad.
+                     updateDataSourceBadge() frissíti a rejtett leírást is. -->
+                <div id="asset-selector-btn" role="button" tabindex="0" aria-describedby="asset-data-source-desc" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-700/60 transition group cursor-pointer">
                     <div id="asset-icon" class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-xs font-bold">
                         ₿
                     </div>
                     <div class="text-left">
                         <div class="flex items-center gap-1.5">
                             <span id="selected-asset-symbol" class="font-bold text-xs text-white">BTC/USDT</span>
-                            <span id="data-source-badge" role="button" tabindex="0" aria-label="Adatforrás információ megjelenítése" onclick="event.stopPropagation(); showDataSourceInfo();" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();this.click();}" class="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0 cursor-pointer" title="Adatforrás"></span>
+                            <span id="data-source-badge" aria-hidden="true" onclick="event.stopPropagation(); showDataSourceInfo();" class="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0 cursor-pointer" title="Adatforrás"></span>
                             <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:text-neon-cyan transition-transform"></i>
                         </div>
                         <span id="selected-asset-name" class="text-[9px] text-slate-400 block -mt-0.5">Bitcoin Perpetual</span>
+                        <span id="asset-data-source-desc" class="sr-only">Szimulált adat (oktatási célra) — nincs ingyenes valós idejű forrás ehhez az eszközhöz</span>
                     </div>
                 </div>
 
@@ -18962,16 +18965,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function updateDataSourceBadge() {
             const dot = document.getElementById('data-source-badge');
             if (!dot) return;
+            let title;
             if (dataSourceForCurrentAsset === 'live') {
                 dot.className = 'w-1.5 h-1.5 rounded-full bg-neon-green shrink-0 pulse-live';
-                dot.title = 'Élő piaci adat (Binance)';
+                title = 'Élő piaci adat (Binance)';
             } else if (dataSourceForCurrentAsset === 'anchored') {
                 dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0';
-                dot.title = 'Valós napi árfolyamhoz igazítva, szimulált napon belüli mozgással';
+                title = 'Valós napi árfolyamhoz igazítva, szimulált napon belüli mozgással';
             } else {
                 dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0';
-                dot.title = 'Szimulált adat (oktatási célra) — nincs ingyenes valós idejű forrás ehhez az eszközhöz';
+                title = 'Szimulált adat (oktatási célra) — nincs ingyenes valós idejű forrás ehhez az eszközhöz';
             }
+            dot.title = title;
+            // JAVÍTÁS (audit — nested-interactive): a dot immár aria-hidden, a
+            // státuszát a külső #asset-selector-btn aria-describedby-ja közvetíti
+            // ezen a rejtett span-en keresztül (lásd a HTML oldali megjegyzést) —
+            // ezt is szinkronban kell tartani a dot.title-lel.
+            const desc = document.getElementById('asset-data-source-desc');
+            if (desc) desc.textContent = title;
         }
 
         function showDataSourceInfo() {
@@ -51897,9 +51908,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         // "Most találd meg te magad" (10-12. pont): a lecke alakzatának gyakorlása Chart Drillben.
         function toggleBookmark(lessonIdx) {
+            // JAVÍTÁS (audit — fókuszvesztés billentyűzettel): a renderAcademyLessonList()
+            // a teljes lista-panel innerHTML-jét lecseréli, így a könyvjelző-gombot
+            // Enter/Space-szel aktiváló billentyűzet-felhasználó fókusza elveszett
+            // (document.activeElement a <body>-ra esett vissza) — a felhasználónak
+            // elölről kellett volna Tab-oznia. Megjegyezzük, a könyvjelző gombon
+            // volt-e a fókusz újrarajzolás ELŐTT, és ha igen, az ÚJ (azonos
+            // data-bookmark-idx-ű) elemre állítjuk vissza utána.
+            const hadFocus = document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('data-bookmark-idx') === String(lessonIdx);
             if (bookmarkedLessons.has(lessonIdx)) { bookmarkedLessons.delete(lessonIdx); showNotification('Könyvjelző eltávolítva.'); }
             else { bookmarkedLessons.add(lessonIdx); showNotification('Könyvjelzőzve! ⭐'); }
             cloudProgressDirty = true; renderAcademyLessonList();
+            if (hadFocus) {
+                const refocus = document.querySelector('[data-bookmark-idx="' + lessonIdx + '"]');
+                if (refocus) refocus.focus();
+            }
         }
 
         function startAdaptiveDrill() {
@@ -57195,20 +57218,39 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const accent = academyAccentColor(l.c);
                 const activeRow = i === academyLessonIdx;
                 return `
-                    <div role="button" tabindex="0" aria-label="${l.t} megnyitása" onclick="openAcademyLesson(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" class="w-full text-left p-2.5 rounded-lg border transition flex items-start gap-2.5 ${activeRow ? 'bg-dark-800 border-neon-cyan/40' : 'bg-dark-850/40 border-dark-750/60 hover:border-dark-600'} ${locked ? 'opacity-60' : ''}">
-                        <i class="fa-solid ${locked ? 'fa-lock' : ACADEMY_MODULES[l.m].i} ${locked ? 'text-amber-400' : 'text-' + accent} mt-1" aria-hidden="true"></i>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-xs font-bold ${done ? 'text-slate-400 line-through decoration-neon-green/60' : 'text-white'} truncate">${hiText(l.t)}</span>
-                                ${done ? '<i class="fa-solid fa-circle-check text-neon-green text-[10px] shrink-0" aria-hidden="true"></i>' : ''}<span role="button" tabindex="0" aria-pressed="${bookmarkedLessons.has(i) ? 'true' : 'false'}" aria-label="${l.t} könyvjelzőzése" onclick="event.stopPropagation();toggleBookmark(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();toggleBookmark(${i});}" class="ml-auto px-1 text-[10px] ${bookmarkedLessons.has(i)?'text-amber-400':'text-slate-700'} hover:text-amber-400 cursor-pointer shrink-0"><i class="fa-solid fa-bookmark" aria-hidden="true"></i></span>
-                            </div>
-                            <div class="text-[10px] text-slate-500 truncate mt-0.5">${l.s}</div>
-                            <div class="text-[9px] font-mono text-slate-600 mt-1 flex items-center gap-2">
-                                <span><i class="fa-solid fa-layer-group" aria-hidden="true"></i> ${l.cards.length} kártya</span>
-                                <span><i class="fa-solid fa-circle-question" aria-hidden="true"></i> ${l.qs.length} kérdés</span>
-                                ${l.prem ? `<span class="font-bold ${locked ? 'text-amber-400' : 'text-' + accent}">${locked ? '🔒 PRO' : 'PRO'}</span>` : ''}
+                    <!-- JAVÍTÁS (audit — nested-interactive, axe_main_shell_sweep.js):
+                         korábban EZ a sor (role="button" div) tartalmazta közvetlen
+                         leszármazottként a könyvjelző role="button" span-t — a két
+                         önálló interaktív vezérlő egymásba ágyazása (még
+                         event.stopPropagation()-nel is) axe-core "nested-interactive"
+                         (serious) hibát ad, mert képernyőolvasóknál/néhány
+                         böngészőnél megbízhatatlan fókusz-/aktiválási viselkedéshez
+                         vezet — ellentétben az asset-selector-btn melletti korábbi
+                         (téves) megjegyzéssel, ami pont EZT a mintát ajánlotta
+                         követendőként. A VALÓS javítás: a külső kártya-div immár
+                         NEM interaktív (nincs role/tabindex/onclick rajta), hanem
+                         két EGYMÁS MELLETTI (nem egymásba ágyazott) role="button"
+                         gyermeke van — a lecke-megnyitó (ikon+szöveg, flex-1) és a
+                         könyvjelző-kapcsoló (a sor jobb szélén) —, emiatt a
+                         stopPropagation() is elhagyható, mert nincs többé közös
+                         ős-kattintáskezelő, amibe felbuborékolhatna. -->
+                    <div class="w-full p-2.5 rounded-lg border transition flex items-start gap-2.5 ${activeRow ? 'bg-dark-800 border-neon-cyan/40' : 'bg-dark-850/40 border-dark-750/60 hover:border-dark-600'} ${locked ? 'opacity-60' : ''}">
+                        <div role="button" tabindex="0" aria-label="${l.t} megnyitása" onclick="openAcademyLesson(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" class="flex-1 min-w-0 text-left flex items-start gap-2.5 cursor-pointer">
+                            <i class="fa-solid ${locked ? 'fa-lock' : ACADEMY_MODULES[l.m].i} ${locked ? 'text-amber-400' : 'text-' + accent} mt-1" aria-hidden="true"></i>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-bold ${done ? 'text-slate-400 line-through decoration-neon-green/60' : 'text-white'} truncate">${hiText(l.t)}</span>
+                                    ${done ? '<i class="fa-solid fa-circle-check text-neon-green text-[10px] shrink-0" aria-hidden="true"></i>' : ''}
+                                </div>
+                                <div class="text-[10px] text-slate-500 truncate mt-0.5">${l.s}</div>
+                                <div class="text-[9px] font-mono text-slate-600 mt-1 flex items-center gap-2">
+                                    <span><i class="fa-solid fa-layer-group" aria-hidden="true"></i> ${l.cards.length} kártya</span>
+                                    <span><i class="fa-solid fa-circle-question" aria-hidden="true"></i> ${l.qs.length} kérdés</span>
+                                    ${l.prem ? `<span class="font-bold ${locked ? 'text-amber-400' : 'text-' + accent}">${locked ? '🔒 PRO' : 'PRO'}</span>` : ''}
+                                </div>
                             </div>
                         </div>
+                        <span role="button" tabindex="0" data-bookmark-idx="${i}" aria-pressed="${bookmarkedLessons.has(i) ? 'true' : 'false'}" aria-label="${l.t} könyvjelzőzése" onclick="toggleBookmark(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleBookmark(${i});}" class="px-1 text-[10px] ${bookmarkedLessons.has(i)?'text-amber-400':'text-slate-700'} hover:text-amber-400 cursor-pointer shrink-0 self-start"><i class="fa-solid fa-bookmark" aria-hidden="true"></i></span>
                     </div>
                 `;
             }).join('');
