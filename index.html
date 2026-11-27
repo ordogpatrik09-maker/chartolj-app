@@ -1504,6 +1504,18 @@
                 font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8;
             }
             .m-group-head .m-group-chev { transition: transform 0.2s ease; font-size: 10px; }
+            /* Kereskedés: a kilógó gombok a "⋯" lapra kerültek */
+            #chart-type-group, #chart-topbar .tb-sep, #chart-topbar-actions,
+            #tab-btn-portfolio, #tab-btn-historical-event, #tab-btn-progress-export, #tab-btn-weak-topics { display: none !important; }
+            /* A fejléc Profil-gombja 360 px-en kilógott; mobilon az alsó navigáció
+               Profil füle ugyanezt adja, így itt felesleges. PC-n marad. */
+            #header-profile-btn { display: none !important; }
+            #trade-more-sheet.hidden { display: none !important; }
+            .tm-sec { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; margin: 14px 0 6px; }
+            .tm-row { display: grid; gap: 6px; }
+            .tm-btn { padding: 10px 8px; border-radius: 12px; border: 1px solid #1e293b; background: #0b1220; color: #cbd5e1; font-size: 12px; font-weight: 700; text-align: center; }
+            .tm-btn[aria-pressed="true"] { border-color: rgba(34,211,238,0.6); background: rgba(34,211,238,0.10); color: #67e8f9; }
+            .tm-wide { text-align: left; display: flex; align-items: center; gap: 10px; }
             /* Fejlődés: lapok (Áttekintés / Ranglista / Statisztika / Jutalmak) */
             .m-tabbar {
                 position: sticky; top: 0; z-index: 5; display: flex; gap: 4px; padding: 4px;
@@ -3541,10 +3553,10 @@
                     <button onclick="setTimeframe('1D')" id="tf-1D" class="px-2.5 py-1 rounded-md hover:bg-dark-800 text-slate-300 font-medium transition">1D</button>
                 </div>
 
-                <div class="h-4 w-px bg-dark-750"></div>
+                <div class="tb-sep h-4 w-px bg-dark-750"></div>
 
                 <!-- Chart Type Selector -->
-                <div class="flex items-center gap-1">
+                <div id="chart-type-group" class="flex items-center gap-1">
                     <button onclick="setChartType('candles')" id="chart-type-candles" class="p-1.5 rounded-md bg-dark-800 text-neon-cyan border border-dark-700 transition" title="Gyertyatartó Grafikon" aria-label="Gyertyatartó Grafikon">
                         <i class="fa-solid fa-chart-gantt"></i>
                     </button>
@@ -3556,7 +3568,7 @@
                     </button>
                 </div>
 
-                <div class="h-4 w-px bg-dark-750"></div>
+                <div class="tb-sep h-4 w-px bg-dark-750"></div>
 
                 <!-- Quick Active Indicators Toggles -->
                 <!-- JAVÍTÁS (2026-10-09, "nehezen kezelhető... rengeteg minden
@@ -3602,6 +3614,7 @@
                         <i class="fa-solid fa-compress lg:mr-1"></i> <span class="hidden lg:inline">Nézet Visszaállítása</span>
                     </button>
                 </div>
+                <button type="button" class="m-only shrink-0 ml-1 px-2.5 py-1 rounded-lg border border-dark-700 text-slate-300 text-[12px] font-bold" onclick="openTradeMoreSheet()" aria-label="További grafikon- és elemző-beállítások" aria-haspopup="dialog">⋯</button>
                 <!-- JAVÍTÁS (2026-10-09, "nehezen kezelhető... nem fogja
                      senki csúsztatni" visszajelzés nyomán): a #chart-topbar
                      vízszintesen görgethető, DE a görgetősáv el volt rejtve
@@ -17680,6 +17693,17 @@ Mean-reversion,2.5</textarea>
                 <button type="button" onclick="miniQuizClose()" class="w-8 h-8 rounded-lg border border-dark-750 text-slate-400 hover:text-white" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="mini-quiz-body"></div>
+        </div>
+    </div>
+
+    <!-- Mobil "Több" lap a Kereskedés fülön — a kilógó grafikon- és elemző-gombok
+         egy helyen. Minden elem az EREDETI (mobilon rejtett) gombot nyomja meg,
+         így a viselkedés azonos. PC-n sosem látszik (.m-only). -->
+    <div id="trade-more-sheet" class="m-only hidden fixed inset-0 z-[97] bg-black/70 flex items-end" role="dialog" aria-modal="true" aria-label="További beállítások" onclick="if(event.target===this)closeTradeMoreSheet()">
+        <div class="w-full bg-dark-950 border-t border-dark-750 rounded-t-2xl p-4 pb-6 max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3"><h2 class="text-sm font-extrabold text-white">Grafikon és elemzés</h2>
+                <button type="button" onclick="closeTradeMoreSheet()" class="w-8 h-8 rounded-lg border border-dark-750 text-slate-400" aria-label="Bezárás">✕</button></div>
+            <div id="trade-more-body"></div>
         </div>
     </div>
 
@@ -48945,6 +48969,33 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         document.addEventListener('DOMContentLoaded', () => setTimeout(renderHomeToday, 400));
+        // ================= MOBIL "TÖBB" LAP (Kereskedés) =================
+        function tmProxy(id) { const el = document.getElementById(id); if (el) el.click(); }
+        function renderTradeMoreSheet() {
+            const body = document.getElementById('trade-more-body'); if (!body) return;
+            const ct = (typeof chartType !== 'undefined' && chartType) || 'candles';
+            const ck = id => { const e = document.getElementById(id); return !!(e && e.checked); };
+            const tm = document.getElementById('terminal-mode-toggle-btn');
+            const tmLabel = tm ? (tm.getAttribute('title') || 'Terminál mód') : 'Terminál mód';
+            const ctBtn = (t, label) => `<button type="button" class="tm-btn" aria-pressed="${ct === t}" onclick="tmProxy('chart-type-${t}'); renderTradeMoreSheet()">${label}</button>`;
+            const indBtn = (id, label) => `<button type="button" class="tm-btn" aria-pressed="${ck(id)}" onclick="tmProxy('${id}'); renderTradeMoreSheet()">${label}</button>`;
+            const act = (id, icon, label, sub) => `<button type="button" class="tm-btn tm-wide" onclick="closeTradeMoreSheet(); tmProxy('${id}')"><span class="text-lg">${icon}</span><span><span class="block">${label}</span>${sub ? `<span class="block text-[10.5px] font-normal text-slate-500">${sub}</span>` : ''}</span></button>`;
+            body.innerHTML =
+                `<div class="tm-sec">Grafikon típusa</div><div class="tm-row grid-cols-3">${ctBtn('candles', '🕯️ Gyertya')}${ctBtn('line', '📈 Vonal')}${ctBtn('area', '🏔️ Terület')}</div>` +
+                `<div class="tm-sec">Indikátorok</div><div class="tm-row grid-cols-3">${indBtn('toggle-ema', 'EMA 20/50')}${indBtn('toggle-bollinger', 'Bollinger')}${indBtn('toggle-rsi', 'RSI 14')}</div>` +
+                `<div class="tm-sec">Nézet</div><div class="tm-row grid-cols-2">
+                    <button type="button" class="tm-btn" onclick="tmProxy('terminal-mode-toggle-btn'); renderTradeMoreSheet()">🎓 ${escapeHtml(tmLabel)}</button>
+                    <button type="button" class="tm-btn" onclick="closeTradeMoreSheet(); resetZoom()">🔍 Nézet visszaállítása</button></div>` +
+                `<div class="tm-sec">Elemzések</div><div class="tm-row">
+                    ${act('tab-btn-portfolio', '💼', 'Portfólió áttekintés', 'Egyenleg, kitettség, eszközönkénti bontás')}
+                    ${act('tab-btn-weak-topics', '🎯', 'Gyengepontok', 'Hol hibázol a legtöbbet')}
+                    ${act('tab-btn-historical-event', '🏛️', 'Történelmi esemény szimulátor', 'Kereskedd le a nagy piaci eseményeket')}
+                    ${act('tab-btn-progress-export', '🖼️', 'Haladás exportálása képként', 'Megosztható összefoglaló')}</div>`;
+        }
+        function openTradeMoreSheet() { renderTradeMoreSheet(); const s = document.getElementById('trade-more-sheet'); if (s) { s.classList.remove('hidden'); const f = s.querySelector('button'); if (f) f.focus(); } }
+        function closeTradeMoreSheet() { const s = document.getElementById('trade-more-sheet'); if (s) s.classList.add('hidden'); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { const s = document.getElementById('trade-more-sheet'); if (s && !s.classList.contains('hidden')) closeTradeMoreSheet(); } });
+
         // Fejlődés lapjai (mobil) — csak osztályt vált; a rejtés a mobil CSS-ben van.
         function setProgressTab(t) {
             const c = document.getElementById('progress-stack'); if (!c) return;
