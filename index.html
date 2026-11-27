@@ -3240,6 +3240,13 @@
                                 <div class="text-[10px] text-slate-400">Naiv vs. bázisrátával korrigált valószínűség egy jelzésnél</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('stepdown-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-down-wide-short"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Vesztes Sorozat Utáni Tétcsökkentés</div>
+                                <div class="text-[10px] text-slate-400">Mechanikus tétcsökkentés N vesztés után vs. fix tétméret</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -9422,6 +9429,61 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="bayesrate-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Egyszerűsített, kétértékű (igaz/hamis) oktatási modell — a valóságban a "base rate" és az "érzékenység" becslése önmagában is bizonytalan, és a kalkulátor nem helyettesíti a saját, naplózott statisztikáidat. A cél csak annak bemutatása, MENNYIRE eltérhet a naiv és a Bayes-korrigált valószínűség, nem egy konkrét stratégia minősítése.</p>
+        </div>
+    </div>
+
+    <!-- ================= VESZTES SOROZAT UTÁNI TÉTCSÖKKENTÉS SZIMULÁTOR (OKTATÁSI) =================
+         A "Tétcsökkentés Vesztes Sorozat Után" lecke mechanikus szabályát
+         implementáljuk: N egymást követő vesztés után a tétméret egy
+         megadott %-kal csökken, és csak M egymást követő nyerés után áll
+         vissza az alap méretre. Két szimulációt futtatunk ugyanazon a
+         W/L sorozaton — egy ÁLLANDÓ (fix) tétméretű alapesetet, és a
+         fenti szabály szerint csökkentett tétméretű esetet —, és a
+         legnagyobb visszaesést (drawdown, %-ban) hasonlítjuk össze. -->
+    <div id="stepdown-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="stepdown-modal-title">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 id="stepdown-modal-title" class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-down-wide-short text-amber-400"></i> Vesztes Sorozat Utáni Tétcsökkentés
+                </h3>
+                <button onclick="closeToolModal('stepdown-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Mechanikus szabály: <strong class="text-amber-400">N egymást követő vesztés</strong> után a tétméret egy megadott %-kal csökken, és csak <strong class="text-amber-400">M egymást követő nyerés</strong> után áll vissza az alap méretre. Add meg ugyanazt a nyertes/vesztes sorozatot (W/L), és a kalkulátor összehasonlítja a FIX tétméretű és a szabály szerint csökkentett tétméretű eredményt.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="stepdown-sequence">Trade-sorozat (W = nyertes, L = vesztes, vesszővel elválasztva)</label>
+            <textarea id="stepdown-sequence" rows="2" placeholder="pl. L, L, L, L, L, W, L, W, W, W" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">L, L, L, L, L, W, L, W, W, W</textarea>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="stepdown-capital">Kezdő tőke ($)</label>
+                    <input type="number" inputmode="decimal" id="stepdown-capital" value="1000" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="stepdown-basebet">Alap tétnagyság ($)</label>
+                    <input type="number" inputmode="decimal" id="stepdown-basebet" value="20" step="1" min="1" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="stepdown-losstrigger">Vesztés-küszöb (N)</label>
+                    <input type="number" inputmode="numeric" id="stepdown-losstrigger" value="3" step="1" min="1" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="stepdown-reduction">Tétcsökkentés (%)</label>
+                    <input type="number" inputmode="decimal" id="stepdown-reduction" value="50" step="1" min="1" max="100" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="stepdown-recoverwins">Visszaállításhoz szükséges egymást követő nyerés (M)</label>
+            <input type="number" inputmode="numeric" id="stepdown-recoverwins" value="2" step="1" min="1" max="1000" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-amber-400/50">
+
+            <button onclick="calcStepDownSim()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Szimuláció futtatása
+            </button>
+
+            <div id="stepdown-result" role="status" aria-live="polite" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy oktatási demonstráció: a "fix" eset minden trade-nél ugyanazzal a tétmérettel kereskedik, a "szabály" eset N egymást követő vesztés után a megadott %-kal csökkenti a tétet, és M egymást követő nyerés után állítja vissza — a nyertes/vesztes sorrend mindkét esetben ugyanaz, csak a tétméret tér el. Az eredmény a megadott konkrét sorozattól függ, nem jövőbeli teljesítmény garanciája.</p>
         </div>
     </div>
 
@@ -16070,6 +16132,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Base Rate Bayes-Kalkulátor</div>
                             <div class="text-[10px] text-slate-400">Naiv vs. bázisrátával korrigált valószínűség egy jelzésnél</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('stepdown-modal')" data-tool-title="vesztes sorozat utáni tétcsökkentés" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrow-down-wide-short"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Vesztes Sorozat Utáni Tétcsökkentés</div>
+                            <div class="text-[10px] text-slate-400">Mechanikus tétcsökkentés N vesztés után vs. fix tétméret</div>
                         </div>
                     </button>
                 </div>
@@ -45349,6 +45418,146 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Naiv vs. Bayes-korrigált rés:</span><span class="font-extrabold ${colorClass} text-sm">${gapAbsFmt} pp</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
+            `;
+        }
+
+        // ================= VESZTES SOROZAT UTÁNI TÉTCSÖKKENTÉS SZIMULÁTOR (OKTATÁSI) =================
+        // "Fix" alapeset: minden trade-nél ugyanaz a tétméret (a capital-hoz
+        // kötve felső korlátozva, hogy ne menjen negatívba — ugyanaz a minta,
+        // mint a Martingale szimulátornál).
+        function simulateFixedBet(outcomes, startCapital, baseBet) {
+            let capital = startCapital;
+            let ruined = false;
+            const path = [capital];
+            for (const outcome of outcomes) {
+                const bet = Math.min(baseBet, capital);
+                if (bet <= 0) { ruined = true; path.push(capital); continue; }
+                if (outcome === 'W') capital += bet; else capital -= bet;
+                if (capital <= 0) { capital = 0; ruined = true; }
+                path.push(capital);
+            }
+            return { finalCapital: capital, ruined, path };
+        }
+
+        // "Szabály" eset: N egymást követő vesztés után a tétméret
+        // (reductionFraction-nel szorozva, pl. 0.5 = felezés) csökken, és
+        // csak M egymást követő nyerés után áll vissza az alap méretre.
+        // A nyertes/vesztes SORREND (az outcomes tömb) ugyanaz marad, mint a
+        // fix esetnél — csak a tétméret reagál rá.
+        function simulateStepDown(outcomes, startCapital, baseBet, lossTrigger, reductionFraction, recoverWins) {
+            let capital = startCapital;
+            let consecutiveLosses = 0;
+            let consecutiveWins = 0;
+            let reduced = false;
+            let ruined = false;
+            let reducedTradeCount = 0;
+            const path = [capital];
+            for (const outcome of outcomes) {
+                const bet = Math.min(reduced ? baseBet * reductionFraction : baseBet, capital);
+                if (bet <= 0) { ruined = true; path.push(capital); continue; }
+                if (reduced) reducedTradeCount++;
+                if (outcome === 'W') {
+                    capital += bet;
+                    consecutiveWins++;
+                    consecutiveLosses = 0;
+                    if (reduced && consecutiveWins >= recoverWins) { reduced = false; consecutiveWins = 0; }
+                } else {
+                    capital -= bet;
+                    consecutiveLosses++;
+                    consecutiveWins = 0;
+                    if (!reduced && consecutiveLosses >= lossTrigger) { reduced = true; }
+                }
+                if (capital <= 0) { capital = 0; ruined = true; }
+                path.push(capital);
+            }
+            return { finalCapital: capital, ruined, path, reducedTradeCount };
+        }
+
+        // Legnagyobb csúcstól-völgyig visszaesés %-ban egy tőke-path mentén.
+        function calcStepDownMaxDrawdownPct(path) {
+            let peak = path[0];
+            let maxDD = 0;
+            for (const v of path) {
+                if (v > peak) peak = v;
+                const dd = peak > 0 ? (peak - v) / peak * 100 : 0;
+                if (dd > maxDD) maxDD = dd;
+            }
+            return maxDD;
+        }
+
+        function calcStepDownSim() {
+            const seqEl = document.getElementById('stepdown-sequence');
+            const capitalEl = document.getElementById('stepdown-capital');
+            const betEl = document.getElementById('stepdown-basebet');
+            const triggerEl = document.getElementById('stepdown-losstrigger');
+            const reductionEl = document.getElementById('stepdown-reduction');
+            const recoverEl = document.getElementById('stepdown-recoverwins');
+            const out = document.getElementById('stepdown-result');
+            if (!seqEl || !capitalEl || !betEl || !triggerEl || !reductionEl || !recoverEl || !out) return;
+
+            const outcomes = seqEl.value.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+            const startCapital = parseFloat(capitalEl.value);
+            const baseBet = parseFloat(betEl.value);
+            const lossTrigger = parseInt(triggerEl.value, 10);
+            const reductionPct = parseFloat(reductionEl.value);
+            const recoverWins = parseInt(recoverEl.value, 10);
+
+            if (outcomes.length < 1 || outcomes.some(o => o !== 'W' && o !== 'L')) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A sorozat csak "W" (nyertes) és "L" (vesztes) jeleket tartalmazhat, vesszővel elválasztva!</div>`;
+                return;
+            }
+            if (!startCapital || startCapital <= 0 || !baseBet || baseBet <= 0 || baseBet > startCapital || !Number.isFinite(startCapital) || !Number.isFinite(baseBet)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg pozitív, véges kezdő tőkét és egy ennél kisebb vagy egyenlő alap tétnagyságot!</div>`;
+                return;
+            }
+            if (!Number.isInteger(lossTrigger) || lossTrigger < 1 || lossTrigger > 1000) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A vesztés-küszöbnek (N) 1 és 1000 közötti egész számnak kell lennie!</div>`;
+                return;
+            }
+            if (!Number.isFinite(reductionPct) || reductionPct <= 0 || reductionPct > 100) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A tétcsökkentés mértékének 0 és 100 közötti %-nak kell lennie!</div>`;
+                return;
+            }
+            if (!Number.isInteger(recoverWins) || recoverWins < 1 || recoverWins > 1000) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A visszaállításhoz szükséges nyerés-számnak (M) 1 és 1000 közötti egész számnak kell lennie!</div>`;
+                return;
+            }
+
+            const reductionFraction = 1 - reductionPct / 100;
+            const fixedSim = simulateFixedBet(outcomes, startCapital, baseBet);
+            const ruleSim = simulateStepDown(outcomes, startCapital, baseBet, lossTrigger, reductionFraction, recoverWins);
+
+            // JAVÍTÁS: bár a tétméret itt a kezdő tőkéhez van korlátozva (nem
+            // tud exponenciálisan nőni, mint a Martingale-nél), extrém nagy
+            // (pl. 1e308 körüli) kezdő tőke/tétméret paraméterek mellett a
+            // .toLocaleString() hívás előtt védekezőleg mégis ellenőrizzük a
+            // végeredmény végességét — ugyanaz a hibaosztály, mint a többi
+            // szimulátornál.
+            if (!Number.isFinite(fixedSim.finalCapital) || !Number.isFinite(ruleSim.finalCapital)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott paraméterek mellett a szimuláció túlcsordul — adj meg reálisabb nagyságrendű kezdő tőkét és tétméretet!</div>`;
+                return;
+            }
+
+            const fixedDD = calcStepDownMaxDrawdownPct(fixedSim.path);
+            const ruleDD = calcStepDownMaxDrawdownPct(ruleSim.path);
+
+            // JAVÍTÁS: a natív .toFixed() >=1e21 nagyságrendnél nyers tudományos
+            // jelölésre vált — .toLocaleString()-re váltva.
+            out.innerHTML = `
+                <div class="glass-card rounded-xl border ${fixedSim.ruined ? 'border-neon-red/30 bg-neon-red/[0.05]' : (fixedSim.finalCapital >= startCapital ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]')} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-minus text-slate-400"></i> Fix tétméret (nincs szabály)</div>
+                    <div class="text-lg font-extrabold ${fixedSim.ruined ? 'text-neon-red' : (fixedSim.finalCapital >= startCapital ? 'text-neon-green' : 'text-amber-400')}">$${fixedSim.finalCapital.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${fixedSim.ruined ? '— CSŐD' : ''}</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Legnagyobb visszaesés (drawdown): ${fixedDD.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</div>
+                </div>
+                <div class="glass-card rounded-xl border ${ruleSim.ruined ? 'border-neon-red/30 bg-neon-red/[0.05]' : (ruleSim.finalCapital >= startCapital ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]')} p-3 mb-3">
+                    <div class="text-[11px] text-slate-400 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-arrow-down-wide-short text-neon-cyan"></i> Szabály szerinti tétcsökkentés</div>
+                    <div class="text-lg font-extrabold ${ruleSim.ruined ? 'text-neon-red' : (ruleSim.finalCapital >= startCapital ? 'text-neon-green' : 'text-amber-400')}">$${ruleSim.finalCapital.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${ruleSim.ruined ? '— CSŐD' : ''}</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Legnagyobb visszaesés (drawdown): ${ruleDD.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</div>
+                    <div class="text-[10px] text-slate-500 mt-1">${ruleSim.reducedTradeCount} trade zajlott csökkentett tétmérettel (${outcomes.length} közül)</div>
+                </div>
+                <p class="text-[10px] font-semibold ${ruleDD < fixedDD ? 'text-neon-green' : 'text-slate-400'}">${ruleDD < fixedDD
+                    ? `A szabály szerinti tétcsökkentés ebben a konkrét sorozatban ${(fixedDD - ruleDD).toLocaleString('en-US', { maximumFractionDigits: 2 })} százalékponttal kisebb legnagyobb visszaesést eredményezett, mint az állandó tétméret — ez a megadott sorozattól függ, nem garancia jövőbeli eredményre.`
+                    : `Ebben a konkrét sorozatban a szabály nem csökkentette a legnagyobb visszaesést a fix tétmérethez képest — minél inkább egybefüggő, hosszú vesztes szakaszokból áll a sorozat (nem elszórt, egyedi veszteségekből), annál inkább segít egy ilyen mechanikus tétcsökkentés.`}</p>
             `;
         }
 
