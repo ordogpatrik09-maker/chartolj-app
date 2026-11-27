@@ -16355,6 +16355,8 @@ Mean-reversion,2.5</textarea>
                 <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-neon-cyan/80 via-neon-cyan/30 to-transparent"></div>
             </div>
 
+            <!-- Mobil "Ma" összefoglaló (PC-n rejtett, .m-only) — a napi teendők egy helyen. -->
+            <div id="home-today-card" class="m-only glass-card rounded-2xl p-3.5" role="region" aria-label="Mai teendők"></div>
             <div>
                 <h3 class="text-xs font-bold text-slate-400 uppercase mb-2" data-i18n="home_quick_actions">Gyors elérés</h3>
                 <div class="grid grid-cols-3 gap-2">
@@ -48906,6 +48908,37 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // Mobilos összecsukható csoportok (Profil, Fejlődés stb.) — csak osztályt
         // vált a konténeren; a tényleges rejtés a mobil @media CSS-ben van, így
         // PC-n nincs hatása.
+        // ================= MOBIL "MA" KÁRTYA (Kezdőlap) =================
+        // A napi teendők egy helyen: Napi 5 perc, sorozat + védő, napi kihívások
+        // állapota, következő kamatdöntés. Csak megjelenítés + navigáció a
+        // meglévő funkciókhoz (semmit nem duplikál, nem számol újra).
+        function renderHomeToday() {
+            const el = document.getElementById('home-today-card'); if (!el) return;
+            try { loadDailyAndStreakState(); } catch (e) {}
+            const done5 = typeof dailyDoneToday === 'function' && dailyDoneToday();
+            const due = typeof getDueMistakeKeys === 'function' ? getDueMistakeKeys().length : 0;
+            const tpl = typeof DAILY_CHALLENGE_TEMPLATES !== 'undefined' ? DAILY_CHALLENGE_TEMPLATES : [];
+            const prog = (dailyChallengeState && dailyChallengeState.progress) || {};
+            const claimed = (dailyChallengeState && dailyChallengeState.claimed) || [];
+            const doneCh = tpl.filter(d => (prog[d.key] || 0) >= d.target).length;
+            const claimable = tpl.filter(d => (prog[d.key] || 0) >= d.target && !claimed.includes(d.id)).length;
+            const freezes = Math.max(0, Math.floor(Number(streakState && streakState.freezes) || 0));
+            const ev = typeof upcomingMacroEvents === 'function' ? upcomingMacroEvents(Date.now(), 1)[0] : null;
+            const evSoon = ev && ev.at - Date.now() <= 24 * 3600000;
+            const row = (icon, main, sub, btn) => `<div class="flex items-center gap-3 py-2 border-b border-dark-800 last:border-0">
+                <div class="w-8 h-8 shrink-0 rounded-lg bg-dark-850 flex items-center justify-center text-base">${icon}</div>
+                <div class="flex-1 min-w-0"><div class="text-[12px] font-bold text-white truncate">${main}</div>${sub ? `<div class="text-[10.5px] text-slate-400 truncate">${sub}</div>` : ''}</div>${btn || ''}</div>`;
+            const btn = (txt, js, strong) => `<button type="button" onclick="${js}" class="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold ${strong ? 'bg-amber-400 text-dark-950' : 'border border-dark-700 text-slate-300'}">${txt}</button>`;
+            el.innerHTML = `<div class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Ma</div>` +
+                row('☀️', done5 ? 'Mai 5 perc kész ✓' : 'Napi 5 perc', (done5 ? 'Szép munka! ' : '1 új lecke a tanár hangjával') + (due ? ' · ' + due + ' esedékes ismétlés' : ''),
+                    btn(done5 ? 'Még egy' : 'Indítás', "switchMobileTab('academy'); setTimeout(startDailySession, 60)", !done5)) +
+                row('🔥', (streakState && streakState.count || 1) + ' napos sorozat', '🧊 Sorozat-védő: ' + freezes + '/' + (typeof STREAK_FREEZE_MAX !== 'undefined' ? STREAK_FREEZE_MAX : 2), '') +
+                row('🎯', 'Napi kihívások: ' + doneCh + '/' + tpl.length, claimable ? claimable + ' jutalom átvehető' : (doneCh === tpl.length ? 'Mind kész — gratulálunk!' : 'Teljesítsd őket XP-ért'),
+                    btn(claimable ? 'Átvétel' : 'Megnézem', "switchMobileTab('progress'); setTimeout(function(){ setProgressTab('ov'); }, 30)", !!claimable)) +
+                (ev ? row(ev.icon, escapeHtml(ev.name), fmtLocalDateTime(ev.at) + (evSoon ? ' · ' + fmtCountdown(ev.at - Date.now()) + ' múlva' : ''), '') : '');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => setTimeout(renderHomeToday, 400));
         // Fejlődés lapjai (mobil) — csak osztályt vált; a rejtés a mobil CSS-ben van.
         function setProgressTab(t) {
             const c = document.getElementById('progress-stack'); if (!c) return;
@@ -50268,6 +50301,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             addSystemLog(`Napi kihívás teljesítve — ${d.title} (+${d.reward} XP).`, 'TRADE');
         }
         function renderDailyChallenges() {
+            if (typeof renderHomeToday === 'function') setTimeout(renderHomeToday, 0); // a mobil "Ma" kártya is frissüljön
             const listEl = document.getElementById('daily-challenges-list');
             const streakNumEl = document.getElementById('daily-streak-num');
             if (streakNumEl) streakNumEl.textContent = streakState.count || 1;
@@ -54312,6 +54346,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (homeScreen) homeScreen.classList.toggle('hidden', tab !== 'home');
             if (progressScreen) progressScreen.classList.toggle('hidden', tab !== 'progress');
             if (profileScreen) profileScreen.classList.toggle('hidden', tab !== 'profile');
+            if (tab === 'home') renderHomeToday();
 
             if (tab === 'academy') {
                 openAcademy();
