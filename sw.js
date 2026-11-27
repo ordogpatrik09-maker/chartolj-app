@@ -27,10 +27,11 @@
 //   törli a régi verziójú cache-eket, hogy ne halmozódjon a tárhely.
 // =====================================================================
 
-const CACHE_NAME = 'chartolj-shell-v3';
+const CACHE_NAME = 'chartolj-shell-v4';
 const SHELL_ASSETS = [
     './',
     './index.html',
+    './lessons-data.js',
     './manifest.webmanifest',
     './icon-192.png',
     './icon-512.png',

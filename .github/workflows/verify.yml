@@ -44,6 +44,9 @@ jobs:
             console.log('Szintaxis OK (' + scripts.length + ' script blokk).');
           "
 
+      - name: Syntax check (lessons-data.js)
+        run: node -e "new Function(require('fs').readFileSync('lessons-data.js','utf8')); console.log('lessons-data.js OK')"
+
       - name: Structural regression checks
         run: node full_regression.js
 

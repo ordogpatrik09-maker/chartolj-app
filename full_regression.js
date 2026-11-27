@@ -13,7 +13,10 @@ const fs = require('fs');
 const path = require('path');
 
 const INDEX_PATH = path.join(__dirname, 'index.html');
-const html = fs.readFileSync(INDEX_PATH, 'utf-8');
+// A tananyag (LESSONS_DATA) külön fájlban van (lessons-data.js) — az
+// ellenőrzések szempontjából az index.html-hez fűzve kezeljük.
+const LESSONS_PATH = path.join(__dirname, 'lessons-data.js');
+const html = fs.readFileSync(INDEX_PATH, 'utf-8') + (fs.existsSync(LESSONS_PATH) ? '\n' + fs.readFileSync(LESSONS_PATH, 'utf-8') : '');
 
 function extractBalanced(src, startMarker, openChar, closeChar) {
     const startIdx = src.indexOf(startMarker);
