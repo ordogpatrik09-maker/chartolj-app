@@ -49018,6 +49018,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['🏫', 'Osztály mód', 'osztály tanár iskola csoport szakkör riport diák b2b', `openClassMode()`],
             ['📧', 'Heti e-mail összefoglaló', 'email e-mail heti összefoglaló levél feliratkozás', `openEmailDigest()`],
             ['🧭', 'Idősík-áttekintő', 'idősík timeframe több trend rsi 4 óra napi', `switchMobileTab('trade'); setTimeout(openMultiTimeframe, 60)`],
             ['🧑‍🏫', 'Mentor', 'mentor heti áttekintés tanács terv értékelés', `openMentor()`],
@@ -57627,6 +57628,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <button type="button" onclick="openStrategyLibrary()" class="text-neon-cyan hover:underline">📚 Stratégiák</button>
                     <button type="button" onclick="openMonthlyLeague('monthly')" class="text-neon-cyan hover:underline">🏆 Bajnokság</button>
                     <button type="button" onclick="openMentor()" class="text-neon-cyan hover:underline">🧑‍🏫 Mentor</button>
+                    <button type="button" onclick="openClassMode()" class="text-neon-cyan hover:underline">🏫 Osztály</button>
                 </div>${seasonalLineHtml()}</div>`;
         }
         function startDailySession() {
@@ -60503,6 +60505,78 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         async function setEmailDigest(on) {
             try { const r = await sb.rpc('set_weekly_digest', { p_enabled: !!on }); if (r.error) throw r.error; showNotification(on ? '📧 Feliratkoztál a heti összefoglalóra.' : 'Leiratkoztál a heti összefoglalóról.'); }
             catch (e) { showNotification('Nem sikerült menteni — próbáld újra később.'); const t = document.getElementById('digest-toggle'); if (t) t.checked = !on; }
+        }
+
+        // ---------- Osztály mód (tanár / csoport; 029 migráció) ----------
+        function classErrMsg(e) { const m = (e && e.message) || ''; return /Nincs ilyen|saját|Legfeljebb|megtelt|Adj nevet|jogosults/i.test(m) ? m : 'A művelet most nem sikerült.'; }
+        function classModalShell(title) {
+            miniQuiz = null; chartTask = null; microLesson = null;
+            document.getElementById('mini-quiz-title').textContent = title;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            return document.getElementById('mini-quiz-body');
+        }
+        async function openClassMode() {
+            const body = classModalShell('🏫 Osztály mód');
+            if (!isLoggedInRealUser()) { body.innerHTML = '<p class="text-[11.5px] text-slate-300">Tanároknak és csoportoknak: hozz létre osztályt, oszd meg a kódot, és kövesd a tanulók haladását. Bejelentkezés szükséges.</p>'; return; }
+            body.innerHTML = '<p class="text-[11px] text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Betöltés…</p>';
+            let d = null; try { const r = await sb.rpc('get_my_classes'); if (r.error) throw r.error; d = r.data; } catch (e) {}
+            if (document.getElementById('mini-quiz-modal').classList.contains('hidden')) return;
+            if (!d) { body.innerHTML = '<p class="text-[11px] text-slate-500">Az osztály mód most nem érhető el.</p>'; return; }
+            const owned = d.owned || [], joined = d.joined || [];
+            window.__ownedClasses = owned;
+            body.innerHTML = `<p class="text-[11px] text-slate-400 mb-3">Tanároknak, szakköröknek, baráti csoportoknak. A tanulók a kóddal csatlakoznak, és ezzel hozzájárulnak, hogy a tulajdonos lássa a haladásuk összesített adatait (XP, leckék, heti aktivitás) — a kötések részleteit nem.</p>
+                <div class="text-[10px] font-extrabold uppercase text-slate-500 mb-1">Saját osztályaim</div>
+                <div class="space-y-1.5 mb-2">${owned.length ? owned.map(c => `<div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-dark-850/60 border border-dark-750">
+                    <div class="flex-1 min-w-0"><div class="text-xs font-bold text-white truncate">${escapeHtml(c.name)}</div><div class="text-[10px] text-slate-500">${Number(c.members) || 0} tanuló · kód: <span class="font-mono text-neon-cyan">${escapeHtml(c.join_code)}</span></div></div>
+                    <button type="button" onclick="shareClassCode('${c.id}')" class="px-2 py-1 rounded-lg border border-dark-700 text-[10.5px] text-slate-300" aria-label="Kód megosztása"><i class="fa-solid fa-share-nodes"></i></button>
+                    <button type="button" onclick="openClassReport('${c.id}')" class="px-2.5 py-1 rounded-lg bg-neon-cyan text-dark-950 text-[10.5px] font-bold">Riport</button></div>`).join('') : '<div class="text-[11px] text-slate-500">Még nincs osztályod.</div>'}</div>
+                <div class="flex gap-2 mb-4"><input id="class-new-name" maxlength="60" placeholder="Új osztály neve (pl. 12.B)" aria-label="Új osztály neve" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600"><button type="button" onclick="createClassFromUI()" class="px-3 py-2 rounded-xl text-xs font-bold bg-neon-cyan/15 border border-neon-cyan/40 text-neon-cyan">Létrehozás</button></div>
+                <div class="text-[10px] font-extrabold uppercase text-slate-500 mb-1">Osztályok, amelyeknek tagja vagyok</div>
+                <div class="space-y-1.5 mb-2">${joined.length ? joined.map(c => `<div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-dark-850/60 border border-dark-750"><div class="flex-1 min-w-0"><div class="text-xs font-bold text-white truncate">${escapeHtml(c.name)}</div><div class="text-[10px] text-slate-500">Vezeti: ${escapeHtml(c.teacher)}</div></div>
+                    <button type="button" onclick="leaveClassFromUI('${c.id}')" class="px-2.5 py-1 rounded-lg border border-dark-700 text-[10.5px] text-slate-300">Kilépés</button></div>`).join('') : '<div class="text-[11px] text-slate-500">Még egy osztálynak sem vagy tagja.</div>'}</div>
+                <div class="flex gap-2"><input id="class-join-code" maxlength="20" placeholder="Osztálykód (OSZT-…)" aria-label="Osztálykód" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 uppercase"><button type="button" onclick="joinClassFromUI()" class="px-3 py-2 rounded-xl text-xs font-bold border border-dark-700 text-slate-200">Csatlakozás</button></div>`;
+        }
+        async function createClassFromUI() {
+            const name = (document.getElementById('class-new-name').value || '').trim(); if (!name) { showNotification('Adj nevet az osztálynak.'); return; }
+            try { const r = await sb.rpc('create_class', { p_name: name }); if (r.error) throw r.error; showNotification(`🏫 Osztály létrehozva — kód: ${r.data.join_code}`); openClassMode(); } catch (e) { showNotification(classErrMsg(e)); }
+        }
+        async function joinClassFromUI() {
+            const code = (document.getElementById('class-join-code').value || '').trim(); if (!code) return;
+            try { const r = await sb.rpc('join_class', { p_code: code }); if (r.error) throw r.error; showNotification(r.data.already ? 'Már tagja vagy ennek az osztálynak.' : `🏫 Csatlakoztál: ${r.data.name}`); openClassMode(); } catch (e) { showNotification(classErrMsg(e)); }
+        }
+        async function leaveClassFromUI(id) {
+            try { const r = await sb.rpc('leave_class', { p_class: id }); if (r.error) throw r.error; showNotification('Kiléptél az osztályból.'); openClassMode(); } catch (e) { showNotification(classErrMsg(e)); }
+        }
+        function shareClassCode(id) {
+            const c = (window.__ownedClasses || []).find(x => x.id === id); if (!c) return;
+            const code = c.join_code;
+            const txt = `Csatlakozz a(z) „${c.name}” osztályhoz a Chartolj!-ban (Akadémia → 🏫 Osztály), kód: ${code}`;
+            if (navigator.share) navigator.share({ title: 'Chartolj! osztály', text: txt }).catch(() => {});
+            else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => showNotification('Meghívó szöveg vágólapra másolva.'));
+            else showNotification('Kód: ' + code);
+        }
+        async function openClassReport(id) {
+            const body = classModalShell('📋 Osztály riport');
+            body.innerHTML = '<p class="text-[11px] text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Betöltés…</p>';
+            let d = null; try { const r = await sb.rpc('get_class_report', { p_class: id }); if (r.error) throw r.error; d = r.data; } catch (e) { body.innerHTML = `<p class="text-[11px] text-slate-500">${escapeHtml(classErrMsg(e))}</p>`; return; }
+            const ms = (d && d.members) || [];
+            const ago = t => { if (!t) return '–'; const h = (Date.now() - new Date(t)) / 3600000; return h < 24 ? 'ma' : Math.floor(h / 24) + ' napja'; };
+            const inactive = ms.filter(m => !m.last_active || (Date.now() - new Date(m.last_active)) > 7 * 86400000).length;
+            const avgLessons = ms.length ? Math.round(ms.reduce((a, m) => a + (Number(m.lessons) || 0), 0) / ms.length) : 0;
+            body.innerHTML = `<div class="flex items-center justify-between mb-3"><div class="text-sm font-extrabold text-white">${escapeHtml(d.name)}</div><button type="button" onclick="openClassMode()" class="text-[11px] text-neon-cyan">← Vissza</button></div>
+                <div class="grid grid-cols-3 gap-2 mb-3 text-center">${[['Tanuló', ms.length], ['Átl. lecke', avgLessons], ['7+ napja inaktív', inactive]].map(([k, v]) => `<div class="rounded-xl bg-dark-850/60 border border-dark-750 py-2"><div class="text-base font-extrabold text-white">${v}</div><div class="text-[9.5px] text-slate-500">${k}</div></div>`).join('')}</div>
+                <div class="overflow-x-auto"><table class="w-full text-[11px]"><thead><tr class="text-slate-500 text-left"><th class="py-1 pr-2 font-semibold">Név</th><th class="py-1 pr-2 font-semibold text-right">XP</th><th class="py-1 pr-2 font-semibold text-right">Heti XP</th><th class="py-1 pr-2 font-semibold text-right">Lecke</th><th class="py-1 pr-2 font-semibold text-right">Kötés/hét</th><th class="py-1 font-semibold text-right">Aktív</th></tr></thead>
+                <tbody>${ms.length ? ms.map(m => `<tr class="border-t border-dark-800 text-slate-200"><td class="py-1.5 pr-2 max-w-[8rem] truncate">${escapeHtml(m.name)}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.xp) || 0}</td><td class="py-1.5 pr-2 text-right font-mono">${m.xp_week == null ? '–' : Number(m.xp_week)}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.lessons) || 0}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.trades_week) || 0}</td><td class="py-1.5 text-right">${ago(m.last_active)}</td></tr>`).join('') : '<tr><td colspan="6" class="py-4 text-center text-slate-500">Még nincs tanuló — oszd meg az osztálykódot!</td></tr>'}</tbody></table></div>
+                <button type="button" onclick="exportClassCsv('${id}')" class="mt-3 w-full py-2 rounded-xl text-[11px] font-bold border border-dark-750 text-slate-300">⬇️ Letöltés CSV-ben</button>`;
+            window.__classReport = { id, d };
+        }
+        function exportClassCsv(id) {
+            const r = window.__classReport; if (!r || r.id !== id) return;
+            const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+            const rows = [['Név', 'XP', 'Heti XP', 'Kész leckék', 'Kötések (7 nap)', 'Utolsó aktivitás']].concat((r.d.members || []).map(m => [m.name, m.xp, m.xp_week, m.lessons, m.trades_week, m.last_active]));
+            const blob = new Blob(['\ufeff' + rows.map(x => x.map(q).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'chartolj-osztaly-' + foldDiacritics(String(r.d.name)).replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.csv';
+            document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
         }
 
         function renderHistory() {
