@@ -56885,10 +56885,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="glass-card rounded-2xl p-6 border border-dark-750">
                         <div class="text-[10px] font-mono text-slate-500 mb-1.5">${l.qs.length > 1 ? (l.qs.length - academyQuizQueue.length + 1) + " / " + l.qs.length + " kérdés" : ""}</div>
                         <h3 class="text-sm font-bold text-white mb-4">${q.q}</h3>
+                        ${(ttsSupported || sttSupported) ? `<div class="flex items-center gap-2 mb-3">
+                            ${ttsSupported ? `<button type="button" onclick="quizReadAloud()" class="px-3 py-1.5 rounded-lg border border-dark-750 text-[11px] font-bold text-slate-300 hover:border-neon-cyan/40 hover:text-neon-cyan transition flex items-center gap-1.5" aria-label="Kérdés és válaszok felolvasása"><i class="fa-solid fa-volume-high"></i> Felolvasás</button>` : ''}
+                            ${sttSupported ? `<button type="button" id="quiz-voice-btn" onclick="quizVoiceAnswer()" class="px-3 py-1.5 rounded-lg border border-dark-750 text-[11px] font-bold text-slate-300 hover:border-neon-cyan/40 hover:text-neon-cyan transition flex items-center gap-1.5" aria-label="Válasz hanggal"><i class="fa-solid fa-microphone"></i> Válasz hanggal</button>` : ''}
+                            <span id="quiz-voice-hint" class="text-[10px] text-slate-500 min-w-0 truncate"></span>
+                        </div>` : ''}
                         <div id="academy-quiz-options" class="space-y-2">
                             ${academyCurrentShuffle.map((origIdx, displayIdx) => `
                                 <button onclick="academyAnswerQuiz(${displayIdx})" data-opt="${displayIdx}" class="academy-quiz-option w-full text-left px-4 py-2.5 rounded-xl border border-dark-750 bg-dark-850/60 text-xs text-slate-200 hover:border-${accent}/50 hover:bg-dark-800 transition">
-                                    ${q.o[origIdx]}
+                                    <span class="font-mono font-bold text-slate-500 mr-2" aria-hidden="true">${'ABCDEF'[displayIdx] || ''}</span>${q.o[origIdx]}
                                 </button>
                             `).join('')}
                         </div>
@@ -56901,6 +56906,95 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
             `;
+        }
+
+        // ================= HANGOS KVÍZ =================
+        // Felolvasás: kérdés + "A: …, B: …" válaszok (a beszélő fej szinkronban
+        // mozog). Hangos válasz: betű ("A", "bé"), sorszám ("második",
+        // "hármas", "3"), vagy a válasz szövegének egy része.
+        let quizVoiceRec = null, quizVoiceListening = false, quizLastAnswerByVoice = false;
+
+        function quizCurrentOptionTexts() {
+            const l = LESSONS_DATA[academyLessonIdx];
+            if (!l || academyStage !== 'quiz' || !academyQuizQueue.length) return null;
+            const q = l.qs[academyQuizQueue[0]];
+            return { q, texts: academyCurrentShuffle.map(oi => ttsStripHtml(q.o[oi])) };
+        }
+
+        function quizReadAloud() {
+            const cur = quizCurrentOptionTexts();
+            if (!cur || !ttsSupported) return;
+            const letters = 'ABCDEF';
+            const text = ttsStripHtml(cur.q.q) + ' ' + cur.texts.map((t, i) => letters[i] + ': ' + t + '.').join(' ');
+            toggleSpeak('quiz-' + academyLessonIdx + '-' + academyQuizQueue[0], text);
+        }
+
+        function quizMatchSpoken(transcript, optionTexts) {
+            const norm = x => foldDiacritics(String(x || '').toLowerCase()).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+            const t = norm(transcript), n = optionTexts.length;
+            if (!t) return -1;
+            const ok = i => (i >= 0 && i < n ? i : -1);
+            const LETTER = { a: 0, b: 1, be: 1, c: 2, ce: 2, d: 3, de: 3, e: 4 };
+            const m = t.match(/^(?:az?\s+)?(?:valasz\s+)?(a|b|be|c|ce|d|de)(?:\s+(?:valasz|betu|a valasz))?$/);
+            if (m) return ok(LETTER[m[1]]);
+            const tokens = t.split(' ');
+            if (tokens.length <= 4) {
+                const ORD = [['elso', 'egyes', 'egy', '1'], ['masodik', 'kettes', 'ketto', '2'], ['harmadik', 'harmas', 'harom', '3'], ['negyedik', 'negyes', 'negy', '4']];
+                for (let i = 0; i < ORD.length; i++) if (tokens.some(w => ORD[i].includes(w))) return ok(i);
+            }
+            // Tartalom szerinti egyezés: a kimondott szavak hány %-a szerepel az adott válaszban.
+            const said = tokens.filter(w => w.length > 2);
+            if (!said.length) return -1;
+            const scores = optionTexts.map(o => { const ow = new Set(norm(o).split(' ')); return said.filter(w => ow.has(w)).length / said.length; });
+            let best = -1, second = 0;
+            scores.forEach((sc, i) => { if (best < 0 || sc > scores[best]) { if (best >= 0) second = Math.max(second, scores[best]); best = i; } else second = Math.max(second, sc); });
+            return (best >= 0 && scores[best] >= 0.5 && scores[best] - second >= 0.2) ? best : -1;
+        }
+
+        function quizSetVoiceUi(listening, hint) {
+            const btn = document.getElementById('quiz-voice-btn');
+            if (btn) {
+                btn.classList.toggle('!text-red-400', listening);
+                btn.classList.toggle('!border-red-400/50', listening);
+                btn.innerHTML = listening ? '<i class="fa-solid fa-microphone-lines animate-pulse"></i> Hallgatlak…' : '<i class="fa-solid fa-microphone"></i> Válasz hanggal';
+            }
+            const h = document.getElementById('quiz-voice-hint');
+            if (h && hint !== undefined) h.textContent = hint;
+        }
+
+        function quizVoiceAnswer() {
+            if (!sttSupported) return;
+            if (quizVoiceListening) { try { quizVoiceRec && quizVoiceRec.stop(); } catch (e) {} return; }
+            const cur = quizCurrentOptionTexts();
+            if (!cur) return;
+            const opts = document.querySelectorAll('.academy-quiz-option');
+            if (opts[0] && opts[0].disabled) return; // már megválaszolva
+            if (ttsSupported) ttsStopAll(); // ne a saját felolvasásunkat hallja meg
+            try {
+                quizVoiceRec = new SpeechRecognitionCtor();
+                quizVoiceRec.lang = 'hu-HU';
+                quizVoiceRec.interimResults = false;
+                quizVoiceRec.maxAlternatives = 4;
+                quizVoiceRec.onstart = () => { quizVoiceListening = true; quizSetVoiceUi(true, 'Mondd: „A”, „bé”, „második”… vagy a válasz egy részét'); };
+                quizVoiceRec.onresult = (ev) => {
+                    const res = ev.results && ev.results[0];
+                    if (!res) return;
+                    const now = quizCurrentOptionTexts();
+                    if (!now) return;
+                    let idx = -1, heard = '';
+                    for (let k = 0; k < res.length && idx < 0; k++) { heard = heard || res[k].transcript; idx = quizMatchSpoken(res[k].transcript, now.texts); }
+                    if (idx >= 0) {
+                        quizSetVoiceUi(false, 'Hallottam: „' + heard + '” → ' + 'ABCDEF'[idx]);
+                        quizLastAnswerByVoice = true;
+                        academyAnswerQuiz(idx);
+                    } else {
+                        quizSetVoiceUi(false, 'Nem értettem: „' + heard + '” — próbáld: „A”, „bé”, „cé” vagy „dé”.');
+                    }
+                };
+                quizVoiceRec.onerror = (e) => { quizSetVoiceUi(false, e && e.error === 'not-allowed' ? 'A mikrofon-hozzáférés le van tiltva.' : ''); };
+                quizVoiceRec.onend = () => { quizVoiceListening = false; quizSetVoiceUi(false); };
+                quizVoiceRec.start();
+            } catch (e) { quizVoiceListening = false; quizSetVoiceUi(false, ''); }
         }
 
         function academyAnswerQuiz(selectedIdx) {
@@ -56947,6 +57041,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ${showAcademyCorrect ? `<div class="mb-2 text-[11px] rounded-lg bg-neon-green/10 border border-neon-green/30 px-3 py-2 text-neon-green font-medium">✓ Helyes válasz: ${escapeHtml(academyCorrectAnswerText)}</div>` : ''}
                 <div class="text-[11px] leading-relaxed opacity-90">${q.e}</div>
             `;
+            // Hangos kvíz: ha hanggal válaszolt, az eredményt és a magyarázatot is felolvassuk.
+            if (quizLastAnswerByVoice && ttsSupported) {
+                quizLastAnswerByVoice = false;
+                const say = (correct ? 'Helyes! ' : 'Nem egészen. A helyes válasz: ' + ttsStripHtml(academyCorrectAnswerText) + '. ') + ttsStripHtml(q.e);
+                ttsSpeak('quiz-fb-' + academyLessonIdx + '-' + qi, say, null);
+            }
+            quizLastAnswerByVoice = false;
 
             const outOfHearts = !correct && !isPremiumUser && getCurrentHearts() <= 0;
             nextBtn.disabled = false;
