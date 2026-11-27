@@ -25668,7 +25668,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             let statusHtml;
             if (!anyLoss) {
-                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">Mindhárom időszakban (nap/hét/hónap) nyereségben vagy vagy nullán állsz — egyik limit sem releváns most, de a fegyelem akkor is számít.</p>`;
+                statusHtml = `<p class="text-[10px] font-semibold mt-2 text-neon-green">Mindhárom időszakban (nap/hét/hónap) nyereségben vagy nullán állsz — egyik limit sem releváns most, de a fegyelem akkor is számít.</p>`;
             } else if (worst.usedPct >= 100) {
                 const breached = tiers.filter(t => t.usedPct >= 100).map(t => t.label.toLowerCase()).join(', ');
                 statusHtml = `<p class="text-[10px] font-extrabold mt-2 text-neon-red">🚦 ELÉRTED (vagy túllépted) a következő szint(ek)et: ${breached} — állj le az adott időszakra, ahogy a Kockázatkezelés modulban tanultad! Minél magasabb szintet érsz el, annál hosszabb szünetet tarts, mielőtt visszatérnél.</p>`;
