@@ -67,12 +67,35 @@ Deno.serve(async (req: Request) => {
     const mistakes = Array.isArray(prog?.mobile_mistake_bank) ? prog.mobile_mistake_bank.length : 0;
     const n = trades?.length ?? 0, net = (trades ?? []).reduce((a: number, t: any) => a + Number(t.pnl || 0), 0);
     const name = prof?.display_name ? esc(String(prof.display_name).split(' ')[0]) : '';
+    // Tanári rész: ha a felhasználónak van osztálya (029/030), osztályonként
+    // tagszám, a héten aktív tagok és a feladatok átlagos teljesítése.
+    let teacherHtml = '';
+    const { data: classes } = await admin.from('classes').select('id, name').eq('owner_id', p.user_id);
+    for (const c of classes ?? []) {
+      const { data: mem } = await admin.from('class_members').select('user_id').eq('class_id', c.id);
+      const ids = (mem ?? []).map((m: any) => m.user_id);
+      let active = 0, assignTxt = '';
+      if (ids.length) {
+        const { count } = await admin.from('profiles').select('id', { count: 'exact', head: true }).in('id', ids).gte('last_active_at', since);
+        active = count ?? 0;
+        const { data: asg } = await admin.from('class_assignments').select('lesson_idx').eq('class_id', c.id);
+        if (asg && asg.length) {
+          const { data: prs } = await admin.from('progress').select('mobile_done_lessons').in('user_id', ids);
+          let done = 0;
+          for (const a of asg) for (const pr of prs ?? []) if (Array.isArray(pr.mobile_done_lessons) && pr.mobile_done_lessons.includes(a.lesson_idx)) done++;
+          assignTxt = ` · feladatok: ${Math.round(done / (asg.length * ids.length) * 100)}% kész`;
+        }
+      }
+      teacherHtml += `<li style="margin:4px 0">${esc(String(c.name))}: ${ids.length} tanuló, ${active} aktív a héten${assignTxt}</li>`;
+    }
+    if (teacherHtml) teacherHtml = `<div style="margin-top:18px;padding:12px;border:1px solid #1e293b;border-radius:12px"><div style="font-weight:700;color:#fbbf24;font-size:13px">🏫 Osztályaid</div><ul style="padding-left:18px;margin:6px 0 0;font-size:13px;color:#cbd5e1">${teacherHtml}</ul></div>`;
     const row = (k: string, v: string) => `<tr><td style="padding:6px 0;color:#94a3b8">${k}</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#fff">${v}</td></tr>`;
     const html = `<div style="background:#05080f;padding:24px;font-family:Arial,sans-serif"><div style="max-width:480px;margin:auto;background:#0b1220;border:1px solid #1e293b;border-radius:16px;padding:24px;color:#e2e8f0">
       <div style="color:#22d3ee;font-weight:800;letter-spacing:1px;font-size:12px">CHARTOLJ! · HETI ÖSSZEFOGLALÓ</div>
       <h1 style="font-size:20px;margin:8px 0 16px">${name ? name + ', íme' : 'Íme'} a heted 📈</h1>
       <table style="width:100%;font-size:14px">${xpWeek !== null ? row('XP ezen a héten', `+${xpWeek}`) : ''}${row('Összes XP', String(xp))}${row('Kész leckék', String(lessons))}${row('Ismétlésre vár', String(mistakes))}${row('Szimulált kötések (7 nap)', n ? `${n} db · ${net >= 0 ? '+' : ''}$${net.toFixed(0)}` : '—')}</table>
       <p style="margin:18px 0 0;font-size:14px;color:#cbd5e1">${mistakes >= 3 ? `Kezdd a jövő hetet a ${mistakes} esedékes ismétléssel — ez rögzíti a legjobban a tudást.` : 'Egy új lecke naponta, és pár tudatos kötés a szimulátorban — így lesz a legtöbb fejlődés.'}</p>
+      ${teacherHtml}
       <a href="${APP_URL}" style="display:inline-block;margin-top:18px;background:#22d3ee;color:#05080f;font-weight:800;padding:12px 20px;border-radius:12px;text-decoration:none">Folytatom</a>
       <p style="margin-top:24px;font-size:11px;color:#64748b">Szimulált, oktatási célú adatok — nem befektetési tanács. <a href="${FN_URL}?unsubscribe=${p.unsubscribe_token}" style="color:#64748b">Leiratkozás</a></p></div></div>`;
     const r = await fetch('https://api.resend.com/emails', {
