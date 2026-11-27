@@ -231,6 +231,83 @@ check('lesson_tool_map_integrity', () => {
     return { mappedLessons: Object.keys(map).length, directModalToolCount: directModalTools.length };
 });
 
+// 9) Angol lecke-fordítások (lessons-en/mN.js, lásd "bbcf0f6" commit) —
+//    ezt a full_regression.js korábban NEM ellenőrizte, pedig pontosan
+//    ugyanaz a "néma, futásidőben derülne ki" kockázati osztály, mint a
+//    LESSON_TOOL_MAP-nál (7-es/8-as ellenőrzés): egy jövőbeli modul
+//    fordításánál elgépelt lecke-index, modul-eltérés, vagy az opciók
+//    számának/sorrendjének eltérése a kvízt törné el némán (rossz opciót
+//    mutatna angolul, vagy a kvíz-logika indexelne tévesen), csak akkor
+//    derülne ki, ha valaki kézzel végignézi angolul az adott leckét.
+//    Minden LESSONS_EN_FILES-ben felsorolt fájlra ellenőrzi: létezik és
+//    szintaktikailag hibátlan; minden benne szereplő lecke-index a
+//    LESSONS_DATA tartományán belül van és a hozzá tartozó modulszámhoz
+//    tartozik; a "cards" tömb nem üres és minden elemének van címe/törzse;
+//    ha a magyar eredetinek van "qs" kvíze, az angol "qs" hossza és minden
+//    kérdés opció-száma megegyezik vele (ez a tényleges futásidejű
+//    feltétel az applyLessonLang()-ban — eltérésnél az a lecke némán
+//    visszaesik magyarra, ami önmagában nem hiba, de jelzi az elmaradt/
+//    hibás fordítást).
+check('lessons_en_translation_integrity', () => {
+    const filesMatch = html.match(/const LESSONS_EN_FILES = (\{[^}]*\});/);
+    if (!filesMatch) throw new Error('LESSONS_EN_FILES konstans nem található');
+    const filesMap = new Function('return ' + filesMatch[1])();
+
+    const lessonsSrc = extractBalanced(html, 'const LESSONS_DATA = ', '[', ']');
+    const lessons = new Function('return ' + lessonsSrc)();
+
+    const issues = [];
+    let totalTranslated = 0;
+
+    Object.keys(filesMap).forEach(moduleKey => {
+        const moduleNum = parseInt(moduleKey, 10);
+        const relPath = filesMap[moduleKey];
+        const filePath = path.join(__dirname, relPath);
+        if (!fs.existsSync(filePath)) { issues.push(`${relPath}: fájl nem található`); return; }
+        const src = fs.readFileSync(filePath, 'utf-8');
+
+        let en;
+        try {
+            en = new Function('window', src + '\nreturn window.LESSONS_EN;')({});
+        } catch (e) {
+            issues.push(`${relPath}: szintaxishiba (${e.message})`); return;
+        }
+        if (!en || typeof en !== 'object') { issues.push(`${relPath}: nem ad vissza LESSONS_EN objektumot`); return; }
+
+        Object.keys(en).forEach(k => {
+            const idx = parseInt(k, 10);
+            const tag = `${relPath} #${k}`;
+            if (!(idx >= 0 && idx <= 551)) { issues.push(`${tag}: lecke-index tartományon kívül`); return; }
+            const l = lessons[idx];
+            if (!l) { issues.push(`${tag}: nincs ilyen lecke a LESSONS_DATA-ban`); return; }
+            if (l.m !== moduleNum) { issues.push(`${tag}: a lecke modulja (${l.m}) nem egyezik a fordítási fájl moduljával (${moduleNum})`); return; }
+            totalTranslated++;
+            const t = en[k];
+            if (!t.t || !t.s) issues.push(`${tag}: hiányzó cím/alcím`);
+            if (!Array.isArray(t.cards) || t.cards.length === 0) {
+                issues.push(`${tag}: nincs fordított kártya`);
+            } else {
+                if (t.cards.length !== l.cards.length) issues.push(`${tag}: kártyaszám eltér (hu=${l.cards.length}, en=${t.cards.length})`);
+                t.cards.forEach((c, ci) => { if (!c.t || !c.b) issues.push(`${tag} kártya #${ci}: hiányzó cím/törzsszöveg`); });
+            }
+            if (Array.isArray(l.qs) && l.qs.length > 0) {
+                if (!Array.isArray(t.qs) || t.qs.length !== l.qs.length) {
+                    issues.push(`${tag}: kvízhossz eltér (hu=${l.qs.length}, en=${Array.isArray(t.qs) ? t.qs.length : 0}) — applyLessonLang() emiatt némán visszaesik magyarra`);
+                } else {
+                    t.qs.forEach((q, qi) => {
+                        if (!q.q || !q.e) issues.push(`${tag} kérdés #${qi}: hiányzó kérdésszöveg/magyarázat`);
+                        if (!Array.isArray(q.o) || q.o.length === 0) issues.push(`${tag} kérdés #${qi}: nincs opció`);
+                        else if (q.o.length !== l.qs[qi].o.length) issues.push(`${tag} kérdés #${qi}: opciószám eltér (hu=${l.qs[qi].o.length}, en=${q.o.length}) — applyLessonLang() ilyenkor a magyar opciókat tartja meg`);
+                    });
+                }
+            }
+        });
+    });
+
+    if (issues.length > 0) throw new Error(issues.slice(0, 20).join(' | ') + (issues.length > 20 ? ` | (+${issues.length - 20} további)` : ''));
+    return { fileCount: Object.keys(filesMap).length, translatedLessons: totalTranslated };
+});
+
 const overallOk = results.every(r => r.ok);
 console.log(JSON.stringify({ ok: overallOk, results }, null, 2));
 process.exit(overallOk ? 0 : 1);
