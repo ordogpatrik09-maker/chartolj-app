@@ -57629,7 +57629,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <button type="button" onclick="openMonthlyLeague('monthly')" class="text-neon-cyan hover:underline">🏆 Bajnokság</button>
                     <button type="button" onclick="openMentor()" class="text-neon-cyan hover:underline">🧑‍🏫 Mentor</button>
                     <button type="button" onclick="openClassMode()" class="text-neon-cyan hover:underline">🏫 Osztály</button>
-                </div>${seasonalLineHtml()}</div>`;
+                </div>${assignmentLineHtml()}${seasonalLineHtml()}</div>`;
         }
         function startDailySession() {
             const li = dailyNextLessonIdx();
@@ -60524,6 +60524,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!d) { body.innerHTML = '<p class="text-[11px] text-slate-500">Az osztály mód most nem érhető el.</p>'; return; }
             const owned = d.owned || [], joined = d.joined || [];
             window.__ownedClasses = owned;
+            if (joined.length) setTimeout(async () => {
+                const list = await loadMyAssignments(); const box = document.getElementById('my-assign-box'); if (!box || !list || !list.length) return;
+                box.innerHTML = `<div class="text-[10px] font-extrabold uppercase text-slate-500 mb-1">📌 Feladataim</div><div class="space-y-1.5">${list.map(a => `<div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-dark-850/60 border ${a.done ? 'border-neon-green/30' : 'border-dark-750'}">
+                    <div class="flex-1 min-w-0"><div class="text-xs font-bold ${a.done ? 'text-neon-green' : 'text-white'} truncate">${a.done ? '✓ ' : ''}${escapeHtml(lessonTitleByIdx(a.lesson))}</div><div class="text-[10px] text-slate-500 truncate">${escapeHtml(a.class)} · ${escapeHtml(fmtDue(a.due))}${a.note ? ' · ' + escapeHtml(a.note) : ''}</div></div>
+                    ${a.done ? '' : `<button type="button" onclick="openLessonByIdx(${Number(a.lesson)})" class="px-2.5 py-1 rounded-lg bg-neon-cyan text-dark-950 text-[10.5px] font-bold">Megnyitás</button>`}</div>`).join('')}</div>`;
+            }, 0);
             body.innerHTML = `<p class="text-[11px] text-slate-400 mb-3">Tanároknak, szakköröknek, baráti csoportoknak. A tanulók a kóddal csatlakoznak, és ezzel hozzájárulnak, hogy a tulajdonos lássa a haladásuk összesített adatait (XP, leckék, heti aktivitás) — a kötések részleteit nem.</p>
                 <div class="text-[10px] font-extrabold uppercase text-slate-500 mb-1">Saját osztályaim</div>
                 <div class="space-y-1.5 mb-2">${owned.length ? owned.map(c => `<div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-dark-850/60 border border-dark-750">
@@ -60534,6 +60540,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="text-[10px] font-extrabold uppercase text-slate-500 mb-1">Osztályok, amelyeknek tagja vagyok</div>
                 <div class="space-y-1.5 mb-2">${joined.length ? joined.map(c => `<div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-dark-850/60 border border-dark-750"><div class="flex-1 min-w-0"><div class="text-xs font-bold text-white truncate">${escapeHtml(c.name)}</div><div class="text-[10px] text-slate-500">Vezeti: ${escapeHtml(c.teacher)}</div></div>
                     <button type="button" onclick="leaveClassFromUI('${c.id}')" class="px-2.5 py-1 rounded-lg border border-dark-700 text-[10.5px] text-slate-300">Kilépés</button></div>`).join('') : '<div class="text-[11px] text-slate-500">Még egy osztálynak sem vagy tagja.</div>'}</div>
+                <div id="my-assign-box" class="mb-2"></div>
                 <div class="flex gap-2"><input id="class-join-code" maxlength="20" placeholder="Osztálykód (OSZT-…)" aria-label="Osztálykód" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 uppercase"><button type="button" onclick="joinClassFromUI()" class="px-3 py-2 rounded-xl text-xs font-bold border border-dark-700 text-slate-200">Csatlakozás</button></div>`;
         }
         async function createClassFromUI() {
@@ -60567,9 +60574,63 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="grid grid-cols-3 gap-2 mb-3 text-center">${[['Tanuló', ms.length], ['Átl. lecke', avgLessons], ['7+ napja inaktív', inactive]].map(([k, v]) => `<div class="rounded-xl bg-dark-850/60 border border-dark-750 py-2"><div class="text-base font-extrabold text-white">${v}</div><div class="text-[9.5px] text-slate-500">${k}</div></div>`).join('')}</div>
                 <div class="overflow-x-auto"><table class="w-full text-[11px]"><thead><tr class="text-slate-500 text-left"><th class="py-1 pr-2 font-semibold">Név</th><th class="py-1 pr-2 font-semibold text-right">XP</th><th class="py-1 pr-2 font-semibold text-right">Heti XP</th><th class="py-1 pr-2 font-semibold text-right">Lecke</th><th class="py-1 pr-2 font-semibold text-right">Kötés/hét</th><th class="py-1 font-semibold text-right">Aktív</th></tr></thead>
                 <tbody>${ms.length ? ms.map(m => `<tr class="border-t border-dark-800 text-slate-200"><td class="py-1.5 pr-2 max-w-[8rem] truncate">${escapeHtml(m.name)}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.xp) || 0}</td><td class="py-1.5 pr-2 text-right font-mono">${m.xp_week == null ? '–' : Number(m.xp_week)}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.lessons) || 0}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.trades_week) || 0}</td><td class="py-1.5 text-right">${ago(m.last_active)}</td></tr>`).join('') : '<tr><td colspan="6" class="py-4 text-center text-slate-500">Még nincs tanuló — oszd meg az osztálykódot!</td></tr>'}</tbody></table></div>
-                <button type="button" onclick="exportClassCsv('${id}')" class="mt-3 w-full py-2 rounded-xl text-[11px] font-bold border border-dark-750 text-slate-300">⬇️ Letöltés CSV-ben</button>`;
+                <button type="button" onclick="exportClassCsv('${id}')" class="mt-3 w-full py-2 rounded-xl text-[11px] font-bold border border-dark-750 text-slate-300">⬇️ Letöltés CSV-ben</button>
+                <div class="mt-4 pt-3 border-t border-dark-750"><div class="text-[10px] font-extrabold uppercase text-slate-500 mb-1">📌 Feladatok</div><div id="class-assign-list" class="space-y-1.5 text-[11px] text-slate-500">Betöltés…</div>
+                <div class="mt-2 space-y-2"><select id="class-assign-lesson" aria-label="Kiadandó lecke" class="w-full bg-dark-950 border border-dark-750 rounded-xl px-2 py-2 text-xs text-white">${ACADEMY_MODULES.map((m, mi) => `<optgroup label="${escapeHtml(m.n)}">${LESSONS_DATA.map((l, li) => l.m === mi ? `<option value="${li}">${escapeHtml(l.t)}</option>` : '').join('')}</optgroup>`).join('')}</select>
+                <div class="flex gap-2"><input type="date" id="class-assign-due" aria-label="Határidő" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-2 py-2 text-xs text-white"><input id="class-assign-note" maxlength="200" placeholder="Megjegyzés (opcionális)" aria-label="Megjegyzés" class="flex-[2] min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-2 py-2 text-xs text-white placeholder-slate-600"></div>
+                <button type="button" onclick="createAssignmentFromUI('${id}')" class="w-full py-2 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Lecke kiadása</button></div></div>`;
             window.__classReport = { id, d };
+            loadClassAssignments(id);
         }
+        function lessonTitleByIdx(i) { const l = LESSONS_DATA[i]; return l ? l.t : '#' + i; }
+        function fmtDue(d) { if (!d) return 'nincs határidő'; const t = new Date(d + 'T23:59:59'); const days = Math.ceil((t - Date.now()) / 86400000); return d.replace(/-/g, '.') + '.' + (days < 0 ? ' · lejárt' : days === 0 ? ' · ma' : ` · ${days} nap`); }
+        async function loadClassAssignments(id) {
+            const box = document.getElementById('class-assign-list'); if (!box) return;
+            let list = null; try { const r = await sb.rpc('get_class_assignments', { p_class: id }); if (r.error) throw r.error; list = r.data || []; } catch (e) {}
+            if (!document.getElementById('class-assign-list')) return;
+            if (!list) { box.textContent = 'A feladatok most nem érhetők el.'; return; }
+            box.innerHTML = list.length ? list.map(a => { const pct = a.members ? Math.round(a.done / a.members * 100) : 0;
+                return `<div class="px-3 py-2 rounded-xl bg-dark-850/60 border border-dark-750"><div class="flex items-center gap-2"><div class="flex-1 min-w-0"><div class="text-xs font-bold text-white truncate">${escapeHtml(lessonTitleByIdx(a.lesson))}</div><div class="text-[10px] text-slate-500">${escapeHtml(fmtDue(a.due))}${a.note ? ' · ' + escapeHtml(a.note) : ''}</div></div>
+                    <span class="text-[10.5px] font-mono text-slate-300">${Number(a.done) || 0}/${Number(a.members) || 0}</span><button type="button" onclick="deleteAssignmentFromUI('${id}', ${Number(a.id)})" class="text-slate-500 hover:text-neon-red px-1" aria-label="Feladat törlése"><i class="fa-solid fa-trash-can"></i></button></div>
+                    <div class="h-1 rounded-full bg-dark-800 overflow-hidden mt-1.5"><div class="h-full bg-neon-green" style="width:${pct}%"></div></div></div>`; }).join('') : 'Még nincs kiadott lecke.';
+        }
+        async function createAssignmentFromUI(id) {
+            const li = parseInt(document.getElementById('class-assign-lesson').value, 10);
+            const due = document.getElementById('class-assign-due').value || null, note = document.getElementById('class-assign-note').value.trim() || null;
+            try { const r = await sb.rpc('create_class_assignment', { p_class: id, p_lesson: li, p_due: due, p_note: note }); if (r.error) throw r.error; showNotification('📌 Lecke kiadva az osztálynak.'); document.getElementById('class-assign-note').value = ''; loadClassAssignments(id); }
+            catch (e) { const m = (e && e.message) || ''; showNotification(/Legfeljebb|Érvénytelen|jogosults/i.test(m) ? m : 'A kiadás most nem sikerült.'); }
+        }
+        async function deleteAssignmentFromUI(id, aid) {
+            try { const r = await sb.rpc('delete_class_assignment', { p_id: aid }); if (r.error) throw r.error; loadClassAssignments(id); } catch (e) { showNotification('A törlés most nem sikerült.'); }
+        }
+        // Tanuló: saját feladatok (az Akadémia kártyán és az Osztály módban).
+        let myAssignments = null;
+        async function loadMyAssignments() {
+            if (typeof isLoggedInRealUser !== 'function' || !isLoggedInRealUser()) return null;
+            try { const r = await sb.rpc('get_my_assignments'); if (r.error) throw r.error; myAssignments = Array.isArray(r.data) ? r.data : []; }
+            catch (e) { myAssignments = null; }
+            // A szerver a mentett haladásból számol — a még nem szinkronizált, helyben kész leckét is késznek mutatjuk.
+            if (myAssignments) myAssignments.forEach(a => { if (academyCompleted.has(a.lesson)) a.done = true; });
+            if (typeof renderAcademyDailyCard === 'function') renderAcademyDailyCard();
+            return myAssignments;
+        }
+        function assignmentLineHtml() {
+            if (!Array.isArray(myAssignments)) return '';
+            const open = myAssignments.filter(a => !a.done && !academyCompleted.has(a.lesson)); if (!open.length) return '';
+            const next = open[0];
+            return `<div class="mt-2 pt-2 border-t border-dark-750/60 flex items-center justify-between gap-2 text-[10.5px]"><span class="min-w-0 truncate text-slate-300">📌 <b class="text-white">${open.length} osztályfeladat</b> · ${escapeHtml(lessonTitleByIdx(next.lesson))}</span>
+                <button type="button" onclick="openLessonByIdx(${Number(next.lesson)})" class="shrink-0 px-2 py-0.5 rounded-md bg-neon-cyan text-dark-950 font-bold">Megnyitás</button></div>`;
+        }
+        function openLessonByIdx(li) {
+            if (!LESSONS_DATA[li]) return;
+            miniQuizClose();
+            if (isLessonLocked(LESSONS_DATA[li])) { openPremiumModal(LESSONS_DATA[li]); return; }
+            if (window.innerWidth < 1024 && typeof switchMobileTab === 'function') switchMobileTab('academy');
+            if (typeof setAcademyMode === 'function') setAcademyMode('lessons');
+            academyModule = LESSONS_DATA[li].m; openAcademyLesson(li);
+        }
+        (function pollMyAssignments() { let n = 0, done = false; const t = setInterval(() => { n++; if (done || n > 60) { clearInterval(t); return; } if (typeof isLoggedInRealUser === 'function' && isLoggedInRealUser()) { done = true; loadMyAssignments(); } }, 5000); })();
+
         function exportClassCsv(id) {
             const r = window.__classReport; if (!r || r.id !== id) return;
             const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
