@@ -60509,6 +60509,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         // ---------- Osztály mód (tanár / csoport; 029 migráció) ----------
         function classErrMsg(e) { const m = (e && e.message) || ''; return /Nincs ilyen|saját|Legfeljebb|megtelt|Adj nevet|jogosults/i.test(m) ? m : 'A művelet most nem sikerült.'; }
+        // JAVÍTÁS (minőségjavítási kör): a Létrehozás/Csatlakozás/Kilépés gombok
+        // korábban semmilyen dupla-elküldés elleni védelemmel nem rendelkeztek —
+        // egy gyors dupla kattintás/koppintás (a mobil app több más helyén
+        // dokumentált, visszatérő probléma-osztály, pl. a könyvjelző-gomb
+        // fókuszvesztés-javításánál) a "Létrehozás" gombon két azonos nevű
+        // osztályt hozott volna létre, feleslegesen elfogyasztva a
+        // tulajdonosonkénti 10-es osztálylimitet. Egyetlen megosztott
+        // classActionBusy jelzővel (a három mutáló művelet ugyanazt a
+        // modal-állapotot írja/olvassa, ezért egy közös jelző a helyes — egy
+        // esetleges párhuzamos "Létrehozás" + "Kilépés" is ugyanígy versenyhelyzetbe
+        // futna az openClassMode() újrarenderelésénél) blokkoljuk az átfedő
+        // kéréseket, és a kattintott gombot a kérés idejére letiltjuk (ugyanaz
+        // a vizuális minta, mint a setAuthBusy()-nál).
+        let classActionBusy = false;
+        function classSetBusy(btn, busy) {
+            classActionBusy = busy;
+            if (btn) { btn.disabled = busy; btn.classList.toggle('opacity-50', busy); btn.classList.toggle('pointer-events-none', busy); }
+        }
         function classModalShell(title) {
             miniQuiz = null; chartTask = null; microLesson = null;
             document.getElementById('mini-quiz-title').textContent = title;
@@ -60536,23 +60554,37 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex-1 min-w-0"><div class="text-xs font-bold text-white truncate">${escapeHtml(c.name)}</div><div class="text-[10px] text-slate-500">${Number(c.members) || 0} tanuló · kód: <span class="font-mono text-neon-cyan">${escapeHtml(c.join_code)}</span></div></div>
                     <button type="button" onclick="shareClassCode('${c.id}')" class="px-2 py-1 rounded-lg border border-dark-700 text-[10.5px] text-slate-300" aria-label="Kód megosztása"><i class="fa-solid fa-share-nodes"></i></button>
                     <button type="button" onclick="openClassReport('${c.id}')" class="px-2.5 py-1 rounded-lg bg-neon-cyan text-dark-950 text-[10.5px] font-bold">Riport</button></div>`).join('') : '<div class="text-[11px] text-slate-500">Még nincs osztályod.</div>'}</div>
-                <div class="flex gap-2 mb-4"><input id="class-new-name" maxlength="60" placeholder="Új osztály neve (pl. 12.B)" aria-label="Új osztály neve" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600"><button type="button" onclick="createClassFromUI()" class="px-3 py-2 rounded-xl text-xs font-bold bg-neon-cyan/15 border border-neon-cyan/40 text-neon-cyan">Létrehozás</button></div>
+                <div class="flex gap-2 mb-4"><input id="class-new-name" maxlength="60" placeholder="Új osztály neve (pl. 12.B)" aria-label="Új osztály neve" onkeydown="if(event.key==='Enter')createClassFromUI()" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600"><button type="button" id="class-create-btn" onclick="createClassFromUI()" class="px-3 py-2 rounded-xl text-xs font-bold bg-neon-cyan/15 border border-neon-cyan/40 text-neon-cyan">Létrehozás</button></div>
                 <div class="text-[10px] font-extrabold uppercase text-slate-500 mb-1">Osztályok, amelyeknek tagja vagyok</div>
                 <div class="space-y-1.5 mb-2">${joined.length ? joined.map(c => `<div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-dark-850/60 border border-dark-750"><div class="flex-1 min-w-0"><div class="text-xs font-bold text-white truncate">${escapeHtml(c.name)}</div><div class="text-[10px] text-slate-500">Vezeti: ${escapeHtml(c.teacher)}</div></div>
-                    <button type="button" onclick="leaveClassFromUI('${c.id}')" class="px-2.5 py-1 rounded-lg border border-dark-700 text-[10.5px] text-slate-300">Kilépés</button></div>`).join('') : '<div class="text-[11px] text-slate-500">Még egy osztálynak sem vagy tagja.</div>'}</div>
+                    <button type="button" onclick="leaveClassFromUI('${c.id}', this)" class="px-2.5 py-1 rounded-lg border border-dark-700 text-[10.5px] text-slate-300">Kilépés</button></div>`).join('') : '<div class="text-[11px] text-slate-500">Még egy osztálynak sem vagy tagja.</div>'}</div>
                 <div id="my-assign-box" class="mb-2"></div>
-                <div class="flex gap-2"><input id="class-join-code" maxlength="20" placeholder="Osztálykód (OSZT-…)" aria-label="Osztálykód" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 uppercase"><button type="button" onclick="joinClassFromUI()" class="px-3 py-2 rounded-xl text-xs font-bold border border-dark-700 text-slate-200">Csatlakozás</button></div>`;
+                <div class="flex gap-2"><input id="class-join-code" maxlength="20" placeholder="Osztálykód (OSZT-…)" aria-label="Osztálykód" onkeydown="if(event.key==='Enter')joinClassFromUI()" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 uppercase"><button type="button" id="class-join-btn" onclick="joinClassFromUI()" class="px-3 py-2 rounded-xl text-xs font-bold border border-dark-700 text-slate-200">Csatlakozás</button></div>`;
         }
         async function createClassFromUI() {
+            if (classActionBusy) return;
             const name = (document.getElementById('class-new-name').value || '').trim(); if (!name) { showNotification('Adj nevet az osztálynak.'); return; }
-            try { const r = await sb.rpc('create_class', { p_name: name }); if (r.error) throw r.error; showNotification(`🏫 Osztály létrehozva — kód: ${r.data.join_code}`); openClassMode(); } catch (e) { showNotification(classErrMsg(e)); }
+            const btn = document.getElementById('class-create-btn');
+            classSetBusy(btn, true);
+            try { const r = await sb.rpc('create_class', { p_name: name }); if (r.error) throw r.error; showNotification(`🏫 Osztály létrehozva — kód: ${r.data.join_code}`); openClassMode(); }
+            catch (e) { showNotification(classErrMsg(e)); }
+            finally { classSetBusy(btn, false); }
         }
         async function joinClassFromUI() {
+            if (classActionBusy) return;
             const code = (document.getElementById('class-join-code').value || '').trim(); if (!code) return;
-            try { const r = await sb.rpc('join_class', { p_code: code }); if (r.error) throw r.error; showNotification(r.data.already ? 'Már tagja vagy ennek az osztálynak.' : `🏫 Csatlakoztál: ${r.data.name}`); openClassMode(); } catch (e) { showNotification(classErrMsg(e)); }
+            const btn = document.getElementById('class-join-btn');
+            classSetBusy(btn, true);
+            try { const r = await sb.rpc('join_class', { p_code: code }); if (r.error) throw r.error; showNotification(r.data.already ? 'Már tagja vagy ennek az osztálynak.' : `🏫 Csatlakoztál: ${r.data.name}`); openClassMode(); }
+            catch (e) { showNotification(classErrMsg(e)); }
+            finally { classSetBusy(btn, false); }
         }
-        async function leaveClassFromUI(id) {
-            try { const r = await sb.rpc('leave_class', { p_class: id }); if (r.error) throw r.error; showNotification('Kiléptél az osztályból.'); openClassMode(); } catch (e) { showNotification(classErrMsg(e)); }
+        async function leaveClassFromUI(id, btn) {
+            if (classActionBusy) return;
+            classSetBusy(btn, true);
+            try { const r = await sb.rpc('leave_class', { p_class: id }); if (r.error) throw r.error; showNotification('Kiléptél az osztályból.'); openClassMode(); }
+            catch (e) { showNotification(classErrMsg(e)); }
+            finally { classSetBusy(btn, false); }
         }
         function shareClassCode(id) {
             const c = (window.__ownedClasses || []).find(x => x.id === id); if (!c) return;
