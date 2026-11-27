@@ -1486,6 +1486,29 @@
            a kis SVG-avatart elrejtjük, hogy ne legyen két "tanár" egyszerre. */
         /* Méretek itt, nem Tailwind-osztályokkal: az app előre lefordított
            Tailwind-készlete nem tartalmazza a w-60/xl:w-72/min-h-[..] osztályokat. */
+        /* ================= MOBIL ÁTRENDEZÉS (csak <1024px) =================
+           A HTML-sorrend és a PC-s megjelenés VÁLTOZATLAN: a meglévő elemek csak
+           jelölőt kapnak (data-mg = csoport, --mo = mobilos sorrend), a csoport-
+           fejlécek (.m-only) PC-n rejtettek, az újrarendezés (flex order) és az
+           összecsukás kizárólag ebben a mobil @media-blokkban él. */
+        @media (min-width: 1024px) { .m-only { display: none !important; } }
+        @media (max-width: 1023px) {
+            #profile-stack { display: flex; flex-direction: column; gap: 10px; }
+            #profile-stack > * { order: var(--mo, 50); margin-top: 0 !important; margin-bottom: 0 !important; }
+            #profile-stack.mg-closed-tools > [data-mg="tools"],
+            #profile-stack.mg-closed-settings > [data-mg="settings"],
+            #profile-stack.mg-closed-other > [data-mg="other"] { display: none !important; }
+            .m-group-head {
+                display: flex; align-items: center; justify-content: space-between; width: 100%;
+                margin-top: 8px !important; padding: 10px 4px 6px; border-bottom: 1px solid rgba(51,65,85,0.5);
+                font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8;
+            }
+            .m-group-head .m-group-chev { transition: transform 0.2s ease; font-size: 10px; }
+            .m-group-head[aria-expanded="false"] .m-group-chev { transform: rotate(-90deg); }
+            #profile-stack > [data-mg="tools"].glass-card,
+            #profile-stack > [data-mg="other"].glass-card { padding-top: 10px; padding-bottom: 10px; }
+        }
+
         /* A mobilos "Modul váltása" / "Vissza a listához" sávok rejtése eddig csak
            a mobil @media-blokkban volt, így PC-n formázatlan gombként a hasábok
            tetején maradtak. PC-n a modul- és a lecke-lista mindig látszik, ott
@@ -16462,9 +16485,12 @@ Mean-reversion,2.5</textarea>
 
     <!-- ================= PROFIL ================= -->
     <div id="profile-screen" class="hidden absolute inset-0 z-[80] bg-dark-950 flex flex-col overflow-y-auto pb-20">
-        <div class="p-4 space-y-4">
-            <h2 class="text-lg font-bold text-white" data-i18n="profile_title">Profil</h2>
-            <div class="glass-card rounded-xl p-4">
+        <div id="profile-stack" class="p-4 space-y-4 mg-closed-settings mg-closed-other">
+            <h2 data-mg="title" style="--mo:0" class="text-lg font-bold text-white" data-i18n="profile_title">Profil</h2>
+            <button type="button" class="m-only m-group-head" data-mg-head="tools" style="--mo:20" onclick="toggleMobileGroup('profile-stack','tools')" aria-expanded="true"><span><i class="fa-solid fa-toolbox mr-2"></i>Kereskedési eszközeim</span><i class="fa-solid fa-chevron-down m-group-chev"></i></button>
+            <button type="button" class="m-only m-group-head" data-mg-head="settings" style="--mo:30" onclick="toggleMobileGroup('profile-stack','settings')" aria-expanded="false"><span><i class="fa-solid fa-sliders mr-2"></i>Beállítások</span><i class="fa-solid fa-chevron-down m-group-chev"></i></button>
+            <button type="button" class="m-only m-group-head" data-mg-head="other" style="--mo:40" onclick="toggleMobileGroup('profile-stack','other')" aria-expanded="false"><span><i class="fa-solid fa-ellipsis mr-2"></i>Egyéb</span><i class="fa-solid fa-chevron-down m-group-chev"></i></button>
+            <div data-mg="account" style="--mo:10" class="glass-card rounded-xl p-4">
                 <div class="flex items-center gap-3 mb-3">
                     <div class="relative shrink-0">
                         <div id="profile-avatar-wrap" class="w-14 h-14 rounded-full bg-dark-800 border border-dark-700 flex items-center justify-center overflow-hidden">
@@ -16502,23 +16528,23 @@ Mean-reversion,2.5</textarea>
                 </div>
                 <div id="profile-name-error" class="hidden text-[10px] text-neon-red mt-1"></div>
             </div>
-            <button onclick="openTradingJournal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-green/40 transition">
+            <button data-mg="tools" style="--mo:21" onclick="openTradingJournal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-green/40 transition">
                 <span class="text-xs font-bold text-white"><i class="fa-solid fa-calendar-day text-neon-green mr-2"></i>Kereskedési Napló (napi P&amp;L)</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
-            <button onclick="openTradingPlan()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-purple/40 transition">
+            <button data-mg="tools" style="--mo:22" onclick="openTradingPlan()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-purple/40 transition">
                 <span class="text-xs font-bold text-white"><i class="fa-solid fa-clipboard-list text-neon-purple mr-2"></i>Kereskedési Terv (szabályaim)</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
-            <button onclick="openPremiumModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-amber-400/40 transition">
+            <button data-mg="account" style="--mo:11" onclick="openPremiumModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-amber-400/40 transition">
                 <span class="text-xs font-bold text-white"><i class="fa-solid fa-crown text-amber-400 mr-2"></i><span data-i18n="profile_premium">Chartolj Prémium</span></span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
-            <button id="profile-manage-sub-btn" onclick="openManageSubscription()" class="hidden w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
+            <button data-mg="account" style="--mo:12" id="profile-manage-sub-btn" onclick="openManageSubscription()" class="hidden w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
                 <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-credit-card text-slate-500 mr-2"></i>Előfizetés kezelése</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
-            <button onclick="openAlertsModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-cyan/40 transition">
+            <button data-mg="tools" style="--mo:23" onclick="openAlertsModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-cyan/40 transition">
                 <span class="text-xs font-bold text-white"><i class="fa-solid fa-bell text-neon-cyan mr-2"></i>Árfolyam-riasztásaim</span>
                 <span class="flex items-center gap-2">
                     <span id="profile-alerts-count" class="hidden px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/40">0</span>
@@ -16531,7 +16557,7 @@ Mean-reversion,2.5</textarea>
                  (chartolj_seen_changelog_version — tisztán kényelmi, nem fiók/
                  progressz-adat, ugyanúgy, mint pl. a napi emlékeztető-kapcsoló)
                  tárolt, utoljára látott verzió összevetésével. -->
-            <button id="profile-changelog-btn" onclick="openChangelogModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-cyan/40 transition">
+            <button data-mg="other" style="--mo:41" id="profile-changelog-btn" onclick="openChangelogModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-neon-cyan/40 transition">
                 <span class="text-xs font-bold text-white relative">
                     <i class="fa-solid fa-sparkles text-neon-cyan mr-2"></i>Mi újság?
                     <span id="profile-changelog-dot" class="hidden absolute -top-1 -right-2.5 w-1.5 h-1.5 rounded-full bg-neon-cyan"></span>
@@ -16547,7 +16573,7 @@ Mean-reversion,2.5</textarea>
                  supabase/migrations/018_admin_stats.sql) — a gomb
                  elrejtése/megjelenítése a böngésző konzoljából megkerülhető
                  lenne, de az RPC akkor is elutasítaná a nem-admin hívót. -->
-            <button id="profile-admin-btn" onclick="openAdminPanel()" class="hidden w-full glass-card rounded-xl p-3 flex items-center justify-between border-amber-500/30 hover:border-amber-500/60 transition">
+            <button data-mg="other" style="--mo:42" id="profile-admin-btn" onclick="openAdminPanel()" class="hidden w-full glass-card rounded-xl p-3 flex items-center justify-between border-amber-500/30 hover:border-amber-500/60 transition">
                 <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-user-shield mr-2"></i>Admin panel</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
@@ -16559,62 +16585,62 @@ Mean-reversion,2.5</textarea>
                  mobil "Eszközök" lebegő gomb egy MÁSIK panelt (a rajzeszköz-
                  oldalsávot) nyit meg. Ez egy mobilra is elérhető belépési
                  pont ugyanazokhoz a kalkulátorokhoz, a Profil fülről. -->
-            <button onclick="openMobileToolsModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-amber-400/40 transition">
+            <button data-mg="tools" style="--mo:24" onclick="openMobileToolsModal()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-amber-400/40 transition">
                 <span class="text-xs font-bold text-white"><i class="fa-solid fa-calculator text-amber-400 mr-2"></i>Stratégiai Kalkulátorok</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
-            <div class="glass-card rounded-xl p-3">
+            <div data-mg="settings" style="--mo:31" class="glass-card rounded-xl p-3">
                 <button onclick="toggleDailyReminder()" class="w-full flex items-center justify-between">
                     <span class="text-xs font-bold text-white text-left"><i class="fa-solid fa-clock-rotate-left text-neon-cyan mr-2"></i>Napi gyakorlás-emlékeztető</span>
                     <span id="daily-reminder-toggle" class="w-10 h-[22px] rounded-full relative transition bg-dark-800 border border-dark-700 shrink-0"></span>
                 </button>
                 <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">Ha engedélyezed, és egy napnál tovább nem gyakoroltál, legközelebb ennek az ablaknak a megnyitásakor böngésző-értesítést kapsz. (Nincs háttér-push, amíg az app zárva van — ehhez majd a natív Android build adja a teljes megoldást.)</p>
             </div>
-            <div class="glass-card rounded-xl p-3">
+            <div data-mg="settings" style="--mo:32" class="glass-card rounded-xl p-3">
                 <div class="text-xs font-bold text-slate-300 mb-2" data-i18n="profile_language"><i class="fa-solid fa-globe mr-2 text-slate-500"></i>Nyelv</div>
                 <div class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750">
                     <button id="lang-btn-hu" onclick="setLanguage('hu')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition">Magyar</button>
                 </div>
             </div>
-            <div class="glass-card rounded-xl p-3">
+            <div data-mg="settings" style="--mo:33" class="glass-card rounded-xl p-3">
                 <div class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-palette mr-2 text-slate-500"></i>Akcentszín</div>
                 <div id="accent-theme-picker" class="flex items-center gap-2.5"></div>
                 <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">A kiemelő szín (gombok, kijelölések) személyre szabása — a kereskedési chartot nem érinti.</p>
             </div>
-            <div class="glass-card rounded-xl p-3">
+            <div data-mg="settings" style="--mo:34" class="glass-card rounded-xl p-3">
                 <div class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-text-height mr-2 text-slate-500"></i>Szövegméret</div>
                 <div id="text-size-picker" class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750"></div>
                 <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">A teljes felület méretezése akadálymentesítési céllal. Csak erre a munkamenetre vonatkozik.</p>
             </div>
-            <div class="glass-card rounded-xl p-3 lg:hidden">
+            <div data-mg="settings" style="--mo:35" class="glass-card rounded-xl p-3 lg:hidden">
                 <div class="text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-sun mr-2 text-slate-500"></i>Megjelenés</div>
                 <div id="theme-mode-picker" class="flex items-center bg-dark-900 p-1 rounded-xl border border-dark-750"></div>
                 <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">Sötét vagy világos felület (csak mobilon/tableten érhető el). Csak erre a munkamenetre vonatkozik.</p>
             </div>
-            <button onclick="toggleProfileDiagnostics()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
+            <button data-mg="other" style="--mo:45" onclick="toggleProfileDiagnostics()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
                 <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-screwdriver-wrench text-slate-500 mr-2"></i><span data-i18n="profile_diagnostics">Speciális / Diagnosztika</span></span>
                 <i id="profile-diagnostics-chevron" class="fa-solid fa-chevron-down text-slate-500 text-xs"></i>
             </button>
-            <div id="profile-diagnostics-panel" class="hidden space-y-3">
+            <div data-mg="other" style="--mo:46" id="profile-diagnostics-panel" class="hidden space-y-3">
                 <div id="system-status-panel" class="glass-card rounded-xl p-3 font-mono text-[10px] space-y-1.5"></div>
                 <div id="profile-diagnostics-log" class="glass-card rounded-xl p-3 font-mono text-[10px] text-slate-500 space-y-1 max-h-48 overflow-y-auto">
                     <!-- Ide másolódik be a Tevékenység napló diagnosztikai célra -->
                 </div>
             </div>
-            <button onclick="exportMyData()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
+            <button data-mg="other" style="--mo:43" onclick="exportMyData()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
                 <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-file-arrow-down text-slate-500 mr-2"></i>Adataim letöltése (JSON)</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
-            <button onclick="openLegalScreen()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
+            <button data-mg="other" style="--mo:44" onclick="openLegalScreen()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
                 <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-scale-balanced text-slate-500 mr-2"></i>Jogi tudnivalók</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
             </button>
-            <button id="profile-delete-account-btn" onclick="openDeleteAccountModal()" class="hidden w-full glass-card rounded-xl p-3 flex items-center justify-between border border-neon-red/20 hover:border-neon-red/50 transition">
+            <button data-mg="other" style="--mo:47" id="profile-delete-account-btn" onclick="openDeleteAccountModal()" class="hidden w-full glass-card rounded-xl p-3 flex items-center justify-between border border-neon-red/20 hover:border-neon-red/50 transition">
                 <span class="text-xs font-bold text-neon-red"><i class="fa-solid fa-trash-can mr-2"></i>Fiók és adatok törlése</span>
                 <i class="fa-solid fa-chevron-right text-neon-red/60 text-xs"></i>
             </button>
             <!-- JAVÍTÁS: mobilon a lebegő AI-chat gomb ráfeküdt erre a gombsorra. -->
-            <div class="h-16 lg:h-0 shrink-0"></div>
+            <div data-mg="spacer" style="--mo:99" class="h-16 lg:h-0 shrink-0"></div>
         </div>
     </div>
 
@@ -48850,6 +48876,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function aiAvatarSetSpeaking(speaking) { /* szándékosan üres — lásd thSyncFloat() */ }
 
         // Minden felolvasás azonnali leállítása (lebegő fej koppintás, stb.).
+        // Mobilos összecsukható csoportok (Profil, Fejlődés stb.) — csak osztályt
+        // vált a konténeren; a tényleges rejtés a mobil @media CSS-ben van, így
+        // PC-n nincs hatása.
+        function toggleMobileGroup(containerId, group) {
+            const c = document.getElementById(containerId); if (!c) return;
+            const closed = c.classList.toggle('mg-closed-' + group);
+            const h = c.querySelector('[data-mg-head="' + group + '"]');
+            if (h) h.setAttribute('aria-expanded', String(!closed));
+        }
+
         function ttsStopAll() {
             if (!ttsSupported) return;
             window.speechSynthesis.cancel();
