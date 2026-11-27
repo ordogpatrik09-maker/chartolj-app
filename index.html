@@ -48949,7 +48949,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             TH.img.src = 'assets/tutor-head.jpg';
         }
 
-        function thTargetVisible(t) { return t.canvas.offsetParent !== null || getComputedStyle(t.canvas).position === 'fixed'; }
+        // A lebegő ablak rejtett állapotban is "display"-ben marad (csak
+        // átlátszó, az áttűnés miatt), ezért ott az osztály dönt — különben a
+        // rajzoló ciklus rejtve is 60 fps-sel futna tovább (akkumerítés).
+        function thTargetVisible(t) {
+            if (t.canvas.id === 'th-float-canvas') { const fl = document.getElementById('th-float'); return !!(fl && fl.classList.contains('th-float-on')); }
+            return t.canvas.offsetParent !== null;
+        }
 
         function thDrawOn(ctx, now) {
             const img = TH.img, g = TH_GEOM;
@@ -49104,11 +49110,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 TH.targets.forEach(t => { if (thTargetVisible(t)) thDrawOn(t.ctx, now); });
                 TH.dirty = false;
             }
-            // Fut, amíg valamelyik fej-felület látszik (pislogás miatt), vagy még mozog a száj.
-            if (visible || TH.active || TH.open > 0) TH.raf = requestAnimationFrame(thLoop);
+            // Beszéd/mozgás/pislogás közben képkockánként fut; csendben, látható
+            // fejnél csak a következő pislogásig "alszik" (nincs üresjárati 60 fps).
+            if (!visible && !TH.active) { TH.open = 0; TH.sway = 0; return; } // senki nem látja — leáll
+            if (TH.active || TH.open > 0 || TH.sway > 0 || blinking) TH.raf = requestAnimationFrame(thLoop);
+            else if (visible) { TH.raf = -1; setTimeout(() => { if (TH.raf === -1) { TH.raf = 0; thKick(); } }, Math.max(16, TH.nextBlinkAt - now)); }
         }
 
-        function thKick() { if (!TH.raf) TH.raf = requestAnimationFrame(thLoop); }
+        function thKick() { if (TH.raf === -1) TH.raf = 0; if (!TH.raf) TH.raf = requestAnimationFrame(thLoop); }
 
         function talkingHeadAttach(utter, text) {
             TH.utter = utter; TH.text = text; TH.active = true;
@@ -57773,9 +57782,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function voiceNavHandle(alts) {
             const norm = x => foldDiacritics(String(x || '').toLowerCase()).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
             const heard = alts[0] || '';
-            const all = alts.map(norm).join(' | ');
-            const has = re => re.test(all);
-            if (has(/\b(allj|stop|csend|eleg|halt)\b/)) { ttsStopAll(); voiceNavPill('„' + heard + '” → leállítva'); return; }
+            // Csak RÖVID megszólalás lehet parancs (max. 3 szó): így egy hosszabb
+            // mondatban — vagy az app saját felolvasásában, amit a mikrofon
+            // visszahall (pl. "…a stop-loss azt jelenti…") — szereplő szó nem
+            // vált ki semmit. Kvízválasznál a tartalmi egyezés ettől független.
+            const shortAlts = alts.map(norm).filter(t => t && t.split(' ').length <= 3);
+            const all = shortAlts.join(' | ');
+            const has = re => shortAlts.length > 0 && re.test(all);
+            if (has(/^(?:allj(?: meg)?|stop|csend|eleg|halt|allj le)$/m) || shortAlts.some(t => /^(allj|stop|csend|eleg)( meg| le)?$/.test(t))) { ttsStopAll(); voiceNavPill('„' + heard + '” → leállítva'); return; }
             if (ttsCurrentKey) return; // az app beszél — csak az "állj" számít
             if (academyLessonIdx === null) return;
             if (academyStage === 'cards') {
