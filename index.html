@@ -3263,6 +3263,13 @@
                                 <div class="text-[10px] text-slate-400">Mechanikus tétcsökkentés N vesztés után vs. fix tétméret</div>
                             </div>
                         </button>
+                        <button onclick="closeToolsDropdown(); openToolModal('longshortpnl-modal')" class="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-dark-800 transition text-left">
+                            <span class="w-8 h-8 rounded-lg bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 flex items-center justify-center text-sm"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+                            <div>
+                                <div class="text-xs font-bold text-white">Long/Short P&L Kalkulátor</div>
+                                <div class="text-[10px] text-slate-400">Nyereség/veszteség mindkét irányban, a kockázat-aszimmetriával</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -9505,6 +9512,55 @@ GOLD: -1.1,0.4,-0.7,-1.9,0.9,-0.2,-1.3,0.8</textarea>
 
             <div id="stepdown-result" role="status" aria-live="polite" class="mt-4"></div>
             <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Ez egy oktatási demonstráció: a "fix" eset minden trade-nél ugyanazzal a tétmérettel kereskedik, a "szabály" eset N egymást követő vesztés után a megadott %-kal csökkenti a tétet, és M egymást követő nyerés után állítja vissza — a nyertes/vesztes sorrend mindkét esetben ugyanaz, csak a tétméret tér el. Az eredmény a megadott konkrét sorozattól függ, nem jövőbeli teljesítmény garanciája.</p>
+        </div>
+    </div>
+
+    <!-- ================= LONG/SHORT P&L KALKULÁTOR (OKTATÁSI) =================
+         A "Long és Short pozíciók" lecke (2. lecke, modul 0) első interaktív
+         eszköze. Long P&L = (Kilépés - Belépés) × Mennyiség; Short P&L =
+         (Belépés - Kilépés) × Mennyiség. A kalkulátor a két irány
+         ASZIMMETRIKUS kockázatát is szemlélteti: Long pozíciónál a
+         maximális veszteség matematikailag korlátos (az ár nem mehet
+         0 alá, tehát legfeljebb -100%), Short pozíciónál viszont nincs
+         elméleti felső határ az árfolyamnak, így a veszteség elméletileg
+         korlátlan — ez pontosan a lecke negyedik kártyájának ("A short
+         kockázata: elméletileg korlátlan veszteség") a számszerűsítése. -->
+    <div id="longshortpnl-modal" class="hidden fixed inset-0 z-[96] flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="longshortpnl-modal-title">
+        <div class="glass-dropdown rounded-2xl w-96 max-w-[92vw] p-5 max-h-[85%] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 id="longshortpnl-modal-title" class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-right-arrow-left text-neon-cyan"></i> Long/Short P&L Kalkulátor
+                </h3>
+                <button onclick="closeToolModal('longshortpnl-modal')" class="text-slate-400 hover:text-white transition" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Add meg az irányt (<strong class="text-neon-cyan">Long</strong> = vásárlás emelkedésre számítva, <strong class="text-neon-cyan">Short</strong> = eladás esésre számítva), a belépési és kilépési árat, és a mennyiséget — a kalkulátor megmutatja a nyereséget/veszteséget, és azt is, mennyire eltérő a két irány KOCKÁZATI korlátja.</p>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="lspnl-direction">Irány</label>
+            <select id="lspnl-direction" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-3 text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                <option value="long">Long (vétel)</option>
+                <option value="short">Short (eladás)</option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="lspnl-entry">Belépési ár</label>
+                    <input type="number" inputmode="decimal" id="lspnl-entry" value="100" step="0.01" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-400" for="lspnl-exit">Kilépési ár</label>
+                    <input type="number" inputmode="decimal" id="lspnl-exit" value="110" step="0.01" min="0" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+                </div>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-400" for="lspnl-qty">Mennyiség (darab/egység)</label>
+            <input type="number" inputmode="decimal" id="lspnl-qty" value="10" step="1" min="0.00000001" class="w-full bg-dark-850 border border-dark-750 rounded-xl px-3 py-2 mt-1 mb-4 font-mono text-xs text-white focus:outline-none focus:border-neon-cyan/50">
+
+            <button onclick="calcLongShortPnl()" class="w-full py-2.5 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950 shadow-lg hover:brightness-110 active:scale-[0.98] transition">
+                Kiszámolás
+            </button>
+
+            <div id="longshortpnl-result" role="status" aria-live="polite" class="mt-4"></div>
+            <p class="text-[9.5px] text-slate-600 mt-4 leading-relaxed">Long pozíciónál az ár elméletileg nem mehet 0 alá, tehát a maximális veszteséged a befektetett tőke 100%-a — ennél rosszabb nem lehet. Short pozíciónál viszont az árfolyamnak NINCS felső határa, így minél magasabbra megy az ár ellened, annál nagyobb (elméletileg korlátlan) a veszteséged — ezért kritikus, hogy short pozíciót sosem nyiss stop-loss nélkül.</p>
         </div>
     </div>
 
@@ -16160,6 +16216,13 @@ Mean-reversion,2.5</textarea>
                         <div>
                             <div class="text-xs font-bold text-white">Vesztes Sorozat Utáni Tétcsökkentés</div>
                             <div class="text-[10px] text-slate-400">Mechanikus tétcsökkentés N vesztés után vs. fix tétméret</div>
+                        </div>
+                    </button>
+                    <button onclick="closeMobileToolsModal(); openToolModal('longshortpnl-modal')" data-tool-title="long short p&l kalkulátor pozíció" class="mobile-tool-item w-full flex items-center gap-2.5 p-2.5 rounded-lg glass-card hover:border-neon-cyan/30 transition text-left">
+                        <span class="w-8 h-8 rounded-lg bg-dark-800 text-slate-300 border border-dark-700 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+                        <div>
+                            <div class="text-xs font-bold text-white">Long/Short P&L Kalkulátor</div>
+                            <div class="text-[10px] text-slate-400">Nyereség/veszteség mindkét irányban, a kockázat-aszimmetriával</div>
                         </div>
                     </button>
                 </div>
@@ -45634,6 +45697,83 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= LONG/SHORT P&L KALKULÁTOR (OKTATÁSI) =================
+        // Long P&L = (Kilépés - Belépés) × Mennyiség; Short P&L =
+        // (Belépés - Kilépés) × Mennyiség. P&L% = P&L / (Belépés × Mennyiség)
+        // × 100. A Long eset matematikailag -100%-nál nem lehet rosszabb
+        // (mert az ár nem lehet negatív — ezt a "exit < 0" validáció zárja
+        // ki), a Short esetnek viszont nincs alsó korlátja a P&L%-ra, mert
+        // nincs felső korlát az árfolyamra — ezt a kalkulátor explicit
+        // üzenettel is jelzi, ha a veszteség meghaladja a kezdő tőkét (ami
+        // Long pozíciónál sosem történhetne meg).
+        function calcLongShortPnl() {
+            const directionEl = document.getElementById('lspnl-direction');
+            const entryEl = document.getElementById('lspnl-entry');
+            const exitEl = document.getElementById('lspnl-exit');
+            const qtyEl = document.getElementById('lspnl-qty');
+            const out = document.getElementById('longshortpnl-result');
+            if (!directionEl || !entryEl || !exitEl || !qtyEl || !out) return;
+
+            const direction = directionEl.value;
+            const entry = parseFloat(entryEl.value);
+            const exit = parseFloat(exitEl.value);
+            const qty = parseFloat(qtyEl.value);
+
+            if (![entry, exit, qty].every(v => Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+                return;
+            }
+            if (entry <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A belépési árnak nagyobbnak kell lennie nullánál!</div>`;
+                return;
+            }
+            if (exit < 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A kilépési ár nem lehet negatív!</div>`;
+                return;
+            }
+            if (qty <= 0) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A mennyiségnek nagyobbnak kell lennie nullánál!</div>`;
+                return;
+            }
+
+            const isLong = direction === 'long';
+            const invested = entry * qty;
+            const pnl = isLong ? (exit - entry) * qty : (entry - exit) * qty;
+            const pnlPct = (pnl / invested) * 100;
+
+            if (![invested, pnl, pnlPct].every(v => Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott ár/mennyiség kombinációja túl szélsőséges érvényes P&L-számításhoz — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
+            }
+
+            let colorClass = 'text-slate-300';
+            let pnlLabel = 'Nullszaldós (breakeven)';
+            if (pnl > 0) { colorClass = 'text-neon-green'; pnlLabel = 'Nyereség'; }
+            else if (pnl < 0) { colorClass = 'text-neon-red'; pnlLabel = 'Veszteség'; }
+
+            const fmt = (n) => { const nn = zeroSafeRound(n, 2); return (nn >= 0 ? '+' : '') + '$' + nn.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 }); };
+            const pctFmt = (n) => { const nn = zeroSafeRound(n, 2); return (nn >= 0 ? '+' : '') + nn.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + '%'; };
+
+            let riskNote;
+            if (isLong) {
+                riskNote = `Long pozíciónál a maximális lehetséges veszteséged ennél a tételnél -100% (azaz ${fmt(-invested)}) lenne, ha az ár nullára esne — ennél rosszabb matematikailag nem történhet.`;
+            } else if (pnlPct <= -100) {
+                riskNote = `Ez a veszteség már MEGHALADJA a kezdő befektetett tőkédet (${'$' + invested.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}) — pontosan ezt jelenti, hogy a short pozíció vesztesége ELMÉLETILEG KORLÁTLAN: az árfolyamnak nincs felső határa, így a veszteség is tetszőlegesen tovább nőhet.`;
+            } else {
+                riskNote = `Short pozíciónál — szemben a Long esettel — NINCS felső korlát az árfolyamra, tehát a veszteségre sincs alsó korlát (-100%-nál sokkal rosszabb is lehet, ha az ár tovább emelkedik ellened).`;
+            }
+
+            out.innerHTML = `
+                <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">Befektetett tőke (Belépés × Mennyiség):</span><span class="text-white font-extrabold">$${invested.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">P&L (${isLong ? 'Long' : 'Short'}):</span><span class="${colorClass} font-extrabold text-sm">${fmt(pnl)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">P&L %:</span><span class="${colorClass} font-extrabold">${pctFmt(pnlPct)}</span></div>
+                </div>
+                <p class="text-[10px] font-semibold ${colorClass} mb-1">${pnlLabel}: ${fmt(pnl)} (${pctFmt(pnlPct)})</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${riskNote}</p>
+            `;
+        }
+
         // ================= DRAWDOWN VISSZANYERÉSI KALKULÁTOR (OKTATÁSI) =================
         function calcDrawdownRecovery() {
             const lossEl = document.getElementById('recovery-loss');
@@ -56821,6 +56961,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // AZONNAL alkalmazhatóvá tesszük a tudást — ez köti össze az Akadémiát a
         // valódi kereskedési terminállal, nem hagyva a tudást elszigetelt tényként.
         const LESSON_TOOL_MAP = {
+            1: { tool: 'longshortpnl-modal', cta: 'Számold ki élesben egy Long és egy Short pozíció nyereségét/veszteségét, és lásd a kockázat-aszimmetriát' },
             209: { tool: 'execlatency-modal', cta: 'Számold ki élesben, mennyi slippage-költség különbség adódhat egy lassabb és egy gyorsabb végrehajtási latencia között' },
             41: { tool: 'sessions-modal', cta: 'Nézd meg élesben a Piaci Szekciók Óráját, és lásd, mikor zárnak/nyitnak a fő szekciók a pre-market/after-hours idősávhoz képest' },
             488: { tool: 'fibonacci', cta: 'Húzz egy Fibonacci-t a charton, és gyakorold a rajzeszköz pontos használatát' },
@@ -57233,7 +57374,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Néhány lecke egy felugró eszköz-modalt nyit meg (pl. Backtester),
             // nem a chart egy overlay-jét kapcsolja be — ezeket külön ágon
             // kezeljük, mert nem igénylik a lenti chart-fókuszálási logikát.
-            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'demarker-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'coveredcall-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'settlement-modal', 'execlatency-modal', 'linreg-modal', 'newscandle-modal', 'bayesrate-modal'];
+            const DIRECT_MODAL_TOOLS = ['backtest-modal', 'montecarlo-modal', 'funding-modal', 'var-modal', 'liquiditysize-modal', 'massindex-modal', 'rvi-modal', 'volratio-modal', 'trendexhaustion-modal', 'roc-modal', 'wildersmooth-modal', 'corrmatrix-modal', 'ddduration-modal', 'ruinprob-modal', 'pathdep-modal', 'multikelly-modal', 'milestone-modal', 'kellydd-modal', 'sortino-modal', 'ulcer-modal', 'martin-modal', 'vwap-modal', 'avwap-modal', 'omega-modal', 'gaintopain-modal', 'treynor-modal', 'skewkurt-modal', 'betasize-modal', 'volscale-modal', 'scaling-modal', 'optimalf-modal', 'fixedratio-modal', 'sterling-modal', 'mfi-modal', 'cci-modal', 'pe-modal', 'elderray-modal', 'forceindex-modal', 'tii-modal', 'atr-modal', 'expectancy-modal', 'ruin-modal', 'rmultiple-modal', 'martingale-modal', 'pivot-modal', 'cmf-modal', 'adx-modal', 'obv-modal', 'rsicalc-modal', 'williamsr-modal', 'demarker-modal', 'stochastic-modal', 'bbwidth-modal', 'psar-modal', 'fibext-modal', 'tmf-modal', 'vortex-modal', 'denomeffect-modal', 'aroon-modal', 'elderimpulse-modal', 'donchian-modal', 'keltner-modal', 'chandelier-modal', 'supertrend-modal', 'camarilla-modal', 'gmma-modal', 'zigzag-modal', 'kelly-modal', 'pipvalue-modal', 'tickvalue-modal', 'heat-modal', 'optionpayoff-modal', 'coveredcall-modal', 'iv-modal', 'dca-modal', 'pairs-modal', 'confluence-modal', 'feeimpact-modal', 'greeks-modal', 'gex-modal', 'recovery-modal', 'ichimoku-modal', 'heikinashi-modal', 'harmonic-modal', 'renko-modal', 'volumedelta-modal', 'fibtime-modal', 'fibfan-modal', 'm2-modal', 'cmo-modal', 'ppo-modal', 'dpo-modal', 'trix-modal', 'qstick-modal', 'bop-modal', 'uo-modal', 'cog-modal', 'mcclellan-modal', 'klinger-modal', 'fibretr-modal', 'emv-modal', 'fisher-modal', 'kst-modal', 'tsi-modal', 'divergence-modal', 'vwma-modal', 'maribbon-modal', 'hma-modal', 'orb-modal', 'rsc-modal', 'vwmacd-modal', 'betacalc-modal', 'divrisk-modal', 'measuredmove-modal', 'rejectionwick-modal', 'liquidation-modal', 'trailingstop-modal', 'timeexit-modal', 'spreadcost-modal', 'spreadbet-modal', 'stoplimitgap-modal', 'yieldcurve-modal', 'goldencross-modal', 'donchianwidth-modal', 'coppock-modal', 'levdecay-modal', 'rebalance-modal', 'dividend-modal', 'certeq-modal', 'envelope-modal', 'autoenv-modal', 'stc-modal', 'chopzone-modal', 'feargreed-modal', 'szjatax-modal', 'il-modal', 'candlepattern-modal', 'fvg-modal', 'pyramid-modal', 'mergerarb-modal', 'vp-modal', 'riskbudget-modal', 'propchallenge-modal', 'wfe-modal', 'histvolatr-modal', 'split-buyback-modal', 'vsa-modal', 'orderbook-modal', 'seqsim-modal', 'tailhedge-modal', 'feestruct-modal', 'makertaker-modal', 'stresstest-modal', 'nakedoption-modal', 'rsifailure-modal', 'mtfrsi-modal', 'premdisc-modal', 'riskparity-modal', 'depeg-modal', 'exchflow-modal', 'shortsqueeze-modal', 'gapclass-modal', 'abcd-modal', 'ladderbreak-modal', 'pitchfork-modal', 'eqhl-modal', 'structure-modal', 'gridopt-modal', 'wfo-modal', 'portfoliocombiner-modal', 'robustmap-modal', 'mtffilter-modal', 'weightopt-modal', 'seasonality-modal', 'regimeswitch-modal', 'voltarget-modal', 'leveragesweep-modal', 'sessions-modal', 'dailylimit-modal', 'newscal-modal', 'elliottwave-modal', 'preflight-modal', 'rollover-modal', 'realizedvol-modal', 'circuitbreaker-modal', 'gsl-modal', 'halving-modal', 'pdt-modal', 'discount-modal', 'l2fee-modal', 'trendline-modal', 'corrshift-modal', 'stakingapy-modal', 'taxharvest-modal', 'hedgeratio-modal', 'emergencyfund-modal', 'gordon-modal', 'settlement-modal', 'execlatency-modal', 'linreg-modal', 'newscandle-modal', 'bayesrate-modal', 'longshortpnl-modal'];
             if (DIRECT_MODAL_TOOLS.includes(mapping.tool)) {
                 closeAcademy();
                 openToolModal(mapping.tool);
