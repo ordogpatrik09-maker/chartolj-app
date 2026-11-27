@@ -47938,6 +47938,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
+        // Minőségjavítás: ékezet-független keresés. A magyar felhasználók
+        // (főleg mobilon, ahol az ékezetes betűk extra koppintást igényelnek)
+        // gyakran ékezet nélkül gépelnek be egy keresőkifejezést (pl.
+        // "kriterium" "kritérium" helyett, "arany" "arány" helyett) — a sima
+        // .includes() emiatt korábban 0 találatot adott, pedig a kalkulátor/
+        // lecke/szószedet-tétel valójában létezik. A String.normalize('NFD')
+        // szétbontja az ékezetes karaktereket alap betű + önálló kombináló
+        // ékezet-jelre, amit a ̀-ͯ tartomány eltávolítása levág —
+        // ez egy standard, függőség nélküli technika ékezet-semlegesítésre.
+        // Biztonságos minden bemeneti típusra (nem csak stringre).
+        function foldDiacritics(s) {
+            return String(s === null || s === undefined ? '' : s)
+                .normalize('NFD').replace(/[̀-ͯ]/g, '');
+        }
+
         // =================================================================
         // Ingyenes felolvasás (TTS) — a böngésző saját speechSynthesis API-ja.
         // Nincs szerveroldali hívás, nincs extra költség; ha a böngésző nem
@@ -49888,10 +49903,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const searchInput = document.getElementById('glossary-search-input');
             const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+            const queryFolded = foldDiacritics(query);
 
             const filtered = GLOSSARY_TERMS
                 .filter(t => !glossarySelectedCat || t.cat === glossarySelectedCat)
-                .filter(t => !query || t.term.toLowerCase().includes(query) || t.def.toLowerCase().includes(query))
+                .filter(t => !query || foldDiacritics(t.term.toLowerCase()).includes(queryFolded) || foldDiacritics(t.def.toLowerCase()).includes(queryFolded))
                 .sort((a, b) => a.term.localeCompare(b.term, 'hu'));
 
             if (filtered.length === 0) {
@@ -50119,10 +50135,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const el = document.getElementById('chart-strategies-list');
             const srchEl = document.getElementById('academy-search'); if (srchEl) srchEl.value = '';
             const gq = (document.getElementById('gallery-search')||{value:''}).value.toLowerCase();
+            const gqFolded = foldDiacritics(gq);
             const gc = (document.getElementById('gallery-cat-filter')||{value:''}).value;
             const gsort = (document.getElementById('gallery-sort')||{value:'name'}).value;
             const filtered = CHART_STRATEGIES
-                .filter(cs => (!gq || cs.name.toLowerCase().includes(gq)) && (!gc || cs.cat === gc))
+                .filter(cs => (!gq || foldDiacritics(cs.name.toLowerCase()).includes(gqFolded)) && (!gc || cs.cat === gc))
                 .sort((a,b) => gsort === 'cat' ? (a.cat||'').localeCompare(b.cat||'') : a.name.localeCompare(b.name));
             el.innerHTML = filtered.length ? filtered.map(cs => {
                 const active = selectedChartStrategy && selectedChartStrategy.id === cs.id;
@@ -55007,10 +55024,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // Védekező kódolás (113-114. pont): egy jövőbeli hibás lecke-adat (pl.
                 // nem string cím) se akassza meg a keresést minden egyéb leckénél —
                 // a String()-re való átalakítás biztonságos minden bemeneti típusra.
+                // Minőségjavítás: ékezet-független összehasonlítás (lásd foldDiacritics),
+                // hogy egy ékezet nélkül begépelt keresőszó is megtalálja az ékezetes
+                // lecke-címeket/alcímeket.
+                const searchTermFolded = foldDiacritics(searchTerm);
                 indices = LESSONS_DATA.reduce((acc, l, i) => {
                     const title = typeof l.t === 'string' ? l.t : String(l.t || '');
                     const subtitle = typeof l.s === 'string' ? l.s : String(l.s || '');
-                    if (title.toLowerCase().includes(searchTerm) || subtitle.toLowerCase().includes(searchTerm)) acc.push(i);
+                    if (foldDiacritics(title.toLowerCase()).includes(searchTermFolded) || foldDiacritics(subtitle.toLowerCase()).includes(searchTermFolded)) acc.push(i);
                     return acc;
                 }, []);
                 titleEl.innerHTML = `<i class="fa-solid fa-magnifying-glass text-neon-cyan"></i> Keresési találatok`;
@@ -59190,7 +59211,7 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
         // görgetés/kategória-nyitogatás nélkül. Üres keresésnél minden
         // kategória visszazáródik az alapállapotba.
         function filterMobileToolsList() {
-            const term = (document.getElementById('mobile-tools-search')?.value || '').trim().toLowerCase();
+            const term = foldDiacritics((document.getElementById('mobile-tools-search')?.value || '').trim().toLowerCase());
             const categories = document.querySelectorAll('.mobile-tools-category');
             let totalVisible = 0;
             categories.forEach(catEl => {
@@ -59209,7 +59230,7 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
                 }
                 let matchCount = 0;
                 itemButtons.forEach(btn => {
-                    const match = (btn.getAttribute('data-tool-title') || '').includes(term);
+                    const match = foldDiacritics(btn.getAttribute('data-tool-title') || '').includes(term);
                     btn.classList.toggle('hidden', !match);
                     if (match) matchCount++;
                 });
