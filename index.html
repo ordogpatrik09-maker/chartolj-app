@@ -33469,8 +33469,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const ind1 = parseFloat(ind1El.value);
             const ind2 = parseFloat(ind2El.value);
 
-            if ([price1, price2, ind1, ind2].some(v => isNaN(v))) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat minden mezőben!</div>`;
+            // JAVÍTÁS: a korábbi `isNaN(v)` ellenőrzés csak a NaN esetet fogta
+            // ki — isNaN(Infinity) === false, tehát egy direktben begépelt
+            // túlcsordult érték (pl. "1e309") átment volna ezen a kapun.
+            // Ennél a konkrét kalkulátornál ez jelenleg nem okozna látható
+            // Infinity/NaN-szivárgást (az árak csak összehasonlításra, nem
+            // aritmetikai kijelzésre kerülnek), de a testvér-eszközöknél
+            // (pl. Portfólió Súly-Optimalizáló) dokumentáltan javított
+            // validációs-inkonzisztencia osztályával konzisztensen itt is
+            // Number.isFinite()-ra váltva.
+            if ([price1, price2, ind1, ind2].some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat minden mezőben!</div>`;
                 return;
             }
 
@@ -36580,8 +36589,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const C = parseFloat(cEl.value);
             const D = parseFloat(dEl.value);
 
-            if ([A, B, C, D].some(v => isNaN(v))) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes számokat mind a négy pontnál!</div>`;
+            // JAVÍTÁS: a korábbi `isNaN(v)` ellenőrzés csak a NaN esetet
+            // fogta ki — isNaN(Infinity) === false, tehát egy direktben
+            // begépelt túlcsordult érték (pl. "1e309") átment volna ezen a
+            // kapun. A lenti lábhossz/arány-ellenőrzések emiatt eddig is
+            // elkapták a tényleges szivárgást, de a testvér-eszközöknél
+            // (pl. Portfólió Súly-Optimalizáló) dokumentáltan javított
+            // validációs-inkonzisztencia osztályával konzisztensen itt is
+            // Number.isFinite()-ra váltva, hogy már az első kapu egyértelmű
+            // hibát jelezzen.
+            if ([A, B, C, D].some(v => !Number.isFinite(v))) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges számokat mind a négy pontnál!</div>`;
                 return;
             }
 
@@ -37996,8 +38014,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const C = parseFloat(cEl.value);
             const D = parseFloat(dEl.value);
 
-            if ([X, A, B, C, D].some(v => isNaN(v)) || A === X) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes X/A/B/C/D árakat — az X és A pontnak különbözőnek kell lennie!</div>`;
+            // JAVÍTÁS: a korábbi `isNaN(v)` ellenőrzés csak a NaN esetet
+            // fogta ki — isNaN(Infinity) === false, tehát egy direktben
+            // begépelt túlcsordult érték (pl. "1e309") átment volna ezen a
+            // kapun. A lenti lábhossz/arány-ellenőrzések emiatt eddig is
+            // elkapták a tényleges szivárgást, de a testvér-eszközöknél
+            // (pl. Portfólió Súly-Optimalizáló) dokumentáltan javított
+            // validációs-inkonzisztencia osztályával konzisztensen itt is
+            // Number.isFinite()-ra váltva, hogy már az első kapu egyértelmű
+            // hibát jelezzen.
+            if ([X, A, B, C, D].some(v => !Number.isFinite(v)) || A === X) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Adj meg érvényes, véges X/A/B/C/D árakat — az X és A pontnak különbözőnek kell lennie!</div>`;
                 return;
             }
 
