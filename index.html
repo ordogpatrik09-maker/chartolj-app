@@ -35714,9 +35714,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const leg3Enabled = document.getElementById('pwo-enable-3').checked;
             if (leg3Enabled) legs.push(pwoReadLeg(3));
 
+            // JAVÍTÁS: lásd a Portfólió-Kombinálónál (calcPortfolioCombinerUI)
+            // ugyanerre a hibaosztályra már korábban dokumentált javítást —
+            // isNaN(Infinity) === false, egy direktben begépelt túlcsordult
+            // stratégia-paraméter (pl. "1e309" egy EMA-periódusnál) átment
+            // volna ezen az ellenőrzésen. A konkrét futtató-motorok
+            // (calcEMASeries/calcRSISeries/calcSMA/calcStdDev) saját belső
+            // Number.isFinite()-védelmük miatt ilyenkor sem csordulna túl a
+            // kijelzett eredmény, de a felhasználó egy zavaró, magyarázat
+            // nélküli "0% hozam, 0 trade" eredményt látna egy ÉRTELMETLEN
+            // bemenet után, egyértelmű hibaüzenet helyett — Number.isFinite()-ra
+            // váltva ez itt is azonnali, érthető hibaüzenetet ad, ugyanúgy,
+            // mint a testvér-eszköznél.
             for (const leg of legs) {
-                if (Object.values(leg.params).some(v => isNaN(v))) {
-                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen paraméter valamelyik stratégiánál!</div>`;
+                if (Object.values(leg.params).some(v => !Number.isFinite(v))) {
+                    out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen, véges paraméter valamelyik stratégiánál!</div>`;
                     return;
                 }
             }
