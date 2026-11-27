@@ -17056,6 +17056,7 @@ Mean-reversion,2.5</textarea>
                     <p id="academy-module-subtitle" class="text-[10px] text-slate-400 mt-0.5"></p>
                 <div id="lesson-bm-filter" data-active="0" role="button" tabindex="0" aria-pressed="false" aria-label="Csak a könyvjelzőzött leckék szűrése" onclick="this.dataset.active=this.dataset.active==='1'?'0':'1';this.setAttribute('aria-pressed', this.dataset.active==='1');renderAcademyLessonList();" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" style="display:none" class="items-center gap-1 text-[10px] font-bold text-amber-400 cursor-pointer mt-1"><i class="fa-solid fa-bookmark mr-0.5" aria-hidden="true"></i><span id="lesson-bm-count">0</span> könyvjelző</div>
                 </div>
+                <div id="academy-daily-card" class="px-2 pt-2"></div>
                 <div id="academy-lesson-list" class="flex-grow overflow-y-auto p-2 space-y-1.5"></div>
             </section>
 
@@ -17529,6 +17530,17 @@ Mean-reversion,2.5</textarea>
     </div>
 
     <div id="voice-nav-pill" role="status" aria-live="polite"><i class="fa-solid fa-microphone-lines animate-pulse text-red-400"></i><span id="voice-nav-pill-text">Hangvezérlés: mondd „következő”, „előző”, „olvasd fel”, „állj”</span></div>
+
+    <!-- Mini-kvíz ablak (szintfelmérő, modulvizsga) -->
+    <div id="mini-quiz-modal" class="hidden fixed inset-0 z-[98] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Kvíz">
+        <div class="glass-card w-full max-w-lg rounded-2xl border border-neon-cyan/30 p-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-2">
+                <h2 id="mini-quiz-title" class="text-sm font-extrabold text-white"></h2>
+                <button type="button" onclick="miniQuizClose()" class="w-8 h-8 rounded-lg border border-dark-750 text-slate-400 hover:text-white" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="mini-quiz-body"></div>
+        </div>
+    </div>
 
     <!-- Kereskedés előtti ellenőrzőlista (opt-in) -->
     <div id="pretrade-modal" class="hidden fixed inset-0 z-[98] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Kereskedés előtti ellenőrzőlista">
@@ -48654,7 +48666,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 // listaelemek egybefolynak) — a felolvasás és a szájmozgás is ezt követné.
                 const spaced = String(html == null ? '' : html).replace(/(<br\s*\/?>|<\/(?:p|li|div|h[1-6]|td|th|tr|ul|ol|blockquote)>)/gi, '$1 ');
                 const doc = new DOMParser().parseFromString(spaced, 'text/html');
-                return (doc.body ? doc.body.textContent : '').replace(/\s+/g, ' ').trim();
+                // Markdown-jelölők (AI-válaszokban gyakori **félkövér**, # címsor,
+                // `kód`) ne hangozzanak el "csillag"-ként.
+                return (doc.body ? doc.body.textContent : '').replace(/\*\*|__|`|^\s*#{1,6}\s+/gm, '').replace(/\*(\S[^*\n]*?)\*/g, '$1').replace(/(^|\s)\*(\s)/g, '$1$2').replace(/\s+/g, ' ').trim();
             } catch (e) {
                 return String(html == null ? '' : html).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
             }
@@ -56054,6 +56068,223 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // ================= KÉRDEZZ A TANÁRTÓL (az aktuális kártyáról) =================
+        // A kérdést a kártya szövegével együtt küldjük az AI-nak (bejelentkezve),
+        // vendégként / hiba esetén a beépített tudásbázis válaszol. A választ a
+        // tanár-fej felolvassa. Írva vagy (ahol támogatott) hangosan is kérdezhető.
+        let tutorQA = null; // { key, q, a, loading }
+        function tutorCardKey() { return academyLessonIdx + ':' + academyCardIdx; }
+        function tutorAnswerInner(qa) {
+            return qa.loading ? '<i class="fa-solid fa-spinner fa-spin mr-1"></i> A tanár gondolkodik…'
+                : '<div class="text-[10px] text-slate-500 mb-1">„' + escapeHtml(qa.q) + '”</div>' + escapeHtml(qa.a).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/^\s*#{1,6}\s+/gm, '').replace(/\n/g, '<br>');
+        }
+        function tutorAskBoxHtml() {
+            const qa = tutorQA && tutorQA.key === tutorCardKey() ? tutorQA : null;
+            return `<div class="mt-5 rounded-xl border border-dark-750 bg-dark-900/70 p-3" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">
+                <div class="text-[11px] font-bold text-slate-300 mb-2"><i class="fa-solid fa-comments text-neon-cyan mr-1.5"></i>Kérdezz a tanártól erről a kártyáról</div>
+                <div class="flex gap-2">
+                    <input id="tutor-ask-input" type="text" maxlength="300" placeholder="Pl. mi a különbség a stop és a limit között?" aria-label="Kérdés a tanárnak" onkeydown="if(event.key==='Enter'){event.preventDefault();tutorAsk();}" class="flex-1 min-w-0 bg-dark-850 border border-dark-750 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                    ${sttSupported ? `<button type="button" onclick="tutorAskByVoice()" class="w-9 rounded-lg border border-dark-750 text-slate-300 hover:text-neon-cyan" aria-label="Kérdés hangosan"><i class="fa-solid fa-microphone text-xs"></i></button>` : ''}
+                    <button type="button" onclick="tutorAsk()" class="px-3 rounded-lg bg-neon-cyan text-dark-950 text-xs font-bold" aria-label="Kérdés elküldése"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+                <div id="tutor-ask-answer" class="${qa ? '' : 'hidden'} mt-2 text-[11.5px] leading-relaxed text-slate-300" aria-live="polite">${qa ? tutorAnswerInner(qa) : ''}</div>
+            </div>`;
+        }
+        function tutorRefreshAnswer() {
+            const el = document.getElementById('tutor-ask-answer');
+            if (!el || !tutorQA || tutorQA.key !== tutorCardKey()) return;
+            el.classList.remove('hidden');
+            el.innerHTML = tutorAnswerInner(tutorQA);
+        }
+        async function tutorAsk(textOverride) {
+            const inp = document.getElementById('tutor-ask-input');
+            const q = String(textOverride || (inp && inp.value) || '').trim().slice(0, 300);
+            if (!q || academyLessonIdx === null || academyStage !== 'cards') return;
+            if (inp) inp.value = '';
+            const l = LESSONS_DATA[academyLessonIdx], card = l.cards[academyCardIdx];
+            const key = tutorCardKey();
+            tutorQA = { key, q, a: '', loading: true };
+            tutorRefreshAnswer();
+            if (ttsSupported) ttsStopAll();
+            const cardText = ttsStripHtml((card.t ? card.t + '. ' : '') + card.b).slice(0, 1500);
+            const prompt = 'Egy magyar nyelvű kereskedés-oktató app türelmes tanára vagy. A tanuló a(z) „' + l.t + '” leckében ezt a kártyát olvassa:\n«' + cardText + '»\n\nA kérdése: ' + q +
+                '\n\nVálaszolj magyarul, röviden (legfeljebb 5 mondat), a kártya tartalmára építve, egy egyszerű példával, ha segít. Ne adj konkrét befektetési tanácsot.';
+            let reply = null;
+            try { const r = await askAiOneShot(prompt); reply = r && r.reply; } catch (e) {}
+            if (!reply) { try { reply = localKnowledgeBaseAnswer(q); } catch (e) { reply = null; } }
+            if (!reply) reply = 'Most nem tudok erre válaszolni — próbáld meg az AI-chatben, vagy fogalmazd meg másképp.';
+            if (!tutorQA || tutorQA.key !== key) return; // közben lapozott
+            tutorQA = { key, q, a: String(reply).slice(0, 3000), loading: false };
+            tutorRefreshAnswer();
+            if (ttsSupported) ttsSpeak('tutor-answer-' + key, tutorQA.a, null);
+        }
+        function tutorAskByVoice() {
+            if (!sttSupported) return;
+            if (voiceNavOn) { showNotification('Kapcsold ki a hangvezérlést, vagy írd be a kérdést.'); return; }
+            if (ttsSupported) ttsStopAll();
+            try {
+                const r = new SpeechRecognitionCtor();
+                r.lang = 'hu-HU'; r.interimResults = false; r.maxAlternatives = 1;
+                r.onresult = (ev) => { const t = ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : ''; if (t) tutorAsk(t); };
+                r.onerror = (e) => { if (e && e.error === 'not-allowed') showNotification('A mikrofon-hozzáférés le van tiltva.'); };
+                r.start();
+                showNotification('🎤 Mondd a kérdésed…');
+            } catch (e) {}
+        }
+
+        // ================= MINI-KVÍZ MOTOR (szintfelmérő + modulvizsga) =================
+        // A meglévő lecke-kérdésekből (LESSONS_DATA[].qs) dolgozik. Nem ad XP-t
+        // és nem módosítja a lecke-haladást — tisztán felmérés.
+        let miniQuiz = null;
+        function miniQuizShuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+        function miniQuizStart(title, items, onFinish) {
+            if (!items.length) { showNotification('Ehhez nincs elég kérdés.'); return; }
+            miniQuiz = { title, items, idx: 0, answers: [], onFinish, order: null };
+            document.getElementById('mini-quiz-title').textContent = title;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            miniQuizRender();
+        }
+        function miniQuizClose() { if (ttsSupported) ttsStopAll(); document.getElementById('mini-quiz-modal').classList.add('hidden'); miniQuiz = null; }
+        function miniQuizRender() {
+            const mq = miniQuiz; if (!mq) return;
+            const body = document.getElementById('mini-quiz-body');
+            if (mq.idx >= mq.items.length) { body.innerHTML = mq.onFinish(mq.answers); return; }
+            const it = mq.items[mq.idx];
+            const q = LESSONS_DATA[it.lessonIdx].qs[it.qi];
+            mq.order = miniQuizShuffle(q.o.map((_, i) => i));
+            body.innerHTML = `
+                <div class="w-full h-1 rounded-full bg-dark-800 overflow-hidden mb-3"><div class="h-full bg-neon-cyan" style="width:${mq.idx / mq.items.length * 100}%"></div></div>
+                <div class="text-[10px] font-mono text-slate-500 mb-1">${mq.idx + 1} / ${mq.items.length} · ${escapeHtml(LESSONS_DATA[it.lessonIdx].t)}</div>
+                <h3 class="text-sm font-bold text-white mb-3">${q.q}</h3>
+                ${ttsSupported ? `<button type="button" onclick="miniQuizRead()" class="mb-3 px-3 py-1.5 rounded-lg border border-dark-750 text-[11px] font-bold text-slate-300 hover:text-neon-cyan transition"><i class="fa-solid fa-volume-high mr-1"></i>Felolvasás</button>` : ''}
+                <div class="space-y-2">${mq.order.map((oi, d) => `<button type="button" class="mini-quiz-opt w-full text-left px-4 py-2.5 rounded-xl border border-dark-750 bg-dark-850/60 text-xs text-slate-200 hover:border-neon-cyan/50 transition" onclick="miniQuizAnswer(${d})"><span class="font-mono font-bold text-slate-500 mr-2">${'ABCDEF'[d]}</span>${q.o[oi]}</button>`).join('')}</div>
+                <div id="mini-quiz-fb" class="hidden mt-3 p-3 rounded-xl text-xs"></div>
+                <div class="flex justify-end mt-4"><button type="button" id="mini-quiz-next" disabled onclick="miniQuizNext()" class="px-5 py-2 rounded-xl text-xs font-extrabold uppercase bg-dark-800 text-slate-600 cursor-not-allowed">Következő</button></div>`;
+        }
+        function miniQuizRead() {
+            const mq = miniQuiz; if (!mq) return;
+            const it = mq.items[mq.idx]; const q = LESSONS_DATA[it.lessonIdx].qs[it.qi];
+            toggleSpeak('mini-quiz-' + mq.idx, ttsStripHtml(q.q) + ' ' + mq.order.map((oi, d) => 'ABCDEF'[d] + ': ' + ttsStripHtml(q.o[oi]) + '.').join(' '));
+        }
+        function miniQuizAnswer(d) {
+            const mq = miniQuiz; if (!mq) return;
+            const opts = document.querySelectorAll('.mini-quiz-opt');
+            if (!opts.length || opts[0].disabled) return;
+            opts.forEach(b => b.disabled = true);
+            const it = mq.items[mq.idx]; const q = LESSONS_DATA[it.lessonIdx].qs[it.qi];
+            const correctD = mq.order.indexOf(q.a); const ok = d === correctD;
+            mq.answers.push({ ...it, ok });
+            opts[correctD].classList.add('!border-neon-green', '!text-neon-green');
+            if (!ok) opts[d].classList.add('!border-neon-red', '!text-neon-red');
+            const fb = document.getElementById('mini-quiz-fb');
+            fb.className = 'mt-3 p-3 rounded-xl text-xs ' + (ok ? 'bg-neon-green/10 border border-neon-green/30 text-neon-green' : 'bg-neon-red/10 border border-neon-red/30 text-neon-red');
+            fb.innerHTML = `<strong>${ok ? 'Helyes!' : 'Nem egészen.'}</strong> <span class="opacity-90 text-[11px]">${q.e}</span>`;
+            const nb = document.getElementById('mini-quiz-next');
+            nb.disabled = false; nb.className = 'px-5 py-2 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950';
+            nb.textContent = mq.idx === mq.items.length - 1 ? 'Eredmény' : 'Következő';
+        }
+        function miniQuizNext() { if (!miniQuiz) return; if (ttsSupported) ttsStopAll(); miniQuiz.idx++; miniQuizRender(); }
+
+        // ---------- Szintfelmérő ----------
+        // Az első 4 modulból modulonként 3 kérdés (a modul első ~8 leckéjéből).
+        // 80%-tól a modult "ismertnek" vesszük, és a következő ismeretlen modult ajánljuk.
+        function startPlacementTest() {
+            const items = [];
+            const mods = ACADEMY_MODULES.map((_, i) => i).slice(0, 4);
+            mods.forEach(mi => {
+                const pool = [];
+                LESSONS_DATA.forEach((l, li) => { if (l.m === mi && !isLessonLocked(l) && Array.isArray(l.qs)) l.qs.forEach((_, qi) => pool.push({ lessonIdx: li, qi, m: mi })); });
+                const early = pool.filter(x => LESSONS_DATA.filter((l, i) => l.m === mi && i <= x.lessonIdx).length <= 8);
+                miniQuizShuffle(early.length >= 3 ? early : pool).slice(0, 3).forEach(x => items.push(x));
+            });
+            miniQuizStart('Szintfelmérő — honnan kezdj?', items, (answers) => {
+                const byMod = {};
+                answers.forEach(a => { (byMod[a.m] = byMod[a.m] || []).push(a.ok); });
+                const rows = Object.keys(byMod).map(Number).sort((a, b) => a - b).map(mi => { const r = byMod[mi]; return { mi, pct: Math.round(r.filter(Boolean).length / r.length * 100) }; });
+                const weak = rows.find(r => r.pct < 80);
+                const rec = weak ? weak.mi : Math.min(rows[rows.length - 1].mi + 1, ACADEMY_MODULES.length - 1);
+                try { localStorage.setItem('chartolj_placement', JSON.stringify({ at: Date.now(), rows, rec })); } catch (e) {}
+                return `<p class="text-xs text-slate-400 mb-3">Modulonkénti eredményed:</p>
+                    <div class="space-y-2 mb-4">${rows.map(r => `<div><div class="flex justify-between text-[11px] mb-0.5"><span class="text-slate-300">${escapeHtml(ACADEMY_MODULES[r.mi].n)}</span><span class="${r.pct >= 80 ? 'text-neon-green' : 'text-amber-300'} font-bold">${r.pct}%</span></div><div class="h-1.5 rounded-full bg-dark-800 overflow-hidden"><div class="h-full ${r.pct >= 80 ? 'bg-neon-green' : 'bg-amber-400'}" style="width:${r.pct}%"></div></div></div>`).join('')}</div>
+                    <p class="text-xs text-white mb-4">Ajánlott kezdés: <strong class="text-neon-cyan">${escapeHtml(ACADEMY_MODULES[rec].n)}</strong>${rows.every(r => r.pct >= 80) ? ' — mindenhol erős vagy, válaszd a haladó modulokat is bátran.' : ''}</p>
+                    <button type="button" onclick="miniQuizClose(); setAcademyMode && setAcademyMode('lessons'); academyModule = ${rec}; renderAcademyModules(); renderAcademyLessonList();" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Ugrás a modulhoz</button>`;
+            });
+        }
+
+        // ---------- Modulvizsga ----------
+        // 10 kérdés a modul leckéiből, a hibabankban lévők előnyben. 80%-tól
+        // "kitüntetéssel" kerül az oklevélre (az eredményt az eszköz tárolja).
+        function getModuleExamBest(mi) { try { return (JSON.parse(localStorage.getItem('chartolj_module_exams') || '{}') || {})[mi] || 0; } catch (e) { return 0; } }
+        function startModuleExam(mi) {
+            const pool = [];
+            LESSONS_DATA.forEach((l, li) => { if (l.m === mi && !isLessonLocked(l) && Array.isArray(l.qs)) l.qs.forEach((_, qi) => pool.push({ lessonIdx: li, qi })); });
+            const missed = miniQuizShuffle(pool.filter(x => academyMistakes.has(mistakeKey(x.lessonIdx, x.qi))));
+            const rest = miniQuizShuffle(pool.filter(x => !academyMistakes.has(mistakeKey(x.lessonIdx, x.qi))));
+            const items = missed.slice(0, 5).concat(rest).slice(0, Math.min(10, pool.length));
+            miniQuizStart('Modulvizsga — ' + ACADEMY_MODULES[mi].n, miniQuizShuffle(items), (answers) => {
+                const pct = Math.round(answers.filter(a => a.ok).length / answers.length * 100);
+                const best = Math.max(pct, getModuleExamBest(mi));
+                try { const o = JSON.parse(localStorage.getItem('chartolj_module_exams') || '{}') || {}; o[mi] = best; localStorage.setItem('chartolj_module_exams', JSON.stringify(o)); } catch (e) {}
+                answers.filter(a => !a.ok).forEach(a => { if (typeof addMistake === 'function') addMistake(a.lessonIdx, a.qi); });
+                renderAcademyLessonList();
+                return `<div class="text-center"><div class="text-4xl font-mono font-extrabold ${pct >= 80 ? 'text-neon-green' : 'text-amber-300'} mb-1">${pct}%</div>
+                    <p class="text-xs text-slate-400 mb-4">${pct >= 80 ? 'Sikeres vizsga — az oklevelen „kitüntetéssel” szerepel.' : 'A kitüntetéshez 80% kell. A hibás kérdések bekerültek az Ismétlésbe.'}</p>
+                    <button type="button" onclick="miniQuizClose()" class="px-6 py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Rendben</button></div>`;
+            });
+        }
+
+        // ---------- Napi 5 perc ----------
+        // 1 új lecke (a tanár felolvassa) + az esedékes ismétlések. A lecke
+        // befejezésekor az összegzés tovább vezet az Ismétléshez.
+        let dailySession = null;
+        function dailyNextLessonIdx() {
+            if (lastUnfinishedLessonIdx !== null && LESSONS_DATA[lastUnfinishedLessonIdx] && !academyCompleted.has(lastUnfinishedLessonIdx) && !isLessonLocked(LESSONS_DATA[lastUnfinishedLessonIdx])) return lastUnfinishedLessonIdx;
+            const inMod = LESSONS_DATA.findIndex((l, i) => l.m === academyModule && !academyCompleted.has(i) && !isLessonLocked(l));
+            if (inMod >= 0) return inMod;
+            const any = LESSONS_DATA.findIndex((l, i) => !academyCompleted.has(i) && !isLessonLocked(l));
+            return any >= 0 ? any : null;
+        }
+        function dailyDoneToday() { try { return localStorage.getItem('chartolj_daily5') === todayKey(); } catch (e) { return false; } }
+        function renderAcademyDailyCard() {
+            const el = document.getElementById('academy-daily-card'); if (!el) return;
+            const due = getDueMistakeKeys().length;
+            const li = dailyNextLessonIdx();
+            const done = dailyDoneToday();
+            el.innerHTML = `<div class="rounded-xl border ${done ? 'border-neon-green/30 bg-neon-green/5' : 'border-amber-400/30 bg-amber-400/5'} p-2.5">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0"><div class="text-[11px] font-extrabold ${done ? 'text-neon-green' : 'text-amber-300'}">${done ? '✅ Mai 5 perc kész' : '☀️ Napi 5 perc'}</div>
+                    <div class="text-[10px] text-slate-400 truncate">${li !== null ? '1 új lecke' : 'Minden lecke kész'}${due ? ' + ' + due + ' ismétlés' : ''}${ttsSupported ? ' · a tanár felolvassa' : ''}</div></div>
+                    <button type="button" onclick="startDailySession()" class="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold ${done ? 'border border-dark-750 text-slate-300' : 'bg-amber-400 text-dark-950'}">${done ? 'Még egy' : 'Indítás'}</button>
+                </div>
+                <div class="flex gap-3 mt-1.5 text-[10px]">
+                    <button type="button" onclick="startPlacementTest()" class="text-neon-cyan hover:underline"><i class="fa-solid fa-gauge-high mr-1"></i>Szintfelmérő</button>
+                    <button type="button" onclick="startModuleExam(academyModule)" class="text-neon-cyan hover:underline"><i class="fa-solid fa-file-pen mr-1"></i>Modulvizsga${getModuleExamBest(academyModule) ? ' (' + getModuleExamBest(academyModule) + '%)' : ''}</button>
+                </div></div>`;
+        }
+        function startDailySession() {
+            const li = dailyNextLessonIdx();
+            const due = getDueMistakeKeys().length;
+            dailySession = { lessonIdx: li, due };
+            if (li === null) { dailyFinish(); if (due) setAcademyMode('review'); return; }
+            if (typeof setAcademyMode === 'function') setAcademyMode('lessons');
+            academyModule = LESSONS_DATA[li].m;
+            openAcademyLesson(li);
+            if (ttsSupported && !academyAutoplayTTS) academyToggleAutoplay();
+        }
+        function dailyFinish() {
+            try { localStorage.setItem('chartolj_daily5', todayKey()); } catch (e) {}
+            dailySession = null;
+            renderAcademyDailyCard();
+            showNotification('☀️ A mai 5 perced kész — szép munka!');
+        }
+        // Az összegzés-képernyő hívja: ha a napi adag leckéje lett kész, továbbvezet.
+        function dailySummaryExtraHtml(passed) {
+            if (!dailySession || dailySession.lessonIdx !== academyLessonIdx || !passed) return '';
+            const due = getDueMistakeKeys().length;
+            if (!due) { setTimeout(dailyFinish, 0); return `<div class="mt-3 text-[11px] text-neon-green font-bold">☀️ Napi 5 perc teljesítve!</div>`; }
+            return `<button onclick="dailyFinish(); setAcademyMode('review');" class="w-full max-w-xs mx-auto mt-3 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-amber-400/10 border border-amber-400/40 text-amber-300 text-xs font-bold hover:bg-amber-400/20 transition">☀️ Napi adag folytatása: ${due} ismétlés</button>`;
+        }
+
         // Modul-oklevél: letölthető/megosztható PNG, ha a modul minden leckéje kész.
         function downloadModuleCertificate(moduleIdx) {
             const mod = ACADEMY_MODULES[moduleIdx];
@@ -56083,6 +56314,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             g.fillText(String(mod.n).slice(0, 48), W / 2, 725);
             g.fillStyle = '#94a3b8'; g.font = '400 32px Inter, Arial, sans-serif';
             g.fillText(`modult — ${lessons.length} lecke és a hozzájuk tartozó kvízek`, W / 2, 790);
+            const examBest = getModuleExamBest(moduleIdx);
+            if (examBest >= 80) { g.fillStyle = '#fbbf24'; g.font = '700 34px Inter, Arial, sans-serif'; g.fillText(`KITÜNTETÉSSEL — modulvizsga: ${examBest}%`, W / 2, 860); }
             const d = new Date();
             g.fillStyle = '#64748b'; g.font = '500 28px Inter, Arial, sans-serif';
             g.fillText(`Kiállítva: ${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}.`, W / 2, 940);
@@ -56107,6 +56340,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderAcademyLessonList() {
+            renderAcademyDailyCard();
             const searchTerm = document.getElementById('academy-search').value.trim().toLowerCase();
             const titleEl = document.getElementById('academy-module-title');
             const subtitleEl = document.getElementById('academy-module-subtitle');
@@ -56299,6 +56533,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             </button>
                         </div>
                         ${('ontouchstart' in window) ? '<p class="text-center text-[10px] text-slate-600 mt-3"><i class="fa-solid fa-hand-pointer mr-1"></i> Húzd balra/jobbra a lapozáshoz</p>' : ''}
+                        ${tutorAskBoxHtml()}
                     </div>
                 `;
             } else if (academyStage === 'quiz') {
@@ -56339,6 +56574,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                                 <i class="fa-solid fa-film"></i> Gyakorold élesben a Replay Szimulátorban
                             </button>
                         ` : ''}
+                        ${dailySummaryExtraHtml(passed)}
                     </div>
                 `;
                 if (passed) {
