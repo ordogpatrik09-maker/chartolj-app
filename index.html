@@ -17713,10 +17713,10 @@ Mean-reversion,2.5</textarea>
     <div id="voice-nav-pill" role="status" aria-live="polite"><i class="fa-solid fa-microphone-lines animate-pulse text-red-400"></i><span id="voice-nav-pill-text">Hangvezérlés: mondd „következő”, „előző”, „olvasd fel”, „állj”</span></div>
 
     <!-- Mini-kvíz ablak (szintfelmérő, modulvizsga) -->
-    <div id="mini-quiz-modal" class="hidden fixed inset-0 z-[98] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Kvíz">
+    <div id="mini-quiz-modal" class="hidden fixed inset-0 z-[98] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="mini-quiz-title">
         <div class="glass-card w-full max-w-lg rounded-2xl border border-neon-cyan/30 p-5 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-2">
-                <h2 id="mini-quiz-title" class="text-sm font-extrabold text-white"></h2>
+                <h2 id="mini-quiz-title" class="text-sm font-extrabold text-white">Kvíz</h2>
                 <button type="button" onclick="miniQuizClose()" class="w-8 h-8 rounded-lg border border-dark-750 text-slate-400 hover:text-white" aria-label="Bezárás"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="mini-quiz-body"></div>
@@ -57320,6 +57320,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function startMicroLesson(li) {
             if (li === undefined || li === null) li = (typeof academyLessonIdx === 'number' && LESSONS_DATA[academyLessonIdx]) ? academyLessonIdx : dailyNextLessonIdx();
             if (li === null || li === undefined || !LESSONS_DATA[li]) li = 0;
+            if (isLessonLocked(LESSONS_DATA[li])) { openPremiumModal(LESSONS_DATA[li]); return; }
             chartTask = null; miniQuiz = null;
             microLesson = { li, parts: microLessonSentences(li), i: 0 };
             document.getElementById('mini-quiz-title').textContent = '🎙️ 1 perces összefoglaló';
@@ -59457,7 +59458,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function showShieldModal(html) { const m = document.getElementById('shield-modal'); document.getElementById('shield-modal-body').innerHTML = html; m.classList.remove('hidden'); const f = m.querySelector('input,button'); if (f) f.focus(); }
         function todayClosedLoss() {
             const d0 = new Date(); d0.setHours(0, 0, 0, 0);
-            const pnl = tradeHistory.filter(t => (t.closedAt || 0) >= d0.getTime()).reduce((a, t) => a + (Number(t.pnl) || 0), 0);
+            // A szerverre mentett (archivált) mai kötéseket is számoljuk, hogy egy
+            // oldal-újratöltés ne nullázza a napi veszteséglimitet.
+            const src = typeof simTradesInWindow === 'function' ? simTradesInWindow(1) : tradeHistory;
+            const pnl = src.filter(t => (t.closedAt || 0) >= d0.getTime()).reduce((a, t) => a + (Number(t.pnl) || 0), 0);
             return pnl < 0 ? -pnl : 0;
         }
         function openRiskShieldSettings() {
@@ -60605,7 +60609,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const avgLessons = ms.length ? Math.round(ms.reduce((a, m) => a + (Number(m.lessons) || 0), 0) / ms.length) : 0;
             body.innerHTML = `<div class="flex items-center justify-between mb-3"><div class="text-sm font-extrabold text-white">${escapeHtml(d.name)}</div><div class="flex gap-3"><button type="button" onclick="openClassLeaderboard('${id}')" class="text-[11px] text-amber-300">🏆 Ranglista</button><button type="button" onclick="openClassMode()" class="text-[11px] text-neon-cyan">← Vissza</button></div></div>
                 <div class="grid grid-cols-3 gap-2 mb-3 text-center">${[['Tanuló', ms.length], ['Átl. lecke', avgLessons], ['7+ napja inaktív', inactive]].map(([k, v]) => `<div class="rounded-xl bg-dark-850/60 border border-dark-750 py-2"><div class="text-base font-extrabold text-white">${v}</div><div class="text-[9.5px] text-slate-500">${k}</div></div>`).join('')}</div>
-                <div class="overflow-x-auto"><table class="w-full text-[11px]"><thead><tr class="text-slate-500 text-left"><th class="py-1 pr-2 font-semibold">Név</th><th class="py-1 pr-2 font-semibold text-right">XP</th><th class="py-1 pr-2 font-semibold text-right">Heti XP</th><th class="py-1 pr-2 font-semibold text-right">Lecke</th><th class="py-1 pr-2 font-semibold text-right">Kötés/hét</th><th class="py-1 font-semibold text-right">Aktív</th></tr></thead>
+                <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Tanulók haladása"><table class="w-full text-[11px]"><thead><tr class="text-slate-500 text-left"><th class="py-1 pr-2 font-semibold">Név</th><th class="py-1 pr-2 font-semibold text-right">XP</th><th class="py-1 pr-2 font-semibold text-right">Heti XP</th><th class="py-1 pr-2 font-semibold text-right">Lecke</th><th class="py-1 pr-2 font-semibold text-right">Kötés/hét</th><th class="py-1 font-semibold text-right">Aktív</th></tr></thead>
                 <tbody>${ms.length ? ms.map(m => `<tr class="border-t border-dark-800 text-slate-200"><td class="py-1.5 pr-2 max-w-[8rem] truncate">${escapeHtml(m.name)}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.xp) || 0}</td><td class="py-1.5 pr-2 text-right font-mono">${m.xp_week == null ? '–' : Number(m.xp_week)}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.lessons) || 0}</td><td class="py-1.5 pr-2 text-right font-mono">${Number(m.trades_week) || 0}</td><td class="py-1.5 text-right">${ago(m.last_active)}</td></tr>`).join('') : '<tr><td colspan="6" class="py-4 text-center text-slate-500">Még nincs tanuló — oszd meg az osztálykódot!</td></tr>'}</tbody></table></div>
                 <button type="button" onclick="exportClassCsv('${id}')" class="mt-3 w-full py-2 rounded-xl text-[11px] font-bold border border-dark-750 text-slate-300">⬇️ Letöltés CSV-ben</button>
                 <div class="mt-4 pt-3 border-t border-dark-750"><div class="text-[10px] font-extrabold uppercase text-slate-500 mb-1">📌 Feladatok</div><div id="class-assign-list" class="space-y-1.5 text-[11px] text-slate-500">Betöltés…</div>
