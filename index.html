@@ -49012,6 +49012,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['🖼️', 'Avatár-keretek', 'avatár keret profilkép coin vásárlás bolt', `openAvatarFrames()`],
+            ['📲', 'Telepítés iPhone-ra', 'telepítés iphone ipad ios kezdőképernyő app', `openIosInstallGuide()`],
             ['📍', 'Grafikon-feladatok', 'grafikon feladat támasz ellenállás koppints gyakorlás', `switchMobileTab('academy'); setTimeout(startChartTasks, 60)`],
             ['🎙️', '1 perces összefoglaló', 'mikrolecke összefoglaló tanár felolvas rövid', `switchMobileTab('academy'); setTimeout(() => startMicroLesson(), 60)`],
             ['🧪', 'Stratégia backtester', 'backtest stratégia ema rsi macd bollinger teszt múlt', `switchMobileTab('trade'); setTimeout(() => { openToolModal('backtest-modal'); renderBacktestAssetLabel(); }, 60)`],
@@ -50044,12 +50046,39 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // Play Áruház saját felülete kezeli — nincs saját portálunk, csak a
         // hivatalos Play deep-linkre irányítjuk a felhasználót, ahol lemondhat
         // vagy módosíthat.
-        async function openManageSubscription() {
+        const CANCEL_REASONS = [['price', '💸 Túl drága'], ['no_time', '⏰ Nincs rá időm'], ['not_useful', '🤷 Nem hasznos nekem'], ['too_hard', '🧗 Túl nehéz'], ['too_easy', '😴 Túl könnyű'], ['bugs', '🐞 Hibák zavarnak'], ['other', '✏️ Más ok']];
+        let cancelFeedbackPicked = null;
+        async function openManageSubscription(skipFeedback) {
+            if (!skipFeedback && isLoggedInRealUser()) {
+                miniQuiz = null; chartTask = null; microLesson = null; cancelFeedbackPicked = null;
+                document.getElementById('mini-quiz-title').textContent = 'Előfizetés kezelése';
+                document.getElementById('mini-quiz-body').innerHTML = `<p class="text-[11.5px] text-slate-300 mb-3">Ha lemondanád: mi a fő ok? Egy koppintás, és sokat segítesz a fejlesztésben. (Nem kötelező.)</p>
+                    <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Lemondás oka">${CANCEL_REASONS.map(([k, l]) => `<button type="button" role="radio" aria-checked="false" data-reason="${k}" onclick="pickCancelReason('${k}')" class="cancel-reason px-3 py-2 rounded-xl border border-dark-750 text-[11.5px] text-slate-200 text-left hover:border-neon-cyan/50 transition">${l}</button>`).join('')}</div>
+                    <textarea id="cancel-note" maxlength="500" rows="2" placeholder="Mit csinálhatnánk jobban? (opcionális)" aria-label="Megjegyzés" class="mt-3 w-full bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600"></textarea>
+                    <div class="flex gap-2 mt-3"><button type="button" onclick="miniQuizClose(); openManageSubscription(true)" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-dark-750 text-slate-300">Kihagyom</button>
+                    <button type="button" onclick="submitCancelFeedbackAndGo()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Küldés és tovább</button></div>`;
+                document.getElementById('mini-quiz-modal').classList.remove('hidden');
+                return;
+            }
             if (PAY_CONFIG.mode === 'playbilling') {
                 window.location.href = 'https://play.google.com/store/account/subscriptions';
                 return;
             }
             showNotification('Az előfizetés-kezelés jelenleg demó/teszt módban fut.');
+        }
+
+        function pickCancelReason(k) {
+            cancelFeedbackPicked = k;
+            document.querySelectorAll('.cancel-reason').forEach(b => { const on = b.dataset.reason === k; b.setAttribute('aria-checked', String(on)); b.classList.toggle('!border-neon-cyan', on); b.classList.toggle('!text-neon-cyan', on); });
+        }
+        async function submitCancelFeedbackAndGo() {
+            const note = (document.getElementById('cancel-note') || {}).value || '';
+            const reason = cancelFeedbackPicked || (note.trim() ? 'other' : null);
+            miniQuizClose();
+            if (reason) {
+                try { const { error } = await sb.rpc('submit_cancel_feedback', { p_reason: reason, p_note: note.trim() || null }); if (!error) showNotification('Köszönjük a visszajelzést!'); } catch (e) { /* nem blokkoljuk a lemondást */ }
+            }
+            openManageSubscription(true);
         }
 
         function openPremiumModal(lockedLesson) {
@@ -50411,7 +50440,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (typeof saveAcademyState === 'function') saveAcademyState();
                 if (typeof updateCoinDisplay === 'function') updateCoinDisplay();
             }
-            if (typeof showNotification === 'function') showNotification(`${hit.icon} ${hit.days} napos sorozat — +${hit.reward} coin bónusz!`);
+            if (typeof showNotification === 'function') showNotification(`${hit.icon} ${hit.days} napos sorozat — +${hit.reward} coin bónusz! (A mérföldkőre koppintva képként is megoszthatod.)`);
             if (typeof addSystemLog === 'function') addSystemLog(`Napi sorozat mérföldkő: ${hit.days} nap (+${hit.reward} coin).`, 'TRADE');
         }
         function saveDailyChallengeState() {
@@ -50471,7 +50500,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 milestoneEl.innerHTML = STREAK_MILESTONES.map(m => {
                     const reached = claimedSet.has(m.days);
                     const current = !reached && (streakState.count || 1) >= m.days;
-                    return `<div class="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-lg ${reached ? 'bg-amber-400/10' : 'bg-dark-900'} border ${reached ? 'border-amber-400/30' : 'border-dark-750'}">
+                    return `<div class="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-lg ${reached ? 'bg-amber-400/10 cursor-pointer hover:border-amber-400/60' : 'bg-dark-900'} border ${reached ? 'border-amber-400/30' : 'border-dark-750'}"${reached ? ` role="button" tabindex="0" aria-label="${m.days} napos mérföldkő megosztása képként" title="Megosztás képként" onclick="shareStreakMilestone(${m.days})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();shareStreakMilestone(${m.days});}"` : ''}>
                         <span class="text-xs ${reached || current ? '' : 'grayscale opacity-40'}">${m.icon}</span>
                         <span class="text-[8.5px] font-mono ${reached ? 'text-amber-300' : 'text-slate-600'}">${m.days} nap</span>
                     </div>`;
@@ -55109,6 +55138,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // elbukik, az nem teszi haszontalanná a fenti statisztikát, ezért
             // saját, el nem akadó try/catch-ben fut.
             try {
+                const { data: cf, error: cfErr } = await sb.rpc('admin_get_cancel_feedback', { p_days: 90 });
+                if (!cfErr && cf) {
+                    const lab = Object.fromEntries(CANCEL_REASONS);
+                    const by = Object.entries(cf.by_reason || {}).sort((a, b) => b[1] - a[1]);
+                    out.innerHTML += `<div class="glass-card rounded-lg p-2.5 mt-1"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fa-solid fa-door-open mr-1"></i>Lemondási okok (90 nap)</div>
+                        ${by.length ? by.map(([k, n]) => `<div class="flex justify-between text-[10.5px] text-slate-300"><span>${escapeHtml(lab[k] || k)}</span><span class="font-mono">${Number(n)}</span></div>`).join('') : '<div class="text-[10px] text-slate-600">Még nincs visszajelzés.</div>'}
+                        ${(cf.recent || []).slice(0, 5).map(r => `<div class="text-[10px] text-slate-500 mt-1 border-t border-dark-750 pt-1">„${escapeHtml(String(r.note || '').slice(0, 200))}”</div>`).join('')}</div>`;
+                }
+            } catch (e) { /* 026-os migráció nélkül csendben kimarad */ }
+            try {
                 const { data: errLog, error: errLogErr } = await sb.rpc('admin_get_error_log', { p_limit: 20 });
                 out.innerHTML += renderAdminErrorLogSection(errLogErr ? null : errLog, errLogErr ? errLogErr.message : null);
             } catch (e) {
@@ -55282,12 +55321,46 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         async function inviteFriends() {
             const code = await getInviteCode();
-            const txt = `Gyere, tanuljunk együtt kereskedni a Chartolj!-ban! Add meg a meghívókódomat regisztrációnál: ${code}`;
+            const link = location.origin + location.pathname + '?invite=' + encodeURIComponent(code);
+            const txt = `Gyere, tanuljunk együtt kereskedni a Chartolj!-ban! Ezzel a linkkel automatikusan barátok leszünk: ${link} (meghívókód: ${code})`;
             if (navigator.share) { navigator.share({ title: 'Chartolj! meghívó', text: txt }).catch(function(){}); }
             else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function(){ showNotification('Meghívó szöveg vágólapra másolva!'); }); }
             else { showNotification('Meghívókódod: ' + code); }
             addSystemLog('Meghívó megosztva, kód: ' + code + '.');
         }
+
+        // ---------- Meghívólink (?invite=KÓD) ----------
+        // A kódot eltesszük, az URL-ből eltávolítjuk, és amint valódi
+        // felhasználó van bejelentkezve, a MEGLÉVŐ send_friend_request_by_code
+        // RPC-vel elküldjük a barátkérést (ugyanaz, mint a kézi beírás).
+        (function captureInviteParam() {
+            try {
+                const u = new URL(location.href); const c = (u.searchParams.get('invite') || '').trim();
+                if (!c) return;
+                u.searchParams.delete('invite'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+                if (/^[A-Za-z0-9-]{4,24}$/.test(c)) localStorage.setItem('chartolj_pending_invite', c.toUpperCase());
+            } catch (e) {}
+        })();
+        let inviteRedeemTimer = null, inviteGuestHintShown = false;
+        async function tryRedeemPendingInvite() {
+            let code = null; try { code = localStorage.getItem('chartolj_pending_invite'); } catch (e) {}
+            if (!code) { clearInterval(inviteRedeemTimer); inviteRedeemTimer = null; return; }
+            if (typeof isLoggedInRealUser !== 'function' || !isLoggedInRealUser()) {
+                if (!inviteGuestHintShown && typeof showNotification === 'function' && document.readyState === 'complete') { inviteGuestHintShown = true; showNotification('🤝 Meghívót kaptál! Jelentkezz be vagy regisztrálj, és automatikusan barátok lesztek.'); }
+                return;
+            }
+            try { localStorage.removeItem('chartolj_pending_invite'); } catch (e) {}
+            try {
+                const own = await getInviteCode();
+                if (own && String(own).toUpperCase() === code) return;
+                const { data, error } = await sb.rpc('send_friend_request_by_code', { p_code: code });
+                if (error) throw error;
+                const row = Array.isArray(data) ? data[0] : data;
+                showNotification(`🤝 ${row && row.friend_name ? row.friend_name : 'A meghívód'} mostantól a barátod!`);
+                if (typeof renderFriendsList === 'function') renderFriendsList();
+            } catch (e) { showNotification('A meghívólinket nem sikerült beváltani — a kódot kézzel is megadhatod a Barátoknál.'); }
+        }
+        try { if (localStorage.getItem('chartolj_pending_invite')) inviteRedeemTimer = setInterval(tryRedeemPendingInvite, 4000); } catch (e) {}
 
         let leaderboardTab = 'global';
         function setLeaderboardTab(tab) {
@@ -55681,6 +55754,69 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     : 'A feltöltés sikertelen volt. Próbáld újra egy másik képpel, vagy később.';
                 errEl.classList.remove('hidden');
             }
+        }
+
+        // ---------- Avatár-keretek coinért (kozmetikai, eszközönként) ----------
+        const AVATAR_FRAMES = [
+            { id: 'none', name: 'Nincs keret', cost: 0, css: '' },
+            { id: 'bronze', name: 'Bronz', cost: 50, css: '0 0 0 3px #b45309, 0 0 12px rgba(180,83,9,0.5)' },
+            { id: 'silver', name: 'Ezüst', cost: 120, css: '0 0 0 3px #cbd5e1, 0 0 14px rgba(203,213,225,0.5)' },
+            { id: 'gold', name: 'Arany', cost: 250, css: '0 0 0 3px #f59e0b, 0 0 18px rgba(245,158,11,0.6)' },
+            { id: 'neon', name: 'Neon', cost: 400, css: '0 0 0 3px #22d3ee, 0 0 0 6px rgba(168,85,247,0.7), 0 0 24px rgba(34,211,238,0.7)' }
+        ];
+        function frameState() { try { const v = JSON.parse(localStorage.getItem('chartolj_frames') || 'null'); if (v && Array.isArray(v.owned)) return v; } catch (e) {} return { owned: ['none'], active: 'none' }; }
+        function applyAvatarFrame() {
+            const w = document.getElementById('profile-avatar-wrap'); if (!w) return;
+            const f = AVATAR_FRAMES.find(x => x.id === frameState().active);
+            w.style.boxShadow = f && f.css ? f.css : '';
+        }
+        function openAvatarFrames() {
+            const st = frameState(); miniQuiz = null; chartTask = null; microLesson = null;
+            document.getElementById('mini-quiz-title').textContent = '🖼️ Avatár-keretek';
+            document.getElementById('mini-quiz-body').innerHTML = `<p class="text-[11px] text-slate-400 mb-3">Coinokból vásárolható, a profilképed körül jelenik meg. Egyenleged: <b class="text-amber-300">${typeof userCoins !== 'undefined' ? userCoins : 0} coin</b></p>
+                <div class="grid grid-cols-2 gap-3">${AVATAR_FRAMES.map(f => { const own = st.owned.includes(f.id), act = st.active === f.id;
+                    return `<button type="button" onclick="pickAvatarFrame('${f.id}')" class="p-3 rounded-xl border ${act ? 'border-neon-cyan' : 'border-dark-750'} flex flex-col items-center gap-2 hover:border-neon-cyan/50 transition" aria-pressed="${act}">
+                        <span class="w-10 h-10 rounded-full bg-dark-800 flex items-center justify-center" style="box-shadow:${f.css || 'none'}"><i class="fa-solid fa-user text-slate-500"></i></span>
+                        <span class="text-[11px] font-bold text-white">${f.name}</span>
+                        <span class="text-[10px] ${act ? 'text-neon-cyan' : own ? 'text-neon-green' : 'text-amber-300'}">${act ? 'Aktív' : own ? 'Megvan — felveszem' : f.cost + ' coin'}</span></button>`; }).join('')}</div>`;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+        }
+        function pickAvatarFrame(id) {
+            const f = AVATAR_FRAMES.find(x => x.id === id); if (!f) return;
+            const st = frameState();
+            if (!st.owned.includes(id)) {
+                if (typeof userCoins === 'undefined' || userCoins < f.cost) { showNotification(`Nincs elég coinod (${f.cost} kell).`); return; }
+                userCoins -= f.cost; st.owned.push(id);
+                if (typeof saveAcademyState === 'function') saveAcademyState();
+                if (typeof updateCoinDisplay === 'function') updateCoinDisplay();
+                showNotification(`🖼️ ${f.name} keret megvéve (−${f.cost} coin).`);
+            }
+            st.active = id;
+            try { localStorage.setItem('chartolj_frames', JSON.stringify(st)); } catch (e) {}
+            applyAvatarFrame(); openAvatarFrames();
+        }
+        document.addEventListener('DOMContentLoaded', applyAvatarFrame);
+
+        // ---------- Mérföldkő-kép (megosztható) ----------
+        function shareMilestoneImage(icon, headline, sub, slug) {
+            const W = 1080, c = document.createElement('canvas'); c.width = W; c.height = W;
+            const g = c.getContext('2d');
+            const bg = g.createRadialGradient(W / 2, W * 0.4, 40, W / 2, W / 2, W * 0.75); bg.addColorStop(0, '#2a1a05'); bg.addColorStop(1, '#05080f');
+            g.fillStyle = bg; g.fillRect(0, 0, W, W);
+            g.strokeStyle = 'rgba(251,191,36,0.6)'; g.lineWidth = 5; g.strokeRect(36, 36, W - 72, W - 72);
+            g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.font = '220px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.fillText(icon, W / 2, 420);
+            g.textBaseline = 'alphabetic';
+            g.fillStyle = '#67e8f9'; g.font = '700 34px Inter, Arial, sans-serif'; g.fillText('CHARTOLJ AKADÉMIA', W / 2, 150);
+            g.fillStyle = '#ffffff'; g.font = '800 76px Inter, Arial, sans-serif'; g.fillText(String(headline).slice(0, 24), W / 2, 700);
+            g.fillStyle = '#94a3b8'; g.font = '400 36px Inter, Arial, sans-serif'; g.fillText(String(sub).slice(0, 48), W / 2, 775);
+            g.fillStyle = '#475569'; g.font = '400 24px Inter, Arial, sans-serif'; g.fillText('Szimulált kereskedési képzés — nem pénzügyi minősítés.', W / 2, 990);
+            shareOrDownloadCanvas(c, 'chartolj-merfoldko-' + slug + '.png', 'Chartolj mérföldkő', `${headline} — ${sub} a Chartolj Akadémián!`);
+        }
+        function shareStreakMilestone(days) {
+            const m = STREAK_MILESTONES.find(x => x.days === days); if (!m) return;
+            if (!(streakState.milestonesClaimed || []).includes(days) && (streakState.count || 0) < days) return;
+            shareMilestoneImage(m.icon, `${days} napos sorozat`, `${days} egymást követő napon tanultam`, 'sorozat-' + days);
         }
 
         function renderAvatarDisplay() {
@@ -57180,6 +57316,59 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (typeof setAcademyMode === 'function') setAcademyMode('lessons');
             academyModule = LESSONS_DATA[li].m; openAcademyLesson(li);
         }
+
+        // ---------- Telepítés iPhone-ra / iPadre (iOS-en nincs telepítés-prompt) ----------
+        function isIosBrowser() { return /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+        function isStandaloneApp() { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+        function openIosInstallGuide() {
+            miniQuiz = null; chartTask = null; microLesson = null;
+            document.getElementById('mini-quiz-title').textContent = '📲 Telepítés a kezdőképernyőre';
+            const step = (n, t) => `<li class="flex gap-3 items-start"><span class="shrink-0 w-6 h-6 rounded-full bg-neon-cyan/15 text-neon-cyan text-[11px] font-extrabold flex items-center justify-center">${n}</span><span class="text-xs text-slate-200 leading-relaxed">${t}</span></li>`;
+            document.getElementById('mini-quiz-body').innerHTML = `<p class="text-[11px] text-slate-400 mb-3">Így a Chartolj! saját ikonnal, teljes képernyőn, alkalmazásként indul.</p>
+                <ol class="space-y-3">${step(1, 'Nyisd meg ezt az oldalt a <b>Safari</b> böngészőben.')}${step(2, 'Koppints a <b>Megosztás</b> gombra (négyzet felfelé mutató nyíllal) alul vagy fent.')}${step(3, 'Görgess le, és válaszd: <b>Főképernyőhöz adás</b>.')}${step(4, 'Koppints a <b>Hozzáadás</b> gombra — kész!')}</ol>
+                <div class="flex justify-end mt-4"><button type="button" onclick="miniQuizClose()" class="px-5 py-2 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Értem</button></div>`;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+        }
+        setTimeout(() => {
+            try {
+                if (!isIosBrowser() || isStandaloneApp() || localStorage.getItem('chartolj_ios_guide_seen')) return;
+                const n = Number(localStorage.getItem('chartolj_visit_n') || 0) + 1; localStorage.setItem('chartolj_visit_n', String(n));
+                if (n < 2) return; // az első látogatáskor még ne zavarjunk
+                const m = document.getElementById('mini-quiz-modal'); if (!m || !m.classList.contains('hidden')) return;
+                localStorage.setItem('chartolj_ios_guide_seen', '1'); openIosInstallGuide();
+            } catch (e) {}
+        }, 15000);
+
+        // ---------- Fókuszkezelés az új párbeszédablakokban ----------
+        // Megnyitáskor eltesszük, honnan jött a fókusz, és Tab-bal a dialóguson
+        // belül tartjuk; bezáráskor visszaadjuk az eredeti elemnek. Osztályváltást
+        // figyel, így minden megnyitó/bezáró útvonalra érvényes.
+        (function setupDialogFocus() {
+            const ids = ['mini-quiz-modal', 'shield-modal', 'pretrade-modal'];
+            const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+            let lastOutside = null;
+            document.addEventListener('focusin', e => { if (!ids.some(id => { const m = document.getElementById(id); return m && m.contains(e.target); })) lastOutside = e.target; });
+            const start = () => ids.forEach(id => {
+                const m = document.getElementById(id); if (!m || m.__focusWired) return; m.__focusWired = true;
+                let opener = null, wasOpen = !m.classList.contains('hidden');
+                new MutationObserver(() => {
+                    const open = !m.classList.contains('hidden'); if (open === wasOpen) return; wasOpen = open;
+                    if (open) {
+                        opener = lastOutside;
+                        setTimeout(() => { if (!m.contains(document.activeElement)) { const f = m.querySelector(FOCUSABLE); if (f) f.focus(); } }, 0);
+                    } else if (opener && document.contains(opener) && opener.offsetParent !== null) { try { opener.focus(); } catch (e) {} opener = null; }
+                }).observe(m, { attributes: true, attributeFilter: ['class'] });
+                m.addEventListener('keydown', e => {
+                    if (e.key === 'Escape' && id === 'mini-quiz-modal') { e.preventDefault(); miniQuizClose(); return; }
+                    if (e.key !== 'Tab') return;
+                    const f = [...m.querySelectorAll(FOCUSABLE)].filter(x => x.offsetParent !== null); if (!f.length) return;
+                    const first = f[0], last = f[f.length - 1];
+                    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+                });
+            });
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+        })();
 
         // ---------- Napi 5 perc ----------
         // 1 új lecke (a tanár felolvassa) + az esedékes ismétlések. A lecke
@@ -59925,13 +60114,61 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="text-[11px] text-slate-400 space-y-0.5 mb-3">${extra}</div>
                 <div id="trade-ai-review" class="hidden mb-3 rounded-lg bg-neon-purple/[0.07] border border-neon-purple/30 p-3 text-[11.5px] text-slate-200 leading-relaxed"></div>
                 <button type="button" id="trade-ai-review-btn" onclick="reviewTradeWithAi('${h.id}')" class="w-full mb-2 py-2.5 rounded-xl text-xs font-bold border border-neon-purple/40 text-purple-300">🤖 AI értékelés erről a kötésről</button>
+                <div class="mb-3 rounded-lg border border-dark-750 p-2.5">
+                    <div class="flex items-center justify-between gap-2"><span class="text-[11px] font-bold text-slate-300">📷 Napló-kép</span>
+                    <span class="flex gap-2"><button type="button" onclick="journalSnapChart('${h.id}')" class="px-2.5 py-1 rounded-lg text-[10.5px] font-bold border border-dark-750 text-slate-300 hover:text-neon-cyan">Grafikon mentése</button>
+                    <label class="px-2.5 py-1 rounded-lg text-[10.5px] font-bold border border-dark-750 text-slate-300 hover:text-neon-cyan cursor-pointer">Kép feltöltése<input type="file" accept="image/*" class="hidden" onchange="journalUploadImage('${h.id}', this)"></label></span></div>
+                    <div id="journal-img-box" class="mt-2 hidden"></div>
+                    <div class="text-[9.5px] text-slate-600 mt-1">A képek csak ezen az eszközön tárolódnak.</div>
+                </div>
                 <p class="text-xs text-amber-300 mb-4"><i class="fa-solid fa-lightbulb mr-1"></i>${verdict}</p>
                 <button type="button" onclick="miniQuizClose()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Rendben</button>`;
             document.getElementById('mini-quiz-modal').classList.remove('hidden');
             drawTradeReplay(w);
+            journalShowImage(h.id);
         }
 
         // ================= KÖTÉS-VISSZAJÁTSZÁS (mini grafikon) =================
+        // ---------- Napló képpel (IndexedDB, eszközönként) ----------
+        function journalDb() {
+            return new Promise((res, rej) => {
+                try { const r = indexedDB.open('chartolj_journal', 1); r.onupgradeneeded = () => r.result.createObjectStore('img'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); }
+            });
+        }
+        async function journalPut(id, dataUrl) { const db = await journalDb(); return new Promise((res, rej) => { const t = db.transaction('img', 'readwrite'); t.objectStore('img').put(dataUrl, String(id)); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+        async function journalGet(id) { const db = await journalDb(); return new Promise(res => { const q = db.transaction('img').objectStore('img').get(String(id)); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); }
+        function journalDownscale(src, maxW) {
+            const k = Math.min(1, maxW / (src.width || maxW)); const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round((src.width || maxW) * k)); c.height = Math.max(1, Math.round((src.height || maxW * 0.6) * k));
+            const g = c.getContext('2d'); g.fillStyle = '#0b1220'; g.fillRect(0, 0, c.width, c.height); g.drawImage(src, 0, 0, c.width, c.height);
+            return c.toDataURL('image/jpeg', 0.82);
+        }
+        async function journalSave(id, dataUrl) {
+            try { await journalPut(id, dataUrl); journalShowImage(id); showNotification('📷 Kép hozzáadva a naplóhoz.'); }
+            catch (e) { showNotification('A kép mentése nem sikerült ezen az eszközön.'); }
+        }
+        function journalSnapChart(id) {
+            const cv = document.getElementById('main-chart-canvas');
+            if (!cv || !cv.width) { showNotification('A grafikon most nem menthető.'); return; }
+            journalSave(id, journalDownscale(cv, 900));
+        }
+        function journalUploadImage(id, input) {
+            const f = input.files && input.files[0]; input.value = '';
+            if (!f || !/^image\//.test(f.type)) return;
+            if (f.size > 15 * 1024 * 1024) { showNotification('A kép túl nagy (max. 15 MB).'); return; }
+            const url = URL.createObjectURL(f), img = new Image();
+            img.onload = () => { URL.revokeObjectURL(url); journalSave(id, journalDownscale(img, 900)); };
+            img.onerror = () => { URL.revokeObjectURL(url); showNotification('Ez a fájl nem olvasható képként.'); };
+            img.src = url;
+        }
+        async function journalShowImage(id) {
+            const box = document.getElementById('journal-img-box'); if (!box) return;
+            let d = null; try { d = await journalGet(id); } catch (e) {}
+            if (!d || !/^data:image\/(jpeg|png);base64,/.test(d)) { box.classList.add('hidden'); return; }
+            box.innerHTML = ''; const im = document.createElement('img'); im.src = d; im.alt = 'Napló-kép ehhez a kötéshez'; im.className = 'w-full rounded-lg border border-dark-750';
+            box.appendChild(im); box.classList.remove('hidden');
+        }
+
         function drawTradeReplay(w) {
             const c = document.getElementById('whatif-replay-canvas'); if (!c || !w || !w.path || w.path.length < 2) return;
             const g = c.getContext('2d'), W = c.width, H = c.height, pad = 18;
