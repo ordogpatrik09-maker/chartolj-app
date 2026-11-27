@@ -1584,6 +1584,7 @@
 
         /* Lebegő beszélő fej — mobilon, illetve PC-n az Akadémián kívüli
            felolvasásnál (pl. AI-coach). Koppintásra leállítja a felolvasást. */
+        body.ml-on #th-float { z-index: 99; }
         #th-float {
             position: fixed; right: 10px; top: 64px; z-index: 95;
             width: 96px; border-radius: 14px; overflow: hidden; background: #000;
@@ -49011,6 +49012,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['📍', 'Grafikon-feladatok', 'grafikon feladat támasz ellenállás koppints gyakorlás', `switchMobileTab('academy'); setTimeout(startChartTasks, 60)`],
+            ['🎙️', '1 perces összefoglaló', 'mikrolecke összefoglaló tanár felolvas rövid', `switchMobileTab('academy'); setTimeout(() => startMicroLesson(), 60)`],
+            ['🧪', 'Stratégia backtester', 'backtest stratégia ema rsi macd bollinger teszt múlt', `switchMobileTab('trade'); setTimeout(() => { openToolModal('backtest-modal'); renderBacktestAssetLabel(); }, 60)`],
             ['🛡️', 'Kockázati pajzs', 'kockázat pajzs limit napi veszteség stop-loss', `switchMobileTab('trade'); setTimeout(openRiskShieldSettings, 60)`],
             ['☀️', 'Napi 5 perc', 'napi adag gyakorlás ma', `switchMobileTab('academy'); setTimeout(startDailySession, 60)`],
             ['📖', 'Leckék', 'tanulás lecke modul', AC('lessons')], ['🧭', 'Kezdő Tanterv', 'tanterv útvonal kezdő', AC('curriculum')],
@@ -56818,7 +56822,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('mini-quiz-modal').classList.remove('hidden');
             miniQuizRender();
         }
-        function miniQuizClose() { if (ttsSupported) ttsStopAll(); document.getElementById('mini-quiz-modal').classList.add('hidden'); miniQuiz = null; }
+        function miniQuizClose() { if (ttsSupported) ttsStopAll(); document.getElementById('mini-quiz-modal').classList.add('hidden'); miniQuiz = null; chartTask = null; microLesson = null; document.body.classList.remove('ml-on'); }
         function miniQuizRender() {
             const mq = miniQuiz; if (!mq) return;
             const body = document.getElementById('mini-quiz-body');
@@ -57036,6 +57040,147 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             renderFlashcard();
         }
 
+        // ---------- Interaktív grafikon-feladatok ----------
+        // Szintetikus, ismert szerkezetű gyertyák (támasz/ellenállás közti
+        // oldalazás) — a felhasználó a grafikonra koppintva jelöli a kért
+        // szintet / gyertyát; a helyes választ utána berajzoljuk.
+        let chartTask = null;
+        const CT_W = 640, CT_H = 300, CT_PAD = 14;
+        function ctGenerate() {
+            const kinds = ['support', 'resistance', 'high', 'low'];
+            const kind = kinds[Math.floor(Math.random() * kinds.length)];
+            const S = 100, R = 100 + 8 + Math.random() * 6, n = 36;
+            const c = []; let p = S + (R - S) * (0.3 + Math.random() * 0.4), dir = Math.random() < 0.5 ? 1 : -1;
+            for (let i = 0; i < n; i++) {
+                const step = (R - S) * (0.06 + Math.random() * 0.1) * dir;
+                let close = p + step;
+                if (close >= R) { close = R - (R - S) * (0.04 + Math.random() * 0.06); dir = -1; }
+                if (close <= S) { close = S + (R - S) * (0.04 + Math.random() * 0.06); dir = 1; }
+                if (Math.random() < 0.15) dir = -dir;
+                const hi = Math.min(R, Math.max(p, close) + Math.random() * (R - S) * 0.05);
+                const lo = Math.max(S, Math.min(p, close) - Math.random() * (R - S) * 0.05);
+                c.push({ o: p, c: close, h: hi, l: lo }); p = close;
+            }
+            // Legalább 2-2 érintés a szinteken, hogy a szint "látható" legyen.
+            [[5, 'l'], [18, 'h'], [27, 'l'], [11, 'h']].forEach(([i, k]) => { if (k === 'l') c[i].l = S; else c[i].h = R; });
+            const lo = S - (R - S) * 0.15, hi = R + (R - S) * 0.15;
+            return { kind, candles: c, S, R, lo, hi };
+        }
+        function ctY(t, price) { return CT_PAD + (t.hi - price) / (t.hi - t.lo) * (CT_H - 2 * CT_PAD); }
+        function ctPrice(t, y) { return t.hi - (y - CT_PAD) / (CT_H - 2 * CT_PAD) * (t.hi - t.lo); }
+        function ctX(i, n) { const w = (CT_W - 2 * CT_PAD) / n; return CT_PAD + w * i + w / 2; }
+        function ctDraw(t, tap, showAnswer) {
+            const cv = document.getElementById('ct-canvas'); if (!cv) return;
+            const g = cv.getContext('2d'); const n = t.candles.length, w = (CT_W - 2 * CT_PAD) / n;
+            g.fillStyle = '#0b1220'; g.fillRect(0, 0, CT_W, CT_H);
+            t.candles.forEach((k, i) => {
+                const x = ctX(i, n), up = k.c >= k.o; g.strokeStyle = g.fillStyle = up ? '#22c55e' : '#ef4444';
+                g.beginPath(); g.moveTo(x, ctY(t, k.h)); g.lineTo(x, ctY(t, k.l)); g.stroke();
+                const y1 = ctY(t, Math.max(k.o, k.c)), y2 = ctY(t, Math.min(k.o, k.c));
+                g.fillRect(x - w * 0.32, y1, w * 0.64, Math.max(1, y2 - y1));
+            });
+            if (showAnswer) {
+                g.strokeStyle = '#22d3ee'; g.lineWidth = 2; g.setLineDash([6, 4]);
+                if (t.kind === 'support' || t.kind === 'resistance') { const y = ctY(t, t.kind === 'support' ? t.S : t.R); g.beginPath(); g.moveTo(0, y); g.lineTo(CT_W, y); g.stroke(); }
+                else { const i = ctTargetIdx(t), k = t.candles[i], x = ctX(i, n), y = ctY(t, t.kind === 'high' ? k.h : k.l); g.beginPath(); g.arc(x, y, 12, 0, Math.PI * 2); g.stroke(); }
+                g.setLineDash([]); g.lineWidth = 1;
+            }
+            if (tap) { g.fillStyle = '#fff'; g.beginPath(); g.arc(tap.x, tap.y, 5, 0, Math.PI * 2); g.fill(); }
+        }
+        function ctTargetIdx(t) { let b = 0; t.candles.forEach((k, i) => { if (t.kind === 'high' ? k.h > t.candles[b].h : k.l < t.candles[b].l) b = i; }); return b; }
+        const CT_PROMPTS = { support: 'Koppints a TÁMASZ szintjére (ahonnan az ár többször felpattant).', resistance: 'Koppints az ELLENÁLLÁS szintjére (ahonnan az ár többször visszafordult).', high: 'Koppints a legmagasabb csúcsot elérő gyertyára.', low: 'Koppints a legmélyebb pontot elérő gyertyára.' };
+        function startChartTasks() {
+            chartTask = { i: 0, total: 5, ok: 0, cur: ctGenerate(), answered: false };
+            miniQuiz = null;
+            document.getElementById('mini-quiz-title').textContent = '📍 Grafikon-feladatok';
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            renderChartTask();
+        }
+        function renderChartTask() {
+            const ct = chartTask, body = document.getElementById('mini-quiz-body'); if (!ct || !body) return;
+            if (ct.i >= ct.total) {
+                body.innerHTML = `<div class="text-center py-4"><div class="text-3xl mb-2">${ct.ok >= 4 ? '🎯' : '📈'}</div><div class="text-sm font-extrabold text-white">${ct.ok} / ${ct.total} helyes</div><div class="text-[11px] text-slate-400 mt-1">+${ct.ok * 3} XP</div>
+                    <div class="flex gap-2 justify-center mt-4"><button type="button" onclick="startChartTasks()" class="px-4 py-2 rounded-xl text-xs font-bold border border-dark-750 text-slate-300">Újra</button><button type="button" onclick="miniQuizClose()" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Kész</button></div></div>`;
+                chartTask = null; return;
+            }
+            body.innerHTML = `<div class="w-full h-1 rounded-full bg-dark-800 overflow-hidden mb-3"><div class="h-full bg-neon-cyan" style="width:${ct.i / ct.total * 100}%"></div></div>
+                <div class="text-[10px] font-mono text-slate-500 mb-1">${ct.i + 1} / ${ct.total}</div>
+                <p class="text-xs font-bold text-white mb-2">${CT_PROMPTS[ct.cur.kind]}</p>
+                <canvas id="ct-canvas" width="${CT_W}" height="${CT_H}" class="w-full rounded-xl border border-dark-750 cursor-crosshair touch-none" role="img" aria-label="Gyakorló grafikon — koppints a kért helyre"></canvas>
+                <div id="ct-fb" class="mt-2 text-[11.5px] min-h-[1.25rem]" role="status"></div>
+                <div class="flex justify-end mt-2"><button type="button" id="ct-next" disabled onclick="chartTaskNext()" class="px-5 py-2 rounded-xl text-xs font-extrabold uppercase bg-dark-800 text-slate-600 cursor-not-allowed">Következő</button></div>`;
+            ctDraw(ct.cur, null, false);
+            document.getElementById('ct-canvas').addEventListener('pointerdown', chartTaskTap);
+        }
+        function chartTaskTap(e) {
+            const ct = chartTask; if (!ct || ct.answered) return;
+            const cv = e.currentTarget, r = cv.getBoundingClientRect();
+            const x = (e.clientX - r.left) * CT_W / r.width, y = (e.clientY - r.top) * CT_H / r.height;
+            const t = ct.cur, n = t.candles.length; let ok;
+            if (t.kind === 'support' || t.kind === 'resistance') ok = Math.abs(ctPrice(t, y) - (t.kind === 'support' ? t.S : t.R)) <= (t.R - t.S) * 0.12;
+            else { const i = Math.round((x - CT_PAD) / ((CT_W - 2 * CT_PAD) / n) - 0.5); ok = Math.abs(i - ctTargetIdx(t)) <= 1; }
+            ct.answered = true; if (ok) { ct.ok++; if (typeof awardAcademyXP === 'function') awardAcademyXP(3); }
+            ctDraw(t, { x, y }, true);
+            const fb = document.getElementById('ct-fb');
+            fb.className = 'mt-2 text-[11.5px] min-h-[1.25rem] ' + (ok ? 'text-neon-green' : 'text-amber-300');
+            fb.textContent = ok ? '✅ Pontos! A szaggatott vonal/kör a helyes válasz.' : '❌ Nem egészen — a szaggatott vonal/kör mutatja a helyes választ.';
+            const nb = document.getElementById('ct-next'); nb.disabled = false; nb.className = 'px-5 py-2 rounded-xl text-xs font-extrabold uppercase bg-neon-cyan text-dark-950'; nb.focus();
+        }
+        function chartTaskNext() { const ct = chartTask; if (!ct) return; ct.i++; ct.cur = ctGenerate(); ct.answered = false; renderChartTask(); }
+
+        // ---------- 1 perces mikrolecke (a tanár-fej felolvassa, felirattal) ----------
+        let microLesson = null;
+        function microLessonSentences(li) {
+            const L = LESSONS_DATA[li]; const out = [L.t + '.'];
+            L.cards.forEach(c => {
+                const txt = ttsStripHtml(c.b || ''); const first = (txt.match(/^[\s\S]*?[.!?](\s|$)/) || [txt])[0].trim();
+                if (first) out.push(first.length > 260 ? first.slice(0, 257) + '…' : first);
+            });
+            return out;
+        }
+        function startMicroLesson(li) {
+            if (li === undefined || li === null) li = (typeof academyLessonIdx === 'number' && LESSONS_DATA[academyLessonIdx]) ? academyLessonIdx : dailyNextLessonIdx();
+            if (li === null || li === undefined || !LESSONS_DATA[li]) li = 0;
+            chartTask = null; miniQuiz = null;
+            microLesson = { li, parts: microLessonSentences(li), i: 0 };
+            document.getElementById('mini-quiz-title').textContent = '🎙️ 1 perces összefoglaló';
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            document.body.classList.add('ml-on');
+            renderMicroLesson();
+            if (ttsSupported) microLessonSpeak(); else document.getElementById('ml-hint').textContent = 'Ez a böngésző nem tud felolvasni — lapozz a nyilakkal.';
+        }
+        function renderMicroLesson() {
+            const ml = microLesson, body = document.getElementById('mini-quiz-body'); if (!ml || !body) return;
+            body.innerHTML = `<div class="text-[10px] font-mono text-slate-500 mb-2">${escapeHtml(LESSONS_DATA[ml.li].t)} · ${ml.i + 1} / ${ml.parts.length}</div>
+                <div id="ml-caption" class="min-h-[7rem] p-4 rounded-xl bg-dark-950/70 border border-neon-cyan/20 text-[15px] leading-relaxed text-white" aria-live="polite">${escapeHtml(ml.parts[ml.i])}</div>
+                <div id="ml-hint" class="text-[10.5px] text-slate-500 mt-2"></div>
+                <div class="flex gap-2 mt-3">
+                    <button type="button" onclick="microLessonStep(-1)" class="px-3 py-2 rounded-xl border border-dark-750 text-slate-300 text-xs" aria-label="Előző mondat"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button type="button" onclick="microLessonStep(1)" class="px-3 py-2 rounded-xl border border-dark-750 text-slate-300 text-xs" aria-label="Következő mondat"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button type="button" onclick="microLessonOpenFull()" class="flex-1 py-2 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Teljes lecke</button>
+                </div>`;
+        }
+        function microLessonSpeak() {
+            const ml = microLesson; if (!ml || !ttsSupported) return;
+            const myIdx = ml.i, me = ml;
+            ttsSpeak('micro-lesson', ml.parts[ml.i], () => {
+                if (microLesson !== me || me.i !== myIdx) return;
+                if (me.i + 1 < me.parts.length) { me.i++; renderMicroLesson(); microLessonSpeak(); }
+                else { const h = document.getElementById('ml-hint'); if (h) h.textContent = '✅ Vége — nyisd meg a teljes leckét a részletekért és a kvízért.'; }
+            });
+        }
+        function microLessonStep(d) {
+            const ml = microLesson; if (!ml) return;
+            ml.i = Math.max(0, Math.min(ml.parts.length - 1, ml.i + d)); renderMicroLesson();
+            if (ttsSupported) microLessonSpeak();
+        }
+        function microLessonOpenFull() {
+            const li = microLesson ? microLesson.li : 0; miniQuizClose();
+            if (typeof switchMobileTab === 'function' && window.innerWidth < 1024) switchMobileTab('academy');
+            if (typeof setAcademyMode === 'function') setAcademyMode('lessons');
+            academyModule = LESSONS_DATA[li].m; openAcademyLesson(li);
+        }
+
         // ---------- Napi 5 perc ----------
         // 1 új lecke (a tanár felolvassa) + az esedékes ismétlések. A lecke
         // befejezésekor az összegzés tovább vezet az Ismétléshez.
@@ -57067,6 +57212,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <button type="button" onclick="openWeeklyPlan()" class="text-neon-cyan hover:underline">🗓️ Heti terved</button>
                     <button type="button" onclick="openLearningGoal()" class="text-neon-cyan hover:underline">🎯 ${learningGoalLine() || 'Tanulási cél'}</button>
                     <button type="button" onclick="startFlashcards()" class="text-neon-cyan hover:underline">🃏 Szókártyák${flashDueCount() ? ' (' + flashDueCount() + ')' : ''}</button>
+                    <button type="button" onclick="startChartTasks()" class="text-neon-cyan hover:underline">📍 Grafikon-feladatok</button>
+                    <button type="button" onclick="startMicroLesson()" class="text-neon-cyan hover:underline">🎙️ 1 perces összefoglaló</button>
                 </div></div>`;
         }
         function startDailySession() {
