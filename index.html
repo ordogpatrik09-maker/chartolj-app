@@ -16301,6 +16301,7 @@ Mean-reversion,2.5</textarea>
                 </div>
                 <p class="text-[9.5px] text-slate-600 mb-3">Minden nap éjfélkor frissül. Teljesítsd és vedd át a jutalmat!</p>
                 <div id="streak-milestone-row" class="flex items-stretch gap-1.5 mb-3"></div>
+                <div id="streak-freeze-row" class="flex items-center justify-between gap-2 mb-3 px-2.5 py-2 rounded-lg bg-dark-900 border border-dark-750"></div>
                 <div id="daily-challenges-list" class="space-y-1.5"></div>
             </div>
 
@@ -16502,6 +16503,10 @@ Mean-reversion,2.5</textarea>
                     <!-- Ide másolódik be a Tevékenység napló diagnosztikai célra -->
                 </div>
             </div>
+            <button onclick="exportMyData()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
+                <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-file-arrow-down text-slate-500 mr-2"></i>Adataim letöltése (JSON)</span>
+                <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+            </button>
             <button onclick="openLegalScreen()" class="w-full glass-card rounded-xl p-3 flex items-center justify-between hover:border-dark-600 transition">
                 <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-scale-balanced text-slate-500 mr-2"></i>Jogi tudnivalók</span>
                 <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
@@ -49749,6 +49754,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const d = new Date();
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
+        // Két 'ÉÉÉÉ-HH-NN' napkulcs közötti napok száma (helyi naptári napok, DST-biztos).
+        function daysBetweenKeys(a, b) {
+            const pa = String(a).split('-').map(Number), pb = String(b).split('-').map(Number);
+            if (pa.length !== 3 || pb.length !== 3 || pa.some(isNaN) || pb.some(isNaN)) return 0;
+            return Math.round((Date.UTC(pb[0], pb[1] - 1, pb[2]) - Date.UTC(pa[0], pa[1] - 1, pa[2])) / 86400000);
+        }
         function yesterdayKey() {
             const d = new Date(); d.setDate(d.getDate() - 1);
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -49785,8 +49796,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
             // Bejelentkezési sorozat frissítése
             if (streakState.lastDate !== today) {
+                const missed = streakState.lastDate ? Math.max(0, daysBetweenKeys(streakState.lastDate, today) - 1) : 0;
+                const freezes = Math.max(0, Math.floor(Number(streakState.freezes) || 0));
                 if (streakState.lastDate === yesterdayKey()) {
                     streakState.count = (streakState.count || 0) + 1;
+                } else if (streakState.lastDate && missed >= 1 && freezes >= missed) {
+                    // Sorozat-védő: a kihagyott napokat a védők "lefedik", a sorozat megmarad.
+                    streakState.freezes = freezes - missed;
+                    streakState.count = (streakState.count || 0) + 1;
+                    setTimeout(() => { if (typeof showNotification === 'function') showNotification(`🧊 ${missed} sorozat-védő felhasználva — a ${streakState.count} napos sorozatod megmaradt!`); }, 1200);
                 } else if (streakState.lastDate) {
                     streakState.count = 1;
                 } else {
@@ -49815,6 +49833,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
         function saveDailyChallengeState() {
             try { localStorage.setItem('chartolj_daily_challenges', JSON.stringify(dailyChallengeState)); } catch (e) {}
+        }
+        const STREAK_FREEZE_COST = 60, STREAK_FREEZE_MAX = 2;
+        function buyStreakFreeze() {
+            const have = Math.max(0, Math.floor(Number(streakState.freezes) || 0));
+            if (have >= STREAK_FREEZE_MAX) { showNotification(`Legfeljebb ${STREAK_FREEZE_MAX} sorozat-védőd lehet egyszerre.`); return; }
+            if (typeof userCoins === 'undefined' || userCoins < STREAK_FREEZE_COST) { showNotification(`Nincs elég coinod (${STREAK_FREEZE_COST} kell).`); return; }
+            userCoins -= STREAK_FREEZE_COST;
+            streakState.freezes = have + 1;
+            saveStreakState();
+            if (typeof saveAcademyState === 'function') saveAcademyState();
+            if (typeof updateCoinDisplay === 'function') updateCoinDisplay();
+            renderDailyChallenges();
+            showNotification(`🧊 Sorozat-védő megvéve (−${STREAK_FREEZE_COST} coin). Ha kihagysz egy napot, megvédi a sorozatod.`);
         }
         function saveStreakState() {
             try { localStorage.setItem('chartolj_streak', JSON.stringify(streakState)); } catch (e) {}
@@ -49861,6 +49892,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <span class="text-[8.5px] font-mono ${reached ? 'text-amber-300' : 'text-slate-600'}">${m.days} nap</span>
                     </div>`;
                 }).join('');
+            }
+            const freezeEl = document.getElementById('streak-freeze-row');
+            if (freezeEl) {
+                const have = Math.max(0, Math.floor(Number(streakState.freezes) || 0));
+                const full = have >= STREAK_FREEZE_MAX;
+                freezeEl.innerHTML = `<div class="flex items-center gap-2 text-[10.5px] text-slate-400 min-w-0"><span class="text-sm">🧊</span><span class="truncate">Sorozat-védő: <strong class="text-sky-300">${have}/${STREAK_FREEZE_MAX}</strong> — egy kihagyott napot lefed</span></div>
+                    <button type="button" onclick="buyStreakFreeze()" ${full ? 'disabled' : ''} class="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${full ? 'border-dark-750 text-slate-600 cursor-not-allowed' : 'border-sky-400/40 text-sky-300 hover:bg-sky-400/10'} transition">${full ? 'Tele' : 'Vétel · ' + STREAK_FREEZE_COST + ' coin'}</button>`;
             }
             if (!listEl) return;
             listEl.innerHTML = DAILY_CHALLENGE_TEMPLATES.map(d => {
@@ -55878,6 +55916,58 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             `;
         }
 
+        // Modul-oklevél: letölthető/megosztható PNG, ha a modul minden leckéje kész.
+        function downloadModuleCertificate(moduleIdx) {
+            const mod = ACADEMY_MODULES[moduleIdx];
+            if (!mod) return;
+            const lessons = LESSONS_DATA.reduce((acc, l, i) => { if (l.m === moduleIdx) acc.push(i); return acc; }, []);
+            if (!lessons.length || !lessons.every(i => academyCompleted.has(i))) { showNotification('Az oklevélhez a modul összes leckéjét teljesítened kell.'); return; }
+            const W = 1600, H = 1130;
+            const c = document.createElement('canvas'); c.width = W; c.height = H;
+            const g = c.getContext('2d');
+            const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#05080f'); bg.addColorStop(1, '#0b1424');
+            g.fillStyle = bg; g.fillRect(0, 0, W, H);
+            g.strokeStyle = 'rgba(34,211,238,0.85)'; g.lineWidth = 6; g.strokeRect(40, 40, W - 80, H - 80);
+            g.strokeStyle = 'rgba(168,85,247,0.6)'; g.lineWidth = 2; g.strokeRect(62, 62, W - 124, H - 124);
+            g.textAlign = 'center';
+            g.fillStyle = '#67e8f9'; g.font = '700 34px Inter, Arial, sans-serif';
+            g.fillText('CHARTOLJ AKADÉMIA', W / 2, 190);
+            g.fillStyle = '#ffffff'; g.font = '800 110px Inter, Arial, sans-serif';
+            g.fillText('OKLEVÉL', W / 2, 330);
+            g.fillStyle = '#94a3b8'; g.font = '400 34px Inter, Arial, sans-serif';
+            g.fillText('Igazoljuk, hogy', W / 2, 440);
+            const name = (currentUser && !currentUser.guest && (currentUser.name || currentUser.email)) ? String(currentUser.name || currentUser.email).slice(0, 40) : 'Chartolj tanuló';
+            g.fillStyle = '#fbbf24'; g.font = '800 76px Inter, Arial, sans-serif';
+            g.fillText(name, W / 2, 545);
+            g.fillStyle = '#94a3b8'; g.font = '400 34px Inter, Arial, sans-serif';
+            g.fillText('sikeresen elvégezte a(z)', W / 2, 640);
+            g.fillStyle = '#ffffff'; g.font = '700 58px Inter, Arial, sans-serif';
+            g.fillText(String(mod.n).slice(0, 48), W / 2, 725);
+            g.fillStyle = '#94a3b8'; g.font = '400 32px Inter, Arial, sans-serif';
+            g.fillText(`modult — ${lessons.length} lecke és a hozzájuk tartozó kvízek`, W / 2, 790);
+            const d = new Date();
+            g.fillStyle = '#64748b'; g.font = '500 28px Inter, Arial, sans-serif';
+            g.fillText(`Kiállítva: ${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')}.`, W / 2, 940);
+            g.fillStyle = '#475569'; g.font = '400 22px Inter, Arial, sans-serif';
+            g.fillText('Oktatási célú, szimulált kereskedési képzés — nem pénzügyi minősítés.', W / 2, 990);
+            const fileName = 'chartolj-oklevel-' + foldDiacritics(String(mod.n)).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.png';
+            c.toBlob(async (blob) => {
+                if (!blob) return;
+                try {
+                    const file = new File([blob], fileName, { type: 'image/png' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] }) && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+                        await navigator.share({ files: [file], title: 'Chartolj oklevél', text: `Elvégeztem a(z) ${mod.n} modult a Chartolj Akadémián!` });
+                        return;
+                    }
+                } catch (e) { /* megosztás megszakítva — letöltésre esünk vissza */ }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = fileName;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                showNotification('🎓 Oklevél letöltve.');
+            }, 'image/png');
+        }
+
         function renderAcademyLessonList() {
             const searchTerm = document.getElementById('academy-search').value.trim().toLowerCase();
             const titleEl = document.getElementById('academy-module-title');
@@ -55910,6 +56000,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const mod = ACADEMY_MODULES[academyModule];
                 titleEl.innerHTML = `<i class="fa-solid ${mod.i}"></i> ${mod.n}`;
                 subtitleEl.textContent = `${indices.length} lecke ebben a modulban`;
+                if (indices.length > 0 && indices.every(i => academyCompleted.has(i))) {
+                    subtitleEl.innerHTML = `${indices.length} lecke — <strong class="text-amber-300">modul teljesítve!</strong> <button type="button" onclick="downloadModuleCertificate(${academyModule})" class="ml-1 px-2 py-0.5 rounded-md border border-amber-400/40 text-amber-300 text-[10px] font-bold hover:bg-amber-400/10 transition">🎓 Oklevél</button>`;
+                }
             }
 
             // Az útvonal-nézet csak modul-nézetben értelmezhető (keresési
@@ -59477,6 +59570,57 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
                     line.innerHTML = l ? '<i class="fa-solid ' + l.icon + ' mr-1 ' + l.cls + '"></i> ' + l.text : '';
                 }
             }
+        }
+
+        // GDPR "adathordozhatóság": minden, az app által rólad tárolt adat egy
+        // JSON-fájlban — fiók-alapadatok, a fiókhoz mentett tanulási haladás
+        // (ugyanaz a tartalom, amit a felhőbe mentünk), és az ezen az eszközön
+        // tárolt helyi beállítások/naplók (chartolj_* kulcsok).
+        function exportMyData() {
+            const safe = (fn, fb) => { try { const v = fn(); return v === undefined ? fb : v; } catch (e) { return fb; } };
+            const local = {};
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (!k || !/^chartolj/i.test(k)) continue;
+                    const raw = localStorage.getItem(k);
+                    try { local[k] = JSON.parse(raw); } catch (e) { local[k] = raw; }
+                }
+            } catch (e) {}
+            const data = {
+                export_format: 'chartolj-data-export/1',
+                exported_at: new Date().toISOString(),
+                account: currentUser ? { id: currentUser.id || null, name: currentUser.name || null, email: currentUser.email || null, guest: !!currentUser.guest } : null,
+                premium: safe(() => !!isPremiumUser, false),
+                learning_progress: {
+                    xp: safe(() => academyXP, 0),
+                    coins: safe(() => userCoins, 0),
+                    completed_lessons: safe(() => [...academyCompleted], []),
+                    what_if_done: safe(() => [...whatIfDone], []),
+                    claimed_ranks: safe(() => [...claimedRanks], []),
+                    claimed_missions: safe(() => [...claimedMissions], []),
+                    opened_premium_lessons: safe(() => [...openedPremiumLessons], []),
+                    unlocked_chart_themes: safe(() => [...unlockedChartThemes], []),
+                    hearts: safe(() => academyHearts, null),
+                    mistake_bank: safe(() => serializeMistakeBank(), null),
+                    drill_stats: safe(() => drillStats, null),
+                    replay_stats: safe(() => replayStats, null),
+                    replay_journal: safe(() => replayJournal, null),
+                    learning_log: safe(() => learningLog, [])
+                },
+                this_device_local_data: local
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'chartolj-adataim-' + todayKey() + '.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            if (typeof showNotification === 'function') showNotification('Adataid letöltése elindult (JSON).');
+            return data;
         }
 
         function scheduleCloudProgressSave() {
