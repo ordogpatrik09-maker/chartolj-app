@@ -4016,10 +4016,13 @@
                 <button onclick="executeOrder()" id="btn-execute-order" aria-label="Pozíció végrehajtása" class="w-full py-3.5 rounded-xl font-extrabold text-sm uppercase bg-neon-green text-dark-950 hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
                     LONG Pozíció Nyitása
                 </button>
-                <label class="mt-2 flex items-center justify-center gap-2 text-[10.5px] text-slate-400 cursor-pointer select-none">
+                <div class="mt-2 flex items-center justify-center gap-3 text-[10.5px] text-slate-400">
+                <label class="flex items-center justify-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" id="pretrade-checklist-toggle" onchange="setPretradeChecklistEnabled(this.checked)" class="accent-cyan-400">
                     Kereskedés előtti ellenőrzőlista
                 </label>
+                <button type="button" id="risk-shield-btn" onclick="openRiskShieldSettings()" class="flex items-center gap-1 hover:text-white transition" aria-label="Kockázati pajzs beállításai"><i class="fa-solid fa-shield-halved"></i><span id="risk-shield-state">Pajzs: ki</span></button>
+                </div>
 
             </div>
 
@@ -17730,6 +17733,13 @@ Mean-reversion,2.5</textarea>
                 <button type="button" onclick="closePretradeChecklist()" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-dark-750 text-slate-300 hover:border-dark-600 transition">Mégse</button>
                 <button type="button" id="pretrade-confirm-btn" onclick="confirmPretradeChecklist()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950 hover:brightness-110 transition">Megnyitom</button>
             </div>
+        </div>
+    </div>
+
+    <div id="shield-modal" class="hidden fixed inset-0 z-[98] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="shield-modal-title">
+        <div class="glass-card w-full max-w-sm rounded-2xl border border-amber-400/30 p-5">
+            <h2 id="shield-modal-title" class="text-sm font-extrabold text-white mb-1"><i class="fa-solid fa-shield-halved text-amber-300 mr-1.5"></i>Kockázati pajzs</h2>
+            <div id="shield-modal-body" class="text-[11.5px] text-slate-300 space-y-3"></div>
         </div>
     </div>
 
@@ -48990,6 +49000,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['🛡️', 'Kockázati pajzs', 'kockázat pajzs limit napi veszteség stop-loss', `switchMobileTab('trade'); setTimeout(openRiskShieldSettings, 60)`],
             ['☀️', 'Napi 5 perc', 'napi adag gyakorlás ma', `switchMobileTab('academy'); setTimeout(startDailySession, 60)`],
             ['📖', 'Leckék', 'tanulás lecke modul', AC('lessons')], ['🧭', 'Kezdő Tanterv', 'tanterv útvonal kezdő', AC('curriculum')],
             ['⚡', 'Chart Drill', 'drill alakzat felismerés gyertya gyakorlás', AC('drill')], ['🎬', 'Replay Szimulátor', 'replay visszajátszás múlt', AC('replay')],
@@ -49066,7 +49077,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${act('tab-btn-portfolio', '💼', 'Portfólió áttekintés', 'Egyenleg, kitettség, eszközönkénti bontás')}
                     ${act('tab-btn-weak-topics', '🎯', 'Gyengepontok', 'Hol hibázol a legtöbbet')}
                     ${act('tab-btn-historical-event', '🏛️', 'Történelmi esemény szimulátor', 'Kereskedd le a nagy piaci eseményeket')}
-                    ${act('tab-btn-progress-export', '🖼️', 'Haladás exportálása képként', 'Megosztható összefoglaló')}</div>`;
+                    ${act('tab-btn-progress-export', '🖼️', 'Haladás exportálása képként', 'Megosztható összefoglaló')}
+                    ${act('risk-shield-btn', '🛡️', 'Kockázati pajzs', riskShield.on ? `Bekapcsolva · ${riskShield.maxRisk}% / kötés, ${riskShield.maxDaily}% / nap` : 'Max. kockázat kötésenként és napi veszteséglimit')}</div>`;
         }
         function openTradeMoreSheet() { renderTradeMoreSheet(); const s = document.getElementById('trade-more-sheet'); if (s) { s.classList.remove('hidden'); const f = s.querySelector('button'); if (f) f.focus(); } }
         function closeTradeMoreSheet() { const s = document.getElementById('trade-more-sheet'); if (s) s.classList.add('hidden'); }
@@ -58822,7 +58834,75 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             try { executeOrder(); } finally { pretradeBypass = false; }
         }
 
+        // ================= KOCKÁZATI PAJZS (opt-in) =================
+        // Bekapcsolva a pajzs MEGAKADÁLYOZZA a kötést, ha (a) nincs stop-loss,
+        // (b) a kockázat meghaladja a kötésenkénti limitet (ilyenkor felajánlja
+        // a méret automatikus csökkentését), vagy (c) a mai lezárt kötések
+        // vesztesége elérte a napi limitet. Csak a szimulátorra vonatkozik;
+        // a beállítás eszközönkénti kényelmi preferencia (localStorage).
+        let riskShield = (() => { try { const v = JSON.parse(localStorage.getItem('chartolj_risk_shield') || 'null'); if (v && typeof v === 'object') return { on: !!v.on, maxRisk: Math.min(10, Math.max(0.1, Number(v.maxRisk) || 1)), maxDaily: Math.min(50, Math.max(0.5, Number(v.maxDaily) || 3)) }; } catch (e) {} return { on: false, maxRisk: 1, maxDaily: 3 }; })();
+        let shieldBypass = false;
+        function saveRiskShield() { try { localStorage.setItem('chartolj_risk_shield', JSON.stringify(riskShield)); } catch (e) {} updateRiskShieldLabel(); }
+        function updateRiskShieldLabel() { const e = document.getElementById('risk-shield-state'); if (e) { e.textContent = riskShield.on ? 'Pajzs: be' : 'Pajzs: ki'; e.parentElement.classList.toggle('text-amber-300', riskShield.on); } }
+        document.addEventListener('DOMContentLoaded', () => {
+            updateRiskShieldLabel();
+            const m = document.getElementById('shield-modal');
+            if (m) m.addEventListener('keydown', e => { if (e.key === 'Escape') closeShieldModal(); });
+        });
+        function closeShieldModal() { const m = document.getElementById('shield-modal'); if (m) m.classList.add('hidden'); }
+        function showShieldModal(html) { const m = document.getElementById('shield-modal'); document.getElementById('shield-modal-body').innerHTML = html; m.classList.remove('hidden'); const f = m.querySelector('input,button'); if (f) f.focus(); }
+        function todayClosedLoss() {
+            const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+            const pnl = tradeHistory.filter(t => (t.closedAt || 0) >= d0.getTime()).reduce((a, t) => a + (Number(t.pnl) || 0), 0);
+            return pnl < 0 ? -pnl : 0;
+        }
+        function openRiskShieldSettings() {
+            const fmt = n => String(n).replace('.', ',');
+            showShieldModal(`<p class="text-[10.5px] text-slate-500">Bekapcsolva nem enged stop-loss nélküli, túl nagy kockázatú kötést, és megállít, ha a napi veszteséged elérte a limitet.</p>
+                <label class="flex items-center gap-2 font-bold cursor-pointer"><input type="checkbox" id="shield-on" class="accent-amber-400" ${riskShield.on ? 'checked' : ''}> Pajzs bekapcsolva</label>
+                <label class="block">Max. kockázat kötésenként (% a számlából)<input type="number" id="shield-max-risk" min="0.1" max="10" step="0.1" value="${riskShield.maxRisk}" class="mt-1 w-full bg-dark-950 border border-dark-750 rounded-lg px-2 py-1.5 text-white"></label>
+                <label class="block">Max. napi veszteség (% a számlából)<input type="number" id="shield-max-daily" min="0.5" max="50" step="0.5" value="${riskShield.maxDaily}" class="mt-1 w-full bg-dark-950 border border-dark-750 rounded-lg px-2 py-1.5 text-white"></label>
+                <p class="text-[10.5px] text-slate-500">Ma lezárt veszteség: $${todayClosedLoss().toFixed(2)} · Ajánlott: ${fmt(1)}% / ${fmt(3)}%.</p>
+                <div class="flex gap-2"><button type="button" onclick="closeShieldModal()" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-dark-750 text-slate-300">Mégse</button>
+                <button type="button" onclick="saveRiskShieldFromForm()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-amber-400 text-dark-950">Mentés</button></div>`);
+        }
+        function saveRiskShieldFromForm() {
+            const r = parseFloat(document.getElementById('shield-max-risk').value), d = parseFloat(document.getElementById('shield-max-daily').value);
+            riskShield = { on: document.getElementById('shield-on').checked, maxRisk: Math.min(10, Math.max(0.1, Number.isFinite(r) ? r : 1)), maxDaily: Math.min(50, Math.max(0.5, Number.isFinite(d) ? d : 3)) };
+            saveRiskShield(); closeShieldModal();
+            showNotification(riskShield.on ? `Kockázati pajzs bekapcsolva (${riskShield.maxRisk}% / kötés, ${riskShield.maxDaily}% / nap).` : 'Kockázati pajzs kikapcsolva.');
+        }
+        // true = mehet; false = a pajzs megállította (és üzenetet mutatott).
+        function riskShieldCheck() {
+            if (!riskShield.on) return true;
+            const bal = accountBalance > 0 ? accountBalance : 0;
+            const loss = todayClosedLoss();
+            if (bal > 0 && loss >= (bal + loss) * riskShield.maxDaily / 100) {
+                showShieldModal(`<p class="font-bold text-amber-300">Elérted a napi veszteséglimitet.</p><p>Ma $${loss.toFixed(2)} veszteséget zártál le (limit: ${riskShield.maxDaily}%). A legjobb döntés most a szünet — holnap tiszta fejjel folytathatod.</p><div class="flex gap-2"><button type="button" onclick="closeShieldModal()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-amber-400 text-dark-950">Rendben</button><button type="button" onclick="closeShieldModal(); openRiskShieldSettings()" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-dark-750 text-slate-300">Beállítások</button></div>`);
+                return false;
+            }
+            const a = pretradeAutoChecks();
+            if (!a.hasSl) {
+                showShieldModal(`<p class="font-bold text-amber-300">Stop-loss nélkül a pajzs nem enged kötést.</p><p>Kapcsold be a TP/SL-t, és adj meg egy SL árat — így előre tudod, mennyit kockáztatsz.</p><div class="flex gap-2"><button type="button" onclick="closeShieldModal()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-amber-400 text-dark-950">Értem</button></div>`);
+                return false;
+            }
+            if (a.riskPct > riskShield.maxRisk + 1e-9) {
+                const amount = parseFloat(document.getElementById('input-trade-amount').value) || 0;
+                const fit = Math.floor(amount * riskShield.maxRisk / a.riskPct);
+                showShieldModal(`<p class="font-bold text-amber-300">Túl nagy kockázat: ${a.riskPct.toFixed(2).replace('.', ',')}%</p><p>A limited ${riskShield.maxRisk}% kötésenként. Ugyanezzel a stop-loss-szal legfeljebb <b>$${fit}</b> méretű pozíció fér bele.</p><div class="flex gap-2"><button type="button" onclick="closeShieldModal()" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-dark-750 text-slate-300">Mégse</button>${fit >= 10 ? `<button type="button" onclick="shieldResizeAndRetry(${fit})" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-amber-400 text-dark-950">Méret: $${fit}</button>` : ''}</div>`);
+                return false;
+            }
+            return true;
+        }
+        function shieldResizeAndRetry(fit) {
+            const inp = document.getElementById('input-trade-amount');
+            if (inp) { inp.value = fit; inp.dispatchEvent(new Event('input', { bubbles: true })); }
+            closeShieldModal();
+            executeOrder();
+        }
+
         function executeOrder() {
+            if (riskShield.on && !shieldBypass && !pretradeBypass && !riskShieldCheck()) return;
             if (pretradeEnabled && !pretradeBypass) { openPretradeChecklist(); return; }
             if (!pretradeEnabled) pretradeLastOk = null;
             const btn = document.getElementById('btn-execute-order');
@@ -59385,8 +59465,24 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }
             });
 
+            recordPositionPaths();
             renderPositions();
             trackWhatIf();
+        }
+
+        // Kötés-visszajátszáshoz: nyitott pozíciónként az ár útja (max. 2 mp-
+        // enként egy minta, legfeljebb 600 pont — a régebbi minták ritkítva).
+        function recordPositionPaths() {
+            const now = Date.now();
+            positions.forEach(p => {
+                const price = Number(p.currentPrice);
+                if (!(price > 0)) return;
+                if (!p.path) p.path = [[p.id, p.entryPrice]];
+                const last = p.path[p.path.length - 1];
+                if (now - last[0] < 2000) return;
+                p.path.push([now, price]);
+                if (p.path.length > 600) p.path = p.path.filter((_, i) => i % 2 === 0 || i === p.path.length - 1);
+            });
         }
 
         // Akadálymentességi elv (104. pont): a nyereség/veszteség SOSEM
@@ -59586,8 +59682,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const WHATIF_TRACK_MS = 4 * 3600 * 1000;
         function whatIfInit(p, amount, exitPrice) {
             if (!p || !(p.entryPrice > 0) || !(amount > 0) || !(exitPrice > 0)) return null;
+            const path = Array.isArray(p.path) ? p.path.slice() : [[p.id, p.entryPrice]];
+            path.push([Date.now(), exitPrice]);
             return { entry: p.entryPrice, exit: exitPrice, amount, lev: p.leverage || 1, side: p.side, sl: p.sl || null, tp: p.tp || null,
-                     hi: exitPrice, lo: exitPrice, last: exitPrice, since: Date.now(), tpHit: false, slHit: false };
+                     hi: exitPrice, lo: exitPrice, last: exitPrice, since: Date.now(), tpHit: false, slHit: false,
+                     openedAt: Number(p.id) || null, path, post: [] };
         }
         function whatIfPnl(w, price) {
             let diff = price - w.entry; if (w.side === 'short') diff = -diff;
@@ -59601,6 +59700,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const price = (h.asset === currentAsset.symbol) ? currentAsset.price : (typeof livePrices !== 'undefined' ? livePrices[h.asset] : null);
                 if (!(price > 0)) continue;
                 w.last = price; if (price > w.hi) w.hi = price; if (price < w.lo) w.lo = price;
+                if (w.post && (!w.post.length || now - w.post[w.post.length - 1][0] >= 5000) && w.post.length < 400) w.post.push([now, price]);
                 if (w.tp) { if ((w.side === 'long' && price >= w.tp) || (w.side === 'short' && price <= w.tp)) w.tpHit = w.tpHit || !w.slHit; }
                 if (w.sl) { if ((w.side === 'long' && price <= w.sl) || (w.side === 'short' && price >= w.sl)) w.slHit = w.slHit || !w.tpHit; }
             }
@@ -59631,10 +59731,67 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="rounded-lg bg-dark-900 border border-dark-750 p-2"><div class="text-sm font-extrabold ${rowc(best)}">${formatPnl(best)}</div><div class="text-[9px] text-slate-500 uppercase font-bold">Legjobb kiszállás</div></div>
                     <div class="rounded-lg bg-dark-900 border border-dark-750 p-2"><div class="text-sm font-extrabold ${rowc(worst)}">${formatPnl(worst)}</div><div class="text-[9px] text-slate-500 uppercase font-bold">Legrosszabb kiszállás</div></div>
                 </div>
+                ${w.path && w.path.length > 1 ? `<canvas id="whatif-replay-canvas" width="640" height="220" class="w-full rounded-lg bg-dark-900 border border-dark-750 mb-1" role="img" aria-label="A kötés árútja: belépés, kilépés és a zárás utáni mozgás"></canvas>
+                <div class="flex gap-3 text-[9.5px] text-slate-500 mb-3"><span><span class="inline-block w-2.5 h-0.5 bg-cyan-400 align-middle mr-1"></span>Kötés alatt</span><span><span class="inline-block w-2.5 h-0.5 bg-slate-500 align-middle mr-1"></span>Zárás után</span><span>▲ belépés ● kilépés</span></div>` : ''}
                 <div class="text-[11px] text-slate-400 space-y-0.5 mb-3">${extra}</div>
+                <div id="trade-ai-review" class="hidden mb-3 rounded-lg bg-neon-purple/[0.07] border border-neon-purple/30 p-3 text-[11.5px] text-slate-200 leading-relaxed"></div>
+                <button type="button" id="trade-ai-review-btn" onclick="reviewTradeWithAi('${h.id}')" class="w-full mb-2 py-2.5 rounded-xl text-xs font-bold border border-neon-purple/40 text-purple-300">🤖 AI értékelés erről a kötésről</button>
                 <p class="text-xs text-amber-300 mb-4"><i class="fa-solid fa-lightbulb mr-1"></i>${verdict}</p>
                 <button type="button" onclick="miniQuizClose()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Rendben</button>`;
             document.getElementById('mini-quiz-modal').classList.remove('hidden');
+            drawTradeReplay(w);
+        }
+
+        // ================= KÖTÉS-VISSZAJÁTSZÁS (mini grafikon) =================
+        function drawTradeReplay(w) {
+            const c = document.getElementById('whatif-replay-canvas'); if (!c || !w || !w.path || w.path.length < 2) return;
+            const g = c.getContext('2d'), W = c.width, H = c.height, pad = 18;
+            const all = w.path.concat(w.post || []);
+            const ys = all.map(x => x[1]).concat([w.sl, w.tp].filter(v => v > 0));
+            let lo = Math.min(...ys), hi = Math.max(...ys); if (hi - lo < 1e-9) { hi += 1; lo -= 1; }
+            const t0 = all[0][0], t1 = Math.max(all[all.length - 1][0], t0 + 1);
+            const X = t => pad + (t - t0) / (t1 - t0) * (W - 2 * pad), Y = v => H - pad - (v - lo) / (hi - lo) * (H - 2 * pad);
+            g.clearRect(0, 0, W, H);
+            const hline = (v, col, lab) => { if (!(v > 0)) return; g.strokeStyle = col; g.setLineDash([5, 4]); g.lineWidth = 1; g.beginPath(); g.moveTo(pad, Y(v)); g.lineTo(W - pad, Y(v)); g.stroke(); g.setLineDash([]); g.fillStyle = col; g.font = '11px sans-serif'; g.fillText(lab, W - pad - 22, Y(v) - 3); };
+            hline(w.tp, 'rgba(34,197,94,0.8)', 'TP'); hline(w.sl, 'rgba(239,68,68,0.8)', 'SL');
+            const line = (pts, col) => { if (pts.length < 2) return; g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(X(p[0]), Y(p[1])) : g.moveTo(X(p[0]), Y(p[1]))); g.stroke(); };
+            line(w.path, '#22d3ee');
+            if (w.post && w.post.length) line([w.path[w.path.length - 1]].concat(w.post), '#64748b');
+            const e = w.path[0], x = w.path[w.path.length - 1];
+            g.fillStyle = w.side === 'long' ? '#22c55e' : '#ef4444'; g.beginPath(); g.moveTo(X(e[0]), Y(e[1]) - 7); g.lineTo(X(e[0]) - 6, Y(e[1]) + 5); g.lineTo(X(e[0]) + 6, Y(e[1]) + 5); g.fill();
+            g.fillStyle = '#fbbf24'; g.beginPath(); g.arc(X(x[0]), Y(x[1]), 5, 0, Math.PI * 2); g.fill();
+        }
+
+        // ================= KÖTÉSENKÉNTI AI-ÉRTÉKELÉS =================
+        // Bejelentkezve az AI (askAiOneShot) értékel; vendégként / hiba esetén
+        // szabályalapú helyi értékelés (stop, R:R, tartási idő, zárás utáni ár).
+        function localTradeReview(h) {
+            const w = h.whatIf || {}, pnl = Number(h.pnl) || 0, out = [];
+            const holdMin = w.openedAt && h.closedAt ? Math.round((h.closedAt - w.openedAt) / 60000) : null;
+            if (!w.sl) out.push('❗ Stop-loss nélkül nyitottad — egy rossz mozgás az egész margót vihette volna. Mindig legyen stop.');
+            else out.push('✅ Volt stop-loss — ez a legfontosabb szokás.');
+            if (w.sl && w.tp && w.entry) { const rr = Math.abs(w.tp - w.entry) / Math.max(1e-9, Math.abs(w.entry - w.sl)); out.push(rr >= 1.5 ? `✅ Jó kockázat/hozam arány (1:${rr.toFixed(1)}).` : `⚠️ Gyenge kockázat/hozam arány (1:${rr.toFixed(1)}) — legalább 1:1,5 a cél.`); }
+            const hold = whatIfPnl(w, w.last || w.exit);
+            if (pnl > 0 && hold > pnl * 1.5) out.push('📈 Korán vetted ki a nyereséget — azóta jóval tovább ment. Próbálj részleges zárást vagy követő stopot.');
+            if (pnl < 0 && h.reason && /stop/i.test(h.reason) && hold > 0) out.push('🔁 A stop kiütött, aztán megfordult az ár — lehet, hogy túl szoros volt (pl. ATR alapján tedd).');
+            if (pnl < 0 && !/stop|likvid/i.test(h.reason || '')) out.push('🧠 Kézzel zártál veszteségben — terv szerint, vagy félelemből? Írd be a naplóba.');
+            if (holdMin !== null) out.push(`⏱️ Tartási idő: ${holdMin < 1 ? '1 percnél rövidebb' : holdMin + ' perc'}.`);
+            if (h.checklist === false) out.push('📋 Az ellenőrzőlista nem teljesült ennél a kötésnél.');
+            return out.join('\n');
+        }
+        async function reviewTradeWithAi(id) {
+            const h = tradeHistory.find(x => x.id === id); if (!h) return;
+            const box = document.getElementById('trade-ai-review'), btn = document.getElementById('trade-ai-review-btn');
+            if (!box) return;
+            box.classList.remove('hidden'); box.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Értékelem…'; if (btn) btn.disabled = true;
+            const w = h.whatIf || {};
+            const facts = `Eszköz: ${h.asset}, irány: ${h.side}, belépő: ${w.entry}, kilépő: ${w.exit}, méret: ${w.amount} USDT, tőkeáttétel: ${w.lev}x, SL: ${w.sl || 'nincs'}, TP: ${w.tp || 'nincs'}, eredmény: ${Number(h.pnl).toFixed(2)} USD, zárás oka: ${h.reason || '-'}, tartási idő: ${w.openedAt && h.closedAt ? Math.round((h.closedAt - w.openedAt) / 60000) + ' perc' : 'ismeretlen'}, zárás utáni max/min ár: ${w.hi}/${w.lo}, ellenőrzőlista: ${h.checklist === true ? 'teljesült' : h.checklist === false ? 'nem teljesült' : 'nem használta'}.`;
+            const prompt = 'Kereskedés-oktató vagy. Értékeld röviden (max. 5 felsorolásjel, magyarul) ezt a SZIMULÁLT kötést tanulási szempontból: mi volt jó, mi nem, és egy konkrét javaslat a következőre. Ne adj befektetési tanácsot.\n' + facts;
+            let reply = null;
+            try { const r = await askAiOneShot(prompt); reply = r && r.reply; } catch (e) {}
+            if (!reply) reply = localTradeReview(h);
+            box.innerHTML = escapeHtml(reply).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+            if (btn) btn.disabled = false;
         }
 
         function renderHistory() {
