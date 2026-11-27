@@ -49000,7 +49000,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 row('🔥', (streakState && streakState.count || 1) + ' napos sorozat', '🧊 Sorozat-védő: ' + freezes + '/' + (typeof STREAK_FREEZE_MAX !== 'undefined' ? STREAK_FREEZE_MAX : 2), '') +
                 row('🎯', 'Napi kihívások: ' + doneCh + '/' + tpl.length, claimable ? claimable + ' jutalom átvehető' : (doneCh === tpl.length ? 'Mind kész — gratulálunk!' : 'Teljesítsd őket XP-ért'),
                     btn(claimable ? 'Átvétel' : 'Megnézem', "switchMobileTab('progress'); setTimeout(function(){ setProgressTab('ov'); }, 30)", !!claimable)) +
-                (ev ? row(ev.icon, escapeHtml(ev.name), fmtLocalDateTime(ev.at) + (evSoon ? ' · ' + fmtCountdown(ev.at - Date.now()) + ' múlva' : ''), '') : '');
+                (ev ? row(ev.icon, escapeHtml(ev.name), fmtLocalDateTime(ev.at) + (evSoon ? ' · ' + fmtCountdown(ev.at - Date.now()) + ' múlva' : ''), '') : '') +
+                (() => { const se = typeof activeSeasonalEvent === 'function' ? activeSeasonalEvent() : null; if (!se) return ''; const st = seasonalState(se.key);
+                    return row(se.icon, escapeHtml(se.title), st.claimed ? 'Jutalom átvéve ✓' : st.xp + ' / ' + se.xp + ' XP', st.xp >= se.xp && !st.claimed ? btn('+' + se.reward + ' coin', 'claimSeasonalReward()', true) : ''); })();
         }
 
         document.addEventListener('DOMContentLoaded', () => setTimeout(renderHomeToday, 400));
@@ -49012,6 +49014,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['📚', 'Stratégia-könyvtár', 'stratégia könyvtár ema rsi macd bollinger kitörés pullback orb', `openStrategyLibrary()`],
             ['🖼️', 'Avatár-keretek', 'avatár keret profilkép coin vásárlás bolt', `openAvatarFrames()`],
             ['📲', 'Telepítés iPhone-ra', 'telepítés iphone ipad ios kezdőképernyő app', `openIosInstallGuide()`],
             ['📍', 'Grafikon-feladatok', 'grafikon feladat támasz ellenállás koppints gyakorlás', `switchMobileTab('academy'); setTimeout(startChartTasks, 60)`],
@@ -50891,6 +50894,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function awardAcademyXP(amount) {
             const prevBadge = getCurrentBadge();
             academyXP += amount;
+            if (typeof seasonalAddXp === 'function') seasonalAddXp(amount);
             if (typeof sessionXpGained !== 'undefined') sessionXpGained += amount;
             const _wxEl = document.getElementById('home-weekly-xp'); const _wxNum = document.getElementById('home-weekly-xp-num');
             if (_wxEl && typeof sessionXpGained !== 'undefined' && sessionXpGained > 0) { _wxEl.classList.remove('hidden'); if (_wxNum) _wxNum.textContent = sessionXpGained; }
@@ -57370,6 +57374,115 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
         })();
 
+        // ---------- Stratégia-könyvtár ----------
+        // Oktatási leírások: szabályok, mikor működik, buktatók — és egy
+        // gombbal kipróbálható a MEGLÉVŐ backtesterben vagy megnyitható a lecke.
+        const STRATEGY_LIBRARY = [
+            { id: 'ema', icon: '📈', name: 'EMA-keresztezés', type: 'Trendkövető', lesson: 'Mozgóátlagok (EMA/SMA)', bt: 'ema',
+              rules: ['Vétel: a gyors EMA (pl. 20) felfelé keresztezi a lassút (pl. 50).', 'Kiszállás: visszakeresztezés lefelé, vagy stop-loss az utolsó mélypont alatt.'],
+              works: 'Erős, tartós trendekben.', fails: 'Oldalazó piacon sok hamis jelzés („fűrészelés”).' },
+            { id: 'rsi', icon: '🔄', name: 'RSI visszatérés', type: 'Ellentrend (mean-reversion)', lesson: 'RSI Indikátor', bt: 'rsi',
+              rules: ['Vétel: RSI 30 alatt (túladott), majd visszatér fölé.', 'Kiszállás: RSI 50–70 körül, stop az utolsó mélypont alatt.'],
+              works: 'Oldalazó, sávban mozgó piacon.', fails: 'Erős trendben az RSI sokáig „túladott” maradhat — a zuhanó kés.' },
+            { id: 'boll', icon: '🎯', name: 'Bollinger-szalag visszatérés', type: 'Ellentrend (mean-reversion)', lesson: 'Bollinger Szalagok', bt: 'bollinger',
+              rules: ['Vétel: az ár az alsó szalag alá szúr, majd visszazár a szalagon belül.', 'Kiszállás: a középső vonalnál (20-as átlag).'],
+              works: 'Nyugodt, sávos piacon.', fails: 'Kitöréskor az ár a szalag mentén „sétál” — ott ez veszteséges.' },
+            { id: 'macd', icon: '⚡', name: 'MACD-keresztezés', type: 'Momentum', lesson: 'MACD Indikátor', bt: 'macd',
+              rules: ['Vétel: a MACD-vonal felfelé keresztezi a jelzővonalat.', 'Erősebb jel, ha a nullvonal felett történik.'],
+              works: 'Lendületes mozgások elején.', fails: 'Késik — a mozgás egy része már elmegy, mire jelez.' },
+            { id: 'orb', icon: '🚀', name: 'Nyitási sáv kitörése (ORB)', type: 'Kitörés', lesson: 'Opening Range Breakout (ORB) Stratégia', bt: null,
+              rules: ['Jelöld az első 15–30 perc csúcsát és mélypontját.', 'Vétel a csúcs feletti zárásnál, stop a sáv közepénél vagy aljánál.'],
+              works: 'Hírnapokon, nagy nyitási forgalomnál.', fails: 'Csendes napokon a kitörés gyakran visszafordul (hamis kitörés).' },
+            { id: 'pullback', icon: '↩️', name: 'Trend-visszahúzódás', type: 'Trendkövető', lesson: 'Throwback és Pullback Fogalma', bt: null,
+              rules: ['Csak a trend irányába: emelkedő trendben vásárolj a visszaeséskor (pl. a 20-as EMA-nál vagy egy Fibonacci-szintnél).', 'Stop a visszahúzódás mélypontja alá.'],
+              works: 'Tiszta, rendezett trendben.', fails: 'Ha a „visszahúzódás” valójában trendforduló — ezért kell a stop.' }
+        ];
+        function openStrategyLibrary(openId) {
+            miniQuiz = null; chartTask = null; microLesson = null;
+            document.getElementById('mini-quiz-title').textContent = '📚 Stratégia-könyvtár';
+            document.getElementById('mini-quiz-body').innerHTML = `<p class="text-[11px] text-slate-400 mb-3">Egyszerű, ismert stratégiák — szabályok, mikor működnek és mikor nem. Próbáld ki őket a backtesterben, mielőtt a szimulátorban használod. <span class="text-slate-500">Oktatási célra, nem befektetési tanács.</span></p>
+                <div class="space-y-2">${STRATEGY_LIBRARY.map(st => `<details class="rounded-xl border border-dark-750 bg-dark-850/50"${st.id === openId ? ' open' : ''}>
+                    <summary class="cursor-pointer list-none px-3 py-2.5 flex items-center gap-3"><span class="text-lg">${st.icon}</span><span class="flex-1 min-w-0"><span class="block text-xs font-bold text-white">${st.name}</span><span class="block text-[10px] text-slate-500">${st.type}</span></span><i class="fa-solid fa-chevron-down text-[10px] text-slate-500"></i></summary>
+                    <div class="px-3 pb-3 text-[11.5px] text-slate-300 space-y-2">
+                        <ul class="list-disc pl-4 space-y-1">${st.rules.map(r => `<li>${r}</li>`).join('')}</ul>
+                        <div><span class="text-neon-green font-bold">Működik:</span> ${st.works}</div>
+                        <div><span class="text-amber-300 font-bold">Buktató:</span> ${st.fails}</div>
+                        <div class="flex gap-2 pt-1">${st.bt ? `<button type="button" onclick="strategyBacktest('${st.bt}')" class="flex-1 py-2 rounded-lg text-[11px] font-bold bg-neon-purple/20 border border-neon-purple/40 text-purple-200">🧪 Backtest</button>` : ''}
+                        <button type="button" onclick="strategyOpenLesson('${st.id}')" class="flex-1 py-2 rounded-lg text-[11px] font-bold border border-dark-700 text-slate-300">📖 Lecke</button></div>
+                    </div></details>`).join('')}</div>`;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+        }
+        function strategyBacktest(bt) {
+            miniQuizClose();
+            if (window.innerWidth < 1024 && typeof switchMobileTab === 'function') switchMobileTab('trade');
+            setTimeout(() => {
+                openToolModal('backtest-modal'); renderBacktestAssetLabel();
+                const sel = document.getElementById('backtest-strategy');
+                if (sel && [...sel.options].some(o => o.value === bt)) { sel.value = bt; renderBacktestStrategyInputs(); }
+            }, 60);
+        }
+        function strategyOpenLesson(id) {
+            const st = STRATEGY_LIBRARY.find(x => x.id === id); if (!st) return;
+            const li = LESSONS_DATA.findIndex(l => l.t === st.lesson);
+            if (li < 0) { showNotification('Ehhez a stratégiához nincs külön lecke.'); return; }
+            miniQuizClose();
+            if (isLessonLocked(LESSONS_DATA[li])) { openPremiumModal(LESSONS_DATA[li]); return; }
+            if (window.innerWidth < 1024 && typeof switchMobileTab === 'function') switchMobileTab('academy');
+            if (typeof setAcademyMode === 'function') setAcademyMode('lessons');
+            academyModule = LESSONS_DATA[li].m; openAcademyLesson(li);
+        }
+
+        // ---------- Szezonális események ----------
+        // Dátumhoz kötött, időszakos XP-kihívás egyszeri coin-jutalommal.
+        // A haladás az esemény alatt szerzett XP (awardAcademyXP számolja);
+        // eszközönkénti állapot (localStorage), mint a napi kihívásoknál.
+        const SEASONAL_EVENTS = [
+            { id: 'fomo', from: [11, 23], to: [12, 1], icon: '🛍️', title: 'FOMO-mentes hét', desc: 'Black Friday idején a legnehezebb nem kapkodni — gyűjts 300 XP-t nyugodt tanulással.', xp: 300, reward: 100 },
+            { id: 'advent', from: [12, 2], to: [12, 24], icon: '🎄', title: 'Adventi kihívás', desc: 'Gyűjts 1000 XP-t karácsonyig.', xp: 1000, reward: 250 },
+            { id: 'newyear', from: [12, 26], to: [1, 7], icon: '🎆', title: 'Új év, új terv', desc: 'Kezdd jól az évet: 500 XP az ünnepek alatt.', xp: 500, reward: 150 },
+            { id: 'spring', from: [3, 20], to: [4, 3], icon: '🌱', title: 'Tavaszi újrakezdés', desc: 'Két hét, 600 XP.', xp: 600, reward: 150 },
+            { id: 'summer', from: [7, 1], to: [7, 14], icon: '☀️', title: 'Nyári tábor', desc: 'Két hét, 700 XP.', xp: 700, reward: 180 },
+            { id: 'halloween', from: [10, 25], to: [10, 31], icon: '🎃', title: 'Rémes gyertyák hete', desc: 'Egy hét, 350 XP — a „fekete gyertyák” se ijesszenek meg.', xp: 350, reward: 100 }
+        ];
+        function activeSeasonalEvent(now) {
+            const d = now ? new Date(now) : new Date(); const y = d.getFullYear();
+            for (const ev of SEASONAL_EVENTS) {
+                const wraps = ev.to[0] < ev.from[0];
+                const years = wraps ? (d.getMonth() + 1 <= ev.to[0] ? [y - 1] : [y]) : [y];
+                for (const sy of years) {
+                    const start = new Date(sy, ev.from[0] - 1, ev.from[1]), end = new Date(wraps ? sy + 1 : sy, ev.to[0] - 1, ev.to[1], 23, 59, 59);
+                    if (d >= start && d <= end) return { ...ev, key: ev.id + '-' + sy, end };
+                }
+            }
+            return null;
+        }
+        function seasonalState(key) { try { const v = JSON.parse(localStorage.getItem('chartolj_season') || 'null'); if (v && v.key === key) return v; } catch (e) {} return { key, xp: 0, claimed: false }; }
+        function seasonalAddXp(n) {
+            const ev = activeSeasonalEvent(); if (!ev || !(n > 0)) return;
+            const st = seasonalState(ev.key); if (st.claimed) return;
+            const before = st.xp; st.xp = Math.min(ev.xp, st.xp + n);
+            try { localStorage.setItem('chartolj_season', JSON.stringify(st)); } catch (e) {}
+            if (before < ev.xp && st.xp >= ev.xp) showNotification(`${ev.icon} ${ev.title} teljesítve! Vedd át a(z) ${ev.reward} coin jutalmat.`);
+        }
+        function claimSeasonalReward() {
+            const ev = activeSeasonalEvent(); if (!ev) return;
+            const st = seasonalState(ev.key); if (st.claimed || st.xp < ev.xp) return;
+            st.claimed = true; try { localStorage.setItem('chartolj_season', JSON.stringify(st)); } catch (e) {}
+            if (typeof userCoins !== 'undefined') { userCoins += ev.reward; if (typeof saveAcademyState === 'function') saveAcademyState(); if (typeof updateCoinDisplay === 'function') updateCoinDisplay(); }
+            showNotification(`${ev.icon} +${ev.reward} coin — gratulálunk!`);
+            if (typeof renderHomeToday === 'function') renderHomeToday();
+            renderAcademyDailyCard();
+        }
+        function seasonalLineHtml() {
+            const ev = activeSeasonalEvent(); if (!ev) return '';
+            const st = seasonalState(ev.key), pct = Math.round(st.xp / ev.xp * 100), done = st.xp >= ev.xp;
+            const days = Math.max(0, Math.ceil((ev.end - Date.now()) / 86400000));
+            return `<div class="mt-2 pt-2 border-t border-dark-750/60"><div class="flex items-center justify-between gap-2 text-[10.5px]"><span class="font-bold text-white truncate">${ev.icon} ${ev.title}</span>
+                ${st.claimed ? '<span class="text-neon-green font-bold">Átvéve ✓</span>' : done ? `<button type="button" onclick="claimSeasonalReward()" class="shrink-0 px-2 py-0.5 rounded-md bg-amber-400 text-dark-950 font-bold">+${ev.reward} coin</button>` : `<span class="text-slate-400 shrink-0">${st.xp}/${ev.xp} XP · ${days} nap</span>`}</div>
+                <div class="h-1 rounded-full bg-dark-800 overflow-hidden mt-1"><div class="h-full bg-amber-400" style="width:${pct}%"></div></div>
+                <div class="text-[9.5px] text-slate-500 mt-0.5">${ev.desc}</div></div>`;
+        }
+
         // ---------- Napi 5 perc ----------
         // 1 új lecke (a tanár felolvassa) + az esedékes ismétlések. A lecke
         // befejezésekor az összegzés tovább vezet az Ismétléshez.
@@ -57403,7 +57516,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <button type="button" onclick="startFlashcards()" class="text-neon-cyan hover:underline">🃏 Szókártyák${flashDueCount() ? ' (' + flashDueCount() + ')' : ''}</button>
                     <button type="button" onclick="startChartTasks()" class="text-neon-cyan hover:underline">📍 Grafikon-feladatok</button>
                     <button type="button" onclick="startMicroLesson()" class="text-neon-cyan hover:underline">🎙️ 1 perces összefoglaló</button>
-                </div></div>`;
+                    <button type="button" onclick="openStrategyLibrary()" class="text-neon-cyan hover:underline">📚 Stratégiák</button>
+                </div>${seasonalLineHtml()}</div>`;
         }
         function startDailySession() {
             const li = dailyNextLessonIdx();
