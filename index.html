@@ -3921,6 +3921,7 @@
                      A cél, hogy a szabály ne csak egy elfelejtett dokumentum
                      legyen, hanem pont AZ ELŐTT jelenjen meg, amikor a döntés
                      valójában megtörténik. -->
+                <div id="macro-event-warning" class="hidden mb-2" role="status"></div>
                 <div id="order-plan-reminder" class="hidden"></div>
 
                 <!-- Execute Order Primary Button -->
@@ -50809,6 +50810,61 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             { icon: '🛢️', name: 'OPEC+ olajtermelési döntés', freq: 'Rendszertelen, évente több alkalommal', what: 'Az olajexportáló országok szövetsége (és szövetségesei) döntése a napi olajtermelési szintről.', why: 'Az olajkínálat közvetlenül befolyásolja az energiaárakat, ami begyűrűzik az inflációba és az energiaszektor részvényeibe.', impact: 'Termeléscsökkentés általában áremelkedést, -növelés áreséssel jár — az olaj árfolyama ilyenkor hirtelen ugorhat.' }
         ];
 
+        // ================= MAKRO-ESEMÉNY FIGYELMEZTETÉSEK (valós időpontok) =================
+        // Hivatalos forrásból ellenőrzött döntési napok (2026.11.27-én):
+        //  - Fed FOMC: federalreserve.gov/monetarypolicy/fomccalendars.htm — a
+        //    közlemény 14:00 New York-i idő szerint (a 2027.10.26–27-i ülés
+        //    stratégiai ülés, nem kamatdöntés, ezért kimarad; a 2027-es dátumok
+        //    a Fed szerint még megerősítésre várnak).
+        //  - EKB: ecb.europa.eu/press/calendars/mgcgc — döntés 14:15 frankfurti idő.
+        // A helyi időre váltást az Intl végzi (nyári/téli időszámítás-eltérések
+        // — pl. 2027. márciusban az USA már nyári időben van — helyesen kezelve).
+        // Frissítendő évente, amikor a jegybankok közzéteszik a következő évet.
+        const MACRO_SCHEDULE = [
+            { icon: '🏦', name: 'Fed kamatdöntés (FOMC)', tz: 'America/New_York', time: '14:00',
+              dates: ['2026-12-09', '2027-01-27', '2027-03-17', '2027-04-28', '2027-06-09', '2027-07-28', '2027-09-15', '2027-11-17'] },
+            { icon: '🇪🇺', name: 'EKB kamatdöntés', tz: 'Europe/Berlin', time: '14:15',
+              dates: ['2026-12-17', '2027-02-04', '2027-03-18', '2027-04-29', '2027-06-10', '2027-07-22', '2027-09-09', '2027-10-28', '2027-12-16'] }
+        ];
+        // 'ÉÉÉÉ-HH-NN' + 'ÓÓ:PP' egy adott IANA időzónában -> UTC időbélyeg.
+        function zonedTimeToUtc(dateStr, timeStr, tz) {
+            const [y, mo, d] = dateStr.split('-').map(Number), [h, mi] = timeStr.split(':').map(Number);
+            const guess = Date.UTC(y, mo - 1, d, h, mi);
+            const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const parts = Object.fromEntries(fmt.formatToParts(new Date(guess)).map(p => [p.type, p.value]));
+            const asTz = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute);
+            return guess - (asTz - guess);
+        }
+        function upcomingMacroEvents(now, limit) {
+            now = now || Date.now();
+            const out = [];
+            MACRO_SCHEDULE.forEach(ev => ev.dates.forEach(d => {
+                const at = zonedTimeToUtc(d, ev.time, ev.tz);
+                if (at > now - 60 * 60000) out.push({ icon: ev.icon, name: ev.name, at });
+            }));
+            return out.sort((a, b) => a.at - b.at).slice(0, limit || 6);
+        }
+        function fmtLocalDateTime(ts) {
+            return new Date(ts).toLocaleString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+        function fmtCountdown(ms) {
+            const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60);
+            return h > 0 ? `${h} óra ${m % 60} perc` : `${m} perc`;
+        }
+        function renderMacroEventWarning() {
+            const el = document.getElementById('macro-event-warning'); if (!el) return;
+            const now = Date.now();
+            const ev = upcomingMacroEvents(now, 3).find(e => e.at - now <= 24 * 3600000 && now - e.at <= 60 * 60000);
+            if (!ev) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+            const past = now >= ev.at;
+            el.classList.remove('hidden');
+            el.innerHTML = `<div class="rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-[10.5px] text-amber-200 leading-snug">
+                <strong>${ev.icon} ${escapeHtml(ev.name)}</strong> — ${past ? 'épp most volt (' + fmtLocalDateTime(ev.at) + ')' : fmtLocalDateTime(ev.at) + ', ' + fmtCountdown(ev.at - now) + ' múlva'}.
+                ${past ? 'Az ezt követő órában szokatlanul nagy kilengések lehetnek.' : 'A döntés körül hirtelen, nagy kilengések jöhetnek — szűkebb méret vagy kivárás ajánlott.'}</div>`;
+        }
+        setInterval(renderMacroEventWarning, 60000);
+        document.addEventListener('DOMContentLoaded', renderMacroEventWarning);
+
         let expandedMacroEvent = null;
         function toggleMacroEvent(idx) {
             expandedMacroEvent = expandedMacroEvent === idx ? null : idx;
@@ -50818,7 +50874,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function renderMacroCalendar() {
             const el = document.getElementById('macro-calendar-list');
             if (!el) return;
-            el.innerHTML = MACRO_EVENTS.map((ev, i) => {
+            const up = upcomingMacroEvents(Date.now(), 6);
+            const upHtml = up.length ? `<div class="glass-card rounded-xl p-3 mb-1"><div class="text-[10px] font-bold text-slate-400 uppercase mb-2"><i class="fa-regular fa-calendar mr-1"></i>Következő kamatdöntések (helyi idő)</div>
+                ${up.map(e => `<div class="flex items-center justify-between text-[11.5px] py-1 border-b border-dark-800 last:border-0"><span class="text-white">${e.icon} ${escapeHtml(e.name)}</span><span class="font-mono text-slate-400">${fmtLocalDateTime(e.at)}</span></div>`).join('')}
+                <div class="text-[9.5px] text-slate-600 mt-1.5">Forrás: Fed (federalreserve.gov), EKB (ecb.europa.eu). A kereskedési panelen 24 órával előtte figyelmeztetünk.</div></div>` : '';
+            el.innerHTML = upHtml + MACRO_EVENTS.map((ev, i) => {
                 const open = expandedMacroEvent === i;
                 return `
                 <div class="glass-card rounded-xl overflow-hidden">
@@ -58324,7 +58384,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     pnl: p.pnl,
                     reason: reason || 'Manuális zárás',
                     note: note || '',
-                    checklist: (p.checklist === true || p.checklist === false) ? p.checklist : null
+                    checklist: (p.checklist === true || p.checklist === false) ? p.checklist : null,
+                    whatIf: whatIfInit(p, p.amount, p.currentPrice ?? currentAsset.price)
                 });
                 persistSimTrade(tradeHistory[tradeHistory.length - 1]);
 
@@ -58378,7 +58439,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 pnl: realizedPnl,
                 reason: (reason || 'Manuális zárás') + ` (${pct}% részleges)`,
                 note: note || '',
-                    checklist: (p.checklist === true || p.checklist === false) ? p.checklist : null
+                    checklist: (p.checklist === true || p.checklist === false) ? p.checklist : null,
+                    whatIf: whatIfInit(p, realizedAmount, p.currentPrice ?? currentAsset.price)
             });
             persistSimTrade(tradeHistory[tradeHistory.length - 1]);
 
@@ -58558,6 +58620,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             });
 
             renderPositions();
+            trackWhatIf();
         }
 
         // Akadálymentességi elv (104. pont): a nyereség/veszteség SOSEM
@@ -58748,6 +58811,66 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             tbody.innerHTML = pendingRows + positionRows;
         }
 
+        // ================= "MI LETT VOLNA, HA…" — utólagos elemzés lezárás után =================
+        // Lezáráskor elmentjük a belépőt, méretet, tőkeáttételt, SL/TP-t, és a
+        // zárás utáni 4 órában követjük az eszköz árát (max/min/utolsó). Ebből
+        // számoljuk: mennyit hozott volna a tartás, mi lett volna a legjobb és a
+        // legrosszabb kiszállás, és elérte volna-e az eredeti TP-t / SL-t.
+        // Tisztán megjelenítő funkció: az egyenleget és a kötést nem módosítja.
+        const WHATIF_TRACK_MS = 4 * 3600 * 1000;
+        function whatIfInit(p, amount, exitPrice) {
+            if (!p || !(p.entryPrice > 0) || !(amount > 0) || !(exitPrice > 0)) return null;
+            return { entry: p.entryPrice, exit: exitPrice, amount, lev: p.leverage || 1, side: p.side, sl: p.sl || null, tp: p.tp || null,
+                     hi: exitPrice, lo: exitPrice, last: exitPrice, since: Date.now(), tpHit: false, slHit: false };
+        }
+        function whatIfPnl(w, price) {
+            let diff = price - w.entry; if (w.side === 'short') diff = -diff;
+            return w.amount * (diff / w.entry) * w.lev;
+        }
+        function trackWhatIf() {
+            const now = Date.now();
+            for (let k = tradeHistory.length - 1, n = 0; k >= 0 && n < 30; k--, n++) {
+                const h = tradeHistory[k], w = h && h.whatIf;
+                if (!w || now - w.since > WHATIF_TRACK_MS) continue;
+                const price = (h.asset === currentAsset.symbol) ? currentAsset.price : (typeof livePrices !== 'undefined' ? livePrices[h.asset] : null);
+                if (!(price > 0)) continue;
+                w.last = price; if (price > w.hi) w.hi = price; if (price < w.lo) w.lo = price;
+                if (w.tp) { if ((w.side === 'long' && price >= w.tp) || (w.side === 'short' && price <= w.tp)) w.tpHit = w.tpHit || !w.slHit; }
+                if (w.sl) { if ((w.side === 'long' && price <= w.sl) || (w.side === 'short' && price >= w.sl)) w.slHit = w.slHit || !w.tpHit; }
+            }
+        }
+        function openWhatIf(id) {
+            const h = tradeHistory.find(x => x.id === id); if (!h || !h.whatIf) return;
+            const w = h.whatIf;
+            const real = Number(h.pnl) || 0;
+            const hold = whatIfPnl(w, w.last);
+            const best = Math.max(whatIfPnl(w, w.hi), whatIfPnl(w, w.lo));
+            const worst = Math.min(whatIfPnl(w, w.hi), whatIfPnl(w, w.lo));
+            const mins = Math.round((Math.min(Date.now(), w.since + WHATIF_TRACK_MS) - w.since) / 60000);
+            const diff = hold - real;
+            let verdict;
+            if (mins < 2) verdict = 'Még túl friss a zárás — nézz vissza pár perc múlva, addig követjük az árat.';
+            else if (diff > Math.abs(real) * 0.5 && diff > 1) verdict = 'Ha tovább tartod, többet hozott volna. Gondold át: a kiszállásod tervezett volt, vagy félelemből zártál?';
+            else if (diff < -Math.max(Math.abs(real) * 0.5, 1)) verdict = 'Jó döntés volt kiszállni — azóta rosszabb irányba ment az ár.';
+            else verdict = 'Nagyjából mindegy lett volna — a kiszállásod rendben volt.';
+            const rowc = v => v > 0 ? 'text-neon-green' : v < 0 ? 'text-neon-red' : 'text-slate-300';
+            const extra = (w.tp ? `<div>Eredeti TP ($${w.tp.toFixed(2)}): ${w.tpHit ? '<span class="text-neon-green font-bold">azóta elérte volna</span>' : 'még nem érte el'}</div>` : '') +
+                          (w.sl ? `<div>Eredeti SL ($${w.sl.toFixed(2)}): ${w.slHit ? '<span class="text-neon-red font-bold">azóta kiütötte volna</span>' : 'nem ütötte volna ki'}</div>` : '');
+            document.getElementById('mini-quiz-title').textContent = 'Mi lett volna, ha… — ' + h.asset + ' ' + String(h.side).toUpperCase();
+            document.getElementById('mini-quiz-body').innerHTML = `
+                <p class="text-[11px] text-slate-500 mb-3">A zárás utáni ${mins} perc árai alapján (legfeljebb 4 órát követünk).</p>
+                <div class="grid grid-cols-2 gap-2 mb-3 text-center">
+                    <div class="rounded-lg bg-dark-900 border border-dark-750 p-2"><div class="text-sm font-extrabold ${rowc(real)}">${formatPnl(real)}</div><div class="text-[9px] text-slate-500 uppercase font-bold">Tényleges</div></div>
+                    <div class="rounded-lg bg-dark-900 border border-dark-750 p-2"><div class="text-sm font-extrabold ${rowc(hold)}">${formatPnl(hold)}</div><div class="text-[9px] text-slate-500 uppercase font-bold">Ha most is tartod</div></div>
+                    <div class="rounded-lg bg-dark-900 border border-dark-750 p-2"><div class="text-sm font-extrabold ${rowc(best)}">${formatPnl(best)}</div><div class="text-[9px] text-slate-500 uppercase font-bold">Legjobb kiszállás</div></div>
+                    <div class="rounded-lg bg-dark-900 border border-dark-750 p-2"><div class="text-sm font-extrabold ${rowc(worst)}">${formatPnl(worst)}</div><div class="text-[9px] text-slate-500 uppercase font-bold">Legrosszabb kiszállás</div></div>
+                </div>
+                <div class="text-[11px] text-slate-400 space-y-0.5 mb-3">${extra}</div>
+                <p class="text-xs text-amber-300 mb-4"><i class="fa-solid fa-lightbulb mr-1"></i>${verdict}</p>
+                <button type="button" onclick="miniQuizClose()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950">Rendben</button>`;
+            document.getElementById('mini-quiz-modal').classList.remove('hidden');
+        }
+
         function renderHistory() {
             const tbody = document.getElementById('history-table-body');
 
@@ -58794,6 +58917,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2 text-[10px] text-slate-400">${h.reason || 'Manuális zárás'}</td>
                         <td class="py-2 text-right whitespace-nowrap">
                             ${h.pnl > 0 ? `<button onclick="shareTradeCard('${h.id}')" title="Eredmény megosztása képként" aria-label="Eredmény megosztása képként" class="text-slate-600 hover:text-amber-400 transition mr-2"><i class="fa-solid fa-share-nodes text-xs"></i></button>` : ''}
+                            ${h.whatIf ? `<button onclick="openWhatIf('${h.id}')" title="Mi lett volna, ha…" aria-label="Mi lett volna, ha tovább tartod" class="text-slate-600 hover:text-neon-purple transition mr-2"><i class="fa-solid fa-code-branch text-xs"></i></button>` : ''}
                             ${h.note ? '' : `<button onclick="editTradeNote('${h.id}')" title="Jegyzet hozzáadása" aria-label="Jegyzet hozzáadása" class="text-slate-600 hover:text-neon-cyan transition"><i class="fa-regular fa-note-sticky text-xs"></i></button>`}
                         </td>
                     </tr>
