@@ -17025,13 +17025,18 @@ Mean-reversion,2.5</textarea>
              LÁTHATATLANUL (csak a setAcademyMode() meglévő szinkron-
              logikájának kell, ami .value-t állít rajta — ehhez semmit
              nem kellett a JS-ben módosítani, 0 kockázat). -->
-        <div class="lg:hidden h-11 bg-dark-950/80 border-b border-dark-750/40 px-4 flex items-center shrink-0">
-            <button onclick="openAcademyModeSheet()" id="academy-mode-bar-btn" class="w-full bg-dark-900 border border-dark-750 rounded-xl px-3 py-2 text-sm font-bold text-white flex items-center justify-between gap-2 active:border-neon-cyan/40 transition">
-                <span class="flex items-center gap-2 min-w-0">
-                    <span id="academy-mode-current-icon">📖</span>
-                    <span id="academy-mode-current-label" class="truncate">Leckék</span>
-                </span>
-                <i class="fa-solid fa-chevron-down text-[11px] text-slate-400 shrink-0"></i>
+        <div class="lg:hidden bg-dark-950/80 border-b border-dark-750/40 px-3 pt-2 pb-1.5 shrink-0" id="academy-mbar">
+            <div class="m-tabbar" role="tablist" aria-label="Akadémia részei" style="position:static">
+                <button type="button" role="tab" data-agroup="learn" aria-selected="true" onclick="setAcademyGroup('learn')">📖 Leckék</button>
+                <button type="button" role="tab" data-agroup="practice" aria-selected="false" onclick="setAcademyGroup('practice')">⚡ Gyakorlás</button>
+                <button type="button" role="tab" data-agroup="library" aria-selected="false" onclick="setAcademyGroup('library')">📚 Tudástár</button>
+            </div>
+            <div id="academy-mode-chips" class="flex gap-1.5 overflow-x-auto mt-1.5 pb-0.5" style="scrollbar-width:none"></div>
+            <!-- A korábbi mód-gomb (a teljes mód-listát nyitja) rejtve megmarad: a
+                 setAcademyMode() frissíti a benne lévő ikont/címkét. -->
+            <button onclick="openAcademyModeSheet()" id="academy-mode-bar-btn" class="hidden" tabindex="-1" aria-hidden="true">
+                <span id="academy-mode-current-icon">📖</span>
+                <span id="academy-mode-current-label">Leckék</span>
             </button>
             <select id="academy-mode-select-mobile" onchange="setAcademyMode(this.value)" class="sr-only" tabindex="-1" aria-hidden="true">
                 <option value="curriculum">Kezdő Tanterv</option>
@@ -48383,6 +48388,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             });
         }
         function updateMistakeBankBadge() {
+            try { renderAcademyModeChips(); } catch (e) { /* betöltés közben (TDZ) még nem elérhető — nem baj */ }
             const badge = document.getElementById('mistake-bank-badge');
             if (!badge) return;
             const n = getDueMistakeKeys().length; // csak az ESEDÉKES ismétlések számítanak (cselekvésre késztető szám)
@@ -50755,6 +50761,36 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             hungarian: { icon: '🏳️', label: 'Magyar Piac' },
             calendar: { icon: '📅', label: 'Makronaptár' },
         };
+        // ================= MOBIL AKADÉMIA: 3 lap + mód-chipek =================
+        // A 12 mód három csoportba rendezve; a kiválasztott csoport módjai
+        // görgethető chip-sorban. A tényleges váltás a meglévő setAcademyMode().
+        const ACADEMY_GROUPS = {
+            learn: ['lessons', 'curriculum'],
+            practice: ['drill', 'replay', 'review', 'mistakes', 'whatif', 'ai-analyzer'],
+            library: ['glossary', 'gallery', 'calendar', 'hungarian']
+        };
+        let academyGroup = 'learn';
+        function academyGroupOf(mode) { return Object.keys(ACADEMY_GROUPS).find(g => ACADEMY_GROUPS[g].includes(mode)) || 'learn'; }
+        function renderAcademyModeChips() {
+            const el = document.getElementById('academy-mode-chips'); if (!el) return;
+            document.querySelectorAll('#academy-mbar [data-agroup]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.agroup === academyGroup)));
+            el.innerHTML = ACADEMY_GROUPS[academyGroup].map(m => {
+                const meta = ACADEMY_MODE_META[m] || { icon: '', label: m };
+                const on = academyMode === m;
+                let cnt = 0;
+                try { if (m === 'review') cnt = getDueMistakeKeys().length; else if (m === 'mistakes') cnt = academyMistakes.size; } catch (e) {}
+                return `<button type="button" onclick="setAcademyMode('${m}')" aria-pressed="${on}" class="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border whitespace-nowrap ${on ? 'border-neon-cyan/60 bg-neon-cyan/10 text-neon-cyan' : 'border-dark-750 text-slate-400'}">${meta.icon} ${meta.label}${cnt ? ` <span class="ml-0.5 px-1.5 rounded-full bg-neon-red/80 text-white text-[9px]">${cnt}</span>` : ''}</button>`;
+            }).join('');
+        }
+        document.addEventListener('DOMContentLoaded', renderAcademyModeChips);
+        function setAcademyGroup(g) {
+            if (!ACADEMY_GROUPS[g]) return;
+            academyGroup = g;
+            // Csoportváltáskor az első módra ugrunk, kivéve ha már ebben a csoportban vagyunk.
+            if (!ACADEMY_GROUPS[g].includes(academyMode)) setAcademyMode(ACADEMY_GROUPS[g][0]);
+            else renderAcademyModeChips();
+        }
+
         function openAcademyModeSheet() {
             const sheet = document.getElementById('academy-mode-sheet');
             if (!sheet) return;
@@ -50831,6 +50867,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // badge-ről, kódból), a sáv mindig a tényleges aktuális módot
             // mutatja.
             if (typeof ACADEMY_MODE_META !== 'undefined' && ACADEMY_MODE_META[mode]) {
+                academyGroup = academyGroupOf(mode); renderAcademyModeChips();
                 const iconEl = document.getElementById('academy-mode-current-icon');
                 const labelEl = document.getElementById('academy-mode-current-label');
                 if (iconEl) iconEl.textContent = ACADEMY_MODE_META[mode].icon;
