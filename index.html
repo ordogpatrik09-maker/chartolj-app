@@ -1493,6 +1493,30 @@
         .ai-avatar-hair-spark:nth-child(2n) { animation-delay: 0.4s; }
         .ai-avatar-hair-spark:nth-child(3n) { animation-delay: 0.8s; }
         @keyframes aiAvatarSpark { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        /* JAVÍTÁS (overflow_sweep.js — a modal_numeric_safety_sweep.js
+           módszertanának kiegészítése egy, a textContent-regexen ALAPULÓ
+           szivárgás-kereséstől eltérő hibaosztállyal): extrém, de egyedileg
+           véges nagyságrendű (pl. ×1e20 skálázott bemenetsorozatból
+           kiszámolt) eredmény-értékek a korábbi javítások (pl. a
+           Gain-to-Pain Ratio "nyers tudományos jelölés" fixje) után már
+           HELYESEN ezres-tagolt, nem-exponenciális alakban jelennek meg
+           (.toLocaleString('en-US', {maximumFractionDigits: N})) — de egy
+           ilyen szám jegysorozata önmagában egyetlen, szóköz/kötőjel
+           nélküli "szó", amit a flex-elemek alapértelmezett
+           `min-width: auto` viselkedése miatt a böngésző SOSEM tör sort,
+           hanem kilógatja a konténeréből (vízszintes túlcsordulás mobil
+           nézőablakon). Mivel a Tailwind build-elt (purge-olt)
+           stíluslapja NEM tartalmazza a break-all/break-words
+           segédosztályokat (korábban semelyik elem sem használta őket),
+           egy saját, kézzel írt segédosztály szükséges. Csak akkor lép
+           életbe (tör sort jegyek között is), ha a tartalom amúgy nem
+           férne ki — rövid, normál eredményeknél vizuálisan semmit nem
+           változtat. Lásd az érintett kalkulátorok (certeq, linreg,
+           envelope, autoenv, chandelier, supertrend, adline,
+           wildersmooth, pathdep, histvolatr, hma, trailingstop, vp,
+           klinger, volumedelta) eredmény-sorain alkalmazva. */
+        .num-wrap-safe { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
 </style>
 </head>
 <body class="antialiased">
@@ -27160,11 +27184,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Várható hozam E[r]:</span><span class="text-white">${fmtPct3(meanPct)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Várható hozam E[r]:</span><span class="text-white num-wrap-safe">${fmtPct3(meanPct)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Szórás:</span><span class="text-white">${fmtPct3(stdDevPct)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Kockázatkerülési együttható (A):</span><span class="text-white">${AFmt}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Bizonyossági Egyenérték (CE):</span><span class="font-extrabold ${cePct >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtPct3Signed(cePct)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázati prémium (E[r] - CE):</span><span class="font-extrabold ${verdictColor} text-sm">${fmtPct3Signed(riskPremiumPct)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Bizonyossági Egyenérték (CE):</span><span class="font-extrabold ${cePct >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm num-wrap-safe">${fmtPct3Signed(cePct)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kockázati prémium (E[r] - CE):</span><span class="font-extrabold ${verdictColor} text-sm num-wrap-safe">${fmtPct3Signed(riskPremiumPct)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${verdictColor}">${verdict}</p>
             `;
@@ -28778,16 +28802,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.05] p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Végső A/D Line érték</div>
-                    <div class="text-xl font-extrabold text-neon-cyan">${finalAD >= 0 ? '+' : ''}${finalAD.toLocaleString('en-US', { maximumFractionDigits: 1 })}</div>
+                    <div class="text-xl font-extrabold text-neon-cyan num-wrap-safe">${finalAD >= 0 ? '+' : ''}${finalAD.toLocaleString('en-US', { maximumFractionDigits: 1 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Árfolyam-változás (teljes sorozat):</span>
-                        <span class="font-extrabold ${priceChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${priceChange >= 0 ? '+' : ''}${priceChange.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold ${priceChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm num-wrap-safe">${priceChange >= 0 ? '+' : ''}${priceChange.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">A/D Line-változás (teljes sorozat):</span>
-                        <span class="font-extrabold ${adChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${adChange >= 0 ? '+' : ''}${adChange.toLocaleString('en-US', { maximumFractionDigits: 1 })}</span>
+                        <span class="font-extrabold ${adChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm num-wrap-safe">${adChange >= 0 ? '+' : ''}${adChange.toLocaleString('en-US', { maximumFractionDigits: 1 })}</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -30859,15 +30883,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Felső sáv (jelenlegi bár):</span>
-                        <span class="font-extrabold text-neon-green text-sm">${upperAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-neon-green text-sm num-wrap-safe">${upperAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Regressziós érték (középvonal):</span>
-                        <span class="font-extrabold text-white text-sm">${regAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-white text-sm num-wrap-safe">${regAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Alsó sáv (jelenlegi bár):</span>
-                        <span class="font-extrabold text-neon-red text-sm">${lowerAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-neon-red text-sm num-wrap-safe">${lowerAtLast.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Lejtés (bárankénti ármozgás):</span>
@@ -30968,20 +30992,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Jelenlegi ár vs. sáv</div>
-                    <div class="text-xl font-extrabold ${colorClass}">${current.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
+                    <div class="text-xl font-extrabold ${colorClass} num-wrap-safe">${current.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Felső sáv (+${pctFmt}%):</span>
-                        <span class="font-extrabold text-neon-red text-sm">${upper.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-neon-red text-sm num-wrap-safe">${upper.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Középvonal (SMA-${period}):</span>
-                        <span class="font-extrabold text-white text-sm">${middle.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-white text-sm num-wrap-safe">${middle.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Alsó sáv (${pctFmtIsZero ? '' : '-'}${pctFmt}%):</span>
-                        <span class="font-extrabold text-neon-green text-sm">${lower.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-neon-green text-sm num-wrap-safe">${lower.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Eltérés a középvonaltól:</span>
@@ -31110,20 +31134,20 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.05] p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Jelenlegi ár vs. adaptív sáv</div>
-                    <div class="text-xl font-extrabold ${colorClass}">${current.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
+                    <div class="text-xl font-extrabold ${colorClass} num-wrap-safe">${current.toLocaleString('en-US', { maximumFractionDigits: 2 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Felső sáv (SMA +${bandPct.toFixed(2)}%):</span>
-                        <span class="font-extrabold text-neon-red text-sm">${upper.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-neon-red text-sm num-wrap-safe">${upper.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Középvonal (SMA-${period}):</span>
-                        <span class="font-extrabold text-white text-sm">${currentSma.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-white text-sm num-wrap-safe">${currentSma.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Alsó sáv (SMA -${bandPct.toFixed(2)}%):</span>
-                        <span class="font-extrabold text-neon-green text-sm">${lower.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-neon-green text-sm num-wrap-safe">${lower.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Automatikusan számolt sávszélesség:</span>
@@ -32600,9 +32624,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // "0" helyett.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">EMA34 (Volume Force):</span><span class="text-white">${zeroSafeRound(ema34Last, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA55 (Volume Force):</span><span class="text-white">${zeroSafeRound(ema55Last, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Klinger Oscillator (KVO):</span><span class="${colorClass} font-extrabold text-sm">${kvo >= 0 ? '+' : ''}${zeroSafeRound(kvo, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">EMA34 (Volume Force):</span><span class="text-white num-wrap-safe">${zeroSafeRound(ema34Last, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA55 (Volume Force):</span><span class="text-white num-wrap-safe">${zeroSafeRound(ema55Last, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Klinger Oscillator (KVO):</span><span class="${colorClass} font-extrabold text-sm num-wrap-safe">${kvo >= 0 ? '+' : ''}${zeroSafeRound(kvo, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -33422,7 +33446,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rowsHtml = last5.map((v, i) => {
                 const idxFromEnd = last5.length - i;
                 const label = idxFromEnd === 1 ? 'Utolsó (legfrissebb)' : `${idxFromEnd - 1} periódussal korábban`;
-                return `<div class="flex justify-between"><span class="text-slate-400">${label}:</span><span class="text-white">${v.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>`;
+                return `<div class="flex justify-between"><span class="text-slate-400">${label}:</span><span class="text-white num-wrap-safe">${v.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>`;
             }).join('');
 
             const trendNote = prevHMA === null
@@ -33441,9 +33465,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">HMA(${period}) — utolsó érték:</span><span class="text-fuchsia-400 font-extrabold text-sm">${lastHMA.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA(${period}) — összehasonlításhoz:</span><span class="text-white">${lastEMA.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó záróár:</span><span class="text-white">${lastClose.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">HMA(${period}) — utolsó érték:</span><span class="text-fuchsia-400 font-extrabold text-sm num-wrap-safe">${lastHMA.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">EMA(${period}) — összehasonlításhoz:</span><span class="text-white num-wrap-safe">${lastEMA.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó záróár:</span><span class="text-white num-wrap-safe">${lastClose.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-1 mb-3 font-mono text-[10.5px]">
                     <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Utolsó ${last5.length} HMA-érték</div>
@@ -34301,9 +34325,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Stop-távolság:</span><span class="text-white">${distanceLabel}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kezdő stop:</span><span class="text-white">${stops0Safe.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó/trigger stop:</span><span class="${colorClass} font-extrabold text-sm">${finalStopSafe.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Stop-távolság:</span><span class="text-white num-wrap-safe">${distanceLabel}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Kezdő stop:</span><span class="text-white num-wrap-safe">${stops0Safe.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Utolsó/trigger stop:</span><span class="${colorClass} font-extrabold text-sm num-wrap-safe">${finalStopSafe.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -36509,16 +36533,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const inVA = included.has(i);
                 const color = isPoc ? 'bg-amber-500' : (inVA ? 'bg-neon-cyan/60' : 'bg-slate-600');
                 return `<div class="flex items-center gap-2 text-[9px] font-mono">
-                    <span class="text-slate-400 w-20 text-right">${binLow.toLocaleString(undefined,{maximumFractionDigits:2})}-${binHigh.toLocaleString(undefined,{maximumFractionDigits:2})}</span>
+                    <span class="text-slate-400 w-20 text-right num-wrap-safe">${binLow.toLocaleString(undefined,{maximumFractionDigits:2})}-${binHigh.toLocaleString(undefined,{maximumFractionDigits:2})}</span>
                     <div class="flex-1 h-3 bg-dark-850 rounded"><div class="h-3 rounded ${color}" style="width:${pct}%"></div></div>
                 </div>`;
             }).reverse().join('');
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">POC (Point of Control):</span><span class="text-amber-400">${pocLow.toLocaleString(undefined,{maximumFractionDigits:4})} – ${pocHigh.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Value Area (70%):</span><span class="text-neon-cyan">${vaLow.toLocaleString(undefined,{maximumFractionDigits:4})} – ${vaHigh.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Teljes volumen:</span><span class="text-white">${totalVol.toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">POC (Point of Control):</span><span class="text-amber-400 num-wrap-safe">${pocLow.toLocaleString(undefined,{maximumFractionDigits:4})} – ${pocHigh.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Value Area (70%):</span><span class="text-neon-cyan num-wrap-safe">${vaLow.toLocaleString(undefined,{maximumFractionDigits:4})} – ${vaHigh.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Teljes volumen:</span><span class="text-white num-wrap-safe">${totalVol.toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>
                 </div>
                 <div class="space-y-1 mb-3">${barsHtml}</div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">A POC az a sáv, ahol a legtöbb volumen cserélt tulajdonost — ez gyakran mágnesként viselkedik, ahova az ár visszatér. A Value Area a teljes volumen 70%-át lefedő, a POC-ból kifelé bővülő sávtartomány — ezen kívül az ár jellemzően gyorsabban mozog, mert kevesebb kereskedő "véd" ott árszintet.</p>
@@ -37569,8 +37593,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const colorClass = deltas[i] >= 0 ? 'text-neon-green' : 'text-neon-red';
                 return `
                     <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
-                        <span class="text-slate-400">#${i + 1} (záróár ${r.close.toLocaleString('en-US', { maximumFractionDigits: 2 })}):</span>
-                        <span class="font-extrabold ${colorClass}">Δ ${deltas[i] >= 0 ? '+' : ''}${deltas[i].toLocaleString('en-US', { maximumFractionDigits: 0 })} · Kum. ${cums[i] >= 0 ? '+' : ''}${cums[i].toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                        <span class="text-slate-400 num-wrap-safe">#${i + 1} (záróár ${r.close.toLocaleString('en-US', { maximumFractionDigits: 2 })}):</span>
+                        <span class="font-extrabold ${colorClass} num-wrap-safe">Δ ${deltas[i] >= 0 ? '+' : ''}${deltas[i].toLocaleString('en-US', { maximumFractionDigits: 0 })} · Kum. ${cums[i] >= 0 ? '+' : ''}${cums[i].toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                     </div>
                 `;
             }).join('');
@@ -38394,7 +38418,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Supertrend érték:</span>
-                        <span class="font-extrabold ${colorClass} text-sm">${supertrendValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold ${colorClass} text-sm num-wrap-safe">${supertrendValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Trend iránya:</span>
@@ -38402,7 +38426,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Jelenlegi záróár:</span>
-                        <span class="font-extrabold text-white text-sm">${lastClose.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-white text-sm num-wrap-safe">${lastClose.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -38472,23 +38496,23 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Legmagasabb (${period} gyertya):</span>
-                        <span class="font-extrabold text-white text-sm">${highestHigh.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-white text-sm num-wrap-safe">${highestHigh.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Long Exit:</span>
-                        <span class="font-extrabold text-neon-green text-sm">${longExit.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-neon-green text-sm num-wrap-safe">${longExit.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Legalacsonyabb (${period} gyertya):</span>
-                        <span class="font-extrabold text-white text-sm">${lowestLow.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-white text-sm num-wrap-safe">${lowestLow.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Short Exit:</span>
-                        <span class="font-extrabold text-neon-red text-sm">${shortExit.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold text-neon-red text-sm num-wrap-safe">${shortExit.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Jelenlegi záróár:</span>
-                        <span class="font-extrabold ${colorClass} text-sm">${lastClose.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold ${colorClass} text-sm num-wrap-safe">${lastClose.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -39209,17 +39233,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div class="rounded-xl bg-neon-blue/5 border border-neon-blue/30 p-3">
                         <div class="text-[10px] text-neon-blue uppercase font-bold mb-1">Wilder-simítás (RMA)</div>
-                        <div class="text-lg font-extrabold text-white font-mono">${lastWilder.toLocaleString('en-US', { maximumFractionDigits: 4 })}</div>
+                        <div class="text-lg font-extrabold text-white font-mono num-wrap-safe">${lastWilder.toLocaleString('en-US', { maximumFractionDigits: 4 })}</div>
                         <div class="text-[9.5px] text-slate-500 mt-0.5">α = 1/${period} = ${wilderAlpha.toFixed(4)}</div>
                     </div>
                     <div class="rounded-xl bg-amber-400/5 border border-amber-400/30 p-3">
                         <div class="text-[10px] text-amber-400 uppercase font-bold mb-1">EMA (azonos periódus)</div>
-                        <div class="text-lg font-extrabold text-white font-mono">${lastEma.toLocaleString('en-US', { maximumFractionDigits: 4 })}</div>
+                        <div class="text-lg font-extrabold text-white font-mono num-wrap-safe">${lastEma.toLocaleString('en-US', { maximumFractionDigits: 4 })}</div>
                         <div class="text-[9.5px] text-slate-500 mt-0.5">α = 2/(${period}+1) = ${emaAlpha.toFixed(4)}</div>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-1.5 font-mono text-xs mb-3">
-                    <div class="flex justify-between"><span class="text-slate-400">Legutóbbi ár:</span><span class="text-slate-300">${lastPrice.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Legutóbbi ár:</span><span class="text-slate-300 num-wrap-safe">${lastPrice.toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Wilder félidő (periódus):</span><span class="font-bold text-neon-blue">${wilderHalfLife.toFixed(2)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">EMA félidő (periódus):</span><span class="font-bold text-amber-400">${emaHalfLife.toFixed(2)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Wilder ennyi×lassabb félidőben:</span><span class="font-extrabold text-white">${halfLifeRatio.toFixed(2)}×</span></div>
@@ -39627,10 +39651,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="text-slate-300 font-bold">Eredeti sorrend</div>
-                    <div class="flex justify-between"><span class="text-slate-400">Végtőke:</span><span class="${original.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">$${original.finalCapital.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Végtőke:</span><span class="${original.stoppedOut ? 'text-neon-red' : 'text-neon-green'} num-wrap-safe">$${original.finalCapital.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Állapot:</span><span class="${original.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">${original.stoppedOut ? 'STOP-OUT a ' + original.stopAtTrade + '. trade-nél' : 'Végigfutott, nem állt le'}</span></div>
                     <div class="text-slate-300 font-bold border-t border-dark-750 pt-2">Fordított sorrend</div>
-                    <div class="flex justify-between"><span class="text-slate-400">Végtőke:</span><span class="${reversedResult.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">$${reversedResult.finalCapital.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Végtőke:</span><span class="${reversedResult.stoppedOut ? 'text-neon-red' : 'text-neon-green'} num-wrap-safe">$${reversedResult.finalCapital.toLocaleString('en-US', {maximumFractionDigits: 2})}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Állapot:</span><span class="${reversedResult.stoppedOut ? 'text-neon-red' : 'text-neon-green'}">${reversedResult.stoppedOut ? 'STOP-OUT a ' + reversedResult.stopAtTrade + '. trade-nél' : 'Végigfutott, nem állt le'}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 text-amber-400">${verdict}</p>
@@ -44882,12 +44906,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div class="rounded-xl bg-neon-blue/5 border border-neon-blue/30 p-3">
                         <div class="text-[10px] text-neon-blue uppercase font-bold mb-1">ATR (${period} periódus)</div>
-                        <div class="text-lg font-extrabold text-white font-mono">${lastAtr.toLocaleString('en-US', { maximumFractionDigits: 4 })}</div>
+                        <div class="text-lg font-extrabold text-white font-mono num-wrap-safe">${lastAtr.toLocaleString('en-US', { maximumFractionDigits: 4 })}</div>
                         <div class="text-[9.5px] text-slate-500 mt-0.5">${atrPctOfPrice.toLocaleString('en-US', { maximumFractionDigits: 3 })}% az árból, Wilder-simítással</div>
                     </div>
                     <div class="rounded-xl bg-amber-400/5 border border-amber-400/30 p-3">
                         <div class="text-[10px] text-amber-400 uppercase font-bold mb-1">Historical Volatility (évesített)</div>
-                        <div class="text-lg font-extrabold text-white font-mono">${hvAnnualPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</div>
+                        <div class="text-lg font-extrabold text-white font-mono num-wrap-safe">${hvAnnualPct.toLocaleString('en-US', { maximumFractionDigits: 2 })}%</div>
                         <div class="text-[9.5px] text-slate-500 mt-0.5">${n} log-hozamból, ${annFactor.toLocaleString('en-US', { maximumFractionDigits: 6 })} nap/év évesítve</div>
                     </div>
                 </div>
