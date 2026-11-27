@@ -49018,6 +49018,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
         const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
         const FEATURES = [
+            ['🎥', 'Élő órák', 'élő óra youtube live adás webinár stream', `openLiveSessions()`],
+            ['👨‍👩‍👧', 'Családi csomag', 'család családi prémium csomag kód tag', `openFamilyPlan()`],
             ['🏫', 'Osztály mód', 'osztály tanár iskola csoport szakkör riport diák b2b', `openClassMode()`],
             ['📧', 'Heti e-mail összefoglaló', 'email e-mail heti összefoglaló levél feliratkozás', `openEmailDigest()`],
             ['🧭', 'Idősík-áttekintő', 'idősík timeframe több trend rsi 4 óra napi', `switchMobileTab('trade'); setTimeout(openMultiTimeframe, 60)`],
@@ -49834,10 +49836,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
            előfizetést árulni, ott továbbra is használható lenne a Stripe. */
         const PAY_CONFIG = {
             mode: 'demo',              // 'demo' | 'playbilling'
-            playProductIds: { monthly: 'premium_monthly', yearly: 'premium_yearly' }, // Play Console Product ID-k (PLACEHOLDER — cseréld le!)
+            playProductIds: { monthly: 'premium_monthly', yearly: 'premium_yearly', family: 'premium_family_yearly' }, // Play Console Product ID-k (PLACEHOLDER — cseréld le! A családinak tartalmaznia kell a "family" szót.)
             playVerifyEndpoint: 'https://tpmvglpnkaebgthmrgzb.supabase.co/functions/v1/verify-play-purchase',
             currency: 'HUF',
-            amounts: { monthly: 1990, yearly: 14990 }
+            amounts: { monthly: 1990, yearly: 14990, family: 22490 }
         };
 
         // Elérhető-e ténylegesen a Play Billing ezen az eszközön/böngészőn?
@@ -50149,6 +50151,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div class="text-[9px] text-slate-500">/ év</div>
                         </button>
                     </div>
+                    <button id="premium-plan-family-btn" onclick="processPayment('family')" class="w-full glass-card rounded-xl p-3 mb-3 flex items-center justify-between border border-dark-750 hover:border-amber-400/50 transition text-left">
+                        <span><span class="block text-[10px] text-amber-300 font-bold uppercase">👨‍👩‍👧 Családi · max. 5 fő</span><span class="block text-[9.5px] text-slate-500 mt-0.5">Te + 4 családtag, mindenki saját fiókkal</span></span>
+                        <span class="text-right"><span class="block text-lg font-extrabold text-white">${PAY_CONFIG.amounts.family.toLocaleString('hu-HU')} Ft</span><span class="block text-[9px] text-slate-500">/ év</span></span>
+                    </button>
                     <div id="premium-activate-error" class="hidden text-[11px] text-neon-red mb-2"></div>
                     <p class="text-[9px] text-slate-600 text-center mt-2">
                         ${(PAY_CONFIG.mode === 'playbilling')
@@ -55164,6 +55170,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             try {
                 const { data: errLog, error: errLogErr } = await sb.rpc('admin_get_error_log', { p_limit: 20 });
                 out.innerHTML += renderAdminErrorLogSection(errLogErr ? null : errLog, errLogErr ? errLogErr.message : null);
+                try { out.insertAdjacentHTML('beforeend', '<div id="admin-live-box">' + await renderAdminLiveSection() + '</div>'); } catch (e2) {}
             } catch (e) {
                 out.innerHTML += renderAdminErrorLogSection(null, (e && e.message) ? e.message : 'A hibanapló-lekérés nem sikerült.');
             }
@@ -55921,7 +55928,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="text-[10px] text-slate-500 mt-0.5">A díjbeszedés sikertelen volt — frissítsd a fizetési módod a Play Áruházban, különben elveszíted a Prémiumot.</div>
                 `;
             } else if (isPremiumUser) {
-                const planLabel = subscriptionPlan === 'yearly' ? 'Éves csomag' : subscriptionPlan === 'monthly' ? 'Havi csomag' : null;
+                const planLabel = subscriptionPlan === 'family' ? 'Családi csomag (tulajdonos)' : subscriptionPlan === 'family-member' ? 'Családi csomag (tag)' : subscriptionPlan === 'yearly' ? 'Éves csomag' : subscriptionPlan === 'monthly' ? 'Havi csomag' : null;
                 const platformLabel = subscriptionPlatform === 'playbilling' ? 'Google Play' : null;
                 premStatusEl.innerHTML = `
                     <div class="flex items-center gap-1"><i class="fa-solid fa-crown text-amber-400"></i><span class="text-amber-300 font-semibold">${T('profile_premium_active')}</span>${planLabel ? ` <span class="text-slate-500 font-normal">— ${planLabel}</span>` : ''}</div>
@@ -57630,7 +57637,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <button type="button" onclick="openMonthlyLeague('monthly')" class="text-neon-cyan hover:underline">🏆 Bajnokság</button>
                     <button type="button" onclick="openMentor()" class="text-neon-cyan hover:underline">🧑‍🏫 Mentor</button>
                     <button type="button" onclick="openClassMode()" class="text-neon-cyan hover:underline">🏫 Osztály</button>
-                </div>${assignmentLineHtml()}${seasonalLineHtml()}</div>`;
+                </div>${liveLineHtml()}${assignmentLineHtml()}${seasonalLineHtml()}</div>`;
         }
         function startDailySession() {
             const li = dailyNextLessonIdx();
@@ -60688,6 +60695,135 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
         }
 
+        // ---------- Családi csomag kezelése (032) ----------
+        async function openFamilyPlan() {
+            const body = classModalShell('👨‍👩‍👧 Családi csomag');
+            if (!isLoggedInRealUser()) { body.innerHTML = '<p class="text-[11.5px] text-slate-300">A családi Prémium egy előfizetéssel 5 főnek ad Prémiumot, mindenkinek saját fiókkal. Jelentkezz be!</p>'; return; }
+            body.innerHTML = '<p class="text-[11px] text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Betöltés…</p>';
+            let st = null; try { const r = await sb.rpc('get_family_status'); if (r.error) throw r.error; st = r.data; } catch (e) {}
+            if (document.getElementById('mini-quiz-modal').classList.contains('hidden')) return;
+            if (!st) { body.innerHTML = '<p class="text-[11px] text-slate-500">A családi csomag most nem érhető el.</p>'; return; }
+            if (st.role === 'owner') {
+                const ms = st.members || [];
+                body.innerHTML = `<p class="text-[11.5px] text-slate-300 mb-3">Oszd meg a családi kódot — a családtagok a saját fiókjukban ezzel csatlakoznak (${ms.length}/${st.max_members} hely foglalt).</p>
+                    <div class="flex items-center gap-2 p-3 rounded-xl bg-amber-400/10 border border-amber-400/30 mb-3"><span class="flex-1 font-mono font-bold text-amber-300 text-sm">${escapeHtml(st.invite_code)}</span><button type="button" onclick="shareFamilyCode('${escapeHtml(st.invite_code)}')" class="px-3 py-1.5 rounded-lg bg-amber-400 text-dark-950 text-[11px] font-bold">Megosztás</button></div>
+                    <div class="space-y-1.5">${ms.length ? ms.map(m => `<div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-dark-850/60 border border-dark-750"><span class="flex-1 text-xs text-white truncate">${escapeHtml(m.name)}</span><button type="button" onclick="removeFamilyMember('${m.id}')" class="text-[10.5px] text-slate-400 hover:text-neon-red">Eltávolítás</button></div>`).join('') : '<div class="text-[11px] text-slate-500">Még nincs családtag.</div>'}</div>`;
+            } else if (st.role === 'member') {
+                body.innerHTML = `<p class="text-[11.5px] text-slate-300 mb-3">${escapeHtml(st.owner_name)} családi csomagjának vagy tagja. ${st.active ? '<span class="text-neon-green font-bold">A Prémium aktív.</span>' : '<span class="text-amber-300 font-bold">A családi előfizetés jelenleg nem aktív.</span>'}</p>
+                    <button type="button" onclick="leaveFamily()" class="w-full py-2 rounded-xl text-xs font-bold border border-dark-750 text-slate-300">Kilépés a családból</button>`;
+            } else {
+                body.innerHTML = `<p class="text-[11.5px] text-slate-300 mb-3">Van családi kódod? Add meg, és a családfő előfizetésével Prémiumot kapsz.</p>
+                    <div class="flex gap-2 mb-4"><input id="family-code" maxlength="20" placeholder="CSAL-…" aria-label="Családi kód" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-xl px-3 py-2 text-xs text-white uppercase placeholder-slate-600"><button type="button" onclick="joinFamily()" class="px-3 py-2 rounded-xl text-xs font-bold bg-amber-400 text-dark-950">Csatlakozás</button></div>
+                    <button type="button" onclick="miniQuizClose(); openPremiumModal()" class="w-full py-2 rounded-xl text-xs font-bold border border-amber-400/40 text-amber-300">Családi csomag vásárlása (${PAY_CONFIG.amounts.family.toLocaleString('hu-HU')} Ft / év)</button>`;
+            }
+        }
+        function shareFamilyCode(code) {
+            const txt = `Csatlakozz a Chartolj! családi Prémiumomhoz: Kezdőlap → keresés: „Családi csomag”, kód: ${code}`;
+            if (navigator.share) navigator.share({ title: 'Chartolj! családi csomag', text: txt }).catch(() => {});
+            else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => showNotification('Kód vágólapra másolva.'));
+            else showNotification('Kód: ' + code);
+        }
+        function familyErr(e) { const m = (e && e.message) || ''; return /Nincs ilyen|saját|nem aktív|Már tagja|megtelt/i.test(m) ? m : 'A művelet most nem sikerült.'; }
+        async function joinFamily() {
+            const code = (document.getElementById('family-code').value || '').trim(); if (!code) return;
+            try { const r = await sb.rpc('join_family', { p_code: code }); if (r.error) throw r.error; isPremiumUser = true; subscriptionPlan = 'family-member'; showNotification(`👨‍👩‍👧 Csatlakoztál ${r.data.owner_name} családi csomagjához — a Prémium aktív!`); if (typeof renderProfileScreen === 'function') renderProfileScreen(); openFamilyPlan(); }
+            catch (e) { showNotification(familyErr(e)); }
+        }
+        async function leaveFamily() {
+            try { const r = await sb.rpc('leave_family'); if (r.error) throw r.error; if (subscriptionPlan === 'family-member') { isPremiumUser = false; subscriptionPlan = null; } showNotification('Kiléptél a családi csomagból.'); if (typeof renderProfileScreen === 'function') renderProfileScreen(); openFamilyPlan(); }
+            catch (e) { showNotification(familyErr(e)); }
+        }
+        async function removeFamilyMember(id) {
+            try { const r = await sb.rpc('remove_family_member', { p_user: id }); if (r.error) throw r.error; openFamilyPlan(); } catch (e) { showNotification(familyErr(e)); }
+        }
+
+        // ---------- Élő órák (YouTube Live, 033) ----------
+        let liveSessionsCache = null;
+        async function fetchLiveSessions() {
+            if (!sb || typeof sb.rpc !== 'function') return null;
+            try { const r = await sb.rpc('get_live_sessions'); if (r.error) throw r.error; liveSessionsCache = Array.isArray(r.data) ? r.data : []; } catch (e) { liveSessionsCache = null; }
+            return liveSessionsCache;
+        }
+        function liveState(x, now) { const st = new Date(x.starts_at).getTime(), en = st + (Number(x.duration_min) || 60) * 60000; return now < st ? 'upcoming' : now <= en ? 'live' : 'past'; }
+        function liveIcs(x) {
+            const f = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+            const st = new Date(x.starts_at), en = new Date(st.getTime() + (Number(x.duration_min) || 60) * 60000);
+            const clean = t => String(t || '').replace(/[\r\n]+/g, ' ').replace(/([,;\\])/g, '\\$1');
+            const url = x.youtube_id ? 'https://www.youtube.com/watch?v=' + x.youtube_id : location.origin + location.pathname;
+            const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Chartolj//Elo orak//HU', 'BEGIN:VEVENT', 'UID:chartolj-live-' + x.id + '@chartolj', 'DTSTAMP:' + f(Date.now()), 'DTSTART:' + f(st), 'DTEND:' + f(en),
+                'SUMMARY:' + clean('Chartolj! élő óra: ' + x.title), 'DESCRIPTION:' + clean((x.description || '') + ' ' + url), 'URL:' + url,
+                'BEGIN:VALARM', 'TRIGGER:-PT15M', 'ACTION:DISPLAY', 'DESCRIPTION:' + clean(x.title), 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' })); a.download = 'chartolj-elo-ora-' + x.id + '.ics';
+            document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        }
+        async function openLiveSessions() {
+            const body = classModalShell('🎥 Élő órák');
+            body.innerHTML = '<p class="text-[11px] text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Betöltés…</p>';
+            const list = await fetchLiveSessions();
+            if (document.getElementById('mini-quiz-modal').classList.contains('hidden')) return;
+            if (!list) { body.innerHTML = '<p class="text-[11px] text-slate-500">Az órarend most nem érhető el.</p>'; return; }
+            const now = Date.now();
+            const items = list.filter(x => liveState(x, now) !== 'past' || x.youtube_id);
+            const live = items.find(x => liveState(x, now) === 'live' && x.youtube_id && (!x.premium_only || isPremiumUser));
+            const card = x => { const s = liveState(x, now), locked = x.premium_only && !isPremiumUser;
+                return `<div class="px-3 py-2.5 rounded-xl bg-dark-850/60 border ${s === 'live' ? 'border-neon-red/50' : 'border-dark-750'}">
+                    <div class="flex items-center gap-2"><span class="text-[10px] font-bold ${s === 'live' ? 'text-neon-red' : s === 'past' ? 'text-slate-500' : 'text-neon-cyan'}">${s === 'live' ? '● ÉLŐ' : s === 'past' ? 'Felvétel' : escapeHtml(fmtLocalDateTime(new Date(x.starts_at).getTime()))}</span>${x.premium_only ? '<span class="text-[9px] px-1.5 rounded bg-amber-400/15 text-amber-300 font-bold">PRÉMIUM</span>' : ''}</div>
+                    <div class="text-xs font-bold text-white mt-0.5">${escapeHtml(x.title)}</div>${x.description ? `<div class="text-[10.5px] text-slate-400 mt-0.5">${escapeHtml(x.description)}</div>` : ''}
+                    <div class="flex gap-2 mt-2">${locked ? `<button type="button" onclick="miniQuizClose(); openPremiumModal()" class="px-2.5 py-1 rounded-lg text-[10.5px] font-bold border border-amber-400/40 text-amber-300">Prémiummal elérhető</button>` :
+                        (s === 'upcoming' ? `<button type="button" onclick="liveIcs(liveSessionsCache.find(z => z.id === ${Number(x.id)}))" class="px-2.5 py-1 rounded-lg text-[10.5px] font-bold border border-dark-700 text-slate-300">📅 Naptárba</button>` : '') +
+                        (x.youtube_id && s !== 'upcoming' ? `<button type="button" onclick="playLiveSession(${Number(x.id)})" class="px-2.5 py-1 rounded-lg text-[10.5px] font-bold bg-neon-red/80 text-white">▶ ${s === 'live' ? 'Nézem élőben' : 'Visszanézés'}</button>` : '')}</div></div>`; };
+            body.innerHTML = `<div id="live-player" class="${live ? '' : 'hidden'} mb-3"></div>
+                <p class="text-[11px] text-slate-400 mb-3">Rendszeres élő elemzések és kérdezz-felelek a YouTube-on. Tedd be a naptáradba, hogy ne maradj le!</p>
+                <div class="space-y-2">${items.length ? items.map(card).join('') : '<div class="text-[11px] text-slate-500 text-center py-4">Jelenleg nincs meghirdetett élő óra — nézz vissza később!</div>'}</div>`;
+            if (live) playLiveSession(live.id);
+        }
+        function playLiveSession(id) {
+            const x = (liveSessionsCache || []).find(z => z.id === id); const box = document.getElementById('live-player'); if (!x || !box || !/^[A-Za-z0-9_-]{6,20}$/.test(x.youtube_id || '')) return;
+            if (x.premium_only && !isPremiumUser) return;
+            box.innerHTML = `<div class="relative w-full rounded-xl overflow-hidden border border-dark-750" style="padding-top:56.25%"><iframe class="absolute inset-0 w-full h-full" src="https://www.youtube-nocookie.com/embed/${x.youtube_id}?autoplay=1&rel=0" title="${escapeHtml(x.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+            box.classList.remove('hidden');
+        }
+        function liveLineHtml() {
+            if (!Array.isArray(liveSessionsCache)) return '';
+            const now = Date.now(); const x = liveSessionsCache.find(z => { const s = liveState(z, now); return s === 'live' || (s === 'upcoming' && new Date(z.starts_at).getTime() - now < 24 * 3600000); });
+            if (!x) return '';
+            const isLive = liveState(x, now) === 'live';
+            return `<div class="mt-2 pt-2 border-t border-dark-750/60 flex items-center justify-between gap-2 text-[10.5px]"><span class="min-w-0 truncate text-slate-300">${isLive ? '<b class="text-neon-red">● ÉLŐ most:</b>' : '🎥 Ma élő óra:'} ${escapeHtml(x.title)}${isLive ? '' : ' · ' + escapeHtml(fmtLocalDateTime(new Date(x.starts_at).getTime()))}</span>
+                <button type="button" onclick="openLiveSessions()" class="shrink-0 px-2 py-0.5 rounded-md ${isLive ? 'bg-neon-red text-white' : 'bg-dark-800 text-slate-200'} font-bold">${isLive ? 'Nézem' : 'Részletek'}</button></div>`;
+        }
+        setTimeout(async () => { await fetchLiveSessions(); if (typeof renderAcademyDailyCard === 'function') renderAcademyDailyCard(); }, 3000);
+
+        // ---------- Admin: élő órák kezelése ----------
+        async function renderAdminLiveSection() {
+            const list = await fetchLiveSessions() || [];
+            const rows = list.map(x => `<div class="flex items-center gap-2 text-[10.5px] text-slate-300 py-1 border-t border-dark-750"><span class="flex-1 truncate">${escapeHtml(fmtLocalDateTime(new Date(x.starts_at).getTime()))} · ${escapeHtml(x.title)}</span><button type="button" onclick="adminDeleteLive(${Number(x.id)})" class="text-slate-500 hover:text-neon-red" aria-label="Törlés"><i class="fa-solid fa-trash-can"></i></button></div>`).join('');
+            return `<div class="glass-card rounded-lg p-2.5 mt-1"><div class="text-[10px] font-bold text-slate-400 uppercase mb-1"><i class="fa-solid fa-video mr-1"></i>Élő órák (YouTube)</div>${rows || '<div class="text-[10px] text-slate-600">Nincs felvett alkalom.</div>'}
+                <div class="space-y-1.5 mt-2"><input id="adm-live-title" maxlength="120" placeholder="Cím" aria-label="Cím" class="w-full bg-dark-950 border border-dark-750 rounded-lg px-2 py-1.5 text-[11px] text-white">
+                <input id="adm-live-desc" maxlength="600" placeholder="Leírás (opcionális)" aria-label="Leírás" class="w-full bg-dark-950 border border-dark-750 rounded-lg px-2 py-1.5 text-[11px] text-white">
+                <div class="flex gap-1.5"><input id="adm-live-start" type="datetime-local" aria-label="Kezdés" class="flex-1 min-w-0 bg-dark-950 border border-dark-750 rounded-lg px-2 py-1.5 text-[11px] text-white"><input id="adm-live-dur" type="number" min="5" max="600" value="60" aria-label="Hossz (perc)" class="w-16 bg-dark-950 border border-dark-750 rounded-lg px-2 py-1.5 text-[11px] text-white"></div>
+                <input id="adm-live-yt" maxlength="200" placeholder="YouTube link vagy videó-azonosító" aria-label="YouTube link" class="w-full bg-dark-950 border border-dark-750 rounded-lg px-2 py-1.5 text-[11px] text-white">
+                <label class="flex items-center gap-1.5 text-[10.5px] text-slate-400"><input type="checkbox" id="adm-live-prem" class="accent-amber-400"> Csak Prémium</label>
+                <button type="button" onclick="adminSaveLive()" class="w-full py-1.5 rounded-lg bg-neon-cyan text-dark-950 text-[11px] font-bold">Alkalom felvétele</button></div></div>`;
+        }
+        function parseYoutubeId(v) {
+            v = String(v || '').trim(); if (!v) return null;
+            const m = v.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{6,20})/); if (m) return m[1];
+            return /^[A-Za-z0-9_-]{6,20}$/.test(v) ? v : undefined;
+        }
+        async function adminSaveLive() {
+            const title = document.getElementById('adm-live-title').value.trim(), start = document.getElementById('adm-live-start').value;
+            const yt = parseYoutubeId(document.getElementById('adm-live-yt').value);
+            if (!title || !start) { showNotification('Cím és kezdés kötelező.'); return; }
+            if (yt === undefined) { showNotification('Nem ismerem fel a YouTube linket.'); return; }
+            try { const r = await sb.rpc('admin_upsert_live_session', { p_id: null, p_title: title, p_description: document.getElementById('adm-live-desc').value, p_starts_at: new Date(start).toISOString(),
+                    p_duration_min: parseInt(document.getElementById('adm-live-dur').value, 10) || 60, p_youtube_id: yt, p_premium_only: document.getElementById('adm-live-prem').checked });
+                if (r.error) throw r.error; showNotification('Élő óra felvéve.'); const box = document.getElementById('admin-live-box'); if (box) box.innerHTML = await renderAdminLiveSection(); }
+            catch (e) { showNotification('Mentés sikertelen: ' + ((e && e.message) || '')); }
+        }
+        async function adminDeleteLive(id) {
+            try { const r = await sb.rpc('admin_delete_live_session', { p_id: id }); if (r.error) throw r.error; const box = document.getElementById('admin-live-box'); if (box) box.innerHTML = await renderAdminLiveSection(); } catch (e) { showNotification('Törlés sikertelen.'); }
+        }
+
         function renderHistory() {
             const tbody = document.getElementById('history-table-body');
 
@@ -62015,6 +62151,11 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
                     ? (sub.subscription_product_id.includes('yearly') || sub.subscription_product_id.includes('éves') ? 'yearly' : 'monthly')
                     : null;
                 subscriptionPlatform = sub ? sub.subscription_platform : null;
+                if (sub && sub.subscription_product_id && /family/i.test(sub.subscription_product_id)) subscriptionPlan = 'family';
+                // Családi Prémium (032): a családtag Prémiuma a családfő előfizetéséből jön.
+                if (!isPremiumUser) {
+                    try { const fr = await sb.rpc('get_family_status'); if (!fr.error && fr.data && fr.data.role === 'member' && fr.data.active) { isPremiumUser = true; subscriptionPlan = 'family-member'; } } catch (e) { /* 032 nélkül csendben kimarad */ }
+                }
 
                 // A megjelenített név elsődlegesen a profiles.display_name mezőből jön
                 // (amit a felhasználó a Profil képernyőn bármikor módosíthat) — csak

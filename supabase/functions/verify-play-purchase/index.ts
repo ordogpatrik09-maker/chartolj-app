@@ -74,7 +74,9 @@ Deno.serve(async (req: Request) => {
         if (typeof itemId !== 'string' || itemId.length < 1 || itemId.length > 200 || !/^[a-zA-Z0-9._-]+$/.test(itemId)) {
             return json({ valid: false, error: 'Hiányzó vagy érvénytelen itemId' }, 400);
         }
-        if (plan !== 'monthly' && plan !== 'yearly') return json({ valid: false, error: 'Érvénytelen csomag' }, 400);
+        if (plan !== 'monthly' && plan !== 'yearly' && plan !== 'family') return json({ valid: false, error: 'Érvénytelen csomag' }, 400);
+        // Családi csomag (032): a termék-azonosítónak tartalmaznia kell a 'family' szót — erre épül a családi jogosultság.
+        if (plan === 'family' && !/family/i.test(itemId)) return json({ valid: false, error: 'A családi csomag termék-azonosítója hibás' }, 400);
 
         // 1) A hívó felhasználó azonosítása a SAJÁT tokenjéből.
         const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: authHeader } } });

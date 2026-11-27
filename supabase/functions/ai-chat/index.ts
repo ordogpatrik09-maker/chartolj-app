@@ -270,7 +270,17 @@ Deno.serve(async (req: Request) => {
             .eq('user_id', user.id)
             .maybeSingle();
         const notExpired = !sub?.expires_at || new Date(sub.expires_at).getTime() > Date.now();
-        const isPremium = !!(sub && (sub.subscription_status === 'active' || sub.subscription_status === 'grace_period') && notExpired);
+        let isPremium = !!(sub && (sub.subscription_status === 'active' || sub.subscription_status === 'grace_period') && notExpired);
+        // Családi Prémium (032): a családtag Prémiuma a családfő aktív családi előfizetéséből jön.
+        if (!isPremium) {
+            const { data: fam } = await adminClient.from('family_members').select('owner_id').eq('user_id', user.id).maybeSingle();
+            if (fam?.owner_id) {
+                const { data: os } = await adminClient.from('subscriptions').select('subscription_status, expires_at, subscription_product_id').eq('user_id', fam.owner_id).maybeSingle();
+                isPremium = !!(os && (os.subscription_status === 'active' || os.subscription_status === 'grace_period')
+                    && (!os.expires_at || new Date(os.expires_at).getTime() > Date.now())
+                    && String(os.subscription_product_id || '').toLowerCase().includes('family'));
+            }
+        }
 
         // Burst-ellenőrzés — MINDKÉT körre vonatkozik (prémium és ingyenes is),
         // lásd a BURST_MAX_CALLS fenti megjegyzését. Ez megelőzi a napi
