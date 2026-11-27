@@ -48323,6 +48323,101 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // gyakorolt, hanem azt is, HOGYAN ment, és mit érdemes a jövő héten
         // másképp csinálni. Ez a Napló, a Chart Drill, a Replay Szimulátor és a
         // Mistake Bank adatait egyetlen, cselekvésre ösztönző kártyává fűzi össze.
+        // ================= SZIMULÁLT KÖTÉSEK TARTÓS MENTÉSE (024 migráció) =================
+        // A tradeHistory továbbra is a munkamenet listája (változatlan működés);
+        // a lezárt kötéseket bejelentkezett felhasználónál KÜLÖN a sim_trades
+        // táblába is mentjük, és a heti elemzés ebből + a munkamenet kötéseiből
+        // dolgozik (azonosító szerint duplikáció nélkül). Ha a migráció még nincs
+        // lefuttatva, a mentés csendben kimarad — semmi más nem sérül.
+        let simTradeArchive = [];
+        let simTradeRpcMissing = false;
+
+        function persistSimTrade(t) {
+            if (!t || simTradeRpcMissing || !sb || !currentUser || currentUser.guest || !currentUser.id) return;
+            const pnl = Number(t.pnl);
+            if (!Number.isFinite(pnl) || (t.side !== 'long' && t.side !== 'short')) return;
+            try {
+                sb.rpc('record_sim_trade', {
+                    p_client_id: String(t.id).slice(0, 64), p_asset: String(t.asset || '?').slice(0, 32), p_side: t.side,
+                    p_pnl: Math.round(pnl * 100) / 100, p_reason: t.reason ? String(t.reason).slice(0, 120) : null, p_note: t.note ? String(t.note).slice(0, 500) : null
+                }).then(({ error }) => {
+                    if (error && /record_sim_trade|function .* does not exist|PGRST202/i.test((error.message || '') + (error.code || ''))) simTradeRpcMissing = true;
+                }).catch(() => {});
+            } catch (e) {}
+        }
+
+        async function loadSimTradeArchive() {
+            if (simTradeRpcMissing || !sb || !currentUser || currentUser.guest || !currentUser.id) return;
+            try {
+                const { data, error } = await sb.rpc('get_my_sim_trades', { p_days: 30 });
+                if (error) { if (/get_my_sim_trades|does not exist|PGRST202/i.test((error.message || '') + (error.code || ''))) simTradeRpcMissing = true; return; }
+                if (Array.isArray(data)) {
+                    simTradeArchive = data.map(r => ({ id: r.id, closedAt: Date.parse(r.closed_at), asset: r.asset, side: r.side, pnl: Number(r.pnl), reason: r.reason || '' }))
+                                          .filter(r => Number.isFinite(r.closedAt) && Number.isFinite(r.pnl));
+                    if (typeof renderProgressWeeklyReview === 'function') renderProgressWeeklyReview();
+                }
+            } catch (e) {}
+        }
+
+        function simTradesInWindow(days) {
+            const since = Date.now() - days * 86400000;
+            const map = new Map();
+            simTradeArchive.forEach(t => { if (t.closedAt >= since) map.set(t.id, t); });
+            (typeof tradeHistory !== 'undefined' ? tradeHistory : []).forEach(t => {
+                if (t && Number.isFinite(t.closedAt) && t.closedAt >= since && Number.isFinite(Number(t.pnl))) map.set(t.id, { id: t.id, closedAt: t.closedAt, asset: t.asset, side: t.side, pnl: Number(t.pnl), reason: t.reason || '' });
+            });
+            return [...map.values()].sort((a, b) => a.closedAt - b.closedAt);
+        }
+
+        function simWeeklyStats(days) {
+            const tr = simTradesInWindow(days);
+            if (!tr.length) return null;
+            const wins = tr.filter(t => t.pnl > 0), losses = tr.filter(t => t.pnl < 0);
+            const sum = a => a.reduce((x, t) => x + t.pnl, 0);
+            const grossWin = sum(wins), grossLoss = Math.abs(sum(losses));
+            const net = grossWin - grossLoss;
+            const winRate = wins.length / tr.length * 100;
+            const avgWin = wins.length ? grossWin / wins.length : 0;
+            const avgLoss = losses.length ? grossLoss / losses.length : 0;
+            const pf = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : null);
+            const byAsset = {};
+            tr.forEach(t => { byAsset[t.asset] = (byAsset[t.asset] || 0) + t.pnl; });
+            const assets = Object.entries(byAsset).sort((a, b) => b[1] - a[1]);
+            const sideStats = side => { const x = tr.filter(t => t.side === side); return { n: x.length, net: sum(x) }; };
+            const L = sideStats('long'), S = sideStats('short');
+            // Leghosszabb vesztes sorozat (időrendben)
+            let run = 0, maxLossRun = 0;
+            tr.forEach(t => { if (t.pnl < 0) { run++; maxLossRun = Math.max(maxLossRun, run); } else run = 0; });
+            const insights = [];
+            if (tr.length >= 5) {
+                if (avgLoss > 0 && avgWin > 0 && avgLoss > avgWin * 1.3 && winRate < 65)
+                    insights.push(`A szimulátorban az átlagos veszteséged (${fmtUsd(avgLoss)}) jóval nagyobb az átlagos nyereségednél (${fmtUsd(avgWin)}) — szűkebb stop vagy tovább futtatott nyerők javítanának a legtöbbet.`);
+                if (maxLossRun >= 4)
+                    insights.push(`${maxLossRun} vesztes kötés jött egymás után — ilyenkor érdemes szünetet tartani, mielőtt a "visszanyerés" vágya irányítana.`);
+                if (L.n >= 3 && S.n >= 3 && Math.sign(L.net) !== Math.sign(S.net))
+                    insights.push(`${L.net > S.net ? 'Long' : 'Short'} irányban sokkal jobb voltál (${fmtUsd(Math.max(L.net, S.net))} vs ${fmtUsd(Math.min(L.net, S.net))}) — nézd meg, mi a különbség a két irány setupjai között.`);
+                if (pf !== null && pf !== Infinity && pf >= 1.5 && net > 0)
+                    insights.push(`Erős hét a szimulátorban: ${pf.toFixed(2)}-es profit faktor — a nyereséged ${pf.toFixed(1)}-szerese a veszteségednek.`);
+            }
+            return { n: tr.length, wins: wins.length, losses: losses.length, net, winRate, avgWin, avgLoss, pf, bestAsset: assets[0], worstAsset: assets[assets.length - 1], L, S, maxLossRun, insights };
+        }
+
+        function fmtUsd(v) { const n = Number(v) || 0; return (n < 0 ? '−' : '') + '$' + Math.abs(n).toLocaleString('hu-HU', { maximumFractionDigits: 0 }); }
+
+        function simWeeklyHtml(w) {
+            const pfTxt = w.pf === null ? '—' : (w.pf === Infinity ? '∞' : w.pf.toFixed(2).replace('.', ','));
+            const asset = (a, cls) => a ? `<span class="${cls} font-bold">${escapeHtml(a[0])}</span> (${a[1] >= 0 ? '+' : ''}${fmtUsd(a[1])})` : '—';
+            return `<div class="mb-3 rounded-lg bg-dark-900 border border-dark-750 p-2.5">
+                <div class="flex items-center justify-between mb-1.5"><span class="text-[10px] font-bold text-slate-300 uppercase"><i class="fa-solid fa-chart-line text-neon-cyan mr-1"></i>Szimulátor — 7 nap</span><span class="text-[10px] text-slate-500">${w.n} kötés</span></div>
+                <div class="grid grid-cols-3 gap-2 text-center mb-1.5">
+                    <div><div class="text-sm font-extrabold ${w.net > 0 ? 'text-neon-green' : w.net < 0 ? 'text-neon-red' : 'text-slate-300'}">${w.net >= 0 ? '+' : ''}${fmtUsd(w.net)}</div><div class="text-[9px] text-slate-500 uppercase font-bold">Nettó</div></div>
+                    <div><div class="text-sm font-extrabold text-white">${w.winRate.toFixed(0)}%</div><div class="text-[9px] text-slate-500 uppercase font-bold">Nyerési arány</div></div>
+                    <div><div class="text-sm font-extrabold text-white">${pfTxt}</div><div class="text-[9px] text-slate-500 uppercase font-bold">Profit faktor</div></div>
+                </div>
+                <div class="text-[10.5px] text-slate-400 leading-relaxed">Átlag nyerő ${fmtUsd(w.avgWin)} · átlag vesztes ${fmtUsd(w.avgLoss)} · Long ${w.L.n} (${w.L.net >= 0 ? '+' : ''}${fmtUsd(w.L.net)}) · Short ${w.S.n} (${w.S.net >= 0 ? '+' : ''}${fmtUsd(w.S.net)})<br>Legjobb: ${asset(w.bestAsset, 'text-neon-green')}${w.worstAsset && w.worstAsset !== w.bestAsset ? ' · Leggyengébb: ' + asset(w.worstAsset, 'text-neon-red') : ''}</div>
+            </div>`;
+        }
+
         function renderProgressWeeklyReview() {
             const el = document.getElementById('progress-weekly-review');
             if (!el) return;
@@ -48334,7 +48429,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const recentReplaySessions = replayJournal.filter(j => j.date && j.date >= weekAgo);
             const recentJournalEntries = Object.entries(tradingJournal).filter(([k]) => k >= weekAgoKey).map(([, v]) => v);
 
-            const hasAnyData = recentLog.length + recentReplaySessions.length + recentJournalEntries.length > 0;
+            const simW = simWeeklyStats(7);
+            const hasAnyData = recentLog.length + recentReplaySessions.length + recentJournalEntries.length > 0 || !!simW;
             if (!hasAnyData) {
                 el.innerHTML = '<div class="text-xs text-slate-500">Még nincs adat az elmúlt hétre — kezdj el gyakorolni, hogy itt lásd a heti összegzésed.</div>';
                 return;
@@ -48407,6 +48503,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     insights.push(`Ezen a héten "${worst.label}" lelkiállapotban átlagosan ${worst.avg >= 0 ? '+' : ''}$${worst.avg.toFixed(0)}-t hoztál (${worst.count}×) — érdemes figyelni, mikor jelentkezik ez az állapot.`);
                 }
             }
+            if (simW) simW.insights.forEach(t => insights.push(t));
             if (insights.length === 0) insights.push('Folytasd ugyanígy — még nincs elég adat egy konkrét, személyre szabott tanácshoz.');
 
             el.innerHTML = `
@@ -48425,6 +48522,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                 </div>
                 ${recentJournalEntries.length > 0 ? `<div class="text-[11px] text-slate-400 mb-2"><span class="text-neon-green font-bold">${journalWinDays}</span> nyerő / <span class="text-neon-red font-bold">${journalLossDays}</span> vesztes nap a Naplóban.</div>` : ''}
+                ${simW ? simWeeklyHtml(simW) : ''}
                 ${replayAvgReturn !== null ? `<div class="text-[11px] text-slate-400 mb-2">Replay átlag: <span class="font-bold ${replayAvgReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${replayAvgReturn >= 0 ? '+' : ''}${replayAvgReturn.toFixed(1)}%</span>, ${replayBeatCount}/${recentReplaySessions.length} nap verte a Buy&amp;Hold-ot.</div>` : ''}
                 <div class="mt-2 pt-2 border-t border-dark-750/60">
                     ${insights.map(txt => `<p class="text-[11px] text-amber-400 leading-relaxed flex gap-1.5"><i class="fa-solid fa-lightbulb mt-0.5 shrink-0"></i><span>${txt}</span></p>`).join('')}
@@ -57779,6 +57877,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 tradeHistory.push({
                     id: 'th_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                     time: new Date().toLocaleTimeString(),
+                    closedAt: Date.now(),
                     asset: p.asset,
                     side: p.side,
                     closePrice: p.currentPrice ?? currentAsset.price,
@@ -57786,6 +57885,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     reason: reason || 'Manuális zárás',
                     note: note || ''
                 });
+                persistSimTrade(tradeHistory[tradeHistory.length - 1]);
 
                 positions.splice(idx, 1);
                 renderPositions();
@@ -57830,6 +57930,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             tradeHistory.push({
                 id: 'th_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                 time: new Date().toLocaleTimeString(),
+                closedAt: Date.now(),
                 asset: p.asset,
                 side: p.side,
                 closePrice: p.currentPrice ?? currentAsset.price,
@@ -57837,6 +57938,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 reason: (reason || 'Manuális zárás') + ` (${pct}% részleges)`,
                 note: note || ''
             });
+            persistSimTrade(tradeHistory[tradeHistory.length - 1]);
 
             // A maradék (nyitva tartott) pozíció arányosan kisebb amount/
             // margin-nal — entryPrice/leverage VÁLTOZATLAN marad (nem egy új
@@ -59478,6 +59580,7 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
                 if (subErr) throw subErr;
                 if (profileErr) throw profileErr;
                 if (progressErr) throw progressErr;
+                loadSimTradeArchive(); // új, külön tábla (024) — hibája nem érinti a haladás betöltését
 
                 // Aktív Prémium: a státusz 'active' vagy 'grace_period', ÉS (nincs
                 // lejárati dátum, vagy az még a jövőben van). 'expired'/'cancelled'/
@@ -59709,6 +59812,7 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
                     replay_journal: safe(() => replayJournal, null),
                     learning_log: safe(() => learningLog, [])
                 },
+                simulated_trades_last_30_days: safe(() => simTradesInWindow(30), []),
                 this_device_local_data: local
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
