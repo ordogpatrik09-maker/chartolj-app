@@ -1552,7 +1552,24 @@
 
             <!-- Asset Selector Dropdown -->
             <div class="relative">
-                <button id="asset-selector-btn" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-700/60 transition group">
+                <!-- JAVÍTÁS: eredetileg natív <button> volt, de a belsejében lévő
+                     #data-source-badge egy ÖNÁLLÓ, saját billentyűzet-kezeléssel
+                     és event.stopPropagation()-nel rendelkező role="button"
+                     elem — egy natív <button>-nek viszont a HTML-specifikáció
+                     szerint nem lehet interaktív (fókuszálható) leszármazottja
+                     ("nested interactive controls"), ez képernyőolvasóknál és
+                     néhány böngészőnél megbízhatatlan fókusz-/aktiválási
+                     viselkedéshez vezethet. A projektben máshol (pl. az
+                     Akadémia lecke-lista sorai + a bennük lévő könyvjelző-
+                     gomb, lásd renderAcademyLessonList()) pontosan erre az
+                     esetre EZ a bevett, helyes minta: a külső "gomb" egy
+                     role="button" + tabindex="0" + onkeydown Enter/Space-
+                     kezelő div, nem natív <button>. Ez az elem volt az
+                     egyetlen kivétel ez alól — most ugyanarra a mintára
+                     igazítva. A kattintás-logika (addEventListener('click', ...))
+                     és a látható szöveges tartalomból (BTC/USDT, Bitcoin
+                     Perpetual) számított elérhető név változatlan marad. -->
+                <div id="asset-selector-btn" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-700/60 transition group cursor-pointer">
                     <div id="asset-icon" class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-xs font-bold">
                         ₿
                     </div>
@@ -1564,7 +1581,7 @@
                         </div>
                         <span id="selected-asset-name" class="text-[9px] text-slate-400 block -mt-0.5">Bitcoin Perpetual</span>
                     </div>
-                </button>
+                </div>
 
                 <!-- Asset Dropdown Menu — JS a megnyitáskor a <body> végére "teleportálja"
                      fixed pozícióval (lásd renderAssetDropdown/nyitó handler), mert a
@@ -3177,7 +3194,7 @@
                 <span>Indikátorok</span>
             </button>
 
-            <button id="auth-header-btn" onclick="openAuthModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 text-xs font-semibold text-slate-200 transition">
+            <button id="auth-header-btn" onclick="openAuthModal()" aria-label="Bejelentkezés" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-850 hover:bg-dark-800 border border-dark-750 text-xs font-semibold text-slate-200 transition">
                 <i class="fa-solid fa-circle-user text-slate-400"></i>
                 <span id="auth-header-label">Bejelentkezés</span>
             </button>
@@ -3570,7 +3587,18 @@
                      most vízszintesen görgethető (a sor maga nem zsugorodik
                      390px-nél kisebbre, oldalra lehet húzni/görgetni), nem
                      pedig minden oszlopot erőltetve egy képernyőnyi helyre. -->
-                <div id="bottom-tab-positions" class="flex-grow overflow-auto p-2">
+                <!-- JAVÍTÁS (axe-core a11y audit): a fenti görgethető konténer
+                     önmaga NEM volt fókuszálható, és üres/kevés pozíció esetén
+                     (nincs elég sor ahhoz, hogy egy fókuszálható "Zárás" gomb
+                     kilógjon jobbra) nincs benne fókuszálható leszármazott sem
+                     — így billentyűzettel/kapcsoló-eszközzel egyáltalán nem
+                     lehetett vízszintesen görgetni ezt a táblázatot (WCAG 2.1.1
+                     — a vizuális "mobile-scroll-hint" nyíl csak látó
+                     felhasználóknak segít). tabindex="0" + role="region" +
+                     aria-label teszi fókuszálhatóvá és nyílbillentyűkkel
+                     görgethetővé, a már meglévő "Előzmények" fül ugyanerre a
+                     hibára ugyanígy javítva lejjebb. -->
+                <div id="bottom-tab-positions" tabindex="0" role="region" aria-label="Nyitott pozíciók táblázata, vízszintesen görgethető" class="flex-grow overflow-auto p-2">
                     <table class="w-full min-w-[640px] text-left text-xs font-mono">
                         <thead class="text-[10px] text-slate-400 uppercase border-b border-dark-800">
                             <tr>
@@ -3613,7 +3641,10 @@
                 </div>
 
                 <!-- Tab 2: Trade History -->
-                <div id="bottom-tab-history" class="hidden flex-grow overflow-auto p-2">
+                <!-- JAVÍTÁS (axe-core a11y audit): lásd a fenti "Pozíciók" fülön
+                     lévő, ugyanerre a mintára vonatkozó megjegyzést — ugyanaz a
+                     görgethető-de-nem-fókuszálható hiba, ugyanaz a megoldás. -->
+                <div id="bottom-tab-history" tabindex="0" role="region" aria-label="Lezárt pozíciók (kereskedési előzmény) táblázata, vízszintesen görgethető" class="hidden flex-grow overflow-auto p-2">
                     <div class="flex justify-between items-center px-1 mb-1.5"><span class="text-[10px] text-slate-500">Lezárt pozíciók</span><div class="flex items-center gap-3"><button onclick="openWhatIfSimulator()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-code-branch mr-1"></i>Mi lett volna, ha?</button><button onclick="openTradeJournalDashboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-chart-pie mr-1"></i>Riport</button><button onclick="copyTradeHistoryToClipboard()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-copy mr-1"></i>Másolás</button><button onclick="exportTradeHistoryCsv()" class="text-[10px] font-bold text-slate-500 hover:text-neon-cyan transition"><i class="fa-solid fa-file-csv mr-1"></i>CSV</button></div></div>
                     <!-- JAVÍTÁS: ugyanaz a hiba, mint a Nyitott Pozíciók táblánál — 6
                          oszlop fix szélesség nélkül mobilon egymásra/levágva jelent
@@ -3639,7 +3670,12 @@
                 </div>
 
                 <!-- Tab 3: Tevékenység (korábban "System Log" — fejlesztői zsargon nélkül) -->
-                <div id="bottom-tab-logs" class="hidden flex-grow overflow-y-auto p-3 font-mono text-[11px] text-slate-400 space-y-1" id-note="dynamic-log-container">
+                <!-- JAVÍTÁS (axe-core a11y audit): ugyanaz a görgethető-de-nem-
+                     fókuszálható hiba, mint a Pozíciók/Előzmények füleken (itt
+                     függőleges irányban) — a napló-bejegyzések egyszerű,
+                     nem-fókuszálható szöveges sorok, hosszabb napló esetén a
+                     konténer billentyűzettel elérhetetlenül görgethetővé válna. -->
+                <div id="bottom-tab-logs" tabindex="0" role="region" aria-label="Tevékenység-napló, görgethető" class="hidden flex-grow overflow-y-auto p-3 font-mono text-[11px] text-slate-400 space-y-1" id-note="dynamic-log-container">
                     <div id="system-log-list">
                         <div>Demo adatkapcsolat: <span class="text-neon-cyan">aktív</span>. Az itt látható árfolyamok szimuláltak.</div>
                     </div>
@@ -4002,7 +4038,13 @@
                 </button>
             </div>
 
-            <p class="text-[9.5px] text-slate-500 mt-4 leading-relaxed text-center">
+            <!-- JAVÍTÁS: text-slate-500 ezen a sötét háttéren (#0b0e13) 9.5px
+                 méretnél csak 4.06:1 kontrasztot adott a WCAG AA által normál
+                 (nem nagy méretű) szövegre előírt 4.5:1 helyett (axe-core
+                 audit találat). text-slate-400-ra cserélve (7.54:1 — bőven
+                 megfelel), ugyanarra az osztályra, amit a modalon belül
+                 közvetlenül feljebb az ÁSZF-elfogadó jogi szöveg is használ. -->
+            <p class="text-[9.5px] text-slate-400 mt-4 leading-relaxed text-center">
                 A fiókod és a Prémium állapotod a Chartolj szerverén (Supabase) tárolódik — bejelentkezve minden eszközön ugyanazt a valódi állapotot látod, és semmi nem vész el, ha törlöd az app adatait vagy másik telefonra váltasz.
             </p>
         </div>
@@ -58145,10 +58187,19 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             const btn = document.getElementById('auth-header-btn');
             if (!currentUser) {
                 label.textContent = 'Bejelentkezés';
+                // JAVÍTÁS: mobilon a header.h-14 szabály (lásd fent a <style>-ban)
+                // display:none-nal elrejti ezt a span-t, és csak az ikon marad
+                // látható — aria-label nélkül a gomb mobilon névtelen (nincs
+                // elérhető szöveges tartalma egyetlen kisegítő technológia
+                // számára sem). A HTML-ben lévő statikus aria-label ezt az
+                // induló állapotot fedi, itt a be-/kijelentkezett állapotváltáskor
+                // szinkronban tartjuk, ugyanúgy, mint a TTS/STT gombok aria-label-jét.
+                btn.setAttribute('aria-label', 'Bejelentkezés');
                 btn.onclick = openAuthModal;
                 return;
             }
             label.textContent = currentUser.name;
+            btn.setAttribute('aria-label', currentUser.name + ' – kijelentkezés');
             btn.onclick = requestLogout;
         }
 
