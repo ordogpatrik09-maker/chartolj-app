@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.sim_trades (
     pnl         numeric(18, 2) NOT NULL,
     reason      text,
     note        text,
+    checklist   boolean,          -- kereskedés előtti ellenőrzőlista teljesült-e (NULL: nem használta)
     CONSTRAINT sim_trades_user_client_key UNIQUE (user_id, client_id)
 );
 
@@ -46,7 +47,8 @@ CREATE OR REPLACE FUNCTION public.record_sim_trade(
     p_side text,
     p_pnl numeric,
     p_reason text DEFAULT NULL,
-    p_note text DEFAULT NULL
+    p_note text DEFAULT NULL,
+    p_checklist boolean DEFAULT NULL
 ) RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -80,9 +82,9 @@ BEGIN
         RETURN false; -- napi korlát: csendben nem mentünk tovább
     END IF;
 
-    INSERT INTO public.sim_trades (user_id, client_id, asset, side, pnl, reason, note)
+    INSERT INTO public.sim_trades (user_id, client_id, asset, side, pnl, reason, note, checklist)
     VALUES (v_uid, left(p_client_id, 64), left(trim(p_asset), 32), p_side, round(p_pnl, 2),
-            left(p_reason, 120), left(p_note, 500))
+            left(p_reason, 120), left(p_note, 500), p_checklist)
     ON CONFLICT ON CONSTRAINT sim_trades_user_client_key DO NOTHING;
     RETURN true;
 END;
@@ -105,7 +107,7 @@ BEGIN
     RETURN coalesce((
         SELECT jsonb_agg(jsonb_build_object(
                    'id', t.client_id, 'closed_at', t.closed_at, 'asset', t.asset,
-                   'side', t.side, 'pnl', t.pnl, 'reason', t.reason, 'note', t.note)
+                   'side', t.side, 'pnl', t.pnl, 'reason', t.reason, 'note', t.note, 'checklist', t.checklist)
                  ORDER BY t.closed_at DESC)
         FROM (
             SELECT * FROM public.sim_trades
@@ -117,9 +119,9 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.record_sim_trade(text, text, text, numeric, text, text) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.record_sim_trade(text, text, text, numeric, text, text) FROM anon;
-GRANT EXECUTE ON FUNCTION public.record_sim_trade(text, text, text, numeric, text, text) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.record_sim_trade(text, text, text, numeric, text, text, boolean) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.record_sim_trade(text, text, text, numeric, text, text, boolean) FROM anon;
+GRANT EXECUTE ON FUNCTION public.record_sim_trade(text, text, text, numeric, text, text, boolean) TO authenticated;
 
 REVOKE EXECUTE ON FUNCTION public.get_my_sim_trades(integer) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.get_my_sim_trades(integer) FROM anon;

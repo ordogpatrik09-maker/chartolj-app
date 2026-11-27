@@ -1522,6 +1522,18 @@
         }
         @media (min-width: 1024px) { #th-float { width: 170px; top: auto; bottom: 96px; right: 24px; } }
         .tts-rate-chip { min-width: 46px; }
+        #th-float.th-float-top { z-index: 99; }
+        /* Lecke-betűméret (A+): a lecke/kvíz tartalmát nagyítjuk zoom-mal, mert
+           az előre fordított Tailwind sok helyen px-alapú méreteket használ. */
+        #academy-viewer.lesson-fs-1 > * { zoom: 1.15; }
+        #academy-viewer.lesson-fs-2 > * { zoom: 1.3; }
+        #voice-nav-pill {
+            position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 99;
+            padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 700;
+            background: rgba(2,6,23,0.92); border: 1px solid rgba(248,113,113,0.5); color: #fecaca;
+            display: none; align-items: center; gap: 6px; max-width: 92vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #voice-nav-pill.on { display: flex; }
 
         /* JAVÍTÁS (overflow_sweep.js — a modal_numeric_safety_sweep.js
            módszertanának kiegészítése egy, a textContent-regexen ALAPULÓ
@@ -3915,6 +3927,10 @@
                 <button onclick="executeOrder()" id="btn-execute-order" aria-label="Pozíció végrehajtása" class="w-full py-3.5 rounded-xl font-extrabold text-sm uppercase bg-neon-green text-dark-950 hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
                     LONG Pozíció Nyitása
                 </button>
+                <label class="mt-2 flex items-center justify-center gap-2 text-[10.5px] text-slate-400 cursor-pointer select-none">
+                    <input type="checkbox" id="pretrade-checklist-toggle" onchange="setPretradeChecklistEnabled(this.checked)" class="accent-cyan-400">
+                    Kereskedés előtti ellenőrzőlista
+                </label>
 
             </div>
 
@@ -17512,6 +17528,21 @@ Mean-reversion,2.5</textarea>
         </div>
     </div>
 
+    <div id="voice-nav-pill" role="status" aria-live="polite"><i class="fa-solid fa-microphone-lines animate-pulse text-red-400"></i><span id="voice-nav-pill-text">Hangvezérlés: mondd „következő”, „előző”, „olvasd fel”, „állj”</span></div>
+
+    <!-- Kereskedés előtti ellenőrzőlista (opt-in) -->
+    <div id="pretrade-modal" class="hidden fixed inset-0 z-[98] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Kereskedés előtti ellenőrzőlista">
+        <div class="glass-card w-full max-w-sm rounded-2xl border border-neon-cyan/30 p-5">
+            <h2 class="text-sm font-extrabold text-white mb-1"><i class="fa-solid fa-list-check text-neon-cyan mr-1.5"></i>Mielőtt megnyitod</h2>
+            <p class="text-[10.5px] text-slate-500 mb-3">A fegyelmezett kötések hosszú távon jobban teljesítenek — a heti elemzés megmutatja, nálad is így van-e.</p>
+            <div id="pretrade-checks" class="space-y-2 mb-4"></div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closePretradeChecklist()" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-dark-750 text-slate-300 hover:border-dark-600 transition">Mégse</button>
+                <button type="button" id="pretrade-confirm-btn" onclick="confirmPretradeChecklist()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-neon-cyan text-dark-950 hover:brightness-110 transition">Megnyitom</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Lebegő beszélő fej (a felhasználó saját feje) — csak felolvasás közben,
          mobilon és PC-n az Akadémia lecke-panelén kívül. Koppintás = leállítás. -->
     <div id="th-float" role="button" tabindex="0" aria-label="Felolvasás leállítása" onclick="ttsStopAll()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ttsStopAll();}">
@@ -17585,7 +17616,7 @@ Mean-reversion,2.5</textarea>
         <div id="onboarding-tour-tooltip" class="absolute left-1/2 -translate-x-1/2 glass-card rounded-xl border border-neon-cyan/40 p-3.5 shadow-2xl" style="bottom: 84px; width: 260px; max-width: 88vw;">
             <div id="onboarding-tour-text" class="text-xs text-slate-200 leading-relaxed mb-3"></div>
             <div class="flex items-center justify-between">
-                <button onclick="endOnboardingTour()" class="text-[10px] text-slate-500 hover:text-slate-300 transition">Kihagyás</button>
+<div class="flex items-center gap-2">                <button onclick="endOnboardingTour()" class="text-[10px] text-slate-500 hover:text-slate-300 transition">Kihagyás</button><button type="button" id="onboarding-tour-voice-btn" onclick="toggleTourVoice()" class="w-6 h-6 rounded-md border border-dark-750 text-[10px] text-slate-400 hover:text-neon-cyan transition" aria-label="Felolvasás a túrában be/ki" aria-pressed="true"><i class="fa-solid fa-volume-high"></i></button></div>
                 <div class="flex items-center gap-2">
                     <span id="onboarding-tour-step-label" class="text-[9px] text-slate-500 font-mono"></span>
                     <button onclick="onboardingTourNext()" id="onboarding-tour-next-btn" class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-neon-cyan text-dark-950">Tovább</button>
@@ -48339,7 +48370,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             try {
                 sb.rpc('record_sim_trade', {
                     p_client_id: String(t.id).slice(0, 64), p_asset: String(t.asset || '?').slice(0, 32), p_side: t.side,
-                    p_pnl: Math.round(pnl * 100) / 100, p_reason: t.reason ? String(t.reason).slice(0, 120) : null, p_note: t.note ? String(t.note).slice(0, 500) : null
+                    p_pnl: Math.round(pnl * 100) / 100, p_reason: t.reason ? String(t.reason).slice(0, 120) : null, p_note: t.note ? String(t.note).slice(0, 500) : null,
+                    p_checklist: (t.checklist === true || t.checklist === false) ? t.checklist : null
                 }).then(({ error }) => {
                     if (error && /record_sim_trade|function .* does not exist|PGRST202/i.test((error.message || '') + (error.code || ''))) simTradeRpcMissing = true;
                 }).catch(() => {});
@@ -48352,7 +48384,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const { data, error } = await sb.rpc('get_my_sim_trades', { p_days: 30 });
                 if (error) { if (/get_my_sim_trades|does not exist|PGRST202/i.test((error.message || '') + (error.code || ''))) simTradeRpcMissing = true; return; }
                 if (Array.isArray(data)) {
-                    simTradeArchive = data.map(r => ({ id: r.id, closedAt: Date.parse(r.closed_at), asset: r.asset, side: r.side, pnl: Number(r.pnl), reason: r.reason || '' }))
+                    simTradeArchive = data.map(r => ({ id: r.id, closedAt: Date.parse(r.closed_at), asset: r.asset, side: r.side, pnl: Number(r.pnl), reason: r.reason || '', checklist: (r.checklist === true || r.checklist === false) ? r.checklist : null }))
                                           .filter(r => Number.isFinite(r.closedAt) && Number.isFinite(r.pnl));
                     if (typeof renderProgressWeeklyReview === 'function') renderProgressWeeklyReview();
                 }
@@ -48364,7 +48396,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const map = new Map();
             simTradeArchive.forEach(t => { if (t.closedAt >= since) map.set(t.id, t); });
             (typeof tradeHistory !== 'undefined' ? tradeHistory : []).forEach(t => {
-                if (t && Number.isFinite(t.closedAt) && t.closedAt >= since && Number.isFinite(Number(t.pnl))) map.set(t.id, { id: t.id, closedAt: t.closedAt, asset: t.asset, side: t.side, pnl: Number(t.pnl), reason: t.reason || '' });
+                if (t && Number.isFinite(t.closedAt) && t.closedAt >= since && Number.isFinite(Number(t.pnl))) map.set(t.id, { id: t.id, closedAt: t.closedAt, asset: t.asset, side: t.side, pnl: Number(t.pnl), reason: t.reason || '', checklist: t.checklist === true || t.checklist === false ? t.checklist : (map.get(t.id) || {}).checklist });
             });
             return [...map.values()].sort((a, b) => a.closedAt - b.closedAt);
         }
@@ -48373,6 +48405,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const tr = simTradesInWindow(days);
             if (!tr.length) return null;
             const wins = tr.filter(t => t.pnl > 0), losses = tr.filter(t => t.pnl < 0);
+            const ckYes = tr.filter(t => t.checklist === true), ckNo = tr.filter(t => t.checklist === false);
             const sum = a => a.reduce((x, t) => x + t.pnl, 0);
             const grossWin = sum(wins), grossLoss = Math.abs(sum(losses));
             const net = grossWin - grossLoss;
@@ -48396,6 +48429,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     insights.push(`${maxLossRun} vesztes kötés jött egymás után — ilyenkor érdemes szünetet tartani, mielőtt a "visszanyerés" vágya irányítana.`);
                 if (L.n >= 3 && S.n >= 3 && Math.sign(L.net) !== Math.sign(S.net))
                     insights.push(`${L.net > S.net ? 'Long' : 'Short'} irányban sokkal jobb voltál (${fmtUsd(Math.max(L.net, S.net))} vs ${fmtUsd(Math.min(L.net, S.net))}) — nézd meg, mi a különbség a két irány setupjai között.`);
+                if (ckYes.length >= 3 && ckNo.length >= 3) {
+                    const avg = a => a.reduce((x, t) => x + t.pnl, 0) / a.length;
+                    const dy = avg(ckYes), dn = avg(ckNo);
+                    insights.push(dy >= dn
+                        ? `Az ellenőrzőlistát teljesítő kötéseid átlaga ${fmtUsd(dy)}, a többié ${fmtUsd(dn)} — a fegyelem nálad mérhetően kifizetődik.`
+                        : `Érdekes: most a listát NEM teljesítő kötéseid hoztak többet (${fmtUsd(dn)} vs ${fmtUsd(dy)}) — kevés adatnál ez még lehet véletlen, figyeld tovább.`);
+                }
                 if (pf !== null && pf !== Infinity && pf >= 1.5 && net > 0)
                     insights.push(`Erős hét a szimulátorban: ${pf.toFixed(2)}-es profit faktor — a nyereséged ${pf.toFixed(1)}-szerese a veszteségednek.`);
             }
@@ -56240,6 +56280,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <i class="fa-solid ${academyAutoplayTTS ? 'fa-stop' : 'fa-headphones'}"></i> ${academyAutoplayTTS ? 'Hangos tanulás leállítása' : 'Hangos tanulás indítása (automata felolvasás)'}
                         </button>
                         <button type="button" onclick="event.stopPropagation(); ttsCycleRate()" class="tts-rate-chip px-2 rounded-xl border border-dark-750 text-[11px] font-mono font-bold text-slate-300 hover:border-neon-cyan/40 transition" title="Felolvasási sebesség (a következő felolvasástól érvényes)" aria-label="Felolvasási sebesség váltása"><span data-tts-rate-label>${ttsRateLabel()}</span></button>
+                        ${sttSupported ? `<button type="button" onclick="event.stopPropagation(); voiceNavToggle()" class="px-2.5 rounded-xl border ${voiceNavOn ? 'border-red-400/60 text-red-300 bg-red-400/10' : 'border-dark-750 text-slate-300'} text-[11px] font-bold hover:border-neon-cyan/40 transition" title="Hangvezérlés: következő / előző / olvasd fel / kvíz / állj" aria-label="Hangvezérlés be- vagy kikapcsolása" aria-pressed="${voiceNavOn}"><i class="fa-solid ${voiceNavOn ? 'fa-microphone-lines animate-pulse' : 'fa-microphone'}"></i></button>` : ''}
+                        <button type="button" onclick="event.stopPropagation(); cycleLessonFontSize()" class="px-2.5 rounded-xl border border-dark-750 text-[11px] font-bold text-slate-300 hover:border-neon-cyan/40 transition" title="Betűméret" aria-label="Lecke betűméretének váltása">A<span class="text-[9px]">+</span></button>
                         </div>` : ''}
                         <div class="glass-card rounded-2xl p-6 border border-dark-750 min-h-[220px]">
                             <div class="flex items-center justify-between mb-3 gap-2">
@@ -57063,6 +57105,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function quizVoiceAnswer() {
             if (!sttSupported) return;
             if (quizVoiceListening) { try { quizVoiceRec && quizVoiceRec.stop(); } catch (e) {} return; }
+            if (voiceNavOn) { quizSetVoiceUi(false, 'A hangvezérlés be van kapcsolva — mondd ki a válasz betűjét.'); return; }
             const cur = quizCurrentOptionTexts();
             if (!cur) return;
             const opts = document.querySelectorAll('.academy-quiz-option');
@@ -57094,6 +57137,113 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 quizVoiceRec.start();
             } catch (e) { quizVoiceListening = false; quizSetVoiceUi(false, ''); }
         }
+
+        // ================= HANGVEZÉRLÉS A LECKÉKBEN =================
+        // Folyamatos beszédfelismerés, amíg be van kapcsolva: "következő",
+        // "előző", "olvasd fel", "kvíz", kvízben a válasz betűje, "állj".
+        // Amíg az app maga beszél, csak az "állj" parancsot vesszük figyelembe
+        // (különben a saját felolvasásából hallaná ki a "következő" szót).
+        let voiceNavOn = false, voiceNavRec = null, voiceNavStarts = [];
+
+        function voiceNavPill(text) {
+            const p = document.getElementById('voice-nav-pill'); if (!p) return;
+            p.classList.toggle('on', voiceNavOn);
+            if (text) document.getElementById('voice-nav-pill-text').textContent = text;
+        }
+
+        function voiceNavToggle(forceOff) {
+            if (!sttSupported) return;
+            if (voiceNavOn || forceOff) {
+                voiceNavOn = false;
+                try { voiceNavRec && voiceNavRec.abort(); } catch (e) {}
+                voiceNavRec = null;
+                voiceNavPill();
+                if (academyLessonIdx !== null && academyStage === 'cards') renderAcademyViewer();
+                return;
+            }
+            voiceNavOn = true; voiceNavStarts = [];
+            voiceNavPill('Hangvezérlés: mondd „következő”, „előző”, „olvasd fel”, „kvíz”, „állj”');
+            voiceNavStart();
+            if (academyLessonIdx !== null && academyStage === 'cards') renderAcademyViewer();
+        }
+
+        function voiceNavStart() {
+            if (!voiceNavOn) return;
+            const now = Date.now();
+            voiceNavStarts = voiceNavStarts.filter(t => now - t < 10000);
+            if (voiceNavStarts.length >= 6) { voiceNavToggle(true); showNotification('A hangvezérlés leállt (a mikrofon nem ad hangot).'); return; }
+            voiceNavStarts.push(now);
+            try {
+                const r = new SpeechRecognitionCtor();
+                r.lang = 'hu-HU'; r.continuous = true; r.interimResults = false; r.maxAlternatives = 3;
+                r.onresult = (ev) => {
+                    for (let i = ev.resultIndex || 0; i < ev.results.length; i++) {
+                        const res = ev.results[i];
+                        if (res && (res.isFinal === undefined || res.isFinal)) {
+                            const alts = []; for (let k = 0; k < res.length; k++) alts.push(res[k].transcript);
+                            voiceNavHandle(alts);
+                        }
+                    }
+                };
+                r.onerror = (e) => { if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) { voiceNavToggle(true); showNotification('A mikrofon-hozzáférés le van tiltva.'); } };
+                r.onend = () => { if (voiceNavOn && voiceNavRec === r) setTimeout(voiceNavStart, 250); };
+                voiceNavRec = r;
+                r.start();
+            } catch (e) { voiceNavToggle(true); }
+        }
+
+        function voiceNavHandle(alts) {
+            const norm = x => foldDiacritics(String(x || '').toLowerCase()).replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+            const heard = alts[0] || '';
+            const all = alts.map(norm).join(' | ');
+            const has = re => re.test(all);
+            if (has(/\b(allj|stop|csend|eleg|halt)\b/)) { ttsStopAll(); voiceNavPill('„' + heard + '” → leállítva'); return; }
+            if (ttsCurrentKey) return; // az app beszél — csak az "állj" számít
+            if (academyLessonIdx === null) return;
+            if (academyStage === 'cards') {
+                const l = LESSONS_DATA[academyLessonIdx];
+                if (has(/\b(kovetkezo|tovabb|lapozz|kovi)\b/)) { voiceNavPill('„' + heard + '” → következő'); academyNextCard(); return; }
+                if (has(/\b(elozo|vissza)\b/)) { voiceNavPill('„' + heard + '” → előző'); academyPrevCard(); return; }
+                if (has(/\b(olvasd|ismeteld|felolvas|olvass)\b/)) {
+                    const card = l.cards[academyCardIdx];
+                    voiceNavPill('„' + heard + '” → felolvasás');
+                    toggleSpeak('lesson-' + academyLessonIdx + '-card-' + academyCardIdx, (card.t ? card.t + '. ' : '') + card.b);
+                    return;
+                }
+                if (has(/\b(kviz|kerdesek|teszt)\b/)) {
+                    if (academyCardIdx === l.cards.length - 1) { voiceNavPill('„' + heard + '” → kvíz'); academyNextCard(); }
+                    else voiceNavPill('A kvíz a lecke utolsó kártyája után indul.');
+                    return;
+                }
+            } else if (academyStage === 'quiz') {
+                const opts = document.querySelectorAll('.academy-quiz-option');
+                const answered = opts[0] && opts[0].disabled;
+                if (answered && has(/\b(kovetkezo|tovabb|lapozz|kovi)\b/)) { const b = document.getElementById('academy-quiz-next-btn'); if (b && !b.disabled) { voiceNavPill('„' + heard + '” → következő kérdés'); b.click(); } return; }
+                if (has(/\b(olvasd|ismeteld|felolvas|olvass)\b/)) { voiceNavPill('„' + heard + '” → felolvasás'); quizReadAloud(); return; }
+                if (!answered) {
+                    const cur = quizCurrentOptionTexts();
+                    if (!cur) return;
+                    let idx = -1; for (let k = 0; k < alts.length && idx < 0; k++) idx = quizMatchSpoken(alts[k], cur.texts);
+                    if (idx >= 0) { voiceNavPill('„' + heard + '” → ' + 'ABCDEF'[idx]); quizLastAnswerByVoice = true; academyAnswerQuiz(idx); }
+                    else voiceNavPill('Nem értettem: „' + heard + '”');
+                }
+            }
+        }
+
+        // ---------- Lecke-betűméret ----------
+        let lessonFontStep = (() => { try { const v = parseInt(localStorage.getItem('chartolj_lesson_fs'), 10); return v === 1 || v === 2 ? v : 0; } catch (e) { return 0; } })();
+        function applyLessonFontSize() {
+            const v = document.getElementById('academy-viewer'); if (!v) return;
+            v.classList.toggle('lesson-fs-1', lessonFontStep === 1);
+            v.classList.toggle('lesson-fs-2', lessonFontStep === 2);
+        }
+        function cycleLessonFontSize() {
+            lessonFontStep = (lessonFontStep + 1) % 3;
+            try { localStorage.setItem('chartolj_lesson_fs', String(lessonFontStep)); } catch (e) {}
+            applyLessonFontSize();
+            showNotification('Lecke betűméret: ' + ['normál', 'nagy', 'nagyon nagy'][lessonFontStep]);
+        }
+        document.addEventListener('DOMContentLoaded', applyLessonFontSize);
 
         function academyAnswerQuiz(selectedIdx) {
             const l = LESSONS_DATA[academyLessonIdx];
@@ -57172,6 +57322,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
         function academyBackToList() {
             academyStopAutoplayIfRunning();
+            if (voiceNavOn) voiceNavToggle(true);
             academyLessonIdx = null;
             academyStage = 'cards';
             document.getElementById('academy-viewer').innerHTML = `
@@ -57559,7 +57710,59 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // letiltjuk, mielőtt bármilyen pozíció-nyitási logika lefutna — ez
         // megakadályozza, hogy egy gyors dupla-koppintás (mobilon nagyon
         // valós veszély) két pozíciót nyisson és kétszer vonja le a margót.
+        // ================= KERESKEDÉS ELŐTTI ELLENŐRZŐLISTA (opt-in) =================
+        // Bekapcsolva a végrehajtás előtt egy rövid lista jelenik meg (2 automatikus
+        // + 2 önbevallásos pont). A kötést mindig meg lehet nyitni — a cél a
+        // tudatosság és a mérés: a pozíció megkapja, hogy a lista teljesült-e
+        // (checklist: true/false), és a heti elemzés összeveti a kettőt.
+        // Kikapcsolva a végrehajtás pontosan a korábbi módon fut.
+        let pretradeEnabled = (() => { try { return localStorage.getItem('chartolj_pretrade_checklist') === '1'; } catch (e) { return false; } })();
+        let pretradeBypass = false, pretradeLastOk = null;
+        function setPretradeChecklistEnabled(on) {
+            pretradeEnabled = !!on;
+            try { localStorage.setItem('chartolj_pretrade_checklist', on ? '1' : '0'); } catch (e) {}
+        }
+        function pretradeAutoChecks() {
+            const amount = parseFloat(document.getElementById('input-trade-amount').value) || 0;
+            const tpOn = document.getElementById('toggle-tpsl').checked;
+            const sl = parseFloat(document.getElementById('input-sl-price').value);
+            const hasSl = tpOn && Number.isFinite(sl) && sl > 0;
+            const price = currentAsset && currentAsset.price;
+            let riskPct = null;
+            if (hasSl && price > 0 && accountBalance > 0) riskPct = (amount * Math.abs(price - sl) / price) / accountBalance * 100;
+            return { hasSl, riskPct };
+        }
+        function openPretradeChecklist() {
+            const a = pretradeAutoChecks();
+            const row = (ok, txt, sub) => `<div class="flex items-start gap-2 text-[11.5px] ${ok ? 'text-neon-green' : 'text-amber-300'}"><i class="fa-solid ${ok ? 'fa-circle-check' : 'fa-triangle-exclamation'} mt-0.5"></i><div><div class="font-bold">${txt}</div>${sub ? `<div class="text-[10px] text-slate-500">${sub}</div>` : ''}</div></div>`;
+            const riskOk = a.riskPct !== null && a.riskPct <= 1;
+            const manual = (id, txt) => `<label class="flex items-start gap-2 text-[11.5px] text-slate-200 cursor-pointer"><input type="checkbox" id="${id}" class="accent-cyan-400 mt-0.5"> <span>${txt}</span></label>`;
+            document.getElementById('pretrade-checks').innerHTML =
+                row(a.hasSl, a.hasSl ? 'Van stop-loss' : 'Nincs stop-loss beállítva', a.hasSl ? '' : 'Kapcsold be a TP/SL-t, és adj meg SL árat.') +
+                row(riskOk, a.riskPct === null ? 'Kockázat: nem számolható (nincs SL)' : `Kockázat: ${a.riskPct.toFixed(2).replace('.', ',')}% a számládból`, riskOk ? 'Legfeljebb 1% — rendben.' : 'Az ajánlott felső határ kötésenként 1%.') +
+                manual('pretrade-plan', 'Ez a kötés megfelel a kereskedési tervemnek') +
+                manual('pretrade-emotion', 'Nem bosszúból, unalomból vagy FOMO-ból nyitom');
+            document.getElementById('pretrade-modal').classList.remove('hidden');
+            const first = document.getElementById('pretrade-plan'); if (first) first.focus();
+        }
+        function closePretradeChecklist() { document.getElementById('pretrade-modal').classList.add('hidden'); }
+        document.addEventListener('DOMContentLoaded', () => {
+            const t = document.getElementById('pretrade-checklist-toggle'); if (t) t.checked = pretradeEnabled;
+            const m = document.getElementById('pretrade-modal');
+            if (m) m.addEventListener('keydown', e => { if (e.key === 'Escape') closePretradeChecklist(); });
+        });
+        function confirmPretradeChecklist() {
+            const a = pretradeAutoChecks();
+            const plan = document.getElementById('pretrade-plan'), emo = document.getElementById('pretrade-emotion');
+            pretradeLastOk = !!(a.hasSl && a.riskPct !== null && a.riskPct <= 1 && plan && plan.checked && emo && emo.checked);
+            closePretradeChecklist();
+            pretradeBypass = true;
+            try { executeOrder(); } finally { pretradeBypass = false; }
+        }
+
         function executeOrder() {
+            if (pretradeEnabled && !pretradeBypass) { openPretradeChecklist(); return; }
+            if (!pretradeEnabled) pretradeLastOk = null;
             const btn = document.getElementById('btn-execute-order');
             if (btn && btn.disabled) return; // már folyamatban egy végrehajtás
             if (btn) btn.disabled = true;
@@ -57650,7 +57853,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 margin: margin,
                 pnl: 0,
                 tp: tpEnabled ? tpVal : null,
-                sl: tpEnabled ? slVal : null
+                sl: tpEnabled ? slVal : null,
+                checklist: pretradeLastOk
             };
 
             positions.push(pos);
@@ -57883,7 +58087,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     closePrice: p.currentPrice ?? currentAsset.price,
                     pnl: p.pnl,
                     reason: reason || 'Manuális zárás',
-                    note: note || ''
+                    note: note || '',
+                    checklist: (p.checklist === true || p.checklist === false) ? p.checklist : null
                 });
                 persistSimTrade(tradeHistory[tradeHistory.length - 1]);
 
@@ -57936,7 +58141,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 closePrice: p.currentPrice ?? currentAsset.price,
                 pnl: realizedPnl,
                 reason: (reason || 'Manuális zárás') + ` (${pct}% részleges)`,
-                note: note || ''
+                note: note || '',
+                    checklist: (p.checklist === true || p.checklist === false) ? p.checklist : null
             });
             persistSimTrade(tradeHistory[tradeHistory.length - 1]);
 
@@ -59260,6 +59466,11 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             const target = document.getElementById(step.navId);
             if (target) target.classList.add('onboarding-tour-highlight');
             document.getElementById('onboarding-tour-text').textContent = step.text;
+            // A tanár-fej felolvassa a lépést (a lebegő fej a sötét háttér fölé kerül).
+            if (ttsSupported && tourVoiceOn) {
+                const fl = document.getElementById('th-float'); if (fl) fl.classList.add('th-float-top');
+                ttsSpeak('tour-step-' + onboardingTourStepIdx, step.text, null);
+            }
             document.getElementById('onboarding-tour-step-label').textContent = (onboardingTourStepIdx + 1) + ' / ' + ONBOARDING_TOUR_STEPS.length;
             document.getElementById('onboarding-tour-next-btn').textContent = onboardingTourStepIdx === ONBOARDING_TOUR_STEPS.length - 1 ? 'Befejezés' : 'Tovább';
         }
@@ -59268,8 +59479,18 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             if (onboardingTourStepIdx >= ONBOARDING_TOUR_STEPS.length) { endOnboardingTour(); return; }
             renderOnboardingTourStep();
         }
+        let tourVoiceOn = (() => { try { return localStorage.getItem('chartolj_tour_voice') !== '0'; } catch (e) { return true; } })();
+        function toggleTourVoice() {
+            tourVoiceOn = !tourVoiceOn;
+            try { localStorage.setItem('chartolj_tour_voice', tourVoiceOn ? '1' : '0'); } catch (e) {}
+            const b = document.getElementById('onboarding-tour-voice-btn');
+            if (b) { b.innerHTML = tourVoiceOn ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark"></i>'; b.setAttribute('aria-pressed', String(tourVoiceOn)); }
+            if (!tourVoiceOn) ttsStopAll(); else renderOnboardingTourStep();
+        }
         function endOnboardingTour() {
             document.getElementById('onboarding-tour-overlay').classList.add('hidden');
+            if (ttsSupported) ttsStopAll();
+            const _fl = document.getElementById('th-float'); if (_fl) _fl.classList.remove('th-float-top');
             document.querySelectorAll('.onboarding-tour-highlight').forEach(el => el.classList.remove('onboarding-tour-highlight'));
             if (typeof switchMobileTab === 'function') switchMobileTab('home');
             const trigger = _onboardingTourTrigger;
