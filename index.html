@@ -48564,6 +48564,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         // =================================================================
         const ttsSupported = (typeof window !== 'undefined' && 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined');
         let ttsCurrentKey = null;
+        let ttsCurrentUtter = null; // az épp aktív SpeechSynthesisUtterance (elárvult események szűrésére)
         let ttsVoicesCache = null;
 
         function ttsPickHungarianVoice() {
@@ -48577,10 +48578,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         // HTML-ből sima, felolvasható szöveg (tag-ek eltávolítva, entitások feloldva).
+        // BIZTONSÁG: DOMParser-rel egy INERT dokumentumba elemzünk — egy
+        // document.createElement('div').innerHTML ugyanis (még csatolatlanul
+        // is) letölti a képeket és lefuttatja az onerror/onload kezelőket, így
+        // egy AI-coach válaszba csempészett <img onerror=...> a Felolvasás
+        // gombra kattintva kódot futtatott volna (helyileg reprodukálva).
         function ttsStripHtml(html) {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = String(html == null ? '' : html);
-            return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+            try {
+                // Sortörés / blokkhatár után szóközt szúrunk be, különben a
+                // textContent összeragasztja a szavakat ("world<br>ok" -> "worldok",
+                // listaelemek egybefolynak) — a felolvasás és a szájmozgás is ezt követné.
+                const spaced = String(html == null ? '' : html).replace(/(<br\s*\/?>|<\/(?:p|li|div|h[1-6]|td|th|tr|ul|ol|blockquote)>)/gi, '$1 ');
+                const doc = new DOMParser().parseFromString(spaced, 'text/html');
+                return (doc.body ? doc.body.textContent : '').replace(/\s+/g, ' ').trim();
+            } catch (e) {
+                return String(html == null ? '' : html).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            }
         }
 
         function ttsUpdateButtonIcon(key, speaking) {
@@ -48619,10 +48632,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const voice = ttsPickHungarianVoice();
             if (voice) utter.voice = voice;
             utter.rate = 1.0;
-            utter.onend = () => { talkingHeadDetach(utter); if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); } if (onEndExtra) onEndExtra(); };
-            utter.onerror = () => { talkingHeadDetach(utter); if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); } };
+            // Csak a MÉG AKTUÁLIS felolvasás vége számít: egy cancel()-lel
+            // megszakított, "elárvult" utterance késői end/error eseménye (pl.
+            // Safari a cancel után is "end"-et küld) ne nullázza az újabb
+            // felolvasás állapotát, és ne léptesse tovább a Hangos tanulás láncot.
+            utter.onend = () => {
+                talkingHeadDetach(utter);
+                if (ttsCurrentUtter !== utter) return;
+                ttsCurrentUtter = null;
+                if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); }
+                if (onEndExtra) onEndExtra();
+            };
+            utter.onerror = () => {
+                talkingHeadDetach(utter);
+                if (ttsCurrentUtter !== utter) return;
+                ttsCurrentUtter = null;
+                if (ttsCurrentKey === key) { ttsCurrentKey = null; ttsUpdateButtonIcon(key, false); }
+            };
             talkingHeadAttach(utter, text);
 
+            ttsCurrentUtter = utter;
             ttsCurrentKey = key;
             ttsUpdateButtonIcon(key, true);
             window.speechSynthesis.speak(utter);
@@ -48831,7 +48860,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // késve vált igazra (vagy sosem), ami miatt egy második kattintás
             // tévesen újraindította volna a felolvasást leállítás helyett.
             if (ttsCurrentKey === key) {
-                window.speechSynthesis.cancel(); talkingHeadStop();
+                window.speechSynthesis.cancel(); ttsCurrentUtter = null; talkingHeadStop();
                 ttsUpdateButtonIcon(key, false);
                 ttsCurrentKey = null;
                 if (academyAutoplayTTS) { academyAutoplayTTS = false; if (typeof renderAcademyViewer === 'function' && academyStage === 'cards') renderAcademyViewer(); }
@@ -56542,7 +56571,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function academyStopAutoplayIfRunning() {
             if (!academyAutoplayTTS) return;
             academyAutoplayTTS = false;
-            if (ttsSupported) window.speechSynthesis.cancel(); talkingHeadStop();
+            if (ttsSupported) window.speechSynthesis.cancel(); ttsCurrentUtter = null; talkingHeadStop();
             if (ttsCurrentKey) { ttsUpdateButtonIcon(ttsCurrentKey, false); ttsCurrentKey = null; }
         }
 
@@ -56580,7 +56609,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (!ttsSupported) return;
             if (academyAutoplayTTS) {
                 academyAutoplayTTS = false;
-                window.speechSynthesis.cancel(); talkingHeadStop();
+                window.speechSynthesis.cancel(); ttsCurrentUtter = null; talkingHeadStop();
                 if (ttsCurrentKey) { ttsUpdateButtonIcon(ttsCurrentKey, false); ttsCurrentKey = null; }
                 renderAcademyViewer();
                 return;
