@@ -38165,6 +38165,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // képest elenyésző brickSize) emberfeletti sok téglát generálna, és befagyasztaná/
             // kifogyasztaná a memóriát a böngészőben — ehelyett inkább jelezzük a problémát.
             let brickOverflow = false;
+            // JAVÍTÁS (audit — hiányzó túlcsordulás-ellenőrzés): a `closes` szabad
+            // szöveges bemenetből jön, felső korlát nélkül — két egyenként véges, de
+            // szélsőséges nagyságrendű záróár (pl. "1e25" és "5e25") és egy ehhez mért
+            // téglaméret mellett a `lastBrickClose` IEEE754 double túlcsordulhatna
+            // Infinity-re a `+=`/`-=` ismétlésekor, MIELŐTT a MAX_BRICKS-korlát
+            // elkapná. Ugyanaz a hibaosztály, mint a korábban javított kalkulátoroknál.
+            let numericOverflow = false;
 
             brickLoop:
             for (let i = 1; i < closes.length; i++) {
@@ -38172,15 +38179,22 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 while (price - lastBrickClose >= brickSize) {
                     const o = lastBrickClose;
                     lastBrickClose += brickSize;
+                    if (!Number.isFinite(lastBrickClose)) { numericOverflow = true; break brickLoop; }
                     bricks.push({ dir: 'up', open: o, close: lastBrickClose });
                     if (bricks.length > MAX_BRICKS) { brickOverflow = true; break brickLoop; }
                 }
                 while (lastBrickClose - price >= brickSize) {
                     const o = lastBrickClose;
                     lastBrickClose -= brickSize;
+                    if (!Number.isFinite(lastBrickClose)) { numericOverflow = true; break brickLoop; }
                     bricks.push({ dir: 'down', open: o, close: lastBrickClose });
                     if (bricks.length > MAX_BRICKS) { brickOverflow = true; break brickLoop; }
                 }
+            }
+
+            if (numericOverflow) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A megadott záróárak és/vagy a téglaméret szélsőséges (de egyenként véges) nagyságrendi eltérése túlcsordulást okozott a lebegőpontos számábrázolásban — adj meg reálisabb nagyságrendű értékeket!</div>`;
+                return;
             }
 
             if (brickOverflow) {
@@ -38196,13 +38210,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const upCount = bricks.filter(b => b.dir === 'up').length;
             const downCount = bricks.length - upCount;
 
+            // JAVÍTÁS (audit — nyers tudományos jelölés szivárgás + vízszintes
+            // túlcsordulás): a `closes`/`brickSize` felső korlát nélküli szabad
+            // szöveges bemenetből jönnek — egyenként véges, de szélsőséges
+            // nagyságrendű értékeknél a tégla nyitó/záró ára (és maga a
+            // téglaméret-címke az összegző sorban) átlépheti az 1e21-es
+            // küszöböt, ahol a natív `.toFixed()`/sima template-interpoláció
+            // nyers tudományos jelölésre vált (pl. "1e+25"). Ugyanaz a
+            // hibaosztály, mint a korábban javított kalkulátoroknál —
+            // `.toLocaleString()`-re cserélve (SOHA nem vált tudományos
+            // jelölésre), a tégla-sorokat pedig a `min-w-0 text-right` +
+            // `overflow-wrap:anywhere` + `flex-wrap gap-x-2 gap-y-1` mintával
+            // védve a 20+ jegyű számok kilógása ellen.
             const rows = bricks.map((b, i) => {
                 const colorClass = b.dir === 'up' ? 'text-neon-green' : 'text-neon-red';
                 const arrow = b.dir === 'up' ? '▲' : '▼';
                 return `
-                    <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
-                        <span class="text-slate-400">#${i + 1} ${arrow}:</span>
-                        <span class="font-extrabold ${colorClass}">${b.open.toFixed(2)} → ${b.close.toFixed(2)}</span>
+                    <div class="flex flex-wrap items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0 gap-x-2 gap-y-1">
+                        <span class="text-slate-400 min-w-0">#${i + 1} ${arrow}:</span>
+                        <span class="font-extrabold ${colorClass} min-w-0 text-right" style="overflow-wrap:anywhere;">${b.open.toLocaleString('en-US', { maximumFractionDigits: 2 })} → ${b.close.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                 `;
             }).join('');
@@ -38214,7 +38240,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 mb-3 max-h-56 overflow-y-auto">
                     ${rows}
                 </div>
-                <p class="text-[10px] text-slate-500">Összesen ${bricks.length} tégla (${upCount} felfelé, ${downCount} lefelé) ${brickSize}-es téglamérettel. Utolsó tégla iránya: <span class="font-semibold ${lastColorClass}">${lastDir === 'up' ? 'FELFELÉ' : 'LEFELÉ'}</span>.</p>
+                <p class="text-[10px] text-slate-500" style="overflow-wrap:anywhere;">Összesen ${bricks.length} tégla (${upCount} felfelé, ${downCount} lefelé) ${brickSize.toLocaleString('en-US', { maximumFractionDigits: 8 })}-es téglamérettel. Utolsó tégla iránya: <span class="font-semibold ${lastColorClass}">${lastDir === 'up' ? 'FELFELÉ' : 'LEFELÉ'}</span>.</p>
             `;
         }
 
