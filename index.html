@@ -3840,7 +3840,7 @@
                             </div>
                             <input type="range" id="risk-calc-pct" min="0.25" max="5" step="0.25" value="1" oninput="updatePositionSizeCalc()" class="w-full" aria-label="Kockáztatott egyenleg-százalék">
                             <div class="flex items-center justify-between mt-1.5">
-                                <span class="text-[10px] text-slate-500" id="risk-calc-result">Add meg a Stop Loss árat a számításhoz.</span>
+                                <span class="text-[10px] text-slate-500" id="risk-calc-result" role="status" aria-live="polite">Add meg a Stop Loss árat a számításhoz.</span>
                                 <button type="button" onclick="applyPositionSizeCalc()" id="risk-calc-apply-btn" disabled class="shrink-0 ml-2 px-2 py-1 rounded-lg text-[10px] font-bold bg-dark-800 text-neon-cyan hover:bg-dark-750 transition disabled:opacity-40 disabled:cursor-not-allowed">Alkalmaz</button>
                             </div>
                         </div>
@@ -17177,7 +17177,7 @@ Mean-reversion,2.5</textarea>
                 <input type="email" id="admin-user-search-input" placeholder="felhasználó email-címe..." aria-label="Felhasználó keresése email-cím alapján" class="flex-grow bg-dark-850 border border-dark-750 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500" onkeydown="if(event.key==='Enter'){ event.preventDefault(); adminLookupUser(); }">
                 <button onclick="adminLookupUser()" class="shrink-0 px-3 rounded-lg text-xs font-bold bg-dark-800 text-amber-400 hover:bg-dark-750 transition" aria-label="Felhasználó keresése"><i class="fa-solid fa-magnifying-glass"></i></button>
             </div>
-            <div id="admin-user-lookup-result" class="hidden shrink-0 mb-2"></div>
+            <div id="admin-user-lookup-result" class="hidden shrink-0 mb-2" role="status" aria-live="polite"></div>
             <div id="admin-panel-content" class="flex-grow overflow-y-auto space-y-2 pr-1"></div>
             <button onclick="loadAdminStats()" class="mt-2 shrink-0 text-[10.5px] font-bold text-slate-500 hover:text-neon-cyan transition self-start"><i class="fa-solid fa-rotate mr-1"></i>Frissítés</button>
             <p class="text-[9.5px] text-slate-600 pt-2 shrink-0">Csak OLVASÁS: összesített, anonim app-statisztika. A jogosultságot a szerver (adatbázis) is önállóan ellenőrzi, nem csak ez a felület.</p>
