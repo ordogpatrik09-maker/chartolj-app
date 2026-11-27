@@ -16334,6 +16334,12 @@ Mean-reversion,2.5</textarea>
             <div>
                 <h2 id="home-greeting" class="text-lg font-bold text-white">Üdv!</h2>
                 <p class="text-xs text-slate-500" data-i18n="home_subtitle">Készen állsz a következő gyakorláshoz?</p>
+                <div class="m-only relative mt-2.5" id="feature-search-wrap">
+                    <input id="feature-search-input" type="search" autocomplete="off" placeholder="🔍 Mit keresel? pl. Drill, napló, RSI, nyelv…" aria-label="Funkció keresése az appban" aria-controls="feature-search-results"
+                        oninput="renderFeatureSearch(this.value)" onkeydown="if(event.key==='Enter'){const f=document.querySelector('#feature-search-results [data-fs]');if(f){event.preventDefault();f.click();}} if(event.key==='Escape'){this.value='';renderFeatureSearch('');}"
+                        class="w-full bg-dark-900 border border-dark-750 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder-slate-500 focus:outline-none focus:border-neon-cyan/50">
+                    <div id="feature-search-results" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-dark-950 border border-dark-750 rounded-xl shadow-2xl max-h-[55vh] overflow-y-auto" role="listbox" aria-label="Találatok"></div>
+                </div>
                 <div id="home-stats-bar" class="flex items-center gap-3 mt-1.5 text-[11px] font-mono"><span class="text-neon-cyan"><i class="fa-solid fa-star mr-0.5"></i><span id="home-xp-val">0</span> XP</span><span class="text-amber-400"><i class="fa-solid fa-coins mr-0.5"></i><span id="home-coin-val">0</span></span><div id="home-mastered-count" class="text-[10px] text-slate-600 mt-0.5"></div><div id="home-milestone-val" class="text-[10px] text-slate-600 mt-0.5"></div><span id="home-weekly-xp" class="hidden text-slate-600 text-[11px]"><i class="fa-solid fa-bolt mx-1 text-neon-cyan"></i><span id="home-weekly-xp-num">0</span> XP</span><span id="home-streak-val" class="hidden text-slate-600"><i class="fa-solid fa-calendar-check mx-1"></i><span id="home-streak-num">1</span> nap</span></div>
                 <div id="home-srs-due" class="hidden"></div>
                 <div id="home-today-lessons" class="text-[10px] text-slate-600 mt-0.5"></div>
@@ -48969,6 +48975,66 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         document.addEventListener('DOMContentLoaded', () => setTimeout(renderHomeToday, 400));
+        // ================= FUNKCIÓ-KERESŐ (mobil Kezdőlap) =================
+        // Minden fontos funkció egy helyről elérhető. Csak navigáció a meglévő
+        // függvényekre; ékezet- és kis/nagybetű-független keresés.
+        const AC = m => `switchMobileTab('academy'); setTimeout(function(){ setAcademyMode('${m}'); }, 30)`;
+        const PG = t => `switchMobileTab('progress'); setTimeout(function(){ setProgressTab('${t}'); }, 30)`;
+        const PR = g => `switchMobileTab('profile'); setTimeout(function(){ var c=document.getElementById('profile-stack'); if(c&&c.classList.contains('mg-closed-${g}')) toggleMobileGroup('profile-stack','${g}'); }, 30)`;
+        const TR = js => `switchMobileTab('trade'); setTimeout(function(){ ${js} }, 60)`;
+        const FEATURES = [
+            ['☀️', 'Napi 5 perc', 'napi adag gyakorlás ma', `switchMobileTab('academy'); setTimeout(startDailySession, 60)`],
+            ['📖', 'Leckék', 'tanulás lecke modul', AC('lessons')], ['🧭', 'Kezdő Tanterv', 'tanterv útvonal kezdő', AC('curriculum')],
+            ['⚡', 'Chart Drill', 'drill alakzat felismerés gyertya gyakorlás', AC('drill')], ['🎬', 'Replay Szimulátor', 'replay visszajátszás múlt', AC('replay')],
+            ['🏆', 'Heti kihívás', 'heti kihívás verseny ranglista replay', AC('replay')], ['🔄', 'Ismétlés', 'ismétlés esedékes spaced', AC('review')],
+            ['↩️', 'Hibás kérdések', 'hiba hibabank rossz válasz', AC('mistakes')], ['🕐', 'Mi lenne, ha...', 'mi lenne ha forgatókönyv', AC('whatif')],
+            ['📷', 'AI Chart Elemző', 'ai chart elemző kép feltöltés képernyőkép', AC('ai-analyzer')], ['📚', 'Szószedet', 'szószedet fogalom definíció glosszárium', AC('glossary')],
+            ['📈', 'Chart Alakzatok', 'alakzat minta fej váll háromszög galéria', AC('gallery')], ['📅', 'Makronaptár', 'makro naptár fed ekb kamat esemény infláció', AC('calendar')],
+            ['🏳️', 'Magyar Piac', 'magyar piac bux otp mol', AC('hungarian')],
+            ['🎯', 'Szintfelmérő', 'szintfelmérő teszt honnan kezdjek', `switchMobileTab('academy'); setTimeout(startPlacementTest, 60)`],
+            ['📝', 'Modulvizsga', 'vizsga modul oklevél kitüntetés', `switchMobileTab('academy'); setTimeout(function(){ startModuleExam(academyModule); }, 60)`],
+            ['🤖', 'AI Coach chat', 'ai chat coach kérdés tanár', `toggleAiChat()`],
+            ['💱', 'Kereskedési panel', 'kereskedés vétel eladás long short pozíció nyitás megbízás', TR('openOrderSheetMobile()')],
+            ['✏️', 'Rajzeszközök', 'rajz eszközök trendvonal fibonacci', TR('openToolsSheetMobile()')],
+            ['🕯️', 'Grafikon típusa és indikátorok', 'grafikon gyertya vonal terület ema bollinger rsi indikátor', TR('openTradeMoreSheet()')],
+            ['💼', 'Portfólió áttekintés', 'portfólió egyenleg kitettség', TR("tmProxy('tab-btn-portfolio')")],
+            ['🎯', 'Gyengepontok', 'gyengepont hibák elemzés', TR("tmProxy('tab-btn-weak-topics')")],
+            ['🏛️', 'Történelmi esemény szimulátor', 'történelmi esemény válság crash', TR("tmProxy('tab-btn-historical-event')")],
+            ['🖼️', 'Haladás exportálása képként', 'haladás export kép megosztás', TR("tmProxy('tab-btn-progress-export')")],
+            ['📒', 'Kereskedési napló', 'napló journal p&l bejegyzés', `openTradingJournal()`], ['📋', 'Kereskedési terv', 'terv szabályok plan', `openTradingPlan()`],
+            ['🔔', 'Árfolyam-riasztások', 'riasztás értesítés ár alert', `openAlertsModal()`], ['🧮', 'Kalkulátorok', 'kalkulátor számoló kockázat pozícióméret pip', `openMobileToolsModal()`],
+            ['⭐', 'Chartolj Prémium', 'prémium előfizetés fizetés', `openPremiumModal()`],
+            ['📊', 'Heti összefoglaló', 'heti elemzés 7 nap összefoglaló szimulátor', PG('ov')], ['🔥', 'Napi kihívások és sorozat', 'napi kihívás sorozat streak védő freeze', PG('ov')],
+            ['🥇', 'Ranglista', 'ranglista barátok verseny meghívó csapat', PG('lb')], ['📉', 'Statisztika', 'statisztika modul haladás készség', PG('st')],
+            ['🏅', 'Rangok és küldetések', 'rang küldetés téma', `openRanksMissionsModal('ranks')`], ['🛡️', 'Jelvények', 'jelvény badge megosztás', `openBadgesPanel()`],
+            ['🎓', 'Certifikáció', 'certifikáció tanúsítvány', PG('rw')],
+            ['🌐', 'Nyelv', 'nyelv language', PR('settings')], ['🎨', 'Akcentszín', 'szín akcent téma', PR('settings')], ['🔠', 'Szövegméret', 'betűméret szöveg nagyítás', PR('settings')],
+            ['🌓', 'Megjelenés (sötét/világos)', 'sötét világos téma megjelenés', PR('settings')], ['⏰', 'Napi emlékeztető', 'emlékeztető értesítés push', PR('settings')],
+            ['🆕', 'Mi újság?', 'újdonság changelog frissítés', `openChangelogModal()`], ['💾', 'Adataim letöltése', 'adat export gdpr letöltés', `exportMyData()`],
+            ['⚖️', 'Jogi tudnivalók', 'jogi adatvédelem ászf', `openLegalScreen()`], ['👤', 'Profil és fiók', 'profil fiók bejelentkezés jelszó avatar', `switchMobileTab('profile')`]
+        ];
+        function renderFeatureSearch(q) {
+            const box = document.getElementById('feature-search-results'); if (!box) return;
+            const norm = x => foldDiacritics(String(x || '').toLowerCase());
+            const words = norm(q).trim().split(/\s+/).filter(Boolean);
+            if (!words.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+            const hits = FEATURES.map((f, i) => {
+                const hay = norm(f[1] + ' ' + f[2]);
+                if (!words.every(w => hay.includes(w))) return null;
+                return { i, score: norm(f[1]).startsWith(words[0]) ? 0 : (norm(f[1]).includes(words[0]) ? 1 : 2) };
+            }).filter(Boolean).sort((a, b) => a.score - b.score).slice(0, 8);
+            box.classList.remove('hidden');
+            box.innerHTML = hits.length ? hits.map(h => { const f = FEATURES[h.i];
+                return `<button type="button" role="option" data-fs="${h.i}" onclick="runFeature(${h.i})" class="w-full text-left px-3 py-2.5 flex items-center gap-3 border-b border-dark-800 last:border-0 hover:bg-dark-850"><span class="text-base">${f[0]}</span><span class="text-[13px] text-white font-semibold">${escapeHtml(f[1])}</span></button>`; }).join('')
+                : `<div class="px-3 py-3 text-[12px] text-slate-500">Nincs találat — próbáld másképp, vagy kérdezd az AI Coach-ot.</div>`;
+        }
+        function runFeature(i) {
+            const f = FEATURES[i]; if (!f) return;
+            const inp = document.getElementById('feature-search-input'); if (inp) { inp.value = ''; inp.blur(); }
+            renderFeatureSearch('');
+            try { (new Function(f[3]))(); } catch (e) { showNotification('Ez most nem nyitható meg.'); }
+        }
+
         // ================= MOBIL "TÖBB" LAP (Kereskedés) =================
         function tmProxy(id) { const el = document.getElementById(id); if (el) el.click(); }
         function renderTradeMoreSheet() {
@@ -60291,10 +60357,10 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
         // eleve nem látszik (lásd a #mobile-bottom-nav CSS-t) — a Desktop
         // nézet ezzel a funkcióval egyáltalán nem érintett.
         const ONBOARDING_TOUR_STEPS = [
-            { tab: 'home', navId: 'navbtn-home', text: 'Itt a Kezdőlapon találod a napi összefoglalót, a folytatható leckét és az aktuális statisztikáidat.' },
-            { tab: 'trade', navId: 'navbtn-trade', text: 'A Kereskedés fülön demó-egyenleggel gyakorolhatsz valódi piaci grafikonokon, kockázat nélkül.' },
-            { tab: 'academy', navId: 'navbtn-academy', text: 'Az Akadémia leckéi és a Chart Drill itt találhatók — ide térj vissza a napi gyakorláshoz.' },
-            { tab: 'progress', navId: 'navbtn-progress', text: 'A Fejlődés fülön követheted az XP-det, a rangjaidat és a kitűzött céljaidat.' }
+            { tab: 'home', navId: 'navbtn-home', text: 'Itt a Kezdőlapon a „Ma” kártyán látod a napi teendőidet — Napi 5 perc, sorozat, kihívások —, felül pedig a keresővel bármit megtalálsz az appban.' },
+            { tab: 'trade', navId: 'navbtn-trade', text: 'A Kereskedés fülön demó-egyenleggel gyakorolhatsz valódi piaci grafikonokon, kockázat nélkül. A grafikon- és elemző-beállításokat a ⋯ gomb alatt találod.' },
+            { tab: 'academy', navId: 'navbtn-academy', text: 'Az Akadémia három része: Leckék, Gyakorlás (Drill, Replay, Ismétlés) és Tudástár. A leckéket a tanár fel is olvassa neked.' },
+            { tab: 'progress', navId: 'navbtn-progress', text: 'A Fejlődés fülön lapokra bontva látod a haladásod: Áttekintés, Ranglista, Statisztika és Jutalmak.' }
         ];
         let onboardingTourStepIdx = 0;
         // MINŐSÉGJAVÍTÁS: az onboarding-tour-overlay role="dialog"
