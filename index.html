@@ -42160,16 +42160,30 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const anyWipeout = rows.some(r => r.pnl <= -balance);
             const anySevere = rows.some(r => r.pnl < 0 && Math.abs(r.pnlPct) >= 50);
 
+            // JAVÍTÁS (audit — "-0%" szivárgás, ua. hibaosztály mint a fájl többi
+            // "-0.00%" javításánál): a `shock` a felhasználó szabad szöveges
+            // bemenete (pl. "-20,-10,10,20") — egy szó szerint "-0" vagy egy
+            // tetszőlegesen kicsi, de negatív (pl. "-0.00001") megadott érték a
+            // kijelzési 4 tizedesjegyre kerekítve pontosan nullára kerekedik, a
+            // `shock > 0 ? '+' : ''` ellenőrzés viszont a KEREKÍTÉS ELŐTTI
+            // negatív értéket nézi, ezért önálló, értelmetlen "-0%"-ot adott a
+            // helyes "0%" helyett. zeroSafeRound() ugyanazt a nullára-kerekedett
+            // állapotot nézi az előjel-eldöntéshez ÉS a kiíráshoz is.
+            const fmtShock = (v) => {
+                const z = zeroSafeRound(v, 4);
+                return `${z > 0 ? '+' : ''}${z.toLocaleString('en-US', { maximumFractionDigits: 4 })}`;
+            };
+
             let overallColor, overallVerdict;
             if (anyWipeout) {
                 overallColor = 'text-neon-red';
-                overallVerdict = `💀 Legalább egy megadott forgatókönyvben (${worst.shock > 0 ? '+' : ''}${worst.shock.toLocaleString('en-US', { maximumFractionDigits: 4 })}%) a veszteség elérné vagy meghaladná a teljes számla tőkédet — ez a pozícióméret/tőkeáttétel ÉS tőke-arány túl kockázatos egy ilyen szélsőséges, de nem lehetetlen napra.`;
+                overallVerdict = `💀 Legalább egy megadott forgatókönyvben (${fmtShock(worst.shock)}%) a veszteség elérné vagy meghaladná a teljes számla tőkédet — ez a pozícióméret/tőkeáttétel ÉS tőke-arány túl kockázatos egy ilyen szélsőséges, de nem lehetetlen napra.`;
             } else if (anySevere) {
                 overallColor = 'text-amber-400';
-                overallVerdict = `⚠️ A legrosszabb megadott forgatókönyvben (${worst.shock > 0 ? '+' : ''}${worst.shock.toLocaleString('en-US', { maximumFractionDigits: 4 })}%) a veszteség a tőke 50%-át is elérné vagy meghaladná — érdemes kisebb pozícióméretet vagy tőkeáttételt fontolni, ha ez a kockázati szint elfogadhatatlan számodra.`;
+                overallVerdict = `⚠️ A legrosszabb megadott forgatókönyvben (${fmtShock(worst.shock)}%) a veszteség a tőke 50%-át is elérné vagy meghaladná — érdemes kisebb pozícióméretet vagy tőkeáttételt fontolni, ha ez a kockázati szint elfogadhatatlan számodra.`;
             } else {
                 overallColor = 'text-neon-cyan';
-                overallVerdict = `A legrosszabb megadott forgatókönyvben (${worst.shock > 0 ? '+' : ''}${worst.shock.toLocaleString('en-US', { maximumFractionDigits: 4 })}%) a veszteség a tőke kevesebb mint 20%-a — a jelenlegi pozícióméret ezekre a sokkokra viszonylag jól tolerálható, de ettől a stressz-teszt nem garancia a jövőre.`;
+                overallVerdict = `A legrosszabb megadott forgatókönyvben (${fmtShock(worst.shock)}%) a veszteség a tőke kevesebb mint 20%-a — a jelenlegi pozícióméret ezekre a sokkokra viszonylag jól tolerálható, de ettől a stressz-teszt nem garancia a jövőre.`;
             }
 
             // JAVÍTÁS: rendkívül kicsi (pl. 1e-10) belépési ár/pozícióméret/
@@ -42191,12 +42205,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3 min-w-0">
-                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Legrosszabb eset (${worst.shock > 0 ? '+' : ''}${worst.shock.toLocaleString('en-US', { maximumFractionDigits: 4 })}%)</div>
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Legrosszabb eset (${fmtShock(worst.shock)}%)</div>
                         <div class="text-sm font-extrabold ${worst.pnl < 0 ? 'text-neon-red' : 'text-neon-green'}" style="overflow-wrap:anywhere;">${fmtMoney(worst.pnl)}</div>
                         <div class="text-[9.5px] text-slate-500 mt-0.5">${fmtPct2(worst.pnlPct)}% a tőkéhez</div>
                     </div>
                     <div class="rounded-xl bg-dark-850/60 border border-dark-750 p-3 min-w-0">
-                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Legjobb eset (${best.shock > 0 ? '+' : ''}${best.shock.toLocaleString('en-US', { maximumFractionDigits: 4 })}%)</div>
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Legjobb eset (${fmtShock(best.shock)}%)</div>
                         <div class="text-sm font-extrabold ${best.pnl < 0 ? 'text-neon-red' : 'text-neon-green'}" style="overflow-wrap:anywhere;">${fmtMoney(best.pnl)}</div>
                         <div class="text-[9.5px] text-slate-500 mt-0.5">${fmtPct2(best.pnlPct)}% a tőkéhez</div>
                     </div>
@@ -42204,7 +42218,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="space-y-1.5 mb-3">
                     ${rows.map(r => `
                         <div class="flex flex-wrap items-center justify-between font-mono text-[11px] bg-dark-900 rounded-lg px-2.5 py-1.5 gap-x-2 gap-y-1">
-                            <span class="text-slate-400">${r.shock > 0 ? '+' : ''}${r.shock.toLocaleString('en-US', { maximumFractionDigits: 4 })}%</span>
+                            <span class="text-slate-400">${fmtShock(r.shock)}%</span>
                             <span class="text-slate-300 text-center" style="overflow-wrap:anywhere;">$${r.newPrice.toLocaleString('en-US', { maximumFractionDigits: 4 })}${r.clamped ? ' (vágva 0-n)' : ''}</span>
                             <span class="${r.weightClass} ${r.colorClass} text-right" style="overflow-wrap:anywhere;">${fmtMoney(r.pnl)}</span>
                             <span class="${r.weightClass} ${r.colorClass} text-right" style="overflow-wrap:anywhere;">${r.status}</span>
