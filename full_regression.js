@@ -248,6 +248,33 @@ check('lesson_tool_map_integrity', () => {
 //    feltétel az applyLessonLang()-ban — eltérésnél az a lecke némán
 //    visszaesik magyarra, ami önmagában nem hiba, de jelzi az elmaradt/
 //    hibás fordítást).
+// 10) Kvíz-minőség: a helyes válasz pozíciója ne legyen kiszámítható (a
+//     tárolt adatban is egyenletes — a kvíz ugyan keveri, de pl. a régi
+//     certifikációs vizsga nem keverte), ne legyen két azonos kérdésszöveg,
+//     egy kérdésen belül ne ismétlődjön opció, és a több kérdésben is
+//     újrahasznosított "töltelék" rossz válaszok száma csak csökkenhet.
+const REPEATED_DISTRACTOR_BASELINE = 1007; // csökkenő racsni — javításkor ezt is lejjebb kell venni
+check('quiz_quality', () => {
+    const lessons = new Function('return ' + extractBalanced(html, 'const LESSONS_DATA = ', '[', ']'))();
+    const issues = []; const pos = {}; let n = 0; const qText = new Map(); const optUse = new Map();
+    lessons.forEach((l, li) => {
+        const qs = l.qs || [];
+        if (qs.length >= 3 && new Set(qs.map(q => q.a)).size === 1) issues.push(`#${li}: minden kérdés helyes válasza ugyanazon a pozíción van`);
+        qs.forEach((q, qi) => {
+            n++; pos[q.a] = (pos[q.a] || 0) + 1;
+            if (!(q.a >= 0 && q.a < q.o.length)) issues.push(`#${li}:${qi}: érvénytelen helyes-válasz index`);
+            const k = q.q.trim().toLowerCase(); if (qText.has(k)) issues.push(`#${li}:${qi}: ismétlődő kérdés (${qText.get(k)})`); else qText.set(k, li + ':' + qi);
+            const os = q.o.map(o => o.trim().toLowerCase()); if (new Set(os).size !== os.length) issues.push(`#${li}:${qi}: ismétlődő opció a kérdésen belül`);
+            os.forEach(o => optUse.set(o, (optUse.get(o) || 0) + 1));
+        });
+    });
+    Object.keys(pos).forEach(p => { if (pos[p] / n > 0.35) issues.push(`a(z) ${p}. pozíción van a helyes válaszok ${(pos[p] / n * 100).toFixed(0)}%-a`); });
+    let repeated = 0; optUse.forEach(c => { if (c > 1) repeated += c - 1; });
+    if (repeated > REPEATED_DISTRACTOR_BASELINE) issues.push(`újrahasznosított opciók száma nőtt: ${repeated} > ${REPEATED_DISTRACTOR_BASELINE}`);
+    if (issues.length) throw new Error(issues.slice(0, 20).join(' | '));
+    return { questions: n, answerPositions: pos, repeatedOptions: repeated };
+});
+
 check('lessons_en_translation_integrity', () => {
     const filesMatch = html.match(/const LESSONS_EN_FILES = (\{[^}]*\});/);
     if (!filesMatch) throw new Error('LESSONS_EN_FILES konstans nem található');

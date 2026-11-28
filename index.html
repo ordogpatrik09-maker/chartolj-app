@@ -52044,13 +52044,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="w-full h-1 rounded-full bg-dark-800 mb-4 overflow-hidden"><div class="h-full bg-amber-400" style="width:${(certExamIndex / certExamQuestions.length) * 100}%"></div></div>
                 <h3 class="text-sm font-bold text-white mb-4 leading-relaxed">${q.q}</h3>
                 <div id="cert-exam-options" class="space-y-2">
-                    ${q.o.map((opt, i) => `<button onclick="answerCertExam(${i})" class="w-full text-left px-3 py-2.5 rounded-lg bg-dark-850/60 border border-dark-750 hover:border-amber-400/40 text-xs text-slate-200 transition">${opt}</button>`).join('')}
+                    ${(certExamOrder = (() => { const o = q.o.map((_, i) => i); for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; } return o; })()).map((oi, d) => `<button onclick="answerCertExam(${oi})" class="w-full text-left px-3 py-2.5 rounded-lg bg-dark-850/60 border border-dark-750 hover:border-amber-400/40 text-xs text-slate-200 transition">${q.o[oi]}</button>`).join('')}
                 </div>
                 <div id="cert-exam-explanation" class="hidden mt-3 p-3 rounded-lg bg-dark-900 border border-dark-750 text-[11px] text-slate-400 leading-relaxed"></div>
                 <button id="cert-exam-next-btn" onclick="nextCertExamQuestion()" class="hidden w-full mt-3 py-2.5 rounded-xl text-xs font-extrabold uppercase bg-amber-400 text-dark-950 hover:brightness-110 transition">Következő</button>
             `;
         }
 
+        let certExamOrder = [];
         function answerCertExam(choiceIdx) {
             if (certExamAnswered) return;
             certExamAnswered = true;
@@ -52058,7 +52059,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const correct = choiceIdx === q.a;
             if (correct) certExamCorrect++;
             const btns = document.querySelectorAll('#cert-exam-options button');
-            btns.forEach((btn, i) => {
+            btns.forEach((btn, d) => {
+                const i = certExamOrder[d]; // megjelenített sorrend → eredeti index
                 btn.classList.remove('hover:border-amber-400/40');
                 if (i === q.a) btn.className = 'w-full text-left px-3 py-2.5 rounded-lg bg-neon-green/15 border border-neon-green/50 text-xs text-neon-green font-bold transition';
                 else if (i === choiceIdx) btn.className = 'w-full text-left px-3 py-2.5 rounded-lg bg-neon-red/15 border border-neon-red/50 text-xs text-neon-red font-bold transition';
