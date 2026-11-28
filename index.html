@@ -17875,6 +17875,28 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             return rounded === 0 ? 0 : v;
         }
 
+        // JAVÍTÁS (rendszerszintű kör): a "-0.00%" szivárgás ugyanaz a hibaosztály,
+        // mint amit a zeroSafeRound() korábban pontpontszerűen (Portfólió-
+        // Kombináló, M2 Pénzkínálat) kezelt — egy kis negatív, de a megadott
+        // tizedesjegy-pontosságon NULLÁRA kerekedő érték (pl. -0.0012) a natív
+        // .toFixed()-del "-0.00"-t ad, a ">= 0"/"> 0" előjel-ellenőrzés viszont
+        // (ami a KEREKÍTÉS ELŐTTI, eredeti negatív értéket nézi) emellé NEM tesz
+        // "+"-t sem — az eredmény egy önmagában értelmetlen, önálló "-" előjel
+        // "0.00" előtt. Ez a segédfüggvény a zeroSafeRound()-ot használja az
+        // előjel-eldöntéshez ÉS a kiíráshoz is, így a két döntés (kell-e előjel,
+        // mi a kiírt szám) mindig ugyanazt a nullára-kerekedett állapotot látja.
+        // `strict` = true: a ">  0" (szigorú) konvenciót követi (pontosan nulla
+        // esetén NINCS "+" előjel) — ezt használják pl. a Rebalance-kalkulátor
+        // drift-sorai; alapértelmezésben (`strict` hiányában/false) a ">= 0"
+        // konvenciót követi (pontosan nulla esetén VAN "+" előjel), ami a
+        // többségi (hozam-, oszcillátor- stb.) kalkulátorok korábbi konvenciója.
+        function fmtSignedFixed(v, decimals, strict) {
+            if (!Number.isFinite(v)) return String(v);
+            const z = zeroSafeRound(v, decimals);
+            const showPlus = strict ? z > 0 : z >= 0;
+            return (showPlus ? "+" : "") + z.toFixed(decimals);
+        }
+
         /* ================= SCALE-TO-FIT ENGINE =================
         /* ================= RESZPONZÍV ÚJRARAJZOLÁS =================
            A korábbi verzióban egy JS "scale-to-fit" motor arányosan
@@ -21348,7 +21370,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 <div class="glass-card rounded-xl border ${meaningfulGap ? 'border-amber-400/30 bg-amber-400/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
                     <div class="flex justify-between"><span class="text-slate-400">Összehasonlításhoz: i.i.d. bootstrap P95 drawdown:</span><span class="text-white">${iidStats.ddP95.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Eltérés (blokk − i.i.d.):</span><span class="${meaningfulGap ? 'text-amber-400 font-bold' : 'text-white'}">${ddGap >= 0 ? '+' : ''}${ddGap.toFixed(2)}pp</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Eltérés (blokk − i.i.d.):</span><span class="${meaningfulGap ? 'text-amber-400 font-bold' : 'text-white'}">${fmtSignedFixed(ddGap, 2)}pp</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${meaningfulGap ?
                     `A blokk-bootstrap (ami megőrzi a trade-ek közti SOROS korrelációt, pl. a nyerő/vesztő "sorozatokat") érdemben MÁS P95 drawdown-becslést ad, mint a sima, független (i.i.d.) bootstrap. Ha ez MAGASABB, az azt jelenti: a trade-ek közti valós függés miatt a sima bootstrap ALÁBECSÜLTE a valódi kockázatot — érdemes megnézni a Trade-Függetlenségi Tesztet is, hogy ez a függés statisztikailag kimutatható-e.`
@@ -21475,8 +21497,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const erosionPct = stats.idealReturnPct - stats.degradedReturnPct;
             return `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Idealizált (költség nélküli) hozam:</span><span class="${stats.idealReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.idealReturnPct >= 0 ? '+' : ''}${stats.idealReturnPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-cyan font-semibold">Költséggel terhelt (valós) hozam:</span><span class="${stats.degradedReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${stats.degradedReturnPct >= 0 ? '+' : ''}${stats.degradedReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Idealizált (költség nélküli) hozam:</span><span class="${stats.idealReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(stats.idealReturnPct, 2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-cyan font-semibold">Költséggel terhelt (valós) hozam:</span><span class="${stats.degradedReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtSignedFixed(stats.degradedReturnPct, 2)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown (idealizált / valós):</span><span class="text-amber-400">${stats.maxDrawdownIdealPct.toFixed(2)}% / ${stats.maxDrawdownDegradedPct.toFixed(2)}%</span></div>
                 </div>
                 <div class="glass-card rounded-xl border ${edgeSurvives ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
@@ -21599,7 +21621,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (s.tradeCount === 0) {
                     return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${labels[key]}:</span><span class="text-slate-600">nincs trade</span></div>`;
                 }
-                return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${labels[key]}:</span><span class="text-white">${s.tradeCount} trade · ${s.winRatePct.toFixed(0)}% győzelmi arány · átlag ${s.avgReturnPct >= 0 ? '+' : ''}${s.avgReturnPct.toFixed(2)}%</span></div>`;
+                return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${labels[key]}:</span><span class="text-white">${s.tradeCount} trade · ${s.winRatePct.toFixed(0)}% győzelmi arány · átlag ${fmtSignedFixed(s.avgReturnPct, 2)}%</span></div>`;
             }).join('');
 
             const nonEmpty = ['asian', 'european', 'us'].filter(k => breakdown.sessions[k].tradeCount > 0);
@@ -21719,8 +21741,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const consistent = (declining && halfDiff < 0) || (!declining && halfDiff >= 0);
             return `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Első fél (${stats.firstHalf.tradeCount} trade):</span><span class="${stats.firstHalf.avgReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.firstHalf.winRatePct.toFixed(0)}% győzelmi · átlag ${stats.firstHalf.avgReturnPct >= 0 ? '+' : ''}${stats.firstHalf.avgReturnPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Második fél (${stats.secondHalf.tradeCount} trade):</span><span class="${stats.secondHalf.avgReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.secondHalf.winRatePct.toFixed(0)}% győzelmi · átlag ${stats.secondHalf.avgReturnPct >= 0 ? '+' : ''}${stats.secondHalf.avgReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Első fél (${stats.firstHalf.tradeCount} trade):</span><span class="${stats.firstHalf.avgReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.firstHalf.winRatePct.toFixed(0)}% győzelmi · átlag ${fmtSignedFixed(stats.firstHalf.avgReturnPct, 2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Második fél (${stats.secondHalf.tradeCount} trade):</span><span class="${stats.secondHalf.avgReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${stats.secondHalf.winRatePct.toFixed(0)}% győzelmi · átlag ${fmtSignedFixed(stats.secondHalf.avgReturnPct, 2)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Gördülő átlag (${windowSize}-trade ablak) trendje:</span><span class="${declining ? 'text-neon-red' : 'text-neon-green'} font-bold">${declining ? 'CSÖKKENŐ' : 'NÖVEKVŐ/STABIL'}</span></div>
                 </div>
                 <div class="glass-card rounded-xl border ${consistent && declining ? 'border-neon-red/30 bg-neon-red/[0.05]' : consistent ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]'} p-3 mb-3 font-mono text-xs">
@@ -22312,8 +22334,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Trade-ek száma</div><div class="font-bold text-white">${stats.tradeCount}</div></div>
                         <div class="bg-dark-900/50 rounded p-2"></div>
-                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Skewness (ferdeség)</div><div class="font-extrabold ${skewColorClass}">${stats.skewness >= 0 ? '+' : ''}${stats.skewness.toFixed(3)}</div></div>
-                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Excess Kurtosis (csúcsosság)</div><div class="font-extrabold ${kurtColorClass}">${stats.excessKurtosis >= 0 ? '+' : ''}${stats.excessKurtosis.toFixed(3)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Skewness (ferdeség)</div><div class="font-extrabold ${skewColorClass}">${fmtSignedFixed(stats.skewness, 3)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Excess Kurtosis (csúcsosság)</div><div class="font-extrabold ${kurtColorClass}">${fmtSignedFixed(stats.excessKurtosis, 3)}</div></div>
                     </div>
                     <div class="text-xs font-semibold ${skewColorClass}">${skewVerdict}</div>
                     <div class="text-xs font-semibold ${kurtColorClass}">${kurtVerdict}</div>
@@ -24487,7 +24509,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ctx.setLineDash([]);
                     const midX = (x1 + x2) / 2;
                     const midY = (y1 + y2) / 2;
-                    const label = `${diff >= 0 ? '+' : ''}$${diff.toFixed(2)} (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)`;
+                    const label = `${diff >= 0 ? '+' : ''}$${diff.toFixed(2)} (${fmtSignedFixed(pct, 2)}%)`;
                     ctx.font = 'bold 11px JetBrains Mono';
                     const textW = ctx.measureText(label).width;
                     ctx.fillStyle = diff >= 0 ? 'rgba(0, 230, 118, 0.9)' : 'rgba(255, 23, 68, 0.9)';
@@ -24783,7 +24805,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <span class="text-slate-500">H</span><span style="color:${col}">${c.high.toFixed(2)}</span>
                 <span class="text-slate-500">L</span><span style="color:${col}">${c.low.toFixed(2)}</span>
                 <span class="text-slate-500">C</span><span style="color:${col}">${c.close.toFixed(2)}</span>
-                <span style="color:${col}">${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%</span>
+                <span style="color:${col}">${fmtSignedFixed(changePct, 2)}%</span>
             `;
         }
 
@@ -27456,7 +27478,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Időszakok száma:</span><span class="text-white">${n}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Átlagos többlethozam (eszköz − benchmark):</span><span class="${meanExcess >= 0 ? 'text-neon-green' : 'text-neon-red'}">${meanExcess >= 0 ? '+' : ''}${meanExcess.toFixed(3)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Átlagos többlethozam (eszköz − benchmark):</span><span class="${meanExcess >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(meanExcess, 3)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Tracking Error (többlethozam szórása):</span><span class="text-white">${trackingError.toFixed(3)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Information Ratio:</span><span class="font-extrabold ${colorClass} text-sm">${infoRatio.toFixed(3)}</span></div>
                 </div>
@@ -27558,8 +27580,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Adatpontok száma:</span><span class="text-white">${n}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Átlag:</span><span class="text-white">${mean.toFixed(3)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Skewness (ferdeség):</span><span class="font-extrabold ${skewColorClass} text-sm">${skewness >= 0 ? '+' : ''}${skewness.toFixed(3)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Excess Kurtosis (csúcsosság):</span><span class="font-extrabold ${kurtColorClass} text-sm">${excessKurtosis >= 0 ? '+' : ''}${excessKurtosis.toFixed(3)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Skewness (ferdeség):</span><span class="font-extrabold ${skewColorClass} text-sm">${fmtSignedFixed(skewness, 3)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Excess Kurtosis (csúcsosság):</span><span class="font-extrabold ${kurtColorClass} text-sm">${fmtSignedFixed(excessKurtosis, 3)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${skewColorClass}">${skewVerdict}</p>
                 <p class="text-[10px] font-semibold mt-1 ${kurtColorClass}">${kurtVerdict}</p>
@@ -28744,7 +28766,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border ${cmf >= 0 ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Chaikin Money Flow (${period} periódus)</div>
-                    <div class="text-xl font-extrabold ${colorClass}">${cmf >= 0 ? '+' : ''}${cmf.toFixed(3)}</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${fmtSignedFixed(cmf, 3)}</div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -28928,7 +28950,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex justify-between"><span class="text-slate-400">SMA (periódus átlag):</span><span class="text-white">${fmtPrice(sma)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Átlagos abszolút eltérés:</span><span class="text-white">${fmtPrice(meanAbsDeviation)}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Aktuális ár:</span><span class="text-white">${fmtPrice(currentPrice)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">CCI:</span><span class="font-extrabold ${colorClass} text-sm">${cci >= 0 ? '+' : ''}${cci.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">CCI:</span><span class="font-extrabold ${colorClass} text-sm">${fmtSignedFixed(cci, 2)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -30597,7 +30619,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border ${tmf >= 0 ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Twiggs Money Flow (${period} periódus)</div>
-                    <div class="text-xl font-extrabold ${colorClass}">${tmf >= 0 ? '+' : ''}${tmf.toFixed(3)}</div>
+                    <div class="text-xl font-extrabold ${colorClass}">${fmtSignedFixed(tmf, 3)}</div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -31105,7 +31127,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Aroon Oscillator (Up − Down):</span>
-                        <span class="font-extrabold ${currOsc >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${currOsc >= 0 ? '+' : ''}${currOsc.toFixed(1)}</span>
+                        <span class="font-extrabold ${currOsc >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtSignedFixed(currOsc, 1)}</span>
                     </div>${crossHtml}
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -31652,7 +31674,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Eltérés a középvonaltól:</span>
-                        <span class="font-extrabold text-white text-sm">${distFromMidPct >= 0 ? '+' : ''}${distFromMidPct.toFixed(2)}%</span>
+                        <span class="font-extrabold text-white text-sm">${fmtSignedFixed(distFromMidPct, 2)}%</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Historikus áttörési arány (${lookback} pont):</span>
@@ -32181,7 +32203,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <span>Cél: ${r.targetPct.toFixed(2)}% (${r.targetValue.toFixed(2)})</span>
                         </div>
                         <div class="flex items-center justify-between font-mono text-[10px] ${driftColor} mt-0.5">
-                            <span>Eltolódás (drift): ${r.drift > 0 ? '+' : ''}${r.drift.toFixed(2)} pp</span>
+                            <span>Eltolódás (drift): ${fmtSignedFixed(r.drift, 2, true)} pp</span>
                         </div>
                     </div>
                 `;
@@ -32191,9 +32213,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (Math.abs(maxDriftRow.drift) < 1) {
                 verdict = 'A portfólió jelenlegi súlyozása nagyon közel van a cél-súlyokhoz — jelen pillanatban nincs érdemi rebalancing-szükséglet.';
             } else if (Math.abs(maxDriftRow.drift) < 5) {
-                verdict = `Mérsékelt eltolódás: a "${escapeHtml(maxDriftRow.name)}" súlya ${maxDriftRow.drift > 0 ? 'túlsúlyba került' : 'alulsúlyba csúszott'} (${maxDriftRow.drift > 0 ? '+' : ''}${maxDriftRow.drift.toFixed(2)} pp) — érdemes megfontolni a rebalancingot, de nem kritikus.`;
+                verdict = `Mérsékelt eltolódás: a "${escapeHtml(maxDriftRow.name)}" súlya ${maxDriftRow.drift > 0 ? 'túlsúlyba került' : 'alulsúlyba csúszott'} (${fmtSignedFixed(maxDriftRow.drift, 2, true)} pp) — érdemes megfontolni a rebalancingot, de nem kritikus.`;
             } else {
-                verdict = `🔸 Jelentős eltolódás: a "${escapeHtml(maxDriftRow.name)}" súlya ${maxDriftRow.drift > 0 ? 'jelentősen túlsúlyba került' : 'jelentősen alulsúlyba csúszott'} (${maxDriftRow.drift > 0 ? '+' : ''}${maxDriftRow.drift.toFixed(2)} pp) — a kockázati profilod érdemben eltért a kitűzött céltól, a rebalancing most indokolt lehet.`;
+                verdict = `🔸 Jelentős eltolódás: a "${escapeHtml(maxDriftRow.name)}" súlya ${maxDriftRow.drift > 0 ? 'jelentősen túlsúlyba került' : 'jelentősen alulsúlyba csúszott'} (${fmtSignedFixed(maxDriftRow.drift, 2, true)} pp) — a kockázati profilod érdemben eltért a kitűzött céltól, a rebalancing most indokolt lehet.`;
             }
 
             out.innerHTML = `
@@ -32499,7 +32521,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             let elasticityHtml = '';
             if (upRow && upRow.valid && baseRow && baseRow.valid && baseRow.fv > 0) {
                 const changePct = ((upRow.fv - baseRow.fv) / baseRow.fv) * 100;
-                elasticityHtml = `<div class="text-[11px] text-slate-300 leading-relaxed">Egy <strong class="text-white">+1 százalékpontos</strong> diszkontráta-emelkedés (pl. jegybanki kamatemelés hatására) <strong class="${changePct < 0 ? 'text-neon-red' : 'text-neon-green'}">${changePct >= 0 ? '+' : ''}${changePct.toFixed(1)}%</strong>-kal változtatja meg a fair value-t — anélkül, hogy a cég jövőbeli osztaléknövekedése (g) egyáltalán változott volna. Ez a jelenség áll a "kamatemelés nyomás alá helyezi a részvénypiacot" ökölszabály mögött.</div>`;
+                elasticityHtml = `<div class="text-[11px] text-slate-300 leading-relaxed">Egy <strong class="text-white">+1 százalékpontos</strong> diszkontráta-emelkedés (pl. jegybanki kamatemelés hatására) <strong class="${changePct < 0 ? 'text-neon-red' : 'text-neon-green'}">${fmtSignedFixed(changePct, 1)}%</strong>-kal változtatja meg a fair value-t — anélkül, hogy a cég jövőbeli osztaléknövekedése (g) egyáltalán változott volna. Ez a jelenség áll a "kamatemelés nyomás alá helyezi a részvénypiacot" ökölszabály mögött.</div>`;
             }
 
             const gapPct = (r - g) * 100;
@@ -33795,7 +33817,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">VWMA (${period}):</span><span class="text-neon-cyan font-extrabold text-sm">${vwma.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Egyszerű SMA (${period}):</span><span class="text-white">${smaSimple.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Eltérés:</span><span class="text-white">${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Eltérés:</span><span class="text-white">${fmtSignedFixed(diffPct, 3)}%</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400">A VWMA és az SMA közti eltérés azt jelzi, mennyire torzítja a nagyobb volumenű periódusok hatása az átlagot az egyenlő súlyozású SMA-hoz képest.</p>
             `;
@@ -34108,7 +34130,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">RSC (kezdő):</span><span class="text-white">${first.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">RSC (utolsó):</span><span class="${colorClass} font-extrabold text-sm">${last.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Változás:</span><span class="${colorClass} font-extrabold">${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Változás:</span><span class="${colorClass} font-extrabold">${fmtSignedFixed(pctChange, 3)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -35773,8 +35795,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rowsHtml = windows.map(wd => `
                 <div class="flex justify-between font-mono text-[10px] py-1 border-b border-dark-750/50">
                     <span class="text-slate-400">#${wd.window} (EMA${wd.fast}/${wd.slow})</span>
-                    <span class="text-slate-300">in: ${wd.inReturnPct >= 0 ? '+' : ''}${wd.inReturnPct.toFixed(1)}%</span>
-                    <span class="${wd.outReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">out: ${wd.outReturnPct >= 0 ? '+' : ''}${wd.outReturnPct.toFixed(1)}%</span>
+                    <span class="text-slate-300">in: ${fmtSignedFixed(wd.inReturnPct, 1)}%</span>
+                    <span class="${wd.outReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">out: ${fmtSignedFixed(wd.outReturnPct, 1)}%</span>
                 </div>
             `).join('');
 
@@ -35783,10 +35805,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 mb-3">${rowsHtml}</div>
                 <div class="glass-card rounded-xl border ${isGoodWfe ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
-                    <div class="flex justify-between"><span class="text-slate-400">Összesített in-sample hozam:</span><span class="text-white">${totalInReturn >= 0 ? '+' : ''}${totalInReturn.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Összesített out-of-sample hozam:</span><span class="${totalOutReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${totalOutReturn >= 0 ? '+' : ''}${totalOutReturn.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Összesített in-sample hozam:</span><span class="text-white">${fmtSignedFixed(totalInReturn, 2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Összesített out-of-sample hozam:</span><span class="${totalOutReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(totalOutReturn, 2)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Walk-Forward Efficiency (WFE):</span><span class="${isGoodWfe ? 'text-neon-green' : 'text-amber-400'} font-bold">${wfe === null ? 'n/a' : wfe.toFixed(1) + '%'}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Láncolt (chained) out-of-sample hozam:</span><span class="${chainedReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${chainedReturnPct >= 0 ? '+' : ''}${chainedReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Láncolt (chained) out-of-sample hozam:</span><span class="${chainedReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(chainedReturnPct, 2)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Nyereséges out-of-sample ablakok:</span><span class="text-white">${consistentWindows} / ${windows.length}</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">Minden ablaknál az "in" az adott szakasz ELSŐ (in-sample) részén optimalizált legjobb EMA-periódus hozama, az "out" pedig UGYANANNAK a paraméternek a teljesítménye az ablak MÁSODIK, korábban nem látott (out-of-sample) részén. A "láncolt" hozam azt mutatja, mi történt volna, ha minden ablak optimalizált paraméterét valóban élesben, sorban használtad volna — ez reálisabb becslés, mint egyetlen, a teljes adatra optimalizált paraméterkombináció eredménye.</p>
@@ -35991,14 +36013,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3 font-mono text-[11px] space-y-1">
                     <div class="text-amber-400 font-bold text-xs mb-1">🏆 Legjobb talált súlyelosztás</div>
                     ${bestRowsHtml}
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam:</span><span class="${result.bestReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${result.bestReturnPct >= 0 ? '+' : ''}${result.bestReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam:</span><span class="${result.bestReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(result.bestReturnPct, 2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Max. drawdown:</span><span class="text-white">${result.bestMaxDrawdownPct.toFixed(2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Pontszám (hozam/DD):</span><span class="text-white font-bold">${result.bestScore.toFixed(3)}</span></div>
                 </div>
                 <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-1">
                     <div class="text-slate-300 font-bold text-xs mb-1">⚖️ Egyenlő (naiv) súlyozás</div>
                     ${eqRowsHtml}
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam:</span><span class="${result.equalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${result.equalReturnPct >= 0 ? '+' : ''}${result.equalReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam:</span><span class="${result.equalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(result.equalReturnPct, 2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Max. drawdown:</span><span class="text-white">${result.equalMaxDrawdownPct.toFixed(2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Pontszám (hozam/DD):</span><span class="text-white font-bold">${result.equalScore.toFixed(3)}</span></div>
                 </div>
@@ -36079,7 +36101,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl border ${isOverfit ? 'border-neon-red/30 bg-neon-red/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
                     <div class="flex justify-between"><span class="text-slate-400">Legjobb kombó (in-sample):</span><span class="text-white">EMA${best.fast}/${best.slow}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">In-sample hozam:</span><span class="text-neon-green">+${best.inReturn.toFixed(2)}% (${best.tradeCount} trade)</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Ugyanaz a kombó, Out-of-sample:</span><span class="${outResult.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${outResult.totalReturnPct >= 0 ? '+' : ''}${outResult.totalReturnPct.toFixed(2)}% (${outResult.tradeCount} trade)</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Ugyanaz a kombó, Out-of-sample:</span><span class="${outResult.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(outResult.totalReturnPct, 2)}% (${outResult.tradeCount} trade)</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Teljesítmény-rés (overfitting mérőszám):</span><span class="text-amber-400">${gap.toFixed(2)} pp</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${isOverfit ? 'text-neon-red' : 'text-neon-green'} mb-2">${isOverfit
@@ -36164,17 +36186,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-amber-400/30 bg-amber-400/[0.05] p-3 mb-3 font-mono text-[11px] space-y-1.5">
                     <div class="text-amber-400 font-bold text-xs mb-1">⚡ "Csúcs" (legjobb önmagában): EMA ${spike.fast}/${spike.slow}</div>
-                    <div class="flex justify-between"><span class="text-slate-400">In-sample hozam:</span><span class="text-white">${spike.inReturnPct >= 0 ? '+' : ''}${spike.inReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">In-sample hozam:</span><span class="text-white">${fmtSignedFixed(spike.inReturnPct, 2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Szomszédok átlaga (${spike.neighborCount} db):</span><span class="text-white">${spike.neighborAvgReturn.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Rés (csúcs − szomszédok):</span><span class="${spikeIsRisky ? 'text-neon-red' : 'text-white'} font-bold">${spikeGap >= 0 ? '+' : ''}${spikeGap.toFixed(2)}% pont</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Out-of-sample hozam:</span><span class="${spike.oosReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${spike.oosReturnPct >= 0 ? '+' : ''}${spike.oosReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Rés (csúcs − szomszédok):</span><span class="${spikeIsRisky ? 'text-neon-red' : 'text-white'} font-bold">${fmtSignedFixed(spikeGap, 2)}% pont</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Out-of-sample hozam:</span><span class="${spike.oosReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtSignedFixed(spike.oosReturnPct, 2)}%</span></div>
                 </div>
                 <div class="glass-card rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.05] p-3 mb-3 font-mono text-[11px] space-y-1.5">
                     <div class="text-neon-cyan font-bold text-xs mb-1">⛰️ "Fennsík" (legjobb szomszédsági átlag): EMA ${plateau.fast}/${plateau.slow}</div>
-                    <div class="flex justify-between"><span class="text-slate-400">In-sample hozam:</span><span class="text-white">${plateau.inReturnPct >= 0 ? '+' : ''}${plateau.inReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">In-sample hozam:</span><span class="text-white">${fmtSignedFixed(plateau.inReturnPct, 2)}%</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">Szomszédok átlaga (${plateau.neighborCount} db):</span><span class="text-white">${plateau.neighborAvgReturn.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Rés (fennsík − szomszédok):</span><span class="text-white font-bold">${plateauGap >= 0 ? '+' : ''}${plateauGap.toFixed(2)}% pont</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Out-of-sample hozam:</span><span class="${plateau.oosReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${plateau.oosReturnPct >= 0 ? '+' : ''}${plateau.oosReturnPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Rés (fennsík − szomszédok):</span><span class="text-white font-bold">${fmtSignedFixed(plateauGap, 2)}% pont</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Out-of-sample hozam:</span><span class="${plateau.oosReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtSignedFixed(plateau.oosReturnPct, 2)}%</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${spikeIsRisky ? `A "csúcs" pont (EMA ${spike.fast}/${spike.slow}) sokkal jobban teljesít önmagában, mint a szomszédos kombinációi (nagy rés) — ez klasszikus túlillesztés-jel: valószínűleg ez a konkrét paraméterpár "véletlenül" talált rá az in-sample adat zajára, nem egy valódi, tartós mintázatra. A "fennsík" pont kisebb réssel robusztusabb választás lehet, még ha az in-sample hozama alacsonyabb is.` : 'Ebben az esetben a "csúcs" és a szomszédai közti rés nem kirívóan nagy — ez önmagában nem garancia, de kevésbé tipikus túlillesztés-mintázat, mint egy nagy, elszigetelt csúcs.'}</p>
             `;
@@ -36217,8 +36239,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const improved = filtered.maxDrawdownPct < baseline.maxDrawdownPct;
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-1.5">
-                    <div class="flex justify-between"><span class="text-slate-400">Szűrő NÉLKÜL (sima EMA-keresztezés):</span><span class="${baseline.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${baseline.totalReturnPct >= 0 ? '+' : ''}${baseline.totalReturnPct.toFixed(2)}% · DD ${baseline.maxDrawdownPct.toFixed(2)}% · ${baseline.tradeCount} trade</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-sky-400 font-semibold">Hosszú idősíkos trendszűrővel:</span><span class="${filtered.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${filtered.totalReturnPct >= 0 ? '+' : ''}${filtered.totalReturnPct.toFixed(2)}% · DD ${filtered.maxDrawdownPct.toFixed(2)}% · ${filtered.tradeCount} trade</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Szűrő NÉLKÜL (sima EMA-keresztezés):</span><span class="${baseline.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(baseline.totalReturnPct, 2)}% · DD ${baseline.maxDrawdownPct.toFixed(2)}% · ${baseline.tradeCount} trade</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-sky-400 font-semibold">Hosszú idősíkos trendszűrővel:</span><span class="${filtered.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtSignedFixed(filtered.totalReturnPct, 2)}% · DD ${filtered.maxDrawdownPct.toFixed(2)}% · ${filtered.tradeCount} trade</span></div>
                 </div>
                 <div class="glass-card rounded-xl border ${improved ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
                     <div class="flex justify-between"><span class="text-slate-400">Kiszűrt (ellentétes HTF-trendű) jelzések:</span><span class="text-white font-bold">${filtered.filteredOutCount}</span></div>
@@ -36275,9 +36297,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const regimeWins = regimeResult.totalReturnPct > bestSingle;
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-1.5">
-                    <div class="flex justify-between"><span class="text-slate-400">Tiszta EMA-keresztezés:</span><span class="${emaOnly.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${emaOnly.totalReturnPct >= 0 ? '+' : ''}${emaOnly.totalReturnPct.toFixed(2)}% · DD ${emaOnly.maxDrawdownPct.toFixed(2)}% · ${emaOnly.tradeCount} trade</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Tiszta RSI-reverzió:</span><span class="${rsiOnly.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${rsiOnly.totalReturnPct >= 0 ? '+' : ''}${rsiOnly.totalReturnPct.toFixed(2)}% · DD ${rsiOnly.maxDrawdownPct.toFixed(2)}% · ${rsiOnly.tradeCount} trade</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-purple font-semibold">Rezsim-váltó kombináció:</span><span class="${regimeResult.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${regimeResult.totalReturnPct >= 0 ? '+' : ''}${regimeResult.totalReturnPct.toFixed(2)}% · DD ${regimeResult.maxDrawdownPct.toFixed(2)}% · ${regimeResult.tradeCount} trade</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Tiszta EMA-keresztezés:</span><span class="${emaOnly.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(emaOnly.totalReturnPct, 2)}% · DD ${emaOnly.maxDrawdownPct.toFixed(2)}% · ${emaOnly.tradeCount} trade</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Tiszta RSI-reverzió:</span><span class="${rsiOnly.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(rsiOnly.totalReturnPct, 2)}% · DD ${rsiOnly.maxDrawdownPct.toFixed(2)}% · ${rsiOnly.tradeCount} trade</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-purple font-semibold">Rezsim-váltó kombináció:</span><span class="${regimeResult.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtSignedFixed(regimeResult.totalReturnPct, 2)}% · DD ${regimeResult.maxDrawdownPct.toFixed(2)}% · ${regimeResult.tradeCount} trade</span></div>
                 </div>
                 <div class="glass-card rounded-xl border ${regimeWins ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
                     <div class="flex justify-between"><span class="text-slate-400">Magas vol rezsimben nyitott (EMA-s) trade-ek:</span><span class="text-white font-bold">${regimeResult.highRegimeTrades}</span></div>
@@ -36324,8 +36346,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const ddImproved = sized.maxDrawdownPct < fixed.maxDrawdownPct;
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 mb-3 font-mono text-[11px] space-y-1.5">
-                    <div class="flex justify-between"><span class="text-slate-400">FIX (mindig 1×) méretű EMA-keresztezés:</span><span class="${fixed.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fixed.totalReturnPct >= 0 ? '+' : ''}${fixed.totalReturnPct.toFixed(2)}% · DD ${fixed.maxDrawdownPct.toFixed(2)}% · ${fixed.tradeCount} trade</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-cyan font-semibold">Volatilitás-célzásos méretezéssel:</span><span class="${sized.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${sized.totalReturnPct >= 0 ? '+' : ''}${sized.totalReturnPct.toFixed(2)}% · DD ${sized.maxDrawdownPct.toFixed(2)}% · ${sized.tradeCount} trade</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">FIX (mindig 1×) méretű EMA-keresztezés:</span><span class="${fixed.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(fixed.totalReturnPct, 2)}% · DD ${fixed.maxDrawdownPct.toFixed(2)}% · ${fixed.tradeCount} trade</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-cyan font-semibold">Volatilitás-célzásos méretezéssel:</span><span class="${sized.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtSignedFixed(sized.totalReturnPct, 2)}% · DD ${sized.maxDrawdownPct.toFixed(2)}% · ${sized.tradeCount} trade</span></div>
                 </div>
                 <div class="glass-card rounded-xl border ${ddImproved ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-amber-400/30 bg-amber-400/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
                     <div class="flex justify-between"><span class="text-slate-400">Átlagos pozícióméret-arány belépésenként:</span><span class="text-white font-bold">${sized.avgFraction.toFixed(2)}×</span></div>
@@ -36415,7 +36437,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 if (!Number.isFinite(r.totalReturnPct) || !Number.isFinite(r.maxDrawdownPct)) {
                     return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${fmtLev(r.leverage)}×:</span><span class="text-amber-400 font-semibold">túl extrém a számszerűsítéshez</span></div>`;
                 }
-                return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${fmtLev(r.leverage)}×:</span><span class="${r.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${r.totalReturnPct >= 0 ? '+' : ''}${r.totalReturnPct.toFixed(2)}% · DD ${r.maxDrawdownPct.toFixed(2)}%</span></div>`;
+                return `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${fmtLev(r.leverage)}×:</span><span class="${r.totalReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(r.totalReturnPct, 2)}% · DD ${r.maxDrawdownPct.toFixed(2)}%</span></div>`;
             }).join('');
 
             const firstLiquidation = sweep.results.find(r => r.liquidated);
@@ -36427,7 +36449,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     ${rows}
                 </div>
                 <div class="glass-card rounded-xl border ${firstLiquidation ? 'border-neon-red/30 bg-neon-red/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
-                    ${bestResult ? `<div class="flex justify-between"><span class="text-slate-400">Legjobb (likvidáció nélküli) szint:</span><span class="text-white font-bold">${fmtLev(bestResult.leverage)}× (${bestResult.totalReturnPct >= 0 ? '+' : ''}${bestResult.totalReturnPct.toFixed(2)}%)</span></div>` : ''}
+                    ${bestResult ? `<div class="flex justify-between"><span class="text-slate-400">Legjobb (likvidáció nélküli) szint:</span><span class="text-white font-bold">${fmtLev(bestResult.leverage)}× (${fmtSignedFixed(bestResult.totalReturnPct, 2)}%)</span></div>` : ''}
                     ${firstLiquidation ? `<div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Első likvidációs szint:</span><span class="text-neon-red font-bold">${fmtLev(firstLiquidation.leverage)}×</span></div>` : ''}
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${firstLiquidation ? `A ${fmtLev(firstLiquidation.leverage)}×-os (és afölötti) tőkeáttételnél EBBEN A TRADE-SOROZATBAN volt olyan egyetlen mozgás, ami önmagában elérte vagy meghaladta volna a 100%-os veszteséget — vagyis a számla likvidálódott volna. Ez konkrétan mutatja, hogy a tőkeáttétel növelése egy ponton túl NEM lineárisan, hanem UGRÁSSZERŰEN növeli a totális veszteség kockázatát.` : `Ezen a konkrét trade-sorozaton egyik vizsgált tőkeáttétel-szint sem vezetett volna likvidációhoz — de ez NEM garancia a jövőre: egyetlen, a múltban nem látott méretű hirtelen mozgás bármelyik szinten likvidációt okozhat.`}</p>
@@ -37573,7 +37595,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">PPO (12,26):</span><span class="text-white font-extrabold">${lastPpo.toFixed(3)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Signal (EMA 9):</span><span class="text-amber-400 font-extrabold">${lastSignal.toFixed(3)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Histogram:</span><span class="${colorClass} font-extrabold text-sm">${histogram >= 0 ? '+' : ''}${histogram.toFixed(3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Histogram:</span><span class="${colorClass} font-extrabold text-sm">${fmtSignedFixed(histogram, 3)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -37701,8 +37723,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">EMA3 (háromszoros simítás) utolsó értéke:</span><span class="text-white">${ema3[ema3.length - 1].toLocaleString('en-US', { maximumFractionDigits: 4 })}</span></div>
-                    ${prevTrix !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző TRIX:</span><span class="text-slate-300">${prevTrix >= 0 ? '+' : ''}${prevTrix.toFixed(3)}%</span></div>` : ''}
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">TRIX:</span><span class="${colorClass} font-extrabold text-sm">${lastTrix >= 0 ? '+' : ''}${lastTrix.toFixed(3)}%</span></div>
+                    ${prevTrix !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző TRIX:</span><span class="text-slate-300">${fmtSignedFixed(prevTrix, 3)}%</span></div>` : ''}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">TRIX:</span><span class="${colorClass} font-extrabold text-sm">${fmtSignedFixed(lastTrix, 3)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
             `;
@@ -37769,8 +37791,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Feldolgozott gyertyák:</span><span class="text-white">${candles.length}</span></div>
-                    ${prevQstick !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző Qstick:</span><span class="text-slate-300">${prevQstick >= 0 ? '+' : ''}${prevQstick.toFixed(4)}</span></div>` : ''}
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Qstick:</span><span class="${colorClass} font-extrabold text-sm">${lastQstick >= 0 ? '+' : ''}${lastQstick.toFixed(4)}</span></div>
+                    ${prevQstick !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző Qstick:</span><span class="text-slate-300">${fmtSignedFixed(prevQstick, 4)}</span></div>` : ''}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Qstick:</span><span class="${colorClass} font-extrabold text-sm">${fmtSignedFixed(lastQstick, 4)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
                 ${crossNote}
@@ -37946,9 +37968,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Feldolgozott gyertyák:</span><span class="text-white">${candles.length}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Nyers BOP (utolsó gyertya):</span><span class="text-slate-300">${lastRaw >= 0 ? '+' : ''}${lastRaw.toFixed(4)}</span></div>
-                    ${prevBop !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző simított BOP:</span><span class="text-slate-300">${prevBop >= 0 ? '+' : ''}${prevBop.toFixed(4)}</span></div>` : ''}
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított BOP (${period} periódus):</span><span class="${colorClass} font-extrabold text-sm">${lastBop >= 0 ? '+' : ''}${lastBop.toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Nyers BOP (utolsó gyertya):</span><span class="text-slate-300">${fmtSignedFixed(lastRaw, 4)}</span></div>
+                    ${prevBop !== null ? `<div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Előző simított BOP:</span><span class="text-slate-300">${fmtSignedFixed(prevBop, 4)}</span></div>` : ''}
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">Simított BOP (${period} periódus):</span><span class="${colorClass} font-extrabold text-sm">${fmtSignedFixed(lastBop, 4)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
                 ${crossNote}
@@ -39705,8 +39727,8 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Jelenlegi záróár:</span><span class="text-white">${latestClose.toLocaleString('en-US', { maximumFractionDigits: 8 })}</span></div>
                     <div class="flex justify-between"><span class="text-slate-400">${period} periódussal korábbi záróár:</span><span class="text-white">${refClose.toLocaleString('en-US', { maximumFractionDigits: 8 })}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Előző ROC:</span><span class="text-slate-300">${prevRoc >= 0 ? '+' : ''}${prevRoc.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">ROC (jelenlegi):</span><span class="font-extrabold ${colorClass} text-sm">${latestRoc >= 0 ? '+' : ''}${latestRoc.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Előző ROC:</span><span class="text-slate-300">${fmtSignedFixed(prevRoc, 2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">ROC (jelenlegi):</span><span class="font-extrabold ${colorClass} text-sm">${fmtSignedFixed(latestRoc, 2)}%</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
@@ -39933,11 +39955,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const [n1Raw, n2Raw, c] = maxOffDiagPair;
                 const n1 = escapeHtml(n1Raw), n2 = escapeHtml(n2Raw);
                 if (Math.abs(c) >= 0.7) {
-                    verdict = `🚨 A ${n1} és a ${n2} erősen korrelál (${c >= 0 ? '+' : ''}${c.toFixed(2)}) — ha mindkettőben pozíciód van, a valós, összesített kockázatod jóval magasabb lehet, mint az egyedi kockázatok puszta összege. Érdemes megfontolni, hogy csak az egyikben tarts pozíciót, vagy kisebb mérettel mindkettőben.`;
+                    verdict = `🚨 A ${n1} és a ${n2} erősen korrelál (${fmtSignedFixed(c, 2)}) — ha mindkettőben pozíciód van, a valós, összesített kockázatod jóval magasabb lehet, mint az egyedi kockázatok puszta összege. Érdemes megfontolni, hogy csak az egyikben tarts pozíciót, vagy kisebb mérettel mindkettőben.`;
                 } else if (Math.abs(c) >= 0.3) {
-                    verdict = `⚠️ A legerősebb pár (${n1} és ${n2}, ${c >= 0 ? '+' : ''}${c.toFixed(2)}) közepes korrelációt mutat — érdemes szemmel tartani, de önmagában még nem kritikus.`;
+                    verdict = `⚠️ A legerősebb pár (${n1} és ${n2}, ${fmtSignedFixed(c, 2)}) közepes korrelációt mutat — érdemes szemmel tartani, de önmagában még nem kritikus.`;
                 } else {
-                    verdict = `✅ A legerősebb pár (${n1} és ${n2}, ${c >= 0 ? '+' : ''}${c.toFixed(2)}) is csak gyenge korrelációt mutat — a megadott eszközök relatíve jól diverzifikálnak egymáshoz képest.`;
+                    verdict = `✅ A legerősebb pár (${n1} és ${n2}, ${fmtSignedFixed(c, 2)}) is csak gyenge korrelációt mutat — a megadott eszközök relatíve jól diverzifikálnak egymáshoz képest.`;
                 }
             }
 
@@ -42348,14 +42370,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const rowsHtml = rValues.map((r, i) => `
                 <div class="flex justify-between font-mono text-[10px] ${i < rValues.length - 1 ? 'border-b border-dark-800 pb-1 mb-1' : ''}">
                     <span class="text-slate-500">Trade #${i + 1}:</span>
-                    <span class="${r >= 0 ? 'text-neon-green' : 'text-neon-red'} font-semibold">${r >= 0 ? '+' : ''}${r.toFixed(2)}R</span>
+                    <span class="${r >= 0 ? 'text-neon-green' : 'text-neon-red'} font-semibold">${fmtSignedFixed(r, 2)}R</span>
                 </div>
             `).join('');
 
             out.innerHTML = `
                 <div class="glass-card rounded-xl border ${isPositive ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Átlagos R (R-expectancy / trade)</div>
-                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R</div>
+                    <div class="text-xl font-extrabold ${isPositive ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(avgR, 2)}R</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
@@ -42368,7 +42390,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Összes R (kumulált):</span>
-                        <span class="font-extrabold ${totalR >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${totalR >= 0 ? '+' : ''}${totalR.toFixed(2)}R</span>
+                        <span class="font-extrabold ${totalR >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${fmtSignedFixed(totalR, 2)}R</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">R szórása (volatilitás):</span>
@@ -42376,7 +42398,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">Legjobb / legrosszabb trade:</span>
-                        <span class="font-extrabold text-white text-sm">${bestR >= 0 ? '+' : ''}${bestR.toFixed(2)}R / ${worstR >= 0 ? '+' : ''}${worstR.toFixed(2)}R</span>
+                        <span class="font-extrabold text-white text-sm">${fmtSignedFixed(bestR, 2)}R / ${fmtSignedFixed(worstR, 2)}R</span>
                     </div>
                 </div>
                 <div class="glass-card rounded-xl p-3 max-h-32 overflow-y-auto">${rowsHtml}</div>
@@ -46276,7 +46298,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 <div class="grid grid-cols-2 gap-2 mb-3">
                     <div class="glass-card rounded-xl p-3 min-w-0">
                         <div class="text-[10px] text-slate-400 uppercase font-bold mb-1" style="overflow-wrap:anywhere;">Árarány-változás</div>
-                        <div class="text-sm font-extrabold text-white font-mono" style="overflow-wrap:anywhere;">${priceChangePct >= 0 ? '+' : ''}${priceChangePct.toFixed(2)}%</div>
+                        <div class="text-sm font-extrabold text-white font-mono" style="overflow-wrap:anywhere;">${fmtSignedFixed(priceChangePct, 2)}%</div>
                         <div class="text-[10px] text-slate-500 font-mono mt-0.5" style="overflow-wrap:anywhere;">k = ${k.toFixed(4)}</div>
                     </div>
                     <div class="glass-card rounded-xl p-3 border border-neon-red/30 min-w-0">
@@ -47574,7 +47596,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 symbols.forEach(colSym => {
                     const v = CORRELATION_MATRIX[rowSym][colSym];
                     const c = corrColor(v);
-                    html += `<div class="rounded-md text-center py-2 text-[10px] font-mono font-bold" style="background:${c.bg}; color:${c.text}">${v >= 0 ? '+' : ''}${v.toFixed(2)}</div>`;
+                    html += `<div class="rounded-md text-center py-2 text-[10px] font-mono font-bold" style="background:${c.bg}; color:${c.text}">${fmtSignedFixed(v, 2)}</div>`;
                 });
             });
             html += '</div>';
@@ -48883,7 +48905,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 </div>
                 ${recentJournalEntries.length > 0 ? `<div class="text-[11px] text-slate-400 mb-2"><span class="text-neon-green font-bold">${journalWinDays}</span> nyerő / <span class="text-neon-red font-bold">${journalLossDays}</span> vesztes nap a Naplóban.</div>` : ''}
                 ${simW ? simWeeklyHtml(simW) : ''}
-                ${replayAvgReturn !== null ? `<div class="text-[11px] text-slate-400 mb-2">Replay átlag: <span class="font-bold ${replayAvgReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${replayAvgReturn >= 0 ? '+' : ''}${replayAvgReturn.toFixed(1)}%</span>, ${replayBeatCount}/${recentReplaySessions.length} nap verte a Buy&amp;Hold-ot.</div>` : ''}
+                ${replayAvgReturn !== null ? `<div class="text-[11px] text-slate-400 mb-2">Replay átlag: <span class="font-bold ${replayAvgReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(replayAvgReturn, 1)}%</span>, ${replayBeatCount}/${recentReplaySessions.length} nap verte a Buy&amp;Hold-ot.</div>` : ''}
                 <div class="mt-2 pt-2 border-t border-dark-750/60">
                     ${insights.map(txt => `<p class="text-[11px] text-amber-400 leading-relaxed flex gap-1.5"><i class="fa-solid fa-lightbulb mt-0.5 shrink-0"></i><span>${txt}</span></p>`).join('')}
                 </div>
@@ -52414,7 +52436,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     </div>
                     <div class="text-center mb-4">
                         <div class="text-[11px] font-extrabold text-neon-cyan mb-2">${strategy.name}</div>
-                        <div class="text-xs text-slate-400 mb-1">A piac ezután <strong class="text-white">${dirLabel[actualDirection]}</strong> mozgott (${netMove >= 0 ? '+' : ''}${netMove.toFixed(1)}%)</div>
+                        <div class="text-xs text-slate-400 mb-1">A piac ezután <strong class="text-white">${dirLabel[actualDirection]}</strong> mozgott (${fmtSignedFixed(netMove, 1)}%)</div>
                         ${strategy.watch ? `<div class="text-[11px] text-slate-500 italic mb-1">Figyelj rá: ${strategy.watch}</div>` : ''}
                         <div class="text-sm font-bold ${decisionMatchesReality ? 'text-neon-green' : 'text-amber-400'}">
                             ${decisionMatchesReality ? '✓ A döntésed a piaci iránnyal egyezett' : '↯ A piac más irányba ment, mint amire számítottál'}
@@ -53688,7 +53710,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                                 <div class="text-xs font-bold text-slate-200">${label}</div>
                                 <div class="text-[10px] text-slate-500 mt-0.5">${b.count} nap · átl. ${avgWinRate}% találati arány · ${beatPct}%-ban verte a Buy&Hold-ot</div>
                             </div>
-                            <div class="text-sm font-extrabold ${returnColor} shrink-0">${avgReturn >= 0 ? '+' : ''}${avgReturn.toFixed(1)}%</div>
+                            <div class="text-sm font-extrabold ${returnColor} shrink-0">${fmtSignedFixed(avgReturn, 1)}%</div>
                         </div>`;
                 }).join('');
 
@@ -53746,7 +53768,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                                         <div class="text-xs text-slate-300 mt-0.5">${j.trades} trade · ${j.winRate}% találati arány${typeof j.processScore === 'number' ? ' · folyamat: ' + j.processScore + '/100' : ''}</div>
                                     </div>
                                     <div class="text-right shrink-0">
-                                        <div class="text-sm font-extrabold ${j.totalReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${j.totalReturn >= 0 ? '+' : ''}${j.totalReturn.toFixed(1)}%</div>
+                                        <div class="text-sm font-extrabold ${j.totalReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(j.totalReturn, 1)}%</div>
                                         <div class="text-[9px] ${beat ? 'text-neon-green' : 'text-slate-600'}">${beat ? '✓ B&H felett' : 'B&H: ' + (j.buyHoldReturn >= 0 ? '+' : '') + j.buyHoldReturn.toFixed(1) + '%'}</div>
                                     </div>
                                 </div>
@@ -53886,7 +53908,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 posInfo = `
                     <div class="flex items-center gap-3 text-xs font-mono ${color} font-bold">
                         <i class="fa-solid fa-${p.side === 'LONG' ? 'arrow-trend-up' : 'arrow-trend-down'}"></i>
-                        ${p.side} @ ${p.entryPrice.toFixed(2)} · ${unrealized >= 0 ? '+' : ''}${unrealized.toFixed(1)}%${sizeLabel}
+                        ${p.side} @ ${p.entryPrice.toFixed(2)} · ${fmtSignedFixed(unrealized, 1)}%${sizeLabel}
                         ${p.stopPrice ? `<span class="text-slate-500 font-normal">SL: ${p.stopPrice.toFixed(2)}</span>` : ''}
                         ${p.targetPrice ? `<span class="text-slate-500 font-normal">TP: ${p.targetPrice.toFixed(2)}</span>` : ''}
                     </div>`;
@@ -53902,7 +53924,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="flex items-center justify-between mb-3">
                         <div class="text-xs font-mono text-slate-500">Gyertya ${s.revealedCount} / ${s.candles.length} <span class="text-slate-600">· ${diffLabel}</span> <span class="text-slate-500 text-[10px]">${candleTypeLabel}</span></div>
                         ${s.trades.length > 0 ? `<div class="text-[10px] font-mono text-slate-600">${s.trades.filter(t=>t.pnlPct>0).length}/${s.trades.length} nyerő</div>` : ''}
-                        <div class="text-xs font-mono font-bold ${realizedTotal >= 0 ? 'text-neon-green' : 'text-neon-red'}">Realizált: ${realizedTotal >= 0 ? '+' : ''}${realizedTotal.toFixed(1)}%</div>
+                        <div class="text-xs font-mono font-bold ${realizedTotal >= 0 ? 'text-neon-green' : 'text-neon-red'}">Realizált: ${fmtSignedFixed(realizedTotal, 1)}%</div>
                     </div>
                     <div class="w-full h-1 rounded-full bg-dark-800 overflow-hidden mb-4">
                         <div class="h-full bg-neon-purple transition-all" style="width:${pct}%"></div>
@@ -54062,11 +54084,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                         <div class="glass-card rounded-xl border border-dark-750 p-3">
                             <div class="text-[9px] text-slate-500 uppercase font-bold mb-1">Te (aktív kereskedés)</div>
-                            <div class="text-lg font-extrabold ${totalReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(1)}%</div>
+                            <div class="text-lg font-extrabold ${totalReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(totalReturn, 1)}%</div>
                         </div>
                         <div class="glass-card rounded-xl border border-dark-750 p-3">
                             <div class="text-[9px] text-slate-500 uppercase font-bold mb-1">Buy & Hold</div>
-                            <div class="text-lg font-extrabold ${buyHoldReturn >= 0 ? 'text-slate-300' : 'text-slate-300'}">${buyHoldReturn >= 0 ? '+' : ''}${buyHoldReturn.toFixed(1)}%</div>
+                            <div class="text-lg font-extrabold ${buyHoldReturn >= 0 ? 'text-slate-300' : 'text-slate-300'}">${fmtSignedFixed(buyHoldReturn, 1)}%</div>
                         </div>
                     </div>
 
@@ -54251,7 +54273,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 const posColor = pnlPct >= 0 ? 'text-neon-green' : 'text-neon-red';
                 posInfo = `<div class="text-xs font-bold ${posColor} mt-2 flex items-center gap-1.5">
                     <i class="fa-solid fa-${WI.position === 'LONG' ? 'arrow-trend-up' : 'arrow-trend-down'}"></i>
-                    ${WI.position === 'LONG' ? 'Long' : 'Short'} pozícióban · ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%
+                    ${WI.position === 'LONG' ? 'Long' : 'Short'} pozícióban · ${fmtSignedFixed(pnlPct, 1)}%
                 </div>`;
             }
 
@@ -54288,7 +54310,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div class="grid grid-cols-2 border-t border-dark-750/60">
                                 <div class="text-center py-3 border-r border-dark-750/60">
                                     <div class="text-[9px] font-bold text-slate-500 uppercase">Te</div>
-                                    <div class="text-lg font-mono font-extrabold mt-0.5 ${finalPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${finalPnl >= 0 ? '+' : ''}${finalPnl.toFixed(1)}%</div>
+                                    <div class="text-lg font-mono font-extrabold mt-0.5 ${finalPnl >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(finalPnl, 1)}%</div>
                                 </div>
                                 <div class="text-center py-3">
                                     <div class="text-[9px] font-bold text-slate-500 uppercase">Buy & Hold (nem aktív)</div>
@@ -54795,7 +54817,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                     <span class="flex items-center gap-1.5 text-slate-300 font-semibold"><span class="w-5 h-5 rounded-full bg-dark-800 border border-dark-700 flex items-center justify-center text-[10px]">${r.icon}</span>${r.label}</span>
                     <span class="flex items-center gap-2 font-mono">
                         <span class="text-white font-bold">${r.price}</span>
-                        ${r.change !== null && r.change !== undefined ? `<span class="${r.change >= 0 ? 'text-neon-green' : 'text-neon-red'} text-[10px]">${r.change >= 0 ? '+' : ''}${r.change.toFixed(2)}%</span>` : ''}
+                        ${r.change !== null && r.change !== undefined ? `<span class="${r.change >= 0 ? 'text-neon-green' : 'text-neon-red'} text-[10px]">${fmtSignedFixed(r.change, 2)}%</span>` : ''}
                     </span>
                 </div>
             `).join('') + `<div class="text-[9px] text-slate-600 text-right mt-1">Frissítve: ${data.fetchedAt.toLocaleTimeString('hu-HU')}</div>`;
