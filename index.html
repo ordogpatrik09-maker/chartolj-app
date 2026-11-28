@@ -17897,6 +17897,37 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             return (showPlus ? "+" : "") + z.toFixed(decimals);
         }
 
+        // JAVÍTÁS (rendszerszintű kör — Haladó Backtest-elemző eszközcsalád, 2026-11-28):
+        // a Backtester/Stratégia-építő ~19 "Haladó" elemző eszköze (Bootstrap Monte
+        // Carlo, Block Bootstrap, Independence Test, Cost Drag, Ulcer Index, Kelly-
+        // méretezés, Breakeven Winrate, Risk of Ruin stb.) mind a window.lastBacktestResult
+        // / sbLastRunResult trades[].returnPct tömbből számol — ez a mező FELÜLRŐL NEM
+        // KORLÁTOS (pl. sok, nagy hozamú trade egy agresszív stratégián). A kamatos
+        // (compounding) és Monte Carlo-szimulációkon, korrelációs regresszión, Kelly-
+        // frakción stb. keresztül a kiszámolt statisztika-mezők (pl. originalReturnPct,
+        // retP95, ulcerIndex) egy szélsőséges, de egyenként véges trade-sorozatnál a
+        // double-tartomány túlcsordulásáig (Infinity/NaN) nőhetnek, ill. elérhetik a
+        // natív .toFixed() kb. 1e21 fölötti nyers tudományos jelölés-visszaadási
+        // határát — ugyanaz a hibaosztály, amit a projekt már ~20+ más kalkulátorban
+        // (Gain-to-Pain, Calmar/Sterling CAGR, Statisztikai Szignifikancia Teszt stb.)
+        // javított, de ez a 19 eszköz (és a hozzájuk tartozó ~25 render*Html() függvény)
+        // korábban kimaradt ebből az auditból — a renderelés nyers "Infinity%"/"NaN%"
+        // szöveget, vagy pl. "4.9e+23%"-ot adott volna valódi eredményként.
+        //
+        // Ahelyett, hogy minden egyes render*Html()-ben egyenként felsorolnánk a
+        // kockázatos mezőket, ez a generikus, REKURZÍV segédfüggvény bejárja a neki
+        // átadott statisztika-objektumot (beágyazott objektumokkal/tömbökkel együtt)
+        // és minden SZÁM típusú levélértékre Number.isFinite()-ot futtat — ha bármelyik
+        // nem véges, a hívó render*Html() egy explicit hibaüzenetet ad valódi eredmény
+        // helyett. Nem numerikus mezőket (string címke, boolean, null stb.) figyelmen
+        // kívül hagyja.
+        function allStatsFinite(value) {
+            if (typeof value === 'number') return Number.isFinite(value);
+            if (Array.isArray(value)) return value.every(allStatsFinite);
+            if (value && typeof value === 'object') return Object.values(value).every(allStatsFinite);
+            return true;
+        }
+
         /* ================= SCALE-TO-FIT ENGINE =================
         /* ================= RESZPONZÍV ÚJRARAJZOLÁS =================
            A korábbi verzióban egy JS "scale-to-fit" motor arányosan
@@ -21217,12 +21248,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderBootstrapMCHtml(stats, tradeCount, numSims, ddThresholdPct) {
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a bootstrap-szimuláció eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             return `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Eredeti (egyszeri) sorrend hozama:</span><span class="text-white">${stats.originalReturnPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${numSims} újrasorsolt szekvencia, hozam P5/P50/P95:</span><span class="text-white">${stats.retP5.toFixed(1)}% / ${stats.retP50.toFixed(1)}% / ${stats.retP95.toFixed(1)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown P50/P95:</span><span class="text-amber-400">${stats.ddP50.toFixed(2)}% / ${stats.ddP95.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">P(max. drawdown ≥ ${ddThresholdPct}%):</span><span class="${stats.breachProbPct > 20 ? 'text-neon-red' : 'text-neon-green'}">${stats.breachProbPct.toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eredeti (egyszeri) sorrend hozama:</span><span class="text-white">${fmt(stats.originalReturnPct, 2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${numSims} újrasorsolt szekvencia, hozam P5/P50/P95:</span><span class="text-white">${fmt(stats.retP5, 1)}% / ${fmt(stats.retP50, 1)}% / ${fmt(stats.retP95, 1)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown P50/P95:</span><span class="text-amber-400">${fmt(stats.ddP50, 2)}% / ${fmt(stats.ddP95, 2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">P(max. drawdown ≥ ${ddThresholdPct}%):</span><span class="${stats.breachProbPct > 20 ? 'text-neon-red' : 'text-neon-green'}">${fmt(stats.breachProbPct, 1)}%</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">Ugyanazokat a ${tradeCount} trade-hozamot ${numSims}-szer véletlenszerűen újrasorsoltuk (visszatevéssel mintavételezve) — ez megmutatja, hogy a backtest EREDETI sorrendje csak EGY lehetséges kimenet a sok közül. Ha a P5 és P95 hozam közti sáv nagyon széles, vagy a drawdown-küszöb áttörésének esélye magas, az arra figyelmeztet, hogy a stratégia eredménye erősen függ a trade-ek véletlenszerű sorrendjétől (szekvencia-kockázat), nem csak a stratégia "minőségétől".</p>
             `;
@@ -21256,13 +21291,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderIndependenceTestHtml(stats, tradeCount) {
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a függetlenségi teszt eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
             const corrIsMeaningful = Math.abs(stats.lag1Corr) > 0.2;
+            const fmt = (v, d) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             return `
                 <div class="glass-card rounded-xl border ${stats.significant ? 'border-amber-400/30 bg-amber-400/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Lag-1 autokorreláció (trade[i] ↔ trade[i+1]):</span><span class="${corrIsMeaningful ? 'text-amber-400' : 'text-white'} font-bold">${stats.lag1Corr.toFixed(3)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Lag-1 autokorreláció (trade[i] ↔ trade[i+1]):</span><span class="${corrIsMeaningful ? 'text-amber-400' : 'text-white'} font-bold">${fmt(stats.lag1Corr, 3)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Tényleges szériák (runs) száma:</span><span class="text-white">${stats.runsActual}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Várt szériák száma (ha véletlen lenne):</span><span class="text-white">${stats.expectedRuns.toFixed(1)}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Z-score:</span><span class="${stats.significant ? 'text-amber-400' : 'text-neon-green'} font-bold">${stats.zScore.toFixed(2)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Várt szériák száma (ha véletlen lenne):</span><span class="text-white">${fmt(stats.expectedRuns, 1)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Z-score:</span><span class="${stats.significant ? 'text-amber-400' : 'text-neon-green'} font-bold">${fmt(stats.zScore, 2)}</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Statisztikailag szignifikáns (|Z| &gt; 1.96)?</span><span class="${stats.significant ? 'text-amber-400' : 'text-neon-green'} font-bold">${stats.significant ? 'IGEN' : 'NEM'}</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${stats.significant ?
@@ -21377,17 +21416,21 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderBlockBootstrapMCHtml(stats, iidStats, tradeCount, numSims, ddThresholdPct, blockSize) {
+            if (!allStatsFinite(stats) || !allStatsFinite(iidStats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a blokk-bootstrap szimuláció eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
             const ddGap = stats.ddP95 - iidStats.ddP95;
             const meaningfulGap = Math.abs(ddGap) > 2;
+            const fmt = (v, d) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             return `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
-                    <div class="flex justify-between"><span class="text-slate-400">Eredeti (egyszeri) sorrend hozama:</span><span class="text-white">${stats.originalReturnPct.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${numSims} blokk-bootstrap (blokkhossz=${blockSize}), hozam P5/P50/P95:</span><span class="text-white">${stats.retP5.toFixed(1)}% / ${stats.retP50.toFixed(1)}% / ${stats.retP95.toFixed(1)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown P50/P95 (blokk):</span><span class="text-amber-400">${stats.ddP50.toFixed(2)}% / ${stats.ddP95.toFixed(2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">P(max. drawdown ≥ ${ddThresholdPct}%) (blokk):</span><span class="${stats.breachProbPct > 20 ? 'text-neon-red' : 'text-neon-green'}">${stats.breachProbPct.toFixed(1)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Eredeti (egyszeri) sorrend hozama:</span><span class="text-white">${fmt(stats.originalReturnPct, 2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">${numSims} blokk-bootstrap (blokkhossz=${blockSize}), hozam P5/P50/P95:</span><span class="text-white">${fmt(stats.retP5, 1)}% / ${fmt(stats.retP50, 1)}% / ${fmt(stats.retP95, 1)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown P50/P95 (blokk):</span><span class="text-amber-400">${fmt(stats.ddP50, 2)}% / ${fmt(stats.ddP95, 2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">P(max. drawdown ≥ ${ddThresholdPct}%) (blokk):</span><span class="${stats.breachProbPct > 20 ? 'text-neon-red' : 'text-neon-green'}">${fmt(stats.breachProbPct, 1)}%</span></div>
                 </div>
                 <div class="glass-card rounded-xl border ${meaningfulGap ? 'border-amber-400/30 bg-amber-400/[0.05]' : 'border-neon-green/30 bg-neon-green/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
-                    <div class="flex justify-between"><span class="text-slate-400">Összehasonlításhoz: i.i.d. bootstrap P95 drawdown:</span><span class="text-white">${iidStats.ddP95.toFixed(2)}%</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Összehasonlításhoz: i.i.d. bootstrap P95 drawdown:</span><span class="text-white">${fmt(iidStats.ddP95, 2)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Eltérés (blokk − i.i.d.):</span><span class="${meaningfulGap ? 'text-amber-400 font-bold' : 'text-white'}">${fmtSignedFixed(ddGap, 2)}pp</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${meaningfulGap ?
@@ -21511,17 +21554,26 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderCostDragHtml(stats) {
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a költség-szimuláció eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
             const edgeSurvives = stats.degradedReturnPct > 0;
             const erosionPct = stats.idealReturnPct - stats.degradedReturnPct;
+            // JAVÍTÁS: erosionPct a fenti, már véges-ellenőrzött idealReturnPct/degradedReturnPct
+            // KÜLÖNBSÉGE — két véges double különbsége a gyakorlatban nem csordulhat túl
+            // (csak kb. 1.8e308 fölötti, egymással ellentétes előjelű szélsőértékeknél, ami a
+            // trade-adatokból reálisan nem áll elő) —, de a `fmt` (lentebb, toLocaleString-
+            // alapú, nem toFixed) emiatt is védett marad, ha mégis az lenne.
+            const fmt = (v, d) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             return `
                 <div class="glass-card rounded-xl p-3 space-y-1.5 mb-3 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Idealizált (költség nélküli) hozam:</span><span class="${stats.idealReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(stats.idealReturnPct, 2)}%</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-neon-cyan font-semibold">Költséggel terhelt (valós) hozam:</span><span class="${stats.degradedReturnPct >= 0 ? 'text-neon-green' : 'text-neon-red'} font-bold">${fmtSignedFixed(stats.degradedReturnPct, 2)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown (idealizált / valós):</span><span class="text-amber-400">${stats.maxDrawdownIdealPct.toFixed(2)}% / ${stats.maxDrawdownDegradedPct.toFixed(2)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Max. drawdown (idealizált / valós):</span><span class="text-amber-400">${fmt(stats.maxDrawdownIdealPct, 2)}% / ${fmt(stats.maxDrawdownDegradedPct, 2)}%</span></div>
                 </div>
                 <div class="glass-card rounded-xl border ${edgeSurvives ? 'border-neon-green/30 bg-neon-green/[0.05]' : 'border-neon-red/30 bg-neon-red/[0.05]'} p-3 mb-3 font-mono text-xs space-y-1.5">
-                    <div class="flex justify-between"><span class="text-slate-400">Round-trip költség trade-enként:</span><span class="text-white font-bold">${stats.costFractionPct.toFixed(3)}%</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam-erózió (idealizált − valós):</span><span class="text-amber-400 font-bold">${erosionPct.toFixed(2)}pp</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Round-trip költség trade-enként:</span><span class="text-white font-bold">${fmt(stats.costFractionPct, 3)}%</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Hozam-erózió (idealizált − valós):</span><span class="text-amber-400 font-bold">${fmt(erosionPct, 2)}pp</span></div>
                     <div class="flex justify-between border-t border-dark-750 pt-1.5"><span class="text-slate-400">Nyereségesből veszteségessé vált trade-ek:</span><span class="${stats.flippedToLossCount > 0 ? 'text-neon-red font-bold' : 'text-white'}">${stats.flippedToLossCount} / ${stats.tradeCount}</span></div>
                 </div>
                 <p class="text-[10px] text-slate-400 leading-relaxed">${edgeSurvives ?
@@ -21633,6 +21685,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderSessionPerformanceHtml(breakdown) {
+            if (!allStatsFinite(breakdown)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt az idősáv-elemzés eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
             const labels = { asian: 'Ázsiai (00-08 UTC)', european: 'Európai (08-16 UTC)', us: 'Amerikai (16-24 UTC)' };
             const rows = ['asian', 'european', 'us'].map(key => {
                 const s = breakdown.sessions[key];
@@ -21754,6 +21809,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderPerformanceDecayHtml(stats, windowSize) {
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a degradáció-elemzés eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
             const declining = stats.slopePerStep < 0;
             const halfDiff = stats.secondHalf.avgReturnPct - stats.firstHalf.avgReturnPct;
             const consistent = (declining && halfDiff < 0) || (!declining && halfDiff >= 0);
@@ -21841,7 +21899,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderBreakevenWinrateHtml(stats) {
-            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a breakeven-elemzés eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let verdict, verdictClass;
             if (stats.marginOfSafetyPct !== null && stats.marginOfSafetyPct > 5) { verdict = 'EGÉSZSÉGES BIZTONSÁGI RÁHAGYÁS A BREAKEVEN FELETT'; verdictClass = 'text-neon-green'; }
             else if (stats.marginOfSafetyPct !== null && stats.marginOfSafetyPct > 0) { verdict = 'SZŰK BIZTONSÁGI RÁHAGYÁS — ÉRZÉKENY LEHET KIS INGADOZÁSRA'; verdictClass = 'text-neon-amber'; }
@@ -21953,7 +22014,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderConsecutiveStreakHtml(stats) {
-            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a sorozat-elemzés eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             const curLabel = stats.currentStreakType === 'W' ? 'nyerő' : (stats.currentStreakType === 'L' ? 'vesztő' : 'nincs (döntetlen az utolsó trade)');
             const curClass = stats.currentStreakType === 'W' ? 'text-neon-green' : (stats.currentStreakType === 'L' ? 'text-neon-red' : 'text-slate-400');
             return `
@@ -22035,6 +22099,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderAutoUlcerIndexHtml(stats) {
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">Az egyenleg-görbe szélsőséges kombinációja miatt az Ulcer Index nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
             let colorClass, verdict;
             if (stats.ulcerIndex < 1) { colorClass = 'text-neon-green'; verdict = '✅ Nagyon alacsony Ulcer Index — a hozamig vezető út sima volt, rövid és/vagy enyhe visszaesésekkel.'; }
             else if (stats.ulcerIndex < 3) { colorClass = 'text-neon-cyan'; verdict = 'Alacsony-közepes Ulcer Index — kezelhető, nem túl hosszan tartó visszaesések.'; }
@@ -22047,15 +22114,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // valódi visszaesés nélkül is.
             const maxDDDisplay = Math.round(stats.maxDrawdownPct * 100) / 100;
             const avgDDDisplay = Math.round(stats.avgDrawdownPct * 100) / 100;
+            const fmt = (v, d) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             return `
                 <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
                     <div class="text-xs font-bold text-neon-blue">Automatikus Ulcer Index (Egyenleg-görbén)</div>
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Adatpontok száma</div><div class="font-bold text-white">${stats.dataPoints}</div></div>
-                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Maximum Drawdown</div><div class="font-bold text-neon-red">${maxDDDisplay > 0 ? '-' : ''}${maxDDDisplay.toFixed(2)}%</div></div>
-                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos drawdown (minden ponton)</div><div class="font-bold text-white">${avgDDDisplay > 0 ? '-' : ''}${avgDDDisplay.toFixed(2)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Maximum Drawdown</div><div class="font-bold text-neon-red">${maxDDDisplay > 0 ? '-' : ''}${fmt(maxDDDisplay, 2)}%</div></div>
+                        <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Átlagos drawdown (minden ponton)</div><div class="font-bold text-white">${avgDDDisplay > 0 ? '-' : ''}${fmt(avgDDDisplay, 2)}%</div></div>
                         <div class="bg-dark-900/50 rounded p-2"><div class="text-gray-400">Visszaesésben töltött pontok</div><div class="font-bold text-white">${stats.periodsUnderwater} / ${stats.dataPoints}</div></div>
-                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">Ulcer Index</div><div class="font-extrabold ${colorClass} text-sm">${stats.ulcerIndex.toFixed(2)}</div></div>
+                        <div class="bg-dark-900/50 rounded p-2 col-span-2"><div class="text-gray-400">Ulcer Index</div><div class="font-extrabold ${colorClass} text-sm">${fmt(stats.ulcerIndex, 2)}</div></div>
                     </div>
                     <div class="text-xs font-semibold ${colorClass}">${verdict}</div>
                     <div class="text-xs text-gray-500 mt-1">A Maximum Drawdowntól eltérően az Ulcer Index MINDEN ponton figyeli a futó csúcstól mért elmaradást — így a hosszan tartó visszaesést súlyosabban bünteti, mint egy rövid, gyors esést.</div>
@@ -22128,7 +22196,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderAutoExpectancyHtml(stats) {
-            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt az expectancy nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             const isPositive = stats.expectancyPct > 0;
             const verdictClass = isPositive ? 'text-neon-green' : 'text-neon-red';
             const verdict = isPositive
@@ -22224,7 +22295,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderOutlierDependencyHtml(stats) {
-            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a kiugró-érték-függőség elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let verdict, verdictClass;
             if (!stats.profitableWithoutTopTrades) {
                 verdict = `🚨 KRITIKUS FÜGGŐSÉG — a top ${stats.topN} trade nélkül a stratégia VESZTESÉGES lenne. A teljes eredmény túlzottan kevés, kiugró trade-re épül.`;
@@ -22440,7 +22514,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderWeekdayPerformanceHtml(stats) {
-            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a hét napjai szerinti elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             const rows = stats.byDay.map(d => `
                 <div class="flex justify-between text-[11px] ${d.tradeCount === 0 ? 'text-slate-600' : ''}">
                     <span class="text-slate-400">${d.day}${d.day === stats.bestDay ? ' 🏆' : ''}${d.day === stats.worstDay ? ' ⚠️' : ''}:</span>
@@ -22516,7 +22593,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderWinrateConfidenceIntervalHtml(stats) {
-            const fmt = (v, d = 1) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a konfidencia-intervallum nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 1) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let verdict, verdictClass;
             if (stats.intervalWidthPct > 40) { verdict = '🚨 NAGYON SZÉLES intervallum — ennyi trade-ből a valódi win rate lényegében NEM becsülhető meg megbízhatóan. Legalább 50-100+ trade szükséges a szűkebb, megbízhatóbb becsléshez.'; verdictClass = 'text-neon-red'; }
             else if (stats.intervalWidthPct > 20) { verdict = '⚠️ SZÉLES intervallum — a minta még mindig viszonylag kicsi, a valódi win rate jelentősen eltérhet a pontbecsléstől.'; verdictClass = 'text-neon-amber'; }
@@ -22629,7 +22709,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderAutoRiskOfRuinHtml(stats) {
-            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a csőd-valószínűség nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let verdict, verdictClass;
             if (stats.riskOfRuinPct >= 50) { verdict = '🚨 Ez a kockázat/trade % matematikailag életveszélyes a tőkédre a backtest trade-statisztikái alapján — nagyon valószínű a teljes veszteség.'; verdictClass = 'text-neon-red'; }
             else if (stats.riskOfRuinPct >= 15) { verdict = '⚠️ Jelentős a csőd-kockázat ezzel a kockázat/trade %-kal — fontolj meg kisebb tétméretet.'; verdictClass = 'text-amber-400'; }
@@ -22744,7 +22827,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderVolatilityEntryPerformanceHtml(stats) {
-            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a volatilitás-alapú belépés-elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let verdict, verdictClass;
             const lowAvg = stats.lowVol.avgReturnPct, highAvg = stats.highVol.avgReturnPct;
             if (lowAvg !== null && highAvg !== null) {
@@ -22867,7 +22953,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderKellySizedHtml(kellyStats, baseline, kellyMultiplier) {
-            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            if (!allStatsFinite(kellyStats) || !allStatsFinite(baseline) || !Number.isFinite(kellyMultiplier)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok vagy a megadott Kelly-szorzó szélsőséges kombinációja miatt a Kelly-méretezés eredménye nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra vagy szorzóra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             const better = kellyStats.totalReturnPct > baseline.totalReturnPct && kellyStats.maxDrawdownPct <= baseline.maxDrawdownPct;
             return `
                 <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
@@ -22983,7 +23072,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderBenchmarkCorrelationHtml(stats) {
-            const fmt = (v, d = 3) => (v === null || v === undefined) ? 'N/A' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a benchmark-korreláció nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 3) => (v === null || v === undefined) ? 'N/A' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let verdict, verdictClass;
             if (stats.beta !== null && Math.abs(stats.beta) < 0.3) { verdict = 'ALACSONY BÉTA — A STRATÉGIA JELENTŐSEN FÜGGETLEN AZ ESZKÖZ ÁRFOLYAM-MOZGÁSÁTÓL'; verdictClass = 'text-neon-green'; }
             else if (stats.beta !== null && Math.abs(stats.beta) < 0.7) { verdict = 'KÖZEPES BÉTA — RÉSZLEGESEN KÖVETI AZ ESZKÖZ MOZGÁSÁT'; verdictClass = 'text-neon-amber'; }
@@ -23096,7 +23188,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderTradingFrequencyHtml(stats) {
-            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a kereskedési gyakoriság elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             return `
                 <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
                     <div class="text-xs font-bold text-neon-blue">Kereskedési Gyakoriság és Aktivitás (${stats.totalSpanDays} napos időszak)</div>
@@ -23195,7 +23290,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderAutoDrawdownDurationHtml(stats) {
-            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">Az egyenleg-görbe szélsőséges kombinációja miatt a drawdown-időtartam elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             if (stats.episodeCount === 0 && !stats.hasOngoingEpisode) {
                 return `<div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50"><div class="text-xs font-bold text-neon-green">✅ Nem volt lezárt visszaesés-episód az egyenleg-görbén (minden pont elérte vagy meghaladta az addigi csúcsot).</div></div>`;
             }
@@ -23298,7 +23396,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderAutoRiskAdjustedHtml(stats) {
-            const fmt = (v, d = 3) => (v === null || v === undefined) ? 'N/A (nincs szórás)' : Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a kockázattal korrigált mutatók nem fejezhetők ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 3) => (v === null || v === undefined) ? 'N/A (nincs szórás)' : Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             return `
                 <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
                     <div class="text-xs font-bold text-neon-blue">Automatikus Kockázattal Korrigált Mutatók (${stats.n} trade alapján)</div>
@@ -23408,7 +23509,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderMfeMaeHtml(stats) {
-            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt az MFE/MAE elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let verdict, verdictClass;
             if (stats.winnersCount > 0 && stats.givebackPct >= 50) { verdict = 'A NYERTES TRADE-EK TÖBBSÉGE SOKAT VISSZAADOTT A CSÚCSBÓL — FONTOLD MEG A SZOROSABB TAKE-PROFIT/TRAILING-STOP BEÁLLÍTÁST'; verdictClass = 'text-neon-amber'; }
             else if (stats.winnersCount > 0) { verdict = 'A NYERTES TRADE-EK ÁLTALÁBAN JÓL "ELFOGTÁK" A RENDELKEZÉSRE ÁLLÓ MOZGÁST'; verdictClass = 'text-neon-green'; }
@@ -23511,7 +23615,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderDailyPnLBreakdownHtml(stats) {
-            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a napi P&L bontás nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             return `
                 <div class="bg-dark-800 rounded-lg p-3 border border-gray-700/50 space-y-2">
                     <div class="text-xs font-bold text-neon-blue">Napi PnL Bontás (${stats.tradingDaysCount} kereskedési nap)</div>
@@ -23767,7 +23874,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderRoundNumberProximityHtml(stats, proximityPct) {
-            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a kerek-szám-közelség elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let edgeNote = '';
             if (stats.nearRoundNumber.tradeCount > 0 && stats.farFromRoundNumber.tradeCount > 0) {
                 if (stats.nearRoundNumber.avgReturnPct > stats.farFromRoundNumber.avgReturnPct + 0.1) {
@@ -23880,7 +23990,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderGapRiskHtml(stats, gapThresholdPct) {
-            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a gap-kockázat elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let verdict, verdictClass;
             if (stats.exposedPct === 0) { verdict = 'NINCS JELENTŐS GAP-KITETTSÉG EBBEN A MINTÁBAN'; verdictClass = 'text-neon-green'; }
             else if (stats.exposedPct < 20) { verdict = 'ALACSONY GAP-KITETTSÉG'; verdictClass = 'text-neon-amber'; }
@@ -24109,7 +24222,10 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderTradeDurationExposureHtml(stats) {
-            const fmt = (v, d = 2) => Number(v).toFixed(d);
+            if (!allStatsFinite(stats)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a trade-időtartam/kitettség elemzés nem fejezhető ki véges számmal — ez valószínűleg irreálisan extrém backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 2) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
             let edgeNote = '';
             if (stats.shortTrades.tradeCount > 0 && stats.longTrades.tradeCount > 0) {
                 if (stats.longTrades.avgReturnPct > stats.shortTrades.avgReturnPct + 0.1) {
