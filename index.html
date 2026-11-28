@@ -25523,8 +25523,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             if (highEl) highEl.textContent = '$' + high24.toFixed(2);
             if (lowEl) lowEl.textContent = '$' + low24.toFixed(2);
             if (changeEl) {
-                changeEl.textContent = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
-                changeEl.className = (changePct >= 0 ? 'text-neon-green' : 'text-neon-red') + ' font-semibold';
+                // JAVÍTÁS: a changePct egy FOLYAMATOSAN frissülő élő árfolyam-
+                // százalékváltozás (minden tickor-frissítéskor újraszámolva) —
+                // tetszőlegesen kicsi, negatív maradék esetén (pl. -0.001%) a
+                // kerekítés előtti érték alapján döntő `>= 0 ? '+' : ''` NEM
+                // tesz "+"-t, de a natív `.toFixed(2)` a negatív előjelet
+                // megtartja, "-0.00%"-ot mutatva "0.00%" helyett — ugyanaz a
+                // hibaosztály, mint amit a projekt már ~100+ más helyen (lásd
+                // fmtSignedFixed()/zeroSafeRound()) javított, csak ez a
+                // mindig látható fejléc-ticker korábban kimaradt belőle.
+                changeEl.textContent = fmtSignedFixed(changePct, 2) + '%';
+                const changeSafe = zeroSafeRound(changePct, 2);
+                changeEl.className = (changeSafe >= 0 ? 'text-neon-green' : 'text-neon-red') + ' font-semibold';
             }
 
             const volEl = document.querySelector('#chartolj-volume');
@@ -36093,7 +36103,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const corrHtml = result.correlations.map(c => {
                 const nameA = typeNames[result.legResults[c.i].type], nameB = typeNames[result.legResults[c.j].type];
-                return `<div class="flex justify-between"><span class="text-slate-400">${nameA} ↔ ${nameB} korreláció:</span><span class="text-white">${c.corr.toFixed(2)}</span></div>`;
+                // JAVÍTÁS: a stratégia-lábak hozamsorozatai közti Pearson-korreláció
+                // tetszőlegesen kicsi, negatív lehet (pl. -0.003) — 2 tizedesjegyre
+                // kerekítve a sima `.toFixed()` ilyenkor "-0.00"-t adna "0.00"
+                // helyett (itt nincs is "+"/"-" jel-kapcsoló logika, ami elfedné: a
+                // kiírt szám önmagában hordozná az értelmetlen "-" előjelet) —
+                // ugyanaz a hibaosztály, mint amit a Korrelációs Mátrix és a
+                // Korrelációs Rezsim-váltás kalkulátoroknál ugyanebben a körben
+                // javítottunk; itt a zeroSafeRound()-ot használjuk (nem a
+                // fmtSignedFixed()-et), hogy a korábbi, "+" jel nélküli megjelenítési
+                // konvenció változatlan maradjon.
+                return `<div class="flex justify-between"><span class="text-slate-400">${nameA} ↔ ${nameB} korreláció:</span><span class="text-white">${zeroSafeRound(c.corr, 2).toFixed(2)}</span></div>`;
             }).join('');
 
             const isBenefit = result.diversificationBenefitPct > 0.01;
@@ -40152,7 +40172,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 tableHtml += `<tr><td class="text-slate-400 font-bold pr-1">${escapeHtml(assets[i].name.length > 6 ? assets[i].name.slice(0, 6) : assets[i].name)}</td>`;
                 for (let j = 0; j < k; j++) {
                     const c = matrix[i][j];
-                    const display = c === null ? 'N/A' : (c >= 0 ? '+' : '') + c.toFixed(2);
+                    // JAVÍTÁS: tetszőlegesen kicsi, negatív Pearson-korreláció
+                    // (pl. -0.001) 2 tizedesjegyre kerekítve "-0.00"-t adott a
+                    // sima `.toFixed()`-del — ugyanaz a hibaosztály, mint amit
+                    // a fmtSignedFixed() más kalkulátoroknál már javított, ez a
+                    // korrelációs mátrix saját, egyedi (nem azt hívó) megjelenítő
+                    // kódja korábban kimaradt belőle.
+                    const display = c === null ? 'N/A' : fmtSignedFixed(c, 2);
                     tableHtml += `<td class="text-center px-1 py-1 ${corrColorClass(c)} font-bold">${display}</td>`;
                 }
                 tableHtml += '</tr>';
@@ -41693,7 +41719,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return 'text-neon-cyan';
             }
             function corrDisplay(c) {
-                return c === null ? 'N/A' : (c >= 0 ? '+' : '') + c.toFixed(2);
+                // JAVÍTÁS: lásd a Korrelációs Mátrix kalkulátornál (corrmatrix-modal)
+                // ugyanerre a napra javított azonos hibaosztályt — egy gördülő
+                // ablakban tetszőlegesen kicsi, negatív korreláció 2 tizedesjegyre
+                // kerekítve "-0.00"-t adott volna a sima `.toFixed()`-del.
+                return c === null ? 'N/A' : fmtSignedFixed(c, 2);
             }
 
             let classLabel, classColor, classNote;
@@ -53942,7 +53972,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         function renderReplayIntro() {
             const el = document.getElementById('replay-viewer');
             const s = replayStats;
-            const bestStr = s.bestReturn === null ? '—' : (s.bestReturn >= 0 ? '+' : '') + s.bestReturn.toFixed(1) + '%';
+            // JAVÍTÁS: s.bestReturn egy mentett (localStorage-ból visszatöltött)
+            // "legjobb Replay hozam" érték — tetszőlegesen kicsi, negatív
+            // maradék esetén (pl. -0.02%) ugyanaz a "-0.0%" előjel-szivárgás
+            // fordulhatott elő, mint amit a fmtSignedFixed()/zeroSafeRound()
+            // (lásd a fájl elején) már ~100+ más helyen javított — ez a
+            // Replay Szimulátor-összegzés korábban kimaradt belőle.
+            const bestSafe = s.bestReturn === null ? null : zeroSafeRound(s.bestReturn, 1);
+            const bestStr = bestSafe === null ? '—' : fmtSignedFixed(bestSafe, 1) + '%';
             el.innerHTML = `
                 <div class="text-center max-w-lg">
                     <div class="w-16 h-16 mx-auto rounded-2xl bg-neon-purple/10 border border-neon-purple/30 flex items-center justify-center mb-4">
@@ -53961,7 +53998,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div class="text-[9px] text-slate-500 uppercase font-bold mt-0.5">Lejátszott nap</div>
                         </div>
                         <div class="glass-card rounded-xl border border-dark-750 p-3">
-                            <div class="text-lg font-extrabold ${s.bestReturn !== null && s.bestReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${bestStr}</div>
+                            <div class="text-lg font-extrabold ${bestSafe !== null && bestSafe >= 0 ? 'text-neon-green' : 'text-neon-red'}">${bestStr}</div>
                             <div class="text-[9px] text-slate-500 uppercase font-bold mt-0.5">Legjobb eredmény</div>
                         </div>
                         <div class="glass-card rounded-xl border border-dark-750 p-3">
@@ -54091,7 +54128,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                                     </div>
                                     <div class="text-right shrink-0">
                                         <div class="text-sm font-extrabold ${j.totalReturn >= 0 ? 'text-neon-green' : 'text-neon-red'}">${fmtSignedFixed(j.totalReturn, 1)}%</div>
-                                        <div class="text-[9px] ${beat ? 'text-neon-green' : 'text-slate-600'}">${beat ? '✓ B&H felett' : 'B&H: ' + (j.buyHoldReturn >= 0 ? '+' : '') + j.buyHoldReturn.toFixed(1) + '%'}</div>
+                                        <div class="text-[9px] ${beat ? 'text-neon-green' : 'text-slate-600'}">${beat ? '✓ B&H felett' : 'B&H: ' + fmtSignedFixed(j.buyHoldReturn, 1) + '%'}</div>
                                     </div>
                                 </div>
                             `;
@@ -55957,7 +55994,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 { label: 'Leghosszabb sorozat', value: (drillStats.bestStreak || 0) + ' helyes kör', icon: 'fa-fire' },
                 { label: 'Leckék teljesítve', value: academyCompleted.size + ' / ' + LESSONS_DATA.length, icon: 'fa-book-open-reader' },
                 { label: 'Replay sessionök', value: (replayStats.sessionsCompleted || 0) + ' nap', icon: 'fa-film' },
-                { label: 'Legjobb Replay hozam', value: replayStats.bestReturn !== null ? (replayStats.bestReturn >= 0 ? '+' : '') + replayStats.bestReturn.toFixed(1) + '%' : '—', icon: 'fa-chart-line' },
+                { label: 'Legjobb Replay hozam', value: replayStats.bestReturn !== null ? fmtSignedFixed(replayStats.bestReturn, 1) + '%' : '—', icon: 'fa-chart-line' },
                 { label: 'Legjobb profit sorozat', value: (replayStats.bestProfitStreak || 0) + ' nyerő nap', icon: 'fa-fire-flame-curved' },
             ];
             el.innerHTML = qs.map(q => `<div class="glass-card rounded-xl p-3 text-center"><i class="fa-solid ${q.icon} text-neon-cyan text-lg mb-1"></i><div class="text-sm font-extrabold text-white">${q.value}</div><div class="text-[10px] text-slate-500">${q.label}</div></div>`).join('');
