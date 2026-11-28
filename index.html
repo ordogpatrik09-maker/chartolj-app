@@ -29391,16 +29391,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.05] p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Végső OBV érték</div>
-                    <div class="text-xl font-extrabold text-neon-cyan">${finalOBV >= 0 ? '+' : ''}${finalOBV.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+                    <div class="text-xl font-extrabold text-neon-cyan">${finalOBV >= 0 ? '+' : ''}${zeroSafeRound(finalOBV, 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Árfolyam-változás (teljes sorozat):</span>
-                        <span class="font-extrabold ${priceChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${priceChange >= 0 ? '+' : ''}${priceChange.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold ${priceChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${priceChange >= 0 ? '+' : ''}${zeroSafeRound(priceChange, 2).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">OBV-változás (teljes sorozat):</span>
-                        <span class="font-extrabold ${obvChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${obvChange >= 0 ? '+' : ''}${obvChange.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                        <span class="font-extrabold ${obvChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm">${obvChange >= 0 ? '+' : ''}${zeroSafeRound(obvChange, 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -29485,16 +29485,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.innerHTML = `
                 <div class="glass-card rounded-xl border border-neon-cyan/30 bg-neon-cyan/[0.05] p-3 mb-3">
                     <div class="text-[11px] text-slate-400 mb-1">Végső A/D Line érték</div>
-                    <div class="text-xl font-extrabold text-neon-cyan num-wrap-safe">${finalAD >= 0 ? '+' : ''}${finalAD.toLocaleString('en-US', { maximumFractionDigits: 1 })}</div>
+                    <div class="text-xl font-extrabold text-neon-cyan num-wrap-safe">${finalAD >= 0 ? '+' : ''}${zeroSafeRound(finalAD, 1).toLocaleString('en-US', { maximumFractionDigits: 1 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-3 space-y-2 mb-3">
                     <div class="flex items-center justify-between font-mono text-xs">
                         <span class="text-slate-400">Árfolyam-változás (teljes sorozat):</span>
-                        <span class="font-extrabold ${priceChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm num-wrap-safe">${priceChange >= 0 ? '+' : ''}${priceChange.toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                        <span class="font-extrabold ${priceChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm num-wrap-safe">${priceChange >= 0 ? '+' : ''}${zeroSafeRound(priceChange, 2).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
                     </div>
                     <div class="flex items-center justify-between font-mono text-xs border-t border-dark-750 pt-2">
                         <span class="text-slate-400">A/D Line-változás (teljes sorozat):</span>
-                        <span class="font-extrabold ${adChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm num-wrap-safe">${adChange >= 0 ? '+' : ''}${adChange.toLocaleString('en-US', { maximumFractionDigits: 1 })}</span>
+                        <span class="font-extrabold ${adChange >= 0 ? 'text-neon-green' : 'text-neon-red'} text-sm num-wrap-safe">${adChange >= 0 ? '+' : ''}${zeroSafeRound(adChange, 1).toLocaleString('en-US', { maximumFractionDigits: 1 })}</span>
                     </div>
                 </div>
                 <p class="text-[10px] font-semibold ${colorClass}">${verdict}</p>
@@ -38347,7 +38347,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return `
                     <div class="flex items-center justify-between font-mono text-[11px] border-t border-dark-750 pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
                         <span class="text-slate-400 num-wrap-safe">#${i + 1} (záróár ${r.close.toLocaleString('en-US', { maximumFractionDigits: 2 })}):</span>
-                        <span class="font-extrabold ${colorClass} num-wrap-safe">Δ ${deltas[i] >= 0 ? '+' : ''}${deltas[i].toLocaleString('en-US', { maximumFractionDigits: 0 })} · Kum. ${cums[i] >= 0 ? '+' : ''}${cums[i].toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                        <span class="font-extrabold ${colorClass} num-wrap-safe">Δ ${deltas[i] >= 0 ? '+' : ''}${zeroSafeRound(deltas[i], 0).toLocaleString('en-US', { maximumFractionDigits: 0 })} · Kum. ${cums[i] >= 0 ? '+' : ''}${zeroSafeRound(cums[i], 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                     </div>
                 `;
             }).join('');
@@ -40772,7 +40772,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const breakEvenProbPct = slipFrac > 0 ? (feeFrac / slipFrac) * 100 : Infinity;
             const breakEvenSlipPct = probFrac > 0 ? (feeFrac / probFrac) * 100 : Infinity;
 
-            const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "$-0.00" szivárgás): a NYERS
+            // `n`-t adta át közvetlenül a `.toLocaleString()`-nek, ami egy kis
+            // negatív, de 2 tizedesjegyre NULLÁRA kerekedő különbségnél (pl.
+            // netPerTrade/diffPerTrade majdnem pontosan kiegyenlítő A/B-összehason-
+            // lításnál) natívan "$-0.00"-t adott — a `.toLocaleString()`-nek ÖNMAGÁBAN
+            // is megvan ez a "-0" kiírási kvirkje, külön előjel-ternary nélkül is.
+            const fmtMoney = (n) => `$${zeroSafeRound(n, 2).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
             const fmtPctBE = (n) => isFinite(n) ? `${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}%` : 'nem érhető el (0 osztó)';
 
             let colorClass, verdict;
@@ -40870,7 +40876,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
-            const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "$-0.00" szivárgás): a NYERS
+            // `n`-t adta át közvetlenül a `.toLocaleString()`-nek, ami egy kis
+            // negatív, de 2 tizedesjegyre NULLÁRA kerekedő különbségnél (pl.
+            // netPerTrade/diffPerTrade majdnem pontosan kiegyenlítő A/B-összehason-
+            // lításnál) natívan "$-0.00"-t adott — a `.toLocaleString()`-nek ÖNMAGÁBAN
+            // is megvan ez a "-0" kiírási kvirkje, külön előjel-ternary nélkül is.
+            const fmtMoney = (n) => `$${zeroSafeRound(n, 2).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
             const fmtPct4 = (n) => `${n.toFixed(4)}%`;
             const annualDiffPctOfNotional = (annualDiff / notional) * 100;
 
@@ -41919,7 +41931,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
-            const fmtMoney = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "$-0.00" szivárgás): a NYERS
+            // `n`-t adta át közvetlenül a `.toLocaleString()`-nek, ami egy kis
+            // negatív, de 2 tizedesjegyre NULLÁRA kerekedő különbségnél (pl.
+            // netPerTrade/diffPerTrade majdnem pontosan kiegyenlítő A/B-összehason-
+            // lításnál) natívan "$-0.00"-t adott — a `.toLocaleString()`-nek ÖNMAGÁBAN
+            // is megvan ez a "-0" kiírási kvirkje, külön előjel-ternary nélkül is.
+            const fmtMoney = (n) => `$${zeroSafeRound(n, 2).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
             const fmtPos = isFinite(breakEvenPosition) ? fmtMoney(breakEvenPosition) : 'nincs (a százalékos díj 0%, így sosem drágább)';
 
             let colorClass, verdict, cheaperLabel;
@@ -42003,7 +42021,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
-            const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): a NYERS
+            // `n` előjelét és abszolútértékét külön olvasta ki — egy kis negatív, de
+            // 2 tizedesjegyre NULLÁRA kerekedő érték "-$0.00"-t adott a helyes
+            // "$0.00" helyett. zeroSafeRound()-dal a kerekített (±0-nál explicit +0-ra
+            // normalizált) értéken döntünk mindkét ágról.
+            const fmtMoney = (n) => { const z = zeroSafeRound(n, 2); return `${z < 0 ? '-' : ''}$${Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 })}`; };
             // JAVÍTÁS (mezőnkénti DOM-fuzzer sweep, kis-magnitúdójú extrém
             // értékekkel): a makerRatioRaw mező (0-100 közé validált, de
             // tizedesjegyekre nem korlátozott) közvetlen sablonsztring-
@@ -43741,7 +43764,19 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const totalReturnPct = (totalReturn / total) * 100;
             const weightedAvgReturn = assets.reduce((s, a) => s + (a.weightPct / weightSum) * a.returnPct, 0);
 
-            const fmt = (n) => '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-0"/"-0%" szivárgás): a `fmt`/
+            // `fmtPct` korábban a NYERS (nem kerekített) `n`-t adta át közvetlenül a
+            // `.toLocaleString()`-nek — egy kis negatív, de a kiírt tizedesjegy-
+            // pontosságon (0 tizedesjegy a $-nál, 1 a %-nál) NULLÁRA kerekedő
+            // `totalReturn`/`totalReturnPct` (pl. ha a rebalancing/kamatos hozamok
+            // majdnem pontosan kiegyenlítik egymást) natívan "-$0"/"-0.0%"-ot adott
+            // vissza — ugyanaz a hibaosztály, amit a projekt már ~100 másik helyen
+            // (OBV/A-D Line, Kereskedési Napló stb.) javított a `zeroSafeRound()`
+            // segédfüggvénnyel. A kerekítés most MAGÁBAN a segédfüggvényben történik,
+            // így minden hívási hely automatikusan javul, a `>= 0 ? '+' : ''`
+            // előjel-eldöntő ternary-k (amik a NYERS értéket nézik) változatlanok
+            // maradhatnak — lásd a fenti kommentben leírt, már bevett konvenciót.
+            const fmt = (n) => '$' + zeroSafeRound(n, 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
             // JAVÍTÁS (audit, folyamatos minőségi kör): a totalReturnPct/weightedAvgReturn
             // véges, de extrém (pl. egy "1e15"-ös Hozam %-mező sok éven át kamatolva)
             // értékekre simán `.toFixed(N)`-nel volt formázva — a `.toFixed()` az
@@ -43751,7 +43786,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Ugyanez a hibaosztály, mint amit korábban a Split/Buyback és Osztalék-
             // DRIP kalkulátorokban már javítottunk: a `.toLocaleString()`-nek nincs
             // ilyen felső korlátja, ezért azt használjuk a kerekítés helyett.
-            const fmtPct = (n, decimals) => n.toLocaleString('en-US', { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+            const fmtPct = (n, decimals) => zeroSafeRound(n, decimals).toLocaleString('en-US', { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
 
             resultEl.innerHTML = `
                 <div class="space-y-1.5 mb-3">
@@ -43827,7 +43862,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             }
             const netPayoff = intrinsicValue - premium;
 
-            const fmt = (n) => (n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): lásd a
+            // fmtMoney()-nél fentebb leírt, ugyanazon hibaosztályt.
+            const fmt = (n) => { const z = zeroSafeRound(n, 2); return z < 0 ? '-$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + z.toLocaleString('en-US', { maximumFractionDigits: 2 }); };
 
             resultEl.innerHTML = `
                 <div class="grid grid-cols-2 gap-3 mb-3">
@@ -44040,8 +44077,11 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // bemeneteknél nyers tudományos jelölésre vált át (lásd a modal
             // feletti kommentet, illetve a korábbi Ruin Probability/TSI
             // auditokat ugyanerre a hibaosztályra).
-            const fmtUsd = (n) => (n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }));
-            const fmtPct = (n, digits = 2) => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: digits }) + '%';
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00"/"-0.00%" szivárgás):
+            // lásd a fmtMoney()-nél korábban leírt, ugyanazon hibaosztályt — a NYERS
+            // `n` előjelét/abszolútértékét nézte, nem a kerekített állapotot.
+            const fmtUsd = (n) => { const z = zeroSafeRound(n, 2); return z < 0 ? '-$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + z.toLocaleString('en-US', { maximumFractionDigits: 2 }); };
+            const fmtPct = (n, digits = 2) => { const z = zeroSafeRound(n, digits); return (z < 0 ? '-' : '') + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: digits }) + '%'; };
 
             const moneyness = strike > stockPrice ? 'OTM' : strike < stockPrice ? 'ITM' : 'ATM';
             // A "max. veszteség" mezőben megjelenített érték (-maxLossPerShare)
@@ -44316,7 +44356,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 ? -(position * (totalFundingPctOfPosition / 100))
                 : (position * (totalFundingPctOfPosition / 100));
 
-            const fmt = (n) => (n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): lásd a
+            // fmtMoney()-nél fentebb leírt, ugyanazon hibaosztályt.
+            const fmt = (n) => { const z = zeroSafeRound(n, 2); return z < 0 ? '-$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + z.toLocaleString('en-US', { maximumFractionDigits: 2 }); };
             const isPayment = netCashFlow < 0;
             const dailyAvg = netCashFlow / days;
             // JAVÍTÁS: 0%-os (vagy nullára kerekedő) rátánál a `-(position * 0)`
@@ -44426,7 +44468,9 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
 
             const marketState = priceDiff > 0 ? 'Kontangó (távoli > közeli)' : (priceDiff < 0 ? 'Backwardation (távoli < közeli)' : 'Flat (nincs eltérés)');
             const isCost = netCashFlow < 0;
-            const fmt = (n) => (n < 0 ? '-$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): lásd a
+            // fmtMoney()-nél fentebb leírt, ugyanazon hibaosztályt.
+            const fmt = (n) => { const z = zeroSafeRound(n, 2); return z < 0 ? '-$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '$' + z.toLocaleString('en-US', { maximumFractionDigits: 2 }); };
             // JAVÍTÁS: a "days" mezőt korábban nyers `${days}` interpolációval
             // jelenítettük meg — egy nagyon nagy ("1e15") vagy nagyon kicsi
             // ("1e-10") bemenet a JS alapértelmezett szám→string konverziója
@@ -45178,7 +45222,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const isPositive = totalNetGex >= 0;
             const regimeLabel = isPositive ? 'Pozitív gamma rezsim — fékező (vol-csökkentő) hatás valószínű' : 'Negatív gamma rezsim — felerősítő (vol-növelő) hatás valószínű';
             const regimeColor = isPositive ? 'text-neon-green' : 'text-neon-red';
-            const fmtGex = (n) => (n < 0 ? '-$' : '+$') + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0"/"+$0" szivárgás/
+            // félrevezető előjel): a NYERS `n` előjelét nézte — egy kerekítve 0-ra
+            // eső nettó gamma-kitettség korábban "-$0"-t vagy "+$0"-t mutatott,
+            // holott egy pontosan (kerekítve) nulla kitettséghez egyik előjel sem
+            // illik — most ilyenkor nincs előjel ("$0").
+            const fmtGex = (n) => { const z = zeroSafeRound(n, 0); return (z === 0 ? '' : (z < 0 ? '-' : '+')) + '$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 0 }); };
 
             let rowsHtml = '';
             for (const d of detailed) {
@@ -47567,13 +47616,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = `⚠️ A megadott ${outflowPct.toLocaleString('en-US', { maximumFractionDigits: 6 })}%-os napi kiáramlási ráta mellett a túlfedezeti puffer (${bufferPct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%) kevesebb mint egy hét (${runwayDays.toLocaleString('en-US', { maximumFractionDigits: 1 })} nap) alatt kimerülne, ha ez a sebesség folytatódna — ez egy "bank run"-szerű forgatókönyv korai szakaszára hasonlíthat.`;
             } else if (tailRiskExposure > holding * 0.1) {
                 verdictColor = 'text-amber-400';
-                verdict = `⚠️ A fedezetlen, kockázat-súlyozott kitettséged (${tailRiskExposure < 0 ? '-' : ''}$${Math.abs(tailRiskExposure).toLocaleString('en-US', { maximumFractionDigits: 2 })}) jelentős a pozíció méretéhez képest — a fedezet típusa és aránya miatt egy komolyabb de-peg esetén ez az összeg reális veszélyben lenne.`;
+                verdict = `⚠️ A fedezetlen, kockázat-súlyozott kitettséged (${zeroSafeRound(tailRiskExposure, 2) < 0 ? '-' : ''}$${Math.abs(zeroSafeRound(tailRiskExposure, 2)).toLocaleString('en-US', { maximumFractionDigits: 2 })}) jelentős a pozíció méretéhez képest — a fedezet típusa és aránya miatt egy komolyabb de-peg esetén ez az összeg reális veszélyben lenne.`;
             } else {
                 verdictColor = 'text-neon-cyan';
                 verdict = `✅ A jelenlegi adatok alapján a de-peg kockázat viszonylag alacsony: a fedezeti arány meghaladja a 100%-ot, a peg-eltérés minimális, és a kockázat-súlyozott fedezetlen kitettség kicsi a teljes pozícióhoz képest. Ez nem garancia — a fedezet TÉNYLEGES auditáltsága és transzparenciája ettől függetlenül fontos.`;
             }
 
-            const fmtMoney = (n) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): a NYERS
+            // `n` előjelét és abszolútértékét külön olvasta ki — egy kis negatív, de
+            // 2 tizedesjegyre NULLÁRA kerekedő érték "-$0.00"-t adott a helyes
+            // "$0.00" helyett. zeroSafeRound()-dal a kerekített (±0-nál explicit +0-ra
+            // normalizált) értéken döntünk mindkét ágról.
+            const fmtMoney = (n) => { const z = zeroSafeRound(n, 2); return `${z < 0 ? '-' : ''}$${Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 })}`; };
             const runwayDisplay = runwayDays === Infinity ? '∞ (nincs megadott kiáramlás)' : (runwayDays === 0 ? 'Már hiányban (0 nap)' : `${runwayDays.toLocaleString('en-US', { maximumFractionDigits: 1 })} nap`);
             const runwayColor = runwayDays === 0 ? 'text-neon-red' : (runwayDays === Infinity ? 'text-neon-green' : (runwayDays < 7 ? 'text-amber-400' : 'text-neon-green'));
 
@@ -49028,7 +49082,14 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             return { n: tr.length, wins: wins.length, losses: losses.length, net, winRate, avgWin, avgLoss, pf, bestAsset: assets[0], worstAsset: assets[assets.length - 1], L, S, maxLossRun, insights };
         }
 
-        function fmtUsd(v) { const n = Number(v) || 0; return (n < 0 ? '−' : '') + '$' + Math.abs(n).toLocaleString('hu-HU', { maximumFractionDigits: 0 }); }
+        // JAVÍTÁS (audit, folyamatos minőségi kör — "−$0" szivárgás): ez a globális
+        // fmtUsd() ~15 helyen formáz $ összeget (Napló/Szimulátor heti statisztika,
+        // eszköz-összehasonlítás stb.) — a NYERS `n` előjelét és abszolútértékét
+        // külön olvasta ki, ezért egy kis negatív, de 0 tizedesjegyre NULLÁRA
+        // kerekedő összeg (pl. egy majdnem pontosan kiegyenlítő hosszú/short
+        // P&L-differencia) "−$0"-t adott a helyes "$0" helyett. zeroSafeRound()-dal
+        // a kerekített (±0-nál explicit +0-ra normalizált) értéken döntünk.
+        function fmtUsd(v) { const n = Number(v) || 0; const z = zeroSafeRound(n, 0); return (z < 0 ? '−' : '') + '$' + Math.abs(z).toLocaleString('hu-HU', { maximumFractionDigits: 0 }); }
 
         function simWeeklyHtml(w) {
             const pfTxt = w.pf === null ? '—' : (w.pf === Infinity ? '∞' : w.pf.toFixed(2).replace('.', ','));
@@ -49126,7 +49187,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 }).sort((a, b) => a.avg - b.avg);
                 const worst = moodRows[0];
                 if (worst && worst.avg < 0) {
-                    insights.push(`Ezen a héten "${worst.label}" lelkiállapotban átlagosan ${worst.avg >= 0 ? '+' : ''}$${worst.avg.toFixed(0)}-t hoztál (${worst.count}×) — érdemes figyelni, mikor jelentkezik ez az állapot.`);
+                    insights.push(`Ezen a héten "${worst.label}" lelkiállapotban átlagosan ${worst.avg >= 0 ? '+' : ''}$${zeroSafeRound(worst.avg, 0).toFixed(0)}-t hoztál (${worst.count}×) — érdemes figyelni, mikor jelentkezik ez az állapot.`);
                 }
             }
             if (simW) simW.insights.forEach(t => insights.push(t));
@@ -50899,7 +50960,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // Koncentráció-figyelmeztetés: 2+ pozíció UGYANAZON eszközön ÉS oldalon
             const concentrated = rows.filter(r => r.count >= 2);
 
-            const fmtMoney = (v) => v < 0 ? ('-$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): a NYERS
+            // `v` előjelét nézte — egy kis negatív, de 2 tizedesjegyre NULLÁRA
+            // kerekedő P&L "-$0.00"-t adott, holott a mellette lévő szín-logika
+            // (">= 0" → zöld) a nullát már a "nem-negatív" oldalra sorolja — most a
+            // KEREKÍTETT érték dönt, így a két logika konzisztens marad.
+            const fmtMoney = (v) => { const z = zeroSafeRound(v, 2); return z < 0 ? ('-$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + z.toLocaleString('en-US', { maximumFractionDigits: 2 })); };
 
             out.innerHTML = `
                 <div class="grid grid-cols-3 gap-2 mb-1">
@@ -50997,7 +51063,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
-            const fmtMoney = (v) => v < 0 ? ('-$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): a NYERS
+            // `v` előjelét nézte — egy kis negatív, de 2 tizedesjegyre NULLÁRA
+            // kerekedő P&L "-$0.00"-t adott, holott a mellette lévő szín-logika
+            // (">= 0" → zöld) a nullát már a "nem-negatív" oldalra sorolja — most a
+            // KEREKÍTETT érték dönt, így a két logika konzisztens marad.
+            const fmtMoney = (v) => { const z = zeroSafeRound(v, 2); return z < 0 ? ('-$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + z.toLocaleString('en-US', { maximumFractionDigits: 2 })); };
             const diff = hypoEquity - actualEquity;
 
             out.innerHTML = `
@@ -51109,7 +51180,12 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // alakot adott (előjel a $ UTÁN, nem elé) — kozmetikai, de
             // félrevezető/hibásnak tűnő megjelenítés. Explicit előjel-kezeléssel
             // helyesen "-$400" / "+$400" formátumot ad.
-            const fmtMoney = (v) => v < 0 ? ('-$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): a NYERS
+            // `v` előjelét nézte — egy kis negatív, de 2 tizedesjegyre NULLÁRA
+            // kerekedő P&L "-$0.00"-t adott, holott a mellette lévő szín-logika
+            // (">= 0" → zöld) a nullát már a "nem-negatív" oldalra sorolja — most a
+            // KEREKÍTETT érték dönt, így a két logika konzisztens marad.
+            const fmtMoney = (v) => { const z = zeroSafeRound(v, 2); return z < 0 ? ('-$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + z.toLocaleString('en-US', { maximumFractionDigits: 2 })); };
             const pfDisplay = profitFactor === null ? '∞' : profitFactor.toFixed(2);
 
             out.innerHTML = `
@@ -54307,7 +54383,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const coinReward = applyPremiumCoinBonus(Math.max(0, Math.round(totalReturn * 2)) + (beatBuyHold ? 15 : 0) + 10 + processBonus);
             userCoins += coinReward;
             saveAcademyState();
-            showNotification("Replay kész! " + (totalReturn >= 0 ? "+" : "") + totalReturn.toFixed(1) + "% hozam · " + wins + "/" + s.trades.length + " nyerő");
+            showNotification("Replay kész! " + (totalReturn >= 0 ? "+" : "") + zeroSafeRound(totalReturn, 1).toFixed(1) + "% hozam · " + wins + "/" + s.trades.length + " nyerő");
             checkMissionAvailability();
             updateCoinDisplay();
 
@@ -56519,7 +56595,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             const points = keys.map(k => { running += Number(tradingJournal[k].pnl) || 0; return running; });
             const total = points[points.length - 1];
             const totalEl = document.getElementById('journal-equity-total');
-            totalEl.textContent = `${total >= 0 ? '+' : ''}$${total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            totalEl.textContent = `${total >= 0 ? '+' : ''}$${zeroSafeRound(total, 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
             totalEl.className = `text-xs font-mono font-extrabold ${total > 0 ? 'text-neon-green' : total < 0 ? 'text-neon-red' : 'text-slate-300'}`;
 
             const w = 280, h = 64, pad = 4;
@@ -56715,7 +56791,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             document.getElementById('journal-summary').innerHTML = `
                 <div class="glass-card rounded-xl p-2.5 text-center">
                     <div class="text-[9px] text-slate-500 uppercase font-bold mb-0.5">Havi összesen</div>
-                    <div class="text-sm font-mono font-extrabold ${totalColor}">${total >= 0 ? '+' : ''}$${total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                    <div class="text-sm font-mono font-extrabold ${totalColor}">${total >= 0 ? '+' : ''}$${zeroSafeRound(total, 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                 </div>
                 <div class="glass-card rounded-xl p-2.5 text-center">
                     <div class="text-[9px] text-slate-500 uppercase font-bold mb-0.5">Nyerő napok</div>
@@ -56799,9 +56875,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             });
             if (key === todayKey && entry.pnl === undefined && todaysTradeHistory.length > 0) {
                 const simTotal = todaysTradeHistory.reduce((s, h) => s + (Number(h.pnl) || 0), 0);
+                // JAVÍTÁS (audit — "-0.00" szivárgás): a NYERS simTotal helyett a
+                // zeroSafeRound()-dal nullára kerekített értéket írjuk ki ÉS adjuk át
+                // az "Átvétel" gombnak is, hogy egy kerekítve 0-ra eső, de ténylegesen
+                // kis negatív napi összeg se "-$0.00"-t mutasson, se "-0.00"-t írjon
+                // az input mezőbe.
+                const simTotalSafe = zeroSafeRound(simTotal, 2);
                 hint.classList.remove('hidden');
-                hint.innerHTML = `Ma a szimulátorban lezárt pozícióid összesen <strong class="text-white">${simTotal >= 0 ? '+' : ''}$${simTotal.toFixed(2)}</strong>-t hoztak.
-                    <button onclick="document.getElementById('journal-entry-pnl').value='${simTotal.toFixed(2)}'" class="text-neon-cyan font-bold underline ml-1">Átvétel</button>`;
+                hint.innerHTML = `Ma a szimulátorban lezárt pozícióid összesen <strong class="text-white">${simTotalSafe >= 0 ? '+' : ''}$${simTotalSafe.toFixed(2)}</strong>-t hoztak.
+                    <button onclick="document.getElementById('journal-entry-pnl').value='${simTotalSafe.toFixed(2)}'" class="text-neon-cyan font-bold underline ml-1">Átvétel</button>`;
             } else {
                 hint.classList.add('hidden');
                 hint.innerHTML = '';
@@ -56901,7 +56983,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div>
                                 <div class="flex items-center justify-between text-[10.5px] mb-0.5">
                                     <span class="text-slate-300 font-semibold">${r.mood.label} <span class="text-slate-600">(${r.count}×)</span></span>
-                                    <span class="font-mono font-bold ${r.avg >= 0 ? 'text-neon-green' : 'text-neon-red'}">${r.avg >= 0 ? '+' : ''}$${r.avg.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                                    <span class="font-mono font-bold ${r.avg >= 0 ? 'text-neon-green' : 'text-neon-red'}">${r.avg >= 0 ? '+' : ''}$${zeroSafeRound(r.avg, 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                                 </div>
                                 <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden">
                                     <div class="h-full ${r.avg >= 0 ? 'bg-neon-green' : 'bg-neon-red'}" style="width:${Math.max(3, (Math.abs(r.avg) / maxAbsAvg) * 100)}%"></div>
@@ -56949,7 +57031,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                             <div>
                                 <div class="flex items-center justify-between text-[10.5px] mb-0.5">
                                     <span class="text-slate-300 font-semibold">${r.strategy.label} <span class="text-slate-600">(${r.count}×)</span></span>
-                                    <span class="font-mono font-bold ${r.winRate >= 50 ? 'text-neon-green' : 'text-neon-red'}">${r.winRate.toFixed(0)}% <span class="text-slate-500 font-normal">· ${r.avg >= 0 ? '+' : ''}$${r.avg.toLocaleString('en-US', { maximumFractionDigits: 0 })}/nap</span></span>
+                                    <span class="font-mono font-bold ${r.winRate >= 50 ? 'text-neon-green' : 'text-neon-red'}">${r.winRate.toFixed(0)}% <span class="text-slate-500 font-normal">· ${r.avg >= 0 ? '+' : ''}$${zeroSafeRound(r.avg, 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}/nap</span></span>
                                 </div>
                                 <div class="h-1.5 rounded-full bg-dark-800 overflow-hidden">
                                     <div class="h-full ${r.winRate >= 50 ? 'bg-neon-green' : 'bg-neon-red'}" style="width:${Math.max(3, r.winRate)}%"></div>
@@ -60596,7 +60678,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                         <td class="py-2.5">$${p.currentPrice.toFixed(2)}</td>
                         <td class="py-2.5">$${p.amount.toFixed(2)}</td>
                         <td class="py-2.5">${p.leverage}x</td>
-                        <td class="py-2.5 font-bold ${pnlColor}" ${p.fundingAccrued ? `title="Tartalmaz felhalmozott funding-díjat: ${p.fundingAccrued < 0 ? '-$' + Math.abs(p.fundingAccrued).toFixed(2) : '+$' + p.fundingAccrued.toFixed(2)}"` : ''}>${formatPnl(p.pnl)}${p.fundingAccrued ? '<i class="fa-solid fa-coins text-amber-400/70 ml-1 text-[9px]"></i>' : ''}</td><td class="py-2.5 text-right text-[10px] text-slate-500 font-mono">${p.margin?"$"+p.margin.toFixed(0):"-"}</td>
+                        <td class="py-2.5 font-bold ${pnlColor}" ${p.fundingAccrued ? `title="Tartalmaz felhalmozott funding-díjat: ${zeroSafeRound(p.fundingAccrued, 2) < 0 ? '-$' + Math.abs(zeroSafeRound(p.fundingAccrued, 2)).toFixed(2) : '+$' + zeroSafeRound(p.fundingAccrued, 2).toFixed(2)}"` : ''}>${formatPnl(p.pnl)}${p.fundingAccrued ? '<i class="fa-solid fa-coins text-amber-400/70 ml-1 text-[9px]"></i>' : ''}</td><td class="py-2.5 text-right text-[10px] text-slate-500 font-mono">${p.margin?"$"+p.margin.toFixed(0):"-"}</td>
                         <td class="py-2.5 text-right whitespace-nowrap">
                             <button onclick="promptAddToPosition(${p.id})" title="Átlagold be a pozíciót (DCA)" aria-label="Átlagold be a pozíciót (DCA)" class="px-2 py-1 bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 rounded text-[10px] font-bold transition mr-1">
                                 <i class="fa-solid fa-plus"></i>
@@ -60819,7 +60901,7 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             out.push(`📚 ${f.lessons} / ${f.total} lecke kész, ${f.streak} napos sorozat.`);
             if (f.due) out.push(`🔄 ${f.due} esedékes ismétlésed van — ezzel kezdd, ez rögzíti a tudást.`);
             if (f.w) {
-                out.push(`📊 Szimulátor (7 nap): ${f.w.n} kötés, találati arány ${Math.round(f.w.winRate)}%, nettó ${f.w.net >= 0 ? '+' : ''}$${f.w.net.toFixed(0)}.`);
+                out.push(`📊 Szimulátor (7 nap): ${f.w.n} kötés, találati arány ${Math.round(f.w.winRate)}%, nettó ${f.w.net >= 0 ? '+' : ''}$${zeroSafeRound(f.w.net, 0).toFixed(0)}.`);
                 if (f.w.avgLoss > f.w.avgWin && f.w.avgWin > 0) out.push('⚠️ Az átlagos veszteséged nagyobb az átlagos nyereségnél — szorosabb stop-loss vagy hosszabb nyerő tartás segíthet.');
                 if (f.w.n > 30) out.push('⏸️ Sok kötés egy hét alatt — kevesebb, de átgondoltabb belépés általában jobb.');
             } else out.push('📈 Ezen a héten nem zártál szimulált kötést — próbálj ki egyet kockázati pajzzsal.');
@@ -62925,7 +63007,12 @@ szükség esetén, hogy ez oktatási célú, nem befektetési tanács. Magyarul 
             const ev = HISTORICAL_EVENTS.find(e => e.id === historicalEventSelectedId);
             if (!ev) { out.innerHTML = ''; return; }
 
-            const fmtMoney = (v) => v < 0 ? ('-$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+            // JAVÍTÁS (audit, folyamatos minőségi kör — "-$0.00" szivárgás): a NYERS
+            // `v` előjelét nézte — egy kis negatív, de 2 tizedesjegyre NULLÁRA
+            // kerekedő P&L "-$0.00"-t adott, holott a mellette lévő szín-logika
+            // (">= 0" → zöld) a nullát már a "nem-negatív" oldalra sorolja — most a
+            // KEREKÍTETT érték dönt, így a két logika konzisztens marad.
+            const fmtMoney = (v) => { const z = zeroSafeRound(v, 2); return z < 0 ? ('-$' + Math.abs(z).toLocaleString('en-US', { maximumFractionDigits: 2 })) : ('+$' + z.toLocaleString('en-US', { maximumFractionDigits: 2 })); };
 
             const header = `
                 <div class="glass-card rounded-xl p-3 border border-amber-400/30 bg-amber-400/5">
