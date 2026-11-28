@@ -34791,8 +34791,16 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
             const range = h - l;
-            if (range <= 0 || h < Math.max(o, c) || l > Math.min(o, c)) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen OHLC adat — a High-nak a legnagyobb, a Low-nak a legkisebb értéknek kell lennie!</div>`;
+            // JAVÍTÁS (audit — hiányzó Nyitó/Magas/Alacsony/Záró <= 0 bemenet-
+            // validáció): az OHLC-konzisztencia-ellenőrzés (High a legnagyobb,
+            // Low a legkisebb) eddig nem zárta ki a negatív vagy pontosan nulla
+            // árakat — egy ilyen, belsőleg konzisztens, de negatív "gyertyánál"
+            // (pl. Nyitó=-10, Záró=-5, High=-4, Low=-11) a range/upperPct/
+            // lowerPct/bodyPct mind véges, de fogalmilag értelmetlen számot
+            // adott volna szó nélkül. Ugyanaz a hibaosztály, mint a Candle
+            // Pattern/Ladder Breakaway/FVG/RVI kalkulátoroknál (lásd lejjebb).
+            if (range <= 0 || o <= 0 || h <= 0 || l <= 0 || c <= 0 || h < Math.max(o, c) || l > Math.min(o, c)) {
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">Érvénytelen OHLC adat — minden ár (Nyitó, High, Low, Záró) legyen nullánál nagyobb, a High legyen a legnagyobb, a Low a legkisebb érték!</div>`;
                 return;
             }
 
@@ -35582,9 +35590,15 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // fogalmilag értelmetlen (negatív hosszúságú) kanócot. Ugyanaz a
             // hibaosztály, mint a Donchian/DeMarker/Zig Zag kalkulátoroknál
             // már korábban javított "hiányzó Magas/Alacsony validáció".
-            const invalidCandleIdx = candles.findIndex(([o, h, l, c]) => h < Math.max(o, c) || l > Math.min(o, c));
+            // JAVÍTÁS (audit — hiányzó Nyitó/Magas/Alacsony/Záró <= 0 bemenet-
+            // validáció): a fenti OHLC-konzisztencia-ellenőrzés eddig nem zárta
+            // ki a negatív/nulla árakat — egy belsőleg konzisztens, de negatív
+            // "gyertyánál" a bodyPct/upperPct/lowerPct véges, de fogalmilag
+            // értelmetlen lett volna szó nélkül. Ugyanaz a hibaosztály, mint a
+            // Ladder Breakaway/FVG/RVI/Rejection Wick kalkulátoroknál.
+            const invalidCandleIdx = candles.findIndex(([o, h, l, c]) => o <= 0 || h <= 0 || l <= 0 || c <= 0 || h < Math.max(o, c) || l > Math.min(o, c));
             if (invalidCandleIdx !== -1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidCandleIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidCandleIdx + 1}. gyertyánál a Nyitó/Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
                 return;
             }
 
@@ -36936,9 +36950,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // hibajelzés nélkül téves Ladder/Breakaway minta-felismerést okozna.
             // Ugyanaz a hibaosztály, mint a Candle Pattern / Heikin-Ashi
             // kalkulátoroknál már korábban javított "hiányzó Magas/Alacsony validáció".
-            const invalidLadderIdx = candles.findIndex(([o, h, l, c]) => h < Math.max(o, c) || l > Math.min(o, c));
+            // JAVÍTÁS (audit — hiányzó Nyitó/Magas/Alacsony/Záró <= 0 bemenet-
+            // validáció): ugyanaz a hibaosztály, mint a Candle Pattern/FVG/RVI/
+            // Rejection Wick kalkulátoroknál — a konzisztencia-ellenőrzés eddig
+            // nem zárta ki a negatív/nulla árakat.
+            const invalidLadderIdx = candles.findIndex(([o, h, l, c]) => o <= 0 || h <= 0 || l <= 0 || c <= 0 || h < Math.max(o, c) || l > Math.min(o, c));
             if (invalidLadderIdx !== -1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidLadderIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidLadderIdx + 1}. gyertyánál a Nyitó/Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
                 return;
             }
 
@@ -37428,9 +37446,13 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // résből számolna FVG-t. Ugyanaz a hibaosztály, mint a Candle Pattern /
             // Heikin-Ashi kalkulátoroknál már korábban javított "hiányzó Magas/
             // Alacsony validáció".
-            const invalidFvgIdx = candles.findIndex(([o, h, l, c]) => h < Math.max(o, c) || l > Math.min(o, c));
+            // JAVÍTÁS (audit — hiányzó Nyitó/Magas/Alacsony/Záró <= 0 bemenet-
+            // validáció): ugyanaz a hibaosztály, mint a Candle Pattern/Ladder
+            // Breakaway/RVI/Rejection Wick kalkulátoroknál — a konzisztencia-
+            // ellenőrzés eddig nem zárta ki a negatív/nulla árakat.
+            const invalidFvgIdx = candles.findIndex(([o, h, l, c]) => o <= 0 || h <= 0 || l <= 0 || c <= 0 || h < Math.max(o, c) || l > Math.min(o, c));
             if (invalidFvgIdx !== -1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidFvgIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidFvgIdx + 1}. gyertyánál a Nyitó/Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
                 return;
             }
 
@@ -39562,9 +39584,17 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
             // akár negatív is lehet, ami az RVI előjelét megbízhatatlanná/félrevezetővé
             // teszi. Ugyanaz a hibaosztály, mint a Candle Pattern / Heikin-Ashi
             // kalkulátoroknál már korábban javított "hiányzó OHLC-konzisztencia-validáció".
-            const invalidRviIdx = candles.findIndex(c => c.high < Math.max(c.open, c.close) || c.low > Math.min(c.open, c.close));
+            //
+            // UTÓLAGOS JAVÍTÁS (audit — hiányzó <= 0 ár-pozitivitás): a fenti
+            // konzisztencia-ellenőrzés önmagában nem zárta ki a negatív/nulla
+            // árakat — egy belsőleg konzisztens, de negatív "gyertyánál" (pl.
+            // Nyitó=-10, Záró=-5, Magas=-4, Alacsony=-11) a numSma/denSma
+            // hányados véges, de fogalmilag értelmetlen RVI-t adott volna szó
+            // nélkül. Ugyanaz a hibaosztály, mint a Candle Pattern/Ladder
+            // Breakaway/FVG/Rejection Wick kalkulátoroknál.
+            const invalidRviIdx = candles.findIndex(c => c.open <= 0 || c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < Math.max(c.open, c.close) || c.low > Math.min(c.open, c.close));
             if (invalidRviIdx !== -1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidRviIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidRviIdx + 1}. gyertyánál a Nyitó/Magas/Alacsony/Záró érték érvénytelen — mindegyik legyen nullánál nagyobb, a Magas sosem lehet kisebb a Nyitónál/Zárónál, és az Alacsony sosem lehet nagyobb náluk!</div>`;
                 return;
             }
 
