@@ -23650,7 +23650,25 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
         }
 
         function renderEdgeSignificanceHtml(stats) {
-            const fmt = (v, d = 4) => Number(v).toFixed(d);
+            // JAVÍTÁS (minőségjavítás — nyers tudományos jelölés szivárgás):
+            // a meanReturnPct/stdDevPct/tStat a tradeReturns (sbLastRunResult.trades
+            // ill. window.lastBacktestResult.trades) egyedi trade-hozamaiból
+            // származik, amiknek — ugyanúgy, mint a Stratégia-építő/Backtester már
+            // javított más eredmény-nézeteinél (pl. a mentett lista totalReturnPct-je,
+            // lásd 25fa066) — nincs explicit felső korlátja: egy szélsőséges, de
+            // matematikailag véges trade-adat (pl. extrém belépő/kilépő árfolyam-pár,
+            // vagy majdnem-azonos hozamú trade-ek miatt rendkívül kicsi, de nem nulla
+            // szórás) a kiszámolt mezőket >=1e21 nagyságrendbe, ill. a tStat-ot a
+            // double-tartomány túlcsordulásáig (Infinity/NaN) tolhatja. A natív
+            // .toFixed() ilyenkor nyers tudományos jelölésre vált (pl. "1.23e+22%")
+            // vagy a kimenet szó szerint "Infinity"/"NaN"-t jelenítene meg valódi
+            // eredményként. Explicit véges-ellenőrzés + .toLocaleString() (nincs ilyen
+            // felső korlátja), konzisztensen a projekt többi numerikus-biztonsági
+            // javításával.
+            if (![stats.meanReturnPct, stats.stdDevPct, stats.tStat, stats.pValue].every(Number.isFinite)) {
+                return `<div class="text-xs text-neon-red font-semibold">A trade-adatok szélsőséges kombinációja miatt a szignifikancia-teszt eredménye nem fejezhető ki véges számmal — ez valószínűleg hibás vagy irreálisan extrém bemeneti/backtest-adatra utal.</div>`;
+            }
+            const fmt = (v, d = 4) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d });
             let verdict, verdictClass;
             if (stats.significantAt05 && stats.meanReturnPct > 0) { verdict = 'STATISZTIKAILAG SZIGNIFIKÁNS POZITÍV EDGE (p < 0.05)'; verdictClass = 'text-neon-green'; }
             else if (stats.significantAt05 && stats.meanReturnPct < 0) { verdict = 'STATISZTIKAILAG SZIGNIFIKÁNS NEGATÍV EDGE (p < 0.05)'; verdictClass = 'text-neon-red'; }
