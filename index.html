@@ -37826,9 +37826,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 return;
             }
 
-            const invalidIdx = candles.findIndex(c => c.high < c.low);
+            // JAVÍTÁS (audit — hiányzó Magas/Alacsony <= 0 bemenet-validáció):
+            // a kalkulátor eddig csak a Magas < Alacsony esetet szűrte, a
+            // nullánál nem nagyobb (negatív vagy pontosan nulla) árakat nem —
+            // ezekkel a medián ár (és így az AO) véges, de fogalmilag
+            // értelmetlen számot ad, szó nélkül. Ugyanaz a hibaosztály és
+            // ugyanaz a javítás, mint a DeMarker/Fractal/Aroon/Donchian/
+            // Donchian Width/Zig Zag/Mass Index/Volatility Ratio
+            // kalkulátoroknál (mind ugyanazt a "Magas,Alacsony" 2-mezős
+            // gyertya-bemenetet használja).
+            const invalidIdx = candles.findIndex(c => c.high <= 0 || c.low <= 0 || c.high < c.low);
             if (invalidIdx !== -1) {
-                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas érték kisebb, mint az Alacsony — ellenőrizd a bemenetet!</div>`;
+                out.innerHTML = `<div class="text-xs text-neon-red font-semibold">A ${invalidIdx + 1}. gyertyánál a Magas/Alacsony érték érvénytelen — mindkettő legyen nullánál nagyobb, és a Magas sosem lehet kisebb az Alacsonynál!</div>`;
                 return;
             }
 
