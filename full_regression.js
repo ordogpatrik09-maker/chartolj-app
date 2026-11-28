@@ -271,8 +271,17 @@ check('quiz_quality', () => {
     Object.keys(pos).forEach(p => { if (pos[p] / n > 0.35) issues.push(`a(z) ${p}. pozíción van a helyes válaszok ${(pos[p] / n * 100).toFixed(0)}%-a`); });
     let repeated = 0; optUse.forEach(c => { if (c > 1) repeated += c - 1; });
     if (repeated > REPEATED_DISTRACTOR_BASELINE) issues.push(`újrahasznosított opciók száma nőtt: ${repeated} > ${REPEATED_DISTRACTOR_BASELINE}`);
+    // Az angol fordításokban is legyen minden opció és kérdés egyedi.
+    const enWin = {}; let enOpts = 0; const enSeen = new Map(), enQ = new Map();
+    (fs.existsSync(path.join(__dirname, 'lessons-en')) ? fs.readdirSync(path.join(__dirname, 'lessons-en')) : []).forEach(f => {
+        try { new Function('window', fs.readFileSync(path.join(__dirname, 'lessons-en', f), 'utf-8'))(enWin); } catch (e) {}
+    });
+    Object.keys(enWin.LESSONS_EN || {}).forEach(k => (enWin.LESSONS_EN[k].qs || []).forEach((q, qi) => {
+        const qk = String(q.q).trim().toLowerCase(); if (enQ.has(qk)) issues.push(`EN #${k}:${qi}: ismétlődő kérdés (${enQ.get(qk)})`); else enQ.set(qk, k + ':' + qi);
+        (q.o || []).forEach((o, oi) => { enOpts++; const ok = String(o).trim().toLowerCase(); if (enSeen.has(ok)) issues.push(`EN #${k}:${qi}:${oi}: ismétlődő opció (${enSeen.get(ok)})`); else enSeen.set(ok, k + ':' + qi + ':' + oi); });
+    }));
     if (issues.length) throw new Error(issues.slice(0, 20).join(' | '));
-    return { questions: n, answerPositions: pos, repeatedOptions: repeated };
+    return { questions: n, answerPositions: pos, repeatedOptions: repeated, enOptionsChecked: enOpts };
 });
 
 check('lessons_en_translation_integrity', () => {
