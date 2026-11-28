@@ -39642,11 +39642,18 @@ const WHATIF_SCENARIOS = [{"id": "gapup_earnings", "year": 1, "name": "Gap-up ny
                 verdict = 'Az RVI pontosan a jelvonalon van — átmeneti, döntésre még nem alkalmas pillanat.';
             }
 
+            // JAVÍTÁS (audit — "-0.0000" szivárgás): a latestRvi/signalLine önmagában
+            // bármelyik előjelű lehet (numSma/denSma hányados), de ha egy kis negatív
+            // érték a kiírt 4 tizedesjegy pontosságon pontosan nullára kerekedik (pl.
+            // -0.0000000049...), a natív .toFixed(4) egy önmagában értelmetlen, önálló
+            // "-" előjelet hagy a "0.0000" előtt — ugyanaz a hibaosztály, mint a
+            // rendszerszintű "-0.00%" szivárgás-javítási körben (zeroSafeRound) már
+            // kezelt kalkulátoroknál. zeroSafeRound(...)-ot alkalmazzuk kiírás előtt.
             out.innerHTML = `
                 <div class="glass-card rounded-xl p-3 space-y-2 font-mono text-xs">
                     <div class="flex justify-between"><span class="text-slate-400">Gyertyák száma:</span><span class="text-white">${candles.length}</span></div>
-                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">RVI (nyers):</span><span class="font-extrabold text-white text-sm">${latestRvi.toFixed(4)}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Jelvonal:</span><span class="font-extrabold text-white text-sm">${signalLine.toFixed(4)}</span></div>
+                    <div class="flex justify-between border-t border-dark-750 pt-2"><span class="text-slate-400">RVI (nyers):</span><span class="font-extrabold text-white text-sm">${zeroSafeRound(latestRvi, 4).toFixed(4)}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Jelvonal:</span><span class="font-extrabold text-white text-sm">${zeroSafeRound(signalLine, 4).toFixed(4)}</span></div>
                 </div>
                 <p class="text-[10px] font-semibold mt-2 ${colorClass}">${verdict}</p>
             `;
