@@ -253,7 +253,7 @@ check('lesson_tool_map_integrity', () => {
 //     certifikációs vizsga nem keverte), ne legyen két azonos kérdésszöveg,
 //     egy kérdésen belül ne ismétlődjön opció, és a több kérdésben is
 //     újrahasznosított "töltelék" rossz válaszok száma csak csökkenhet.
-const REPEATED_DISTRACTOR_BASELINE = 142; // csökkenő racsni — javításkor ezt is lejjebb kell venni
+const REPEATED_DISTRACTOR_BASELINE = 0; // csökkenő racsni — javításkor ezt is lejjebb kell venni
 check('quiz_quality', () => {
     const lessons = new Function('return ' + extractBalanced(html, 'const LESSONS_DATA = ', '[', ']'))();
     const issues = []; const pos = {}; let n = 0; const qText = new Map(); const optUse = new Map();
